@@ -1,15 +1,21 @@
+# Dependencias
 node_modules
 
+# Compilados
 dist
-
 build
-
-.env
-
-coverage
-
 .next
-
 .vite
 
-pnpm-lock.yaml
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Testing
+coverage
+
+# Sistema operativo y Editores
+.DS_Store
+.vscode/
+.idea/

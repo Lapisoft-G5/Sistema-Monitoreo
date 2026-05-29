@@ -1,0 +1,9 @@
+packages:
+
+  - "apps/*"
+
+  - "packages/*"
+allowBuilds:
+  '@nestjs/core': false
+  bcrypt: true
+  unrs-resolver: false

@@ -29,8 +29,6 @@ Aplica a este monorepo (PNPM Workspaces) y debe seguirse desde el primer día de
 | Docker | Cualquier versión estable | Para levantar PostgreSQL local |
 | Git | 2.40+ | — |
 
-> **Recomendado:** instalar [nvm](https://github.com/nvm-sh/nvm) (Linux/macOS) o [nvm-windows](https://github.com/coreybutler/nvm-windows) para gestionar versiones de Node.
-
 ---
 
 ## 2. Configuración inicial del entorno
@@ -227,7 +225,7 @@ git commit -m "actualizacion del codigo"
 
 ### Template de MR
 
-El repositorio ya incluye un template en `.github/pull_request_template.md`.
+El repositorio ya incluye un template en [`.github/pull_request_template.md`](.github/pull_request_template.md).
 Complétalo siempre que abras una MR.
 
 ### Reglas de revisión

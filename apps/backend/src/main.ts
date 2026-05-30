@@ -1,8 +1,28 @@
+import 'dotenv/config';
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from './app.module.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+      credentials: true,
+    },
+  });
+
+  app.setGlobalPrefix('api');
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
   await app.listen(process.env.PORT ?? 3000);
+  console.log(`Backend running on ${await app.getUrl()}/api`);
 }
-bootstrap();
+
+void bootstrap();

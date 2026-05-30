@@ -1,18 +1,17 @@
-const tseslint = require('@typescript-eslint/eslint-plugin');
-const parser = require('@typescript-eslint/parser');
+import tseslint from 'typescript-eslint';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
-module.exports = [
+export default tseslint.config(
   {
-    files: ['**/*.ts','**/*.tsx'],
-    languageOptions:{
-      parser
+    ignores: ['**/node_modules', '**/dist', '**/build', '**/.next', '**/.vite', '**/generated'],
+  },
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    extends: [tseslint.configs.recommended],
+    rules: {
+      semi: ['error', 'always'],
+      quotes: ['error', 'single'],
     },
-    plugins:{
-      '@typescript-eslint':tseslint
-    },
-    rules:{
-      semi:['error','always'],
-      quotes:['error','single']
-    }
-  }
-];
+  },
+  eslintConfigPrettier,
+);

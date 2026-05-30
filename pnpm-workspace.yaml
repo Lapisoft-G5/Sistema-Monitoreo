@@ -1,9 +1,10 @@
 packages:
-
   - "apps/*"
-
   - "packages/*"
+
+minimumReleaseAge: 0
+
 allowBuilds:
-  '@nestjs/core': false
+  '@prisma/engines': true
   bcrypt: true
-  unrs-resolver: false
+  prisma: true

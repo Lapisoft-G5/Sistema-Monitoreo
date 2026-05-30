@@ -7,6 +7,9 @@ build
 .next
 .vite
 
+# Prisma generado
+**/generated/prisma
+
 # Variables de entorno
 .env
 .env.*
@@ -15,7 +18,22 @@ build
 # Testing
 coverage
 
-# Sistema operativo y Editores
+# Logs
+*.log
+
+# Sistema operativo
 .DS_Store
+Thumbs.db
+
+# Editores
 .vscode/
 .idea/
+
+# pnpm
+.pnpm-debug.log*
+
+# AI / agentes
+.antigravitycli/
+.cursor/
+.gemini/
+.claude/

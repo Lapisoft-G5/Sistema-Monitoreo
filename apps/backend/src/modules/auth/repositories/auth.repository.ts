@@ -18,6 +18,15 @@ export abstract class AuthRepository {
   abstract incrementFailedAttempts(userId: string, now: Date): Promise<number>;
   abstract lockAccount(userId: string, until: Date): Promise<void>;
   abstract resetFailedAttempts(userId: string): Promise<void>;
+  abstract logAuthEvent(data: LogAuthEventData): Promise<void>;
+}
+
+export interface LogAuthEventData {
+  userId?: string;
+  eventType: string;
+  eventDetail?: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 export interface CreateSessionData {

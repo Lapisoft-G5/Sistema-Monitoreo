@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import { AuthRepository, CreateSessionData, CreateResetTokenData } from './auth.repository.js';
+import { AuthRepository, CreateSessionData, CreateResetTokenData, LogAuthEventData } from './auth.repository.js';
 import { User } from '../entities/user.entity.js';
 import { AuthSession } from '../entities/auth-session.entity.js';
 import { PasswordResetToken } from '../entities/password-reset-token.entity.js';
@@ -188,6 +188,18 @@ export class PrismaAuthRepository implements AuthRepository {
       data: {
         failedLoginAttempts: 0,
         lockedUntil: null,
+      },
+    });
+  }
+
+  async logAuthEvent(data: LogAuthEventData): Promise<void> {
+    await this.prisma.authAuditLog.create({
+      data: {
+        userId: data.userId ?? null,
+        eventType: data.eventType,
+        eventDetail: data.eventDetail ?? null,
+        ipAddress: data.ipAddress ?? null,
+        userAgent: data.userAgent ?? null,
       },
     });
   }

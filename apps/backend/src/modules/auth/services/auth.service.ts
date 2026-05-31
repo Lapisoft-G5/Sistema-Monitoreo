@@ -26,17 +26,36 @@ export class AuthService {
     const user = await this.authRepository.findUserByDni(dto.dni);
 
     if (!user) {
-      // No revelamos si el DNI existe o no (seguridad)
+      await this.authRepository.logAuthEvent({
+        eventType: 'LOGIN_FAILURE_UNREGISTERED',
+        eventDetail: `Intento de inicio de sesión fallido para DNI no registrado: ${dto.dni}`,
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+      });
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // ── 2. Verificar cuenta activa ────────────────────────────────────────
     if (!user.isActive) {
+      await this.authRepository.logAuthEvent({
+        userId: user.id,
+        eventType: 'LOGIN_FAILURE_INACTIVE',
+        eventDetail: `Intento de inicio de sesión fallido: cuenta inactiva`,
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+      });
       throw new ForbiddenException('Cuenta inactiva');
     }
 
     // ── 3. Verificar bloqueo temporal ─────────────────────────────────────
     if (user.lockedUntil && user.lockedUntil > now) {
+      await this.authRepository.logAuthEvent({
+        userId: user.id,
+        eventType: 'LOGIN_FAILURE_LOCKED',
+        eventDetail: `Intento de inicio de sesión rechazado: cuenta bloqueada temporalmente`,
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+      });
       throw new ForbiddenException('Cuenta bloqueada temporalmente. Intente más tarde.');
     }
 
@@ -54,9 +73,23 @@ export class AuthService {
       if (updatedAttempts >= 3) {
         const lockUntil = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutos
         await this.authRepository.lockAccount(user.id, lockUntil);
+        await this.authRepository.logAuthEvent({
+          userId: user.id,
+          eventType: 'ACCOUNT_LOCKED',
+          eventDetail: 'Cuenta bloqueada temporalmente por 15 minutos por alcanzar 3 intentos fallidos consecutivos',
+          ipAddress: meta?.ipAddress,
+          userAgent: meta?.userAgent,
+        });
         throw new ForbiddenException('Cuenta bloqueada temporalmente. Intente más tarde.');
       }
 
+      await this.authRepository.logAuthEvent({
+        userId: user.id,
+        eventType: 'LOGIN_FAILURE',
+        eventDetail: `Intento de inicio de sesión fallido por contraseña incorrecta. Intento número: ${updatedAttempts}`,
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+      });
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -95,7 +128,16 @@ export class AuthService {
     // ── 7. Actualizar último login ────────────────────────────────────────
     await this.authRepository.updateLastLogin(user.id, now);
 
-    // ── 8. Construir respuesta ────────────────────────────────────────────
+    // ── 8. Registrar Auditoría de Login Exitoso ───────────────────────────
+    await this.authRepository.logAuthEvent({
+      userId: user.id,
+      eventType: 'LOGIN_SUCCESS',
+      eventDetail: 'Inicio de sesión exitoso y creación de sesión activa',
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+    });
+
+    // ── 9. Construir respuesta ────────────────────────────────────────────
     return {
       accessToken,
       user: {
@@ -112,6 +154,7 @@ export class AuthService {
   async changePassword(
     userId: string,
     dto: ChangePasswordDto,
+    meta?: { ipAddress?: string; userAgent?: string },
   ): Promise<IChangePasswordResponse> {
     const user = await this.authRepository.findUserById(userId);
     if (!user) {
@@ -123,6 +166,14 @@ export class AuthService {
 
     await this.authRepository.updatePassword(userId, passwordHash);
 
+    await this.authRepository.logAuthEvent({
+      userId,
+      eventType: 'PASSWORD_CHANGE',
+      eventDetail: 'Cambio de contraseña por primer acceso exitoso',
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+    });
+
     return {
       success: true,
       message: 'Contraseña actualizada correctamente',
@@ -131,12 +182,18 @@ export class AuthService {
 
   async forgotPassword(
     dto: ForgotPasswordDto,
-    meta?: { ipAddress?: string },
+    meta?: { ipAddress?: string; userAgent?: string },
   ): Promise<IForgotPasswordResponse> {
     const user = await this.authRepository.findUserByDniAndEmail(dto.dni, dto.email);
 
     if (!user || !user.isActive) {
       // Prevención de enumeración de cuentas: misma respuesta genérica exitosa
+      await this.authRepository.logAuthEvent({
+        eventType: 'PASSWORD_RESET_REQUEST_UNREGISTERED',
+        eventDetail: `Solicitud de recuperación para DNI o correo no registrado: DNI=${dto.dni}, Email=${dto.email}`,
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+      });
       return {
         success: true,
         message: 'Si el DNI y correo corresponden a un usuario activo, recibirá un correo con las instrucciones.',
@@ -145,6 +202,13 @@ export class AuthService {
 
     const hasActive = await this.authRepository.hasActiveSession(user.id);
     if (hasActive) {
+      await this.authRepository.logAuthEvent({
+        userId: user.id,
+        eventType: 'PASSWORD_RESET_BLOCKED_ACTIVE_SESSION',
+        eventDetail: 'Solicitud de recuperación bloqueada: el usuario cuenta con una sesión activa en el sistema',
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+      });
       throw new BadRequestException('No se puede generar un enlace de recuperación si existe una sesión activa en el sistema.');
     }
 
@@ -161,6 +225,14 @@ export class AuthService {
       requestedIp: meta?.ipAddress,
     });
 
+    await this.authRepository.logAuthEvent({
+      userId: user.id,
+      eventType: 'PASSWORD_RESET_REQUEST',
+      eventDetail: 'Solicitud de enlace de recuperación generada con éxito',
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+    });
+
     // Registramos en consola para poder testearlo y consumirlo sin correo real en dev
     console.log(`[DEV ONLY] Enlace de recuperación generado para el DNI ${dto.dni}: token=${token}`);
 
@@ -170,11 +242,20 @@ export class AuthService {
     };
   }
 
-  async resetPassword(dto: ResetPasswordDto): Promise<IResetPasswordResponse> {
+  async resetPassword(
+    dto: ResetPasswordDto,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ): Promise<IResetPasswordResponse> {
     const tokenHash = createHash('sha256').update(dto.token).digest('hex');
     const resetToken = await this.authRepository.findResetToken(tokenHash);
 
     if (!resetToken || resetToken.isUsed || resetToken.expiresAt < new Date()) {
+      await this.authRepository.logAuthEvent({
+        eventType: 'PASSWORD_RESET_FAILURE',
+        eventDetail: `Intento de restablecimiento fallido: token inválido, usado o expirado`,
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+      });
       throw new BadRequestException('Enlace de recuperación inválido o expirado');
     }
 
@@ -183,14 +264,35 @@ export class AuthService {
 
     await this.authRepository.useResetToken(resetToken.id, resetToken.userId, passwordHash);
 
+    await this.authRepository.logAuthEvent({
+      userId: resetToken.userId,
+      eventType: 'PASSWORD_RESET_SUCCESS',
+      eventDetail: 'Restablecimiento de contraseña por token exitoso',
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+    });
+
     return {
       success: true,
       message: 'Su contraseña ha sido restablecida con éxito.',
     };
   }
 
-  async logout(sessionJti: string): Promise<ILogoutResponse> {
+  async logout(
+    sessionJti: string,
+    userId: string,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ): Promise<ILogoutResponse> {
     await this.authRepository.invalidateSession(sessionJti, 'LOGOUT');
+
+    await this.authRepository.logAuthEvent({
+      userId,
+      eventType: 'LOGOUT',
+      eventDetail: `Cierre de sesión manual para sesión JTI: ${sessionJti}`,
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+    });
+
     return {
       success: true,
       message: 'Sesión cerrada correctamente',

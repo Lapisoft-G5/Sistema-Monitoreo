@@ -25,6 +25,7 @@ describe('PrismaAuthRepository', () => {
   let updateManySessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
   let findUniqueSessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
   let findFirstSessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
+  let logAuthEventMock: jest.Mock<(args: unknown) => Promise<unknown>>;
 
   beforeEach(async () => {
     findUniqueMock = jest.fn();
@@ -38,6 +39,7 @@ describe('PrismaAuthRepository', () => {
     updateManySessionMock = jest.fn();
     findUniqueSessionMock = jest.fn();
     findFirstSessionMock = jest.fn();
+    logAuthEventMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -61,6 +63,9 @@ describe('PrismaAuthRepository', () => {
               updateMany: updateManySessionMock,
               findUnique: findUniqueSessionMock,
               findFirst: findFirstSessionMock,
+            },
+            authAuditLog: {
+              create: logAuthEventMock,
             },
           },
         },
@@ -349,6 +354,48 @@ describe('PrismaAuthRepository', () => {
       const result = await repository.hasActiveSession('user-uuid');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('logAuthEvent', () => {
+    it('should insert audit log record in DB', async () => {
+      logAuthEventMock.mockResolvedValue({});
+
+      await repository.logAuthEvent({
+        userId: 'user-uuid',
+        eventType: 'LOGIN_SUCCESS',
+        eventDetail: 'Login correct',
+        ipAddress: '127.0.0.1',
+        userAgent: 'Jest',
+      });
+
+      expect(logAuthEventMock).toHaveBeenCalledWith({
+        data: {
+          userId: 'user-uuid',
+          eventType: 'LOGIN_SUCCESS',
+          eventDetail: 'Login correct',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        },
+      });
+    });
+
+    it('should handle optional and null parameters', async () => {
+      logAuthEventMock.mockResolvedValue({});
+
+      await repository.logAuthEvent({
+        eventType: 'LOGIN_FAILURE',
+      });
+
+      expect(logAuthEventMock).toHaveBeenCalledWith({
+        data: {
+          userId: null,
+          eventType: 'LOGIN_FAILURE',
+          eventDetail: null,
+          ipAddress: null,
+          userAgent: null,
+        },
+      });
     });
   });
 });

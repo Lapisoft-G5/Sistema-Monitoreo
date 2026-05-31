@@ -73,6 +73,7 @@ describe('AuthService', () => {
   let useResetTokenMock: jest.MockedFunction<(tokenId: string, userId: string, passwordHash: string) => Promise<void>>;
   let invalidateSessionMock: jest.MockedFunction<(sessionJti: string, reason: string) => Promise<void>>;
   let hasActiveSessionMock: jest.MockedFunction<(userId: string) => Promise<boolean>>;
+  let logAuthEventMock: jest.MockedFunction<(data: any) => Promise<void>>;
   let jwtSignAsyncMock: jest.MockedFunction<
     (payload: unknown, options?: unknown) => Promise<string>
   >;
@@ -92,6 +93,7 @@ describe('AuthService', () => {
     incrementFailedAttemptsMock = jest.fn();
     lockAccountMock = jest.fn();
     resetFailedAttemptsMock = jest.fn();
+    logAuthEventMock = jest.fn();
     jwtSignAsyncMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -114,6 +116,7 @@ describe('AuthService', () => {
             incrementFailedAttempts: incrementFailedAttemptsMock,
             lockAccount: lockAccountMock,
             resetFailedAttempts: resetFailedAttemptsMock,
+            logAuthEvent: logAuthEventMock,
           },
         },
         {
@@ -145,6 +148,7 @@ describe('AuthService', () => {
     incrementFailedAttemptsMock.mockReset();
     lockAccountMock.mockReset();
     resetFailedAttemptsMock.mockReset();
+    logAuthEventMock.mockReset();
     jwtSignAsyncMock.mockReset();
   });
 
@@ -163,12 +167,22 @@ describe('AuthService', () => {
 
       await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
       expect(findUserByDniMock).toHaveBeenCalledWith(dto.dni);
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'LOGIN_FAILURE_UNREGISTERED',
+        }),
+      );
     });
 
     it('should throw ForbiddenException when account is inactive', async () => {
       findUserByDniMock.mockResolvedValue(buildUser({ isActive: false }));
 
       await expect(service.login(dto)).rejects.toThrow(ForbiddenException);
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'LOGIN_FAILURE_INACTIVE',
+        }),
+      );
     });
 
     it('should throw ForbiddenException when account is locked', async () => {
@@ -176,6 +190,11 @@ describe('AuthService', () => {
       findUserByDniMock.mockResolvedValue(buildUser({ lockedUntil }));
 
       await expect(service.login(dto)).rejects.toThrow(ForbiddenException);
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'LOGIN_FAILURE_LOCKED',
+        }),
+      );
     });
 
     it('should throw UnauthorizedException when password is incorrect', async () => {
@@ -183,6 +202,11 @@ describe('AuthService', () => {
       compareMock.mockResolvedValue(false);
 
       await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'LOGIN_FAILURE',
+        }),
+      );
     });
 
     it('should return accessToken and user data on successful login', async () => {
@@ -213,6 +237,14 @@ describe('AuthService', () => {
         }),
       );
       expect(updateLastLoginMock).toHaveBeenCalledWith(user.id, expect.any(Date));
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: user.id,
+          eventType: 'LOGIN_SUCCESS',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      );
     });
 
     it('should not throw when lockedUntil is in the past', async () => {
@@ -248,6 +280,12 @@ describe('AuthService', () => {
       await expect(service.login(dto)).rejects.toThrow(ForbiddenException);
       expect(incrementFailedAttemptsMock).toHaveBeenCalledWith(user.id, expect.any(Date));
       expect(lockAccountMock).toHaveBeenCalledWith(user.id, expect.any(Date));
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: user.id,
+          eventType: 'ACCOUNT_LOCKED',
+        }),
+      );
     });
 
     it('should reset attempts on successful login if user had previous attempts', async () => {
@@ -296,7 +334,10 @@ describe('AuthService', () => {
       hashMock.mockResolvedValue('new_hashed_password');
       updatePasswordMock.mockResolvedValue(undefined);
 
-      const result = await service.changePassword(user.id, changePasswordDto);
+      const result = await service.changePassword(user.id, changePasswordDto, {
+        ipAddress: '127.0.0.1',
+        userAgent: 'Jest',
+      });
 
       expect(result).toEqual({
         success: true,
@@ -305,6 +346,14 @@ describe('AuthService', () => {
       expect(findUserByIdMock).toHaveBeenCalledWith(user.id);
       expect(hashMock).toHaveBeenCalledWith(changePasswordDto.newPassword, 10);
       expect(updatePasswordMock).toHaveBeenCalledWith(user.id, 'new_hashed_password');
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: user.id,
+          eventType: 'PASSWORD_CHANGE',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      );
     });
   });
 
@@ -317,12 +366,22 @@ describe('AuthService', () => {
     it('should securely return generic message if user is not found (prevents account enumeration)', async () => {
       findUserByDniAndEmailMock.mockResolvedValue(null);
 
-      const result = await service.forgotPassword(forgotPasswordDto);
+      const result = await service.forgotPassword(forgotPasswordDto, {
+        ipAddress: '127.0.0.1',
+        userAgent: 'Jest',
+      });
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('recibirá un correo');
       expect(findUserByDniAndEmailMock).toHaveBeenCalledWith(forgotPasswordDto.dni, forgotPasswordDto.email);
       expect(createPasswordResetTokenMock).not.toHaveBeenCalled();
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'PASSWORD_RESET_REQUEST_UNREGISTERED',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      );
     });
 
     it('should generate token, hash it, save reset request and return success if user exists', async () => {
@@ -331,7 +390,10 @@ describe('AuthService', () => {
       hasActiveSessionMock.mockResolvedValue(false); // No active session
       createPasswordResetTokenMock.mockResolvedValue(undefined);
 
-      const result = await service.forgotPassword(forgotPasswordDto, { ipAddress: '127.0.0.1' });
+      const result = await service.forgotPassword(forgotPasswordDto, {
+        ipAddress: '127.0.0.1',
+        userAgent: 'Jest',
+      });
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('recibirá un correo');
@@ -344,6 +406,14 @@ describe('AuthService', () => {
           requestedIp: '127.0.0.1',
         }),
       );
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: user.id,
+          eventType: 'PASSWORD_RESET_REQUEST',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      );
     });
 
     it('should throw BadRequestException if user exists but has an active parallel session', async () => {
@@ -351,8 +421,21 @@ describe('AuthService', () => {
       findUserByDniAndEmailMock.mockResolvedValue(user);
       hasActiveSessionMock.mockResolvedValue(true); // Active session exists!
 
-      await expect(service.forgotPassword(forgotPasswordDto)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.forgotPassword(forgotPasswordDto, {
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      ).rejects.toThrow(BadRequestException);
       expect(createPasswordResetTokenMock).not.toHaveBeenCalled();
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: user.id,
+          eventType: 'PASSWORD_RESET_BLOCKED_ACTIVE_SESSION',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      );
     });
   });
 
@@ -365,7 +448,19 @@ describe('AuthService', () => {
     it('should throw BadRequestException if token is not found in DB', async () => {
       findResetTokenMock.mockResolvedValue(null);
 
-      await expect(service.resetPassword(resetPasswordDto)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.resetPassword(resetPasswordDto, {
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'PASSWORD_RESET_FAILURE',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      );
     });
 
     it('should throw BadRequestException if token is already used', async () => {
@@ -400,12 +495,23 @@ describe('AuthService', () => {
       hashMock.mockResolvedValue('new_hashed_pwd');
       useResetTokenMock.mockResolvedValue(undefined);
 
-      const result = await service.resetPassword(resetPasswordDto);
+      const result = await service.resetPassword(resetPasswordDto, {
+        ipAddress: '127.0.0.1',
+        userAgent: 'Jest',
+      });
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('restablecida con éxito');
       expect(hashMock).toHaveBeenCalledWith(resetPasswordDto.newPassword, 10);
       expect(useResetTokenMock).toHaveBeenCalledWith('token-uuid', 'user-uuid', 'new_hashed_pwd');
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user-uuid',
+          eventType: 'PASSWORD_RESET_SUCCESS',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      );
     });
   });
 
@@ -413,11 +519,22 @@ describe('AuthService', () => {
     it('should invalidate session and return success', async () => {
       invalidateSessionMock.mockResolvedValue(undefined);
 
-      const result = await service.logout('session-jti');
+      const result = await service.logout('session-jti', 'user-uuid', {
+        ipAddress: '127.0.0.1',
+        userAgent: 'Jest',
+      });
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('cerrada correctamente');
       expect(invalidateSessionMock).toHaveBeenCalledWith('session-jti', 'LOGOUT');
+      expect(logAuthEventMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user-uuid',
+          eventType: 'LOGOUT',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+        }),
+      );
     });
   });
 });

@@ -39,7 +39,10 @@ export class AuthController {
     @Req() req: any,
   ): Promise<IChangePasswordResponse> {
     const userId = req.user.sub;
-    return this.authService.changePassword(userId, dto);
+    return this.authService.changePassword(userId, dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 
   /**
@@ -54,6 +57,7 @@ export class AuthController {
   ): Promise<IForgotPasswordResponse> {
     return this.authService.forgotPassword(dto, {
       ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
     });
   }
 
@@ -65,8 +69,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(
     @Body() dto: ResetPasswordDto,
+    @Req() req: Request,
   ): Promise<IResetPasswordResponse> {
-    return this.authService.resetPassword(dto);
+    return this.authService.resetPassword(dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 
   /**
@@ -78,6 +86,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: any): Promise<ILogoutResponse> {
     const sessionJti = req.user.jti;
-    return this.authService.logout(sessionJti);
+    const userId = req.user.sub;
+    return this.authService.logout(sessionJti, userId, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 }

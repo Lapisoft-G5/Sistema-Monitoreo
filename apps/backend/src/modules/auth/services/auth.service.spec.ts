@@ -72,6 +72,7 @@ describe('AuthService', () => {
   let findResetTokenMock: jest.MockedFunction<(tokenHash: string) => Promise<any>>;
   let useResetTokenMock: jest.MockedFunction<(tokenId: string, userId: string, passwordHash: string) => Promise<void>>;
   let invalidateSessionMock: jest.MockedFunction<(sessionJti: string, reason: string) => Promise<void>>;
+  let hasActiveSessionMock: jest.MockedFunction<(userId: string) => Promise<boolean>>;
   let jwtSignAsyncMock: jest.MockedFunction<
     (payload: unknown, options?: unknown) => Promise<string>
   >;
@@ -85,6 +86,7 @@ describe('AuthService', () => {
     findResetTokenMock = jest.fn();
     useResetTokenMock = jest.fn();
     invalidateSessionMock = jest.fn();
+    hasActiveSessionMock = jest.fn();
     updateLastLoginMock = jest.fn();
     updatePasswordMock = jest.fn();
     incrementFailedAttemptsMock = jest.fn();
@@ -106,6 +108,7 @@ describe('AuthService', () => {
             findResetToken: findResetTokenMock,
             useResetToken: useResetTokenMock,
             invalidateSession: invalidateSessionMock,
+            hasActiveSession: hasActiveSessionMock,
             updateLastLogin: updateLastLoginMock,
             updatePassword: updatePasswordMock,
             incrementFailedAttempts: incrementFailedAttemptsMock,
@@ -136,6 +139,7 @@ describe('AuthService', () => {
     findResetTokenMock.mockReset();
     useResetTokenMock.mockReset();
     invalidateSessionMock.mockReset();
+    hasActiveSessionMock.mockReset();
     updateLastLoginMock.mockReset();
     updatePasswordMock.mockReset();
     incrementFailedAttemptsMock.mockReset();
@@ -324,6 +328,7 @@ describe('AuthService', () => {
     it('should generate token, hash it, save reset request and return success if user exists', async () => {
       const user = buildUser();
       findUserByDniAndEmailMock.mockResolvedValue(user);
+      hasActiveSessionMock.mockResolvedValue(false); // No active session
       createPasswordResetTokenMock.mockResolvedValue(undefined);
 
       const result = await service.forgotPassword(forgotPasswordDto, { ipAddress: '127.0.0.1' });
@@ -339,6 +344,15 @@ describe('AuthService', () => {
           requestedIp: '127.0.0.1',
         }),
       );
+    });
+
+    it('should throw BadRequestException if user exists but has an active parallel session', async () => {
+      const user = buildUser();
+      findUserByDniAndEmailMock.mockResolvedValue(user);
+      hasActiveSessionMock.mockResolvedValue(true); // Active session exists!
+
+      await expect(service.forgotPassword(forgotPasswordDto)).rejects.toThrow(BadRequestException);
+      expect(createPasswordResetTokenMock).not.toHaveBeenCalled();
     });
   });
 

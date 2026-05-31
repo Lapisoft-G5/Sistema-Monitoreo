@@ -143,6 +143,11 @@ export class AuthService {
       };
     }
 
+    const hasActive = await this.authRepository.hasActiveSession(user.id);
+    if (hasActive) {
+      throw new BadRequestException('No se puede generar un enlace de recuperación si existe una sesión activa en el sistema.');
+    }
+
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(token).digest('hex');
     

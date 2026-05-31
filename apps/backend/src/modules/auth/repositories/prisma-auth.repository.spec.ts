@@ -24,6 +24,7 @@ describe('PrismaAuthRepository', () => {
   let createSessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
   let updateManySessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
   let findUniqueSessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
+  let findFirstSessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
 
   beforeEach(async () => {
     findUniqueMock = jest.fn();
@@ -36,6 +37,7 @@ describe('PrismaAuthRepository', () => {
     createSessionMock = jest.fn();
     updateManySessionMock = jest.fn();
     findUniqueSessionMock = jest.fn();
+    findFirstSessionMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -58,6 +60,7 @@ describe('PrismaAuthRepository', () => {
               create: createSessionMock,
               updateMany: updateManySessionMock,
               findUnique: findUniqueSessionMock,
+              findFirst: findFirstSessionMock,
             },
           },
         },
@@ -318,6 +321,32 @@ describe('PrismaAuthRepository', () => {
       findUniqueSessionMock.mockResolvedValue(null);
 
       const result = await repository.isSessionActive('session-jti');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('hasActiveSession', () => {
+    it('should return true if active session exists', async () => {
+      findFirstSessionMock.mockResolvedValue({ id: 'session-uuid' });
+
+      const result = await repository.hasActiveSession('user-uuid');
+
+      expect(result).toBe(true);
+      expect(findFirstSessionMock).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-uuid',
+          isActive: true,
+          expiresAt: { gt: expect.any(Date) },
+        },
+        select: { id: true },
+      });
+    });
+
+    it('should return false if no active session exists', async () => {
+      findFirstSessionMock.mockResolvedValue(null);
+
+      const result = await repository.hasActiveSession('user-uuid');
 
       expect(result).toBe(false);
     });

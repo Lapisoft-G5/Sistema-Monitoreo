@@ -6,6 +6,7 @@ import { ChangePasswordDto } from '../dto/change-password.dto.js';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { AuthGuard } from '../guards/auth.guard.js';
+import { AllowFirstLogin } from '../decorators/allow-first-login.decorator.js';
 import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse } from '@sistema-monitoreo/shared-contracts';
 
 @Controller('auth')
@@ -31,6 +32,7 @@ export class AuthController {
    */
   @Post('change-password')
   @UseGuards(AuthGuard)
+  @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
   async changePassword(
     @Body() dto: ChangePasswordDto,

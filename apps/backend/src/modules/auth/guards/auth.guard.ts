@@ -3,13 +3,19 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
+import { ALLOW_FIRST_LOGIN_KEY } from '../decorators/allow-first-login.decorator.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -19,9 +25,24 @@ export class AuthGuard implements CanActivate {
     }
     try {
       const payload = await this.jwtService.verifyAsync(token);
-      // Asignamos el payload al request para acceder desde el controlador
       request['user'] = payload;
-    } catch {
+
+      // Detectar primer acceso y forzar cambio de contraseña temporal
+      if (payload.firstLogin === true) {
+        const allowFirstLogin = this.reflector.getAllAndOverride<boolean>(
+          ALLOW_FIRST_LOGIN_KEY,
+          [context.getHandler(), context.getClass()],
+        );
+        if (!allowFirstLogin) {
+          throw new ForbiddenException(
+            'Debe cambiar su contraseña temporal antes de acceder a otros recursos.',
+          );
+        }
+      }
+    } catch (err) {
+      if (err instanceof ForbiddenException) {
+        throw err;
+      }
       throw new UnauthorizedException('Token inválido o expirado');
     }
     return true;

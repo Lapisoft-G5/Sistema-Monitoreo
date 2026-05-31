@@ -74,6 +74,7 @@ export class AuthService {
       dni: user.dni,
       role: user.role?.code ?? '',
       jti,
+      firstLogin: user.isFirstLogin,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {

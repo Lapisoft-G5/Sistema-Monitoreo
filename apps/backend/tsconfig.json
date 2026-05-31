@@ -14,7 +14,6 @@
     "lib": ["ES2023"],
     "types": ["node", "jest"],
     "sourceMap": true,
-    "outDir": "./dist",
     "incremental": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,5 +22,12 @@
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS",
+      "moduleResolution": "node",
+      "resolvePackageJsonExports": false
+    }
   }
 }

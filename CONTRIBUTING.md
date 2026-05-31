@@ -226,7 +226,6 @@ git commit -m "actualizacion del codigo"
 ### Template de MR
 
 El repositorio ya incluye un template en [`.github/pull_request_template.md`](.github/pull_request_template.md).
-Complétalo siempre que abras una MR.
 
 ### Reglas de revisión
 

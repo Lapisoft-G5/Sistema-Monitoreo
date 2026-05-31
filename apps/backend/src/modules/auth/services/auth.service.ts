@@ -56,7 +56,10 @@ export class AuthService {
         ipAddress: meta?.ipAddress,
         userAgent: meta?.userAgent,
       });
-      throw new ForbiddenException('Cuenta bloqueada temporalmente. Intente más tarde.');
+      throw new ForbiddenException({
+        message: 'Cuenta bloqueada temporalmente. Intente más tarde.',
+        lockedUntil: user.lockedUntil.toISOString(),
+      });
     }
 
     // ── 4. Validar contraseña ─────────────────────────────────────────────
@@ -80,7 +83,10 @@ export class AuthService {
           ipAddress: meta?.ipAddress,
           userAgent: meta?.userAgent,
         });
-        throw new ForbiddenException('Cuenta bloqueada temporalmente. Intente más tarde.');
+        throw new ForbiddenException({
+          message: 'Cuenta bloqueada temporalmente. Intente más tarde.',
+          lockedUntil: lockUntil.toISOString(),
+        });
       }
 
       await this.authRepository.logAuthEvent({

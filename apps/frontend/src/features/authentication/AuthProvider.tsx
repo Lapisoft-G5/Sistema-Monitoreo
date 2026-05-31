@@ -54,6 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return {
           success: false,
           error: errJson.message || 'Credenciales o datos incorrectos',
+          lockedUntil: errJson.lockedUntil || null,
         };
       }
 

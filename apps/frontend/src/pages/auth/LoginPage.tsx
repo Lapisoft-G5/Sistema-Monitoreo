@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../features/authentication/useAuth';
 
 interface Props {
@@ -16,10 +16,25 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [logoError, setLogoError] = useState(false);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      setCountdown(null);
+      setError('');
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCountdown(countdown - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (countdown !== null) return;
     if (!dni || !password) {
       setError('Complete todos los campos');
       return;
@@ -28,7 +43,22 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
     setError('');
     const result = await login(dni, password);
     setLoading(false);
-    if (!result.success) setError(result.error ?? 'Error al iniciar sesión');
+    if (!result.success) {
+      setError(result.error ?? 'Error al iniciar sesión');
+      if (result.lockedUntil) {
+        const lockedTime = new Date(result.lockedUntil).getTime();
+        const diff = Math.ceil((lockedTime - Date.now()) / 1000);
+        if (diff > 0) {
+          setCountdown(diff);
+        }
+      }
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -218,14 +248,14 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                {error}
+                {countdown !== null ? `${error} (Intente de nuevo en ${formatTime(countdown)})` : error}
               </div>
             )}
 
             {/* Botón */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || countdown !== null}
               className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-bold text-sm tracking-wider rounded-xl transition-all shadow-lg shadow-blue-600/20 mt-2 cursor-pointer disabled:cursor-not-allowed border-none"
             >
               {loading ? (
@@ -236,6 +266,8 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                   />
                   Verificando...
                 </span>
+              ) : countdown !== null ? (
+                'CUENTA BLOQUEADA TEMPORALMENTE'
               ) : (
                 'INICIO DE SESIÓN'
               )}

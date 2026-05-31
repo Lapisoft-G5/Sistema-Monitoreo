@@ -57,7 +57,7 @@ export const AppShell = () => {
   const { user } = useAuth();
 
   // 1. Obtenemos la lista de permisos del rol actual
-  const permissions = user ? ROLE_PERMISSIONS[user.role] : [];
+  const permissions = user && ROLE_PERMISSIONS[user.role] ? ROLE_PERMISSIONS[user.role] : [];
 
   const defaultPage = permissions.length > 0 ? permissions[0] : 'dashboard';
 

@@ -18,7 +18,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "prisma db seed"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -62,5 +63,8 @@
     "cross-env": "^7.0.3",
     "@jest/globals": "^30.0.0",
     "@types/bcrypt": "^5.0.2"
+  },
+  "prisma": {
+    "seed": "node ../../database/seeders/dev-seed.js"
   }
 }

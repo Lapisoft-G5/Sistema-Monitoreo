@@ -53,6 +53,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      fetch(`${apiBaseUrl}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      }).catch((err) => {
+        console.error('Error invalidating session in backend on logout:', err);
+      });
+    }
     localStorage.removeItem('accessToken');
     setUser(null);
     setRequiresPasswordChange(false);
@@ -90,6 +103,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const forgotPassword = async (dni: string, email: string) => {
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiBaseUrl}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dni, email }),
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          error: errJson.message || 'No se pudo procesar la solicitud de recuperación',
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error in forgotPassword integration:', error);
+      return {
+        success: false,
+        error: 'No se pudo establecer conexión con el servidor',
+      };
+    }
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiBaseUrl}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, newPassword }),
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          error: errJson.message || 'El enlace de recuperación es inválido o ha expirado',
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error in resetPassword integration:', error);
+      return {
+        success: false,
+        error: 'No se pudo establecer conexión con el servidor',
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -98,6 +169,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         logout,
         changePassword,
+        forgotPassword,
+        resetPassword,
         isAuthenticated: !!user,
       }}
     >

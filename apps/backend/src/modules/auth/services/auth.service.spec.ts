@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { jest } from '@jest/globals';
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthRepository } from '../repositories/auth.repository.js';
 import { LoginDto } from '../dto/login.dto.js';
@@ -61,12 +61,16 @@ describe('AuthService', () => {
   let service: InstanceType<typeof AuthService>;
   let findUserByDniMock: jest.MockedFunction<(dni: string) => Promise<User | null>>;
   let findUserByIdMock: jest.MockedFunction<(id: string) => Promise<User | null>>;
+  let findUserByDniAndEmailMock: jest.MockedFunction<(dni: string, email: string) => Promise<User | null>>;
   let createSessionMock: jest.MockedFunction<(data: unknown) => Promise<unknown>>;
+  let createPasswordResetTokenMock: jest.MockedFunction<(data: unknown) => Promise<void>>;
   let updateLastLoginMock: jest.MockedFunction<(userId: string, date: Date) => Promise<void>>;
   let updatePasswordMock: jest.MockedFunction<(userId: string, passwordHash: string) => Promise<void>>;
   let incrementFailedAttemptsMock: jest.MockedFunction<(userId: string, now: Date) => Promise<number>>;
   let lockAccountMock: jest.MockedFunction<(userId: string, until: Date) => Promise<void>>;
   let resetFailedAttemptsMock: jest.MockedFunction<(userId: string) => Promise<void>>;
+  let findResetTokenMock: jest.MockedFunction<(tokenHash: string) => Promise<any>>;
+  let useResetTokenMock: jest.MockedFunction<(tokenId: string, userId: string, passwordHash: string) => Promise<void>>;
   let jwtSignAsyncMock: jest.MockedFunction<
     (payload: unknown, options?: unknown) => Promise<string>
   >;
@@ -74,7 +78,11 @@ describe('AuthService', () => {
   beforeEach(async () => {
     findUserByDniMock = jest.fn();
     findUserByIdMock = jest.fn();
+    findUserByDniAndEmailMock = jest.fn();
     createSessionMock = jest.fn();
+    createPasswordResetTokenMock = jest.fn();
+    findResetTokenMock = jest.fn();
+    useResetTokenMock = jest.fn();
     updateLastLoginMock = jest.fn();
     updatePasswordMock = jest.fn();
     incrementFailedAttemptsMock = jest.fn();
@@ -90,7 +98,11 @@ describe('AuthService', () => {
           useValue: {
             findUserByDni: findUserByDniMock,
             findUserById: findUserByIdMock,
+            findUserByDniAndEmail: findUserByDniAndEmailMock,
             createSession: createSessionMock,
+            createPasswordResetToken: createPasswordResetTokenMock,
+            findResetToken: findResetTokenMock,
+            useResetToken: useResetTokenMock,
             updateLastLogin: updateLastLoginMock,
             updatePassword: updatePasswordMock,
             incrementFailedAttempts: incrementFailedAttemptsMock,
@@ -115,7 +127,11 @@ describe('AuthService', () => {
     hashMock.mockReset();
     findUserByDniMock.mockReset();
     findUserByIdMock.mockReset();
+    findUserByDniAndEmailMock.mockReset();
     createSessionMock.mockReset();
+    createPasswordResetTokenMock.mockReset();
+    findResetTokenMock.mockReset();
+    useResetTokenMock.mockReset();
     updateLastLoginMock.mockReset();
     updatePasswordMock.mockReset();
     incrementFailedAttemptsMock.mockReset();
@@ -281,6 +297,97 @@ describe('AuthService', () => {
       expect(findUserByIdMock).toHaveBeenCalledWith(user.id);
       expect(hashMock).toHaveBeenCalledWith(changePasswordDto.newPassword, 10);
       expect(updatePasswordMock).toHaveBeenCalledWith(user.id, 'new_hashed_password');
+    });
+  });
+
+  describe('forgotPassword', () => {
+    const forgotPasswordDto = {
+      dni: '76358911',
+      email: 'carlos.quispe@ugel-lampa.gob.pe',
+    };
+
+    it('should securely return generic message if user is not found (prevents account enumeration)', async () => {
+      findUserByDniAndEmailMock.mockResolvedValue(null);
+
+      const result = await service.forgotPassword(forgotPasswordDto);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('recibirá un correo');
+      expect(findUserByDniAndEmailMock).toHaveBeenCalledWith(forgotPasswordDto.dni, forgotPasswordDto.email);
+      expect(createPasswordResetTokenMock).not.toHaveBeenCalled();
+    });
+
+    it('should generate token, hash it, save reset request and return success if user exists', async () => {
+      const user = buildUser();
+      findUserByDniAndEmailMock.mockResolvedValue(user);
+      createPasswordResetTokenMock.mockResolvedValue(undefined);
+
+      const result = await service.forgotPassword(forgotPasswordDto, { ipAddress: '127.0.0.1' });
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('recibirá un correo');
+      expect(findUserByDniAndEmailMock).toHaveBeenCalledWith(forgotPasswordDto.dni, forgotPasswordDto.email);
+      expect(createPasswordResetTokenMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: user.id,
+          tokenHash: expect.any(String),
+          expiresAt: expect.any(Date),
+          requestedIp: '127.0.0.1',
+        }),
+      );
+    });
+  });
+
+  describe('resetPassword', () => {
+    const resetPasswordDto = {
+      token: 'some-valid-plain-token',
+      newPassword: 'NewSecurePassword123!',
+    };
+
+    it('should throw BadRequestException if token is not found in DB', async () => {
+      findResetTokenMock.mockResolvedValue(null);
+
+      await expect(service.resetPassword(resetPasswordDto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if token is already used', async () => {
+      findResetTokenMock.mockResolvedValue({
+        id: 'token-uuid',
+        userId: 'user-uuid',
+        isUsed: true,
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+
+      await expect(service.resetPassword(resetPasswordDto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if token has expired', async () => {
+      findResetTokenMock.mockResolvedValue({
+        id: 'token-uuid',
+        userId: 'user-uuid',
+        isUsed: false,
+        expiresAt: new Date(Date.now() - 60_000),
+      });
+
+      await expect(service.resetPassword(resetPasswordDto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should update password and invalidate token on success', async () => {
+      findResetTokenMock.mockResolvedValue({
+        id: 'token-uuid',
+        userId: 'user-uuid',
+        isUsed: false,
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      hashMock.mockResolvedValue('new_hashed_pwd');
+      useResetTokenMock.mockResolvedValue(undefined);
+
+      const result = await service.resetPassword(resetPasswordDto);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('restablecida con éxito');
+      expect(hashMock).toHaveBeenCalledWith(resetPasswordDto.newPassword, 10);
+      expect(useResetTokenMock).toHaveBeenCalledWith('token-uuid', 'user-uuid', 'new_hashed_pwd');
     });
   });
 });

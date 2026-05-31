@@ -1,10 +1,15 @@
 import { User } from '../entities/user.entity.js';
 import { AuthSession } from '../entities/auth-session.entity.js';
+import { PasswordResetToken } from '../entities/password-reset-token.entity.js';
 
 export abstract class AuthRepository {
   abstract findUserByDni(dni: string): Promise<User | null>;
   abstract findUserById(id: string): Promise<User | null>;
+  abstract findUserByDniAndEmail(dni: string, email: string): Promise<User | null>;
   abstract createSession(data: CreateSessionData): Promise<AuthSession>;
+  abstract createPasswordResetToken(data: CreateResetTokenData): Promise<void>;
+  abstract findResetToken(tokenHash: string): Promise<PasswordResetToken | null>;
+  abstract useResetToken(tokenId: string, userId: string, passwordHash: string): Promise<void>;
   abstract updateLastLogin(userId: string, now: Date): Promise<void>;
   abstract updatePassword(userId: string, passwordHash: string): Promise<void>;
   abstract incrementFailedAttempts(userId: string, now: Date): Promise<number>;
@@ -18,4 +23,11 @@ export interface CreateSessionData {
   ipAddress?: string;
   userAgent?: string;
   expiresAt: Date;
+}
+
+export interface CreateResetTokenData {
+  userId: string;
+  tokenHash: string;
+  expiresAt: Date;
+  requestedIp?: string;
 }

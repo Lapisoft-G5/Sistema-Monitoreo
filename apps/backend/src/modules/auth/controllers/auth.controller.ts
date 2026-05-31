@@ -3,8 +3,10 @@ import type { Request } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { LoginDto } from '../dto/login.dto.js';
 import { ChangePasswordDto } from '../dto/change-password.dto.js';
+import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
+import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { AuthGuard } from '../guards/auth.guard.js';
-import { ILoginResponse, IChangePasswordResponse } from '@sistema-monitoreo/shared-contracts';
+import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse } from '@sistema-monitoreo/shared-contracts';
 
 @Controller('auth')
 export class AuthController {
@@ -36,5 +38,32 @@ export class AuthController {
   ): Promise<IChangePasswordResponse> {
     const userId = req.user.sub;
     return this.authService.changePassword(userId, dto);
+  }
+
+  /**
+   * POST /api/auth/forgot-password
+   * Valida DNI e email del usuario y genera un token de recuperación seguro.
+   */
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+    @Req() req: Request,
+  ): Promise<IForgotPasswordResponse> {
+    return this.authService.forgotPassword(dto, {
+      ipAddress: req.ip,
+    });
+  }
+
+  /**
+   * POST /api/auth/reset-password
+   * Restablece la contraseña si el token es válido y no ha expirado.
+   */
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+  ): Promise<IResetPasswordResponse> {
+    return this.authService.resetPassword(dto);
   }
 }

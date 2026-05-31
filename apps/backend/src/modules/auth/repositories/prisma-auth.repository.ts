@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import { AuthRepository, CreateSessionData } from './auth.repository.js';
+import { AuthRepository, CreateSessionData, CreateResetTokenData } from './auth.repository.js';
 import { User } from '../entities/user.entity.js';
 import { AuthSession } from '../entities/auth-session.entity.js';
+import { PasswordResetToken } from '../entities/password-reset-token.entity.js';
 
 @Injectable()
 export class PrismaAuthRepository implements AuthRepository {
@@ -34,6 +35,22 @@ export class PrismaAuthRepository implements AuthRepository {
     return user as unknown as User;
   }
 
+  async findUserByDniAndEmail(dni: string, email: string): Promise<User | null> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        dni,
+        email,
+      },
+      include: { role: true },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return user as unknown as User;
+  }
+
   async createSession(data: CreateSessionData): Promise<AuthSession> {
     const session = await this.prisma.authSession.create({
       data: {
@@ -48,6 +65,53 @@ export class PrismaAuthRepository implements AuthRepository {
     });
 
     return session;
+  }
+
+  async createPasswordResetToken(data: CreateResetTokenData): Promise<void> {
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: data.userId,
+        tokenHash: data.tokenHash,
+        expiresAt: data.expiresAt,
+        requestedIp: data.requestedIp ?? null,
+        isUsed: false,
+      },
+    });
+  }
+
+  async findResetToken(tokenHash: string): Promise<PasswordResetToken | null> {
+    const token = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!token) {
+      return null;
+    }
+
+    return token as unknown as PasswordResetToken;
+  }
+
+  async useResetToken(tokenId: string, userId: string, passwordHash: string): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash,
+          isFirstLogin: false,
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          passwordChangedAt: new Date(),
+        },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: tokenId },
+        data: {
+          isUsed: true,
+          usedAt: new Date(),
+        },
+      }),
+    ]);
   }
 
   async updateLastLogin(userId: string, now: Date): Promise<void> {

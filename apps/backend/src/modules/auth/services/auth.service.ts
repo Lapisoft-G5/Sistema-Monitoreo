@@ -1,11 +1,13 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { AuthRepository } from '../repositories/auth.repository.js';
 import { LoginDto } from '../dto/login.dto.js';
 import { ChangePasswordDto } from '../dto/change-password.dto.js';
-import { ILoginResponse, IChangePasswordResponse } from '@sistema-monitoreo/shared-contracts';
+import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
+import { ResetPasswordDto } from '../dto/reset-password.dto.js';
+import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse } from '@sistema-monitoreo/shared-contracts';
 
 @Injectable()
 export class AuthService {
@@ -123,6 +125,61 @@ export class AuthService {
     return {
       success: true,
       message: 'Contraseña actualizada correctamente',
+    };
+  }
+
+  async forgotPassword(
+    dto: ForgotPasswordDto,
+    meta?: { ipAddress?: string },
+  ): Promise<IForgotPasswordResponse> {
+    const user = await this.authRepository.findUserByDniAndEmail(dto.dni, dto.email);
+
+    if (!user || !user.isActive) {
+      // Prevención de enumeración de cuentas: misma respuesta genérica exitosa
+      return {
+        success: true,
+        message: 'Si el DNI y correo corresponden a un usuario activo, recibirá un correo con las instrucciones.',
+      };
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    
+    // Expiración: 1 hora a partir de ahora
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.authRepository.createPasswordResetToken({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+      requestedIp: meta?.ipAddress,
+    });
+
+    // Registramos en consola para poder testearlo y consumirlo sin correo real en dev
+    console.log(`[DEV ONLY] Enlace de recuperación generado para el DNI ${dto.dni}: token=${token}`);
+
+    return {
+      success: true,
+      message: 'Si el DNI y correo corresponden a un usuario activo, recibirá un correo con las instrucciones.',
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<IResetPasswordResponse> {
+    const tokenHash = createHash('sha256').update(dto.token).digest('hex');
+    const resetToken = await this.authRepository.findResetToken(tokenHash);
+
+    if (!resetToken || resetToken.isUsed || resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Enlace de recuperación inválido o expirado');
+    }
+
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
+
+    await this.authRepository.useResetToken(resetToken.id, resetToken.userId, passwordHash);
+
+    return {
+      success: true,
+      message: 'Su contraseña ha sido restablecida con éxito.',
     };
   }
 }

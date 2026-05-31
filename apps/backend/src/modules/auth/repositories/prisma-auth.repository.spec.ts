@@ -15,11 +15,21 @@ describe('PrismaAuthRepository', () => {
   let repository: PrismaAuthRepository;
 
   let findUniqueMock: jest.Mock<(args: unknown) => Promise<MockPrismaUser | null>>;
+  let findFirstMock: jest.Mock<(args: unknown) => Promise<MockPrismaUser | null>>;
   let updateMock: jest.Mock<(args: unknown) => Promise<unknown>>;
+  let createTokenMock: jest.Mock<(args: unknown) => Promise<unknown>>;
+  let findUniqueTokenMock: jest.Mock<(args: unknown) => Promise<unknown>>;
+  let updateTokenMock: jest.Mock<(args: unknown) => Promise<unknown>>;
+  let transactionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
 
   beforeEach(async () => {
     findUniqueMock = jest.fn();
+    findFirstMock = jest.fn();
     updateMock = jest.fn();
+    createTokenMock = jest.fn();
+    findUniqueTokenMock = jest.fn();
+    updateTokenMock = jest.fn();
+    transactionMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -27,9 +37,16 @@ describe('PrismaAuthRepository', () => {
         {
           provide: PrismaService,
           useValue: {
+            $transaction: transactionMock,
             user: {
               findUnique: findUniqueMock,
+              findFirst: findFirstMock,
               update: updateMock,
+            },
+            passwordResetToken: {
+              create: createTokenMock,
+              findUnique: findUniqueTokenMock,
+              update: updateTokenMock,
             },
           },
         },
@@ -133,6 +150,99 @@ describe('PrismaAuthRepository', () => {
       const result = await repository.findUserById('nonexistent-uuid');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findUserByDniAndEmail', () => {
+    it('should return a user if found by DNI and Email', async () => {
+      const mockPrismaUser: MockPrismaUser = {
+        id: 'user-uuid',
+        dni: '76358911',
+        role: { code: 'ADMIN' },
+      };
+      findFirstMock.mockResolvedValue(mockPrismaUser);
+
+      const result = await repository.findUserByDniAndEmail('76358911', 'carlos.quispe@ugel-lampa.gob.pe');
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('user-uuid');
+      expect(findFirstMock).toHaveBeenCalledWith({
+        where: { dni: '76358911', email: 'carlos.quispe@ugel-lampa.gob.pe' },
+        include: { role: true },
+      });
+    });
+
+    it('should return null if user not found by DNI and Email', async () => {
+      findFirstMock.mockResolvedValue(null);
+
+      const result = await repository.findUserByDniAndEmail('00000000', 'notfound@example.com');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('createPasswordResetToken', () => {
+    it('should insert password reset token into DB', async () => {
+      createTokenMock.mockResolvedValue({});
+      const expiresAt = new Date();
+
+      await repository.createPasswordResetToken({
+        userId: 'user-uuid',
+        tokenHash: 'hashed_token',
+        expiresAt,
+        requestedIp: '127.0.0.1',
+      });
+
+      expect(createTokenMock).toHaveBeenCalledWith({
+        data: {
+          userId: 'user-uuid',
+          tokenHash: 'hashed_token',
+          expiresAt,
+          requestedIp: '127.0.0.1',
+          isUsed: false,
+        },
+      });
+    });
+  });
+
+  describe('findResetToken', () => {
+    it('should return a token if found', async () => {
+      const mockToken = {
+        id: 'token-uuid',
+        userId: 'user-uuid',
+        tokenHash: 'hashed_token',
+        expiresAt: new Date(),
+        isUsed: false,
+        user: { id: 'user-uuid', dni: '76358911' },
+      };
+      findUniqueTokenMock.mockResolvedValue(mockToken);
+
+      const result = await repository.findResetToken('hashed_token');
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('token-uuid');
+      expect(findUniqueTokenMock).toHaveBeenCalledWith({
+        where: { tokenHash: 'hashed_token' },
+        include: { user: true },
+      });
+    });
+
+    it('should return null if token is not found', async () => {
+      findUniqueTokenMock.mockResolvedValue(null);
+
+      const result = await repository.findResetToken('nonexistent_token');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('useResetToken', () => {
+    it('should run transaction to update user password and mark token as used', async () => {
+      transactionMock.mockImplementation(async (actions) => actions);
+
+      await repository.useResetToken('token-uuid', 'user-uuid', 'new_pwd_hash');
+
+      expect(transactionMock).toHaveBeenCalled();
     });
   });
 });

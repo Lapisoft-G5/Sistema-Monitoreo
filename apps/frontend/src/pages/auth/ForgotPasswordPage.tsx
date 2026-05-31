@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../../features/authentication/useAuth';
 
 interface Props {
   onBack: () => void;
@@ -7,18 +8,26 @@ interface Props {
 const LOGO_SRC = '/logo-ugel.png';
 
 export const ForgotPasswordPage = ({ onBack }: Props) => {
+  const { forgotPassword } = useAuth();
   const [step, setStep] = useState<'form' | 'sent'>('form');
   const [dni, setDni] = useState('');
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (dni.length < 8) return;
+    if (dni.length < 8 || !email) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
+    setError(null);
+    const result = await forgotPassword(dni, email);
     setLoading(false);
-    setStep('sent');
+    if (result.success) {
+      setStep('sent');
+    } else {
+      setError(result.error || 'Ocurrió un error inesperado');
+    }
   };
 
   return (
@@ -115,11 +124,17 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
                 ¿Olvidaste tu contraseña?
               </h2>
               <p className="text-center text-xs text-slate-400 mb-6 leading-relaxed">
-                Ingresa tu DNI y te enviaremos las instrucciones de restablecimiento al correo
-                institucional o personal que registraste en el padrón.
+                Ingresa tu DNI y tu Correo electrónico registrado para enviarte las instrucciones de restablecimiento.
               </p>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                {/* Alerta de Error */}
+                {error && (
+                  <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 text-xs leading-relaxed text-center">
+                    {error}
+                  </div>
+                )}
+
                 {/* Campo DNI */}
                 <div>
                   <label className="block text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
@@ -150,10 +165,40 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
                   </div>
                 </div>
 
+                {/* Campo Correo Electrónico */}
+                <div>
+                  <label className="block text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
+                    Correo Electrónico
+                  </label>
+                  <div className="flex items-center bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors">
+                    <span className="pl-3 text-slate-500">
+                      <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                      </svg>
+                    </span>
+                    <input
+                      type="email"
+                      placeholder="Ingrese su correo registrado"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full bg-transparent border-none outline-none text-white text-sm px-3 py-3"
+                    />
+                  </div>
+                </div>
+
                 {/* Botón de Envío */}
                 <button
                   type="submit"
-                  disabled={loading || dni.length < 8}
+                  disabled={loading || dni.length < 8 || !email}
                   className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/40 disabled:text-slate-500 font-bold text-sm tracking-wider rounded-xl transition-all shadow-lg shadow-blue-600/20 mt-2 cursor-pointer disabled:cursor-not-allowed border-none text-white"
                 >
                   {loading ? (
@@ -189,8 +234,7 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
 
               <h2 className="text-white text-xl font-bold mb-2">¡Instrucciones enviadas!</h2>
               <p className="text-slate-400 text-xs leading-relaxed mb-6">
-                Si el DNI <span className="text-blue-400 font-semibold">{dni}</span> se encuentra
-                registrado de forma activa, recibirás un enlace de recuperación a la brevedad.
+                Si los datos ingresados corresponden a un usuario activo, recibirás un correo de recuperación a la brevedad.
               </p>
 
               <button

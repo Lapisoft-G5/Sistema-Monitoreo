@@ -6,6 +6,7 @@ import { ChangePasswordDto } from '../dto/change-password.dto.js';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { AuthGuard } from '../guards/auth.guard.js';
+import { RolesGuard } from '../guards/roles.guard.js';
 import { AllowFirstLogin } from '../decorators/allow-first-login.decorator.js';
 import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse, ILogoutResponse } from '@sistema-monitoreo/shared-contracts';
 
@@ -31,7 +32,7 @@ export class AuthController {
    * Actualiza la contraseña del usuario en su primer acceso y cambia su estado isFirstLogin a false.
    */
   @Post('change-password')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
   async changePassword(
@@ -82,7 +83,7 @@ export class AuthController {
    * Cierra de sesión manual e invalida la sesión activa.
    */
   @Post('logout')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: any): Promise<ILogoutResponse> {
     const sessionJti = req.user.jti;

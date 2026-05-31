@@ -6,6 +6,8 @@ import { AuthController } from './controllers/auth.controller.js';
 import { AuthRepository } from './repositories/auth.repository.js';
 import { PrismaAuthRepository } from './repositories/prisma-auth.repository.js';
 import { PrismaModule } from '../../shared/prisma/prisma.module.js';
+import { AuthGuard } from './guards/auth.guard.js';
+import { RolesGuard } from './guards/roles.guard.js';
 
 @Module({
   imports: [
@@ -29,7 +31,9 @@ import { PrismaModule } from '../../shared/prisma/prisma.module.js';
       provide: AuthRepository,
       useClass: PrismaAuthRepository,
     },
+    AuthGuard,
+    RolesGuard,
   ],
-  exports: [AuthService, AuthRepository],
+  exports: [AuthService, AuthRepository, AuthGuard, RolesGuard],
 })
 export class AuthModule {}

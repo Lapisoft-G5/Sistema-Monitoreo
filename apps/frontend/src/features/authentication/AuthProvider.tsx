@@ -1,11 +1,42 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { AuthContext } from './AuthContext';
 import type { User } from '../../entities/user';
 import type { ILoginResponse } from '@sistema-monitoreo/shared-contracts';
 
+// Interceptor global de red (Fetch) para capturar 401 y 403 (Sesiones revocadas o primer acceso incumplido)
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  const response = await originalFetch(...args);
+  if (response.status === 401 || response.status === 403) {
+    const url = typeof args[0] === 'string' ? args[0] : (args[0] as any).url || '';
+    // No interceptar llamadas base de login o recuperación para evitar bucles infinitos
+    if (
+      !url.includes('/api/auth/login') &&
+      !url.includes('/api/auth/forgot-password') &&
+      !url.includes('/api/auth/reset-password')
+    ) {
+      console.warn('HTTP Interceptor: Acceso denegado (401/403) detectado. Forzando deslogueo local...');
+      localStorage.removeItem('accessToken');
+      window.dispatchEvent(new Event('auth-invalidation'));
+    }
+  }
+  return response;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
+
+  useEffect(() => {
+    const handleInvalidation = () => {
+      setUser(null);
+      setRequiresPasswordChange(false);
+    };
+    window.addEventListener('auth-invalidation', handleInvalidation);
+    return () => {
+      window.removeEventListener('auth-invalidation', handleInvalidation);
+    };
+  }, []);
 
   const login = async (dni: string, password: string) => {
     try {

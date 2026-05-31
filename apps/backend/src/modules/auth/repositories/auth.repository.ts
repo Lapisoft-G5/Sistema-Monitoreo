@@ -7,6 +7,9 @@ export abstract class AuthRepository {
   abstract createSession(data: CreateSessionData): Promise<AuthSession>;
   abstract updateLastLogin(userId: string, now: Date): Promise<void>;
   abstract updatePassword(userId: string, passwordHash: string): Promise<void>;
+  abstract incrementFailedAttempts(userId: string, now: Date): Promise<number>;
+  abstract lockAccount(userId: string, until: Date): Promise<void>;
+  abstract resetFailedAttempts(userId: string): Promise<void>;
 }
 
 export interface CreateSessionData {

@@ -64,6 +64,9 @@ describe('AuthService', () => {
   let createSessionMock: jest.MockedFunction<(data: unknown) => Promise<unknown>>;
   let updateLastLoginMock: jest.MockedFunction<(userId: string, date: Date) => Promise<void>>;
   let updatePasswordMock: jest.MockedFunction<(userId: string, passwordHash: string) => Promise<void>>;
+  let incrementFailedAttemptsMock: jest.MockedFunction<(userId: string, now: Date) => Promise<number>>;
+  let lockAccountMock: jest.MockedFunction<(userId: string, until: Date) => Promise<void>>;
+  let resetFailedAttemptsMock: jest.MockedFunction<(userId: string) => Promise<void>>;
   let jwtSignAsyncMock: jest.MockedFunction<
     (payload: unknown, options?: unknown) => Promise<string>
   >;
@@ -74,6 +77,9 @@ describe('AuthService', () => {
     createSessionMock = jest.fn();
     updateLastLoginMock = jest.fn();
     updatePasswordMock = jest.fn();
+    incrementFailedAttemptsMock = jest.fn();
+    lockAccountMock = jest.fn();
+    resetFailedAttemptsMock = jest.fn();
     jwtSignAsyncMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -87,6 +93,9 @@ describe('AuthService', () => {
             createSession: createSessionMock,
             updateLastLogin: updateLastLoginMock,
             updatePassword: updatePasswordMock,
+            incrementFailedAttempts: incrementFailedAttemptsMock,
+            lockAccount: lockAccountMock,
+            resetFailedAttempts: resetFailedAttemptsMock,
           },
         },
         {
@@ -109,6 +118,9 @@ describe('AuthService', () => {
     createSessionMock.mockReset();
     updateLastLoginMock.mockReset();
     updatePasswordMock.mockReset();
+    incrementFailedAttemptsMock.mockReset();
+    lockAccountMock.mockReset();
+    resetFailedAttemptsMock.mockReset();
     jwtSignAsyncMock.mockReset();
   });
 
@@ -189,6 +201,53 @@ describe('AuthService', () => {
       jwtSignAsyncMock.mockResolvedValue('signed.jwt.token');
 
       await expect(service.login(dto)).resolves.toBeDefined();
+      expect(resetFailedAttemptsMock).toHaveBeenCalledWith(user.id);
+    });
+
+    it('should increment failed attempts and throw UnauthorizedException on wrong password', async () => {
+      const user = buildUser({ failedLoginAttempts: 0 });
+      findUserByDniMock.mockResolvedValue(user);
+      compareMock.mockResolvedValue(false);
+      incrementFailedAttemptsMock.mockResolvedValue(1);
+
+      await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
+      expect(incrementFailedAttemptsMock).toHaveBeenCalledWith(user.id, expect.any(Date));
+      expect(lockAccountMock).not.toHaveBeenCalled();
+    });
+
+    it('should lock account for 15 minutes and throw ForbiddenException when attempts reach 3', async () => {
+      const user = buildUser({ failedLoginAttempts: 2 });
+      findUserByDniMock.mockResolvedValue(user);
+      compareMock.mockResolvedValue(false);
+      incrementFailedAttemptsMock.mockResolvedValue(3);
+
+      await expect(service.login(dto)).rejects.toThrow(ForbiddenException);
+      expect(incrementFailedAttemptsMock).toHaveBeenCalledWith(user.id, expect.any(Date));
+      expect(lockAccountMock).toHaveBeenCalledWith(user.id, expect.any(Date));
+    });
+
+    it('should reset attempts on successful login if user had previous attempts', async () => {
+      const user = buildUser({ failedLoginAttempts: 1 });
+      findUserByDniMock.mockResolvedValue(user);
+      compareMock.mockResolvedValue(true);
+      createSessionMock.mockResolvedValue({});
+      updateLastLoginMock.mockResolvedValue(undefined);
+      jwtSignAsyncMock.mockResolvedValue('signed.jwt.token');
+
+      await service.login(dto);
+      expect(resetFailedAttemptsMock).toHaveBeenCalledWith(user.id);
+    });
+
+    it('should reset attempts first if login fails but past lock has expired', async () => {
+      const pastDate = new Date(Date.now() - 60_000);
+      const user = buildUser({ failedLoginAttempts: 3, lockedUntil: pastDate });
+      findUserByDniMock.mockResolvedValue(user);
+      compareMock.mockResolvedValue(false);
+      incrementFailedAttemptsMock.mockResolvedValue(1);
+
+      await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
+      expect(resetFailedAttemptsMock).toHaveBeenCalledWith(user.id);
+      expect(incrementFailedAttemptsMock).toHaveBeenCalledWith(user.id, expect.any(Date));
     });
   });
 

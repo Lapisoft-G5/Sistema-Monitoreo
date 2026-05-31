@@ -18,6 +18,8 @@ export class AuthService {
     dto: LoginDto,
     meta?: { ipAddress?: string; userAgent?: string },
   ): Promise<ILoginResponse> {
+    const now = new Date();
+
     // ── 1. Buscar usuario ─────────────────────────────────────────────────
     const user = await this.authRepository.findUserByDni(dto.dni);
 
@@ -32,9 +34,7 @@ export class AuthService {
     }
 
     // ── 3. Verificar bloqueo temporal ─────────────────────────────────────
-    // BE-AUTH-05 controlará el incremento de intentos fallidos.
-    // Aquí solo bloqueamos si ya hay un lockedUntil vigente.
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
+    if (user.lockedUntil && user.lockedUntil > now) {
       throw new ForbiddenException('Cuenta bloqueada temporalmente. Intente más tarde.');
     }
 
@@ -42,8 +42,25 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
-      // BE-AUTH-05 incrementará failedLoginAttempts aquí.
+      // Si la cuenta tenía un bloqueo expirado, reiniciamos el contador antes de contar el nuevo intento
+      if (user.lockedUntil && user.lockedUntil <= now) {
+        await this.authRepository.resetFailedAttempts(user.id);
+      }
+
+      const updatedAttempts = await this.authRepository.incrementFailedAttempts(user.id, now);
+      
+      if (updatedAttempts >= 3) {
+        const lockUntil = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutos
+        await this.authRepository.lockAccount(user.id, lockUntil);
+        throw new ForbiddenException('Cuenta bloqueada temporalmente. Intente más tarde.');
+      }
+
       throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    // Si el login es exitoso, limpiamos intentos fallidos acumulados o bloqueos expirados
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      await this.authRepository.resetFailedAttempts(user.id);
     }
 
     // ── 5. Emitir JWT ─────────────────────────────────────────────────────
@@ -62,7 +79,6 @@ export class AuthService {
     });
 
     // ── 6. Persistir sesión ───────────────────────────────────────────────
-    const now = new Date();
     const expiresAt = new Date(now.getTime() + jwtExpiresInSeconds * 1000);
 
     await this.authRepository.createSession({

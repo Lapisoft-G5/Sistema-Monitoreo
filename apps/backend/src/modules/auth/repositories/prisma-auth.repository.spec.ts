@@ -14,9 +14,7 @@ type MockPrismaUser = {
 describe('PrismaAuthRepository', () => {
   let repository: PrismaAuthRepository;
 
-  let findUniqueMock: jest.Mock<
-    (args: unknown) => Promise<MockPrismaUser | null>
-  >;
+  let findUniqueMock: jest.Mock<(args: unknown) => Promise<MockPrismaUser | null>>;
 
   beforeEach(async () => {
     findUniqueMock = jest.fn();
@@ -72,9 +70,7 @@ describe('PrismaAuthRepository', () => {
     it('should return null if user is not found', async () => {
       findUniqueMock.mockResolvedValue(null);
 
-      const result = await repository.findUserByEmail(
-        'notfound@example.com',
-      );
+      const result = await repository.findUserByEmail('notfound@example.com');
 
       expect(result).toBeNull();
 

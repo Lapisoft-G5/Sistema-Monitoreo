@@ -8,10 +8,12 @@ import { User } from '../entities/user.entity.js';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let authRepository: jest.Mocked<AuthRepository>;
+  let mockAuthRepository: {
+    findUserByEmail: jest.MockedFunction<(email: string) => Promise<User | null>>;
+  };
 
   beforeEach(async () => {
-    const mockAuthRepository = {
+    mockAuthRepository = {
       findUserByEmail: jest.fn(),
     };
 
@@ -26,7 +28,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    authRepository = module.get(AuthRepository);
   });
 
   it('should be defined', () => {
@@ -40,10 +41,10 @@ describe('AuthService', () => {
       dto.password = 'password123';
 
       const mockUser = new User();
-      authRepository.findUserByEmail.mockResolvedValue(mockUser);
+      mockAuthRepository.findUserByEmail.mockResolvedValue(mockUser);
 
       await expect(service.login(dto)).rejects.toThrow(NotImplementedException);
-      expect(authRepository.findUserByEmail).toHaveBeenCalledWith(dto.email);
+      expect(mockAuthRepository.findUserByEmail).toHaveBeenCalledWith(dto.email);
     });
   });
 });

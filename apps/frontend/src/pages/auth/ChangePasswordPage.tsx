@@ -36,9 +36,15 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
       return;
     }
     setLoading(true);
-    await changePassword(pwd);
-    setLoading(false);
-    onSuccess();
+    setError('');
+    try {
+      await changePassword(pwd);
+      onSuccess();
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar la nueva contraseña');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const ruleItems = [

@@ -15,9 +15,11 @@ describe('PrismaAuthRepository', () => {
   let repository: PrismaAuthRepository;
 
   let findUniqueMock: jest.Mock<(args: unknown) => Promise<MockPrismaUser | null>>;
+  let updateMock: jest.Mock<(args: unknown) => Promise<unknown>>;
 
   beforeEach(async () => {
     findUniqueMock = jest.fn();
+    updateMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -27,6 +29,7 @@ describe('PrismaAuthRepository', () => {
           useValue: {
             user: {
               findUnique: findUniqueMock,
+              update: updateMock,
             },
           },
         },
@@ -82,6 +85,54 @@ describe('PrismaAuthRepository', () => {
           role: true,
         },
       });
+    });
+  });
+
+  describe('updatePassword', () => {
+    it('should update user password and firstLogin status', async () => {
+      updateMock.mockResolvedValue({});
+
+      await repository.updatePassword('user-uuid', 'hashed_pwd');
+
+      expect(updateMock).toHaveBeenCalledWith({
+        where: { id: 'user-uuid' },
+        data: {
+          passwordHash: 'hashed_pwd',
+          isFirstLogin: false,
+          passwordChangedAt: expect.any(Date),
+        },
+      });
+    });
+  });
+
+  describe('findUserById', () => {
+    it('should return a user if found by ID', async () => {
+      const mockPrismaUser: MockPrismaUser = {
+        id: 'user-uuid',
+        dni: '76358911',
+        role: {
+          code: 'ADMIN',
+        },
+      };
+
+      findUniqueMock.mockResolvedValue(mockPrismaUser);
+
+      const result = await repository.findUserById('user-uuid');
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('user-uuid');
+      expect(findUniqueMock).toHaveBeenCalledWith({
+        where: { id: 'user-uuid' },
+        include: { role: true },
+      });
+    });
+
+    it('should return null if user not found by ID', async () => {
+      findUniqueMock.mockResolvedValue(null);
+
+      const result = await repository.findUserById('nonexistent-uuid');
+
+      expect(result).toBeNull();
     });
   });
 });

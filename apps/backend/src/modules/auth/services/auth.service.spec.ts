@@ -10,9 +10,13 @@ import { Role } from '../entities/role.entity.js';
 const compareMock = jest.fn() as jest.MockedFunction<
   (password: string, hash: string) => Promise<boolean>
 >;
+const hashMock = jest.fn() as jest.MockedFunction<
+  (password: string, salt: number | string) => Promise<string>
+>;
 
 jest.unstable_mockModule('bcrypt', () => ({
   compare: compareMock,
+  hash: hashMock,
 }));
 
 const { AuthService } = await import('./auth.service.js');
@@ -56,16 +60,20 @@ function buildUser(overrides: Partial<User> = {}): User {
 describe('AuthService', () => {
   let service: InstanceType<typeof AuthService>;
   let findUserByDniMock: jest.MockedFunction<(dni: string) => Promise<User | null>>;
+  let findUserByIdMock: jest.MockedFunction<(id: string) => Promise<User | null>>;
   let createSessionMock: jest.MockedFunction<(data: unknown) => Promise<unknown>>;
   let updateLastLoginMock: jest.MockedFunction<(userId: string, date: Date) => Promise<void>>;
+  let updatePasswordMock: jest.MockedFunction<(userId: string, passwordHash: string) => Promise<void>>;
   let jwtSignAsyncMock: jest.MockedFunction<
     (payload: unknown, options?: unknown) => Promise<string>
   >;
 
   beforeEach(async () => {
     findUserByDniMock = jest.fn();
+    findUserByIdMock = jest.fn();
     createSessionMock = jest.fn();
     updateLastLoginMock = jest.fn();
+    updatePasswordMock = jest.fn();
     jwtSignAsyncMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -75,8 +83,10 @@ describe('AuthService', () => {
           provide: AuthRepository,
           useValue: {
             findUserByDni: findUserByDniMock,
+            findUserById: findUserByIdMock,
             createSession: createSessionMock,
             updateLastLogin: updateLastLoginMock,
+            updatePassword: updatePasswordMock,
           },
         },
         {
@@ -93,9 +103,12 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     compareMock.mockReset();
+    hashMock.mockReset();
     findUserByDniMock.mockReset();
+    findUserByIdMock.mockReset();
     createSessionMock.mockReset();
     updateLastLoginMock.mockReset();
+    updatePasswordMock.mockReset();
     jwtSignAsyncMock.mockReset();
   });
 
@@ -176,6 +189,39 @@ describe('AuthService', () => {
       jwtSignAsyncMock.mockResolvedValue('signed.jwt.token');
 
       await expect(service.login(dto)).resolves.toBeDefined();
+    });
+  });
+
+  describe('changePassword', () => {
+    const changePasswordDto = {
+      newPassword: 'NewSecurePassword123!',
+    };
+
+    it('should throw UnauthorizedException if user does not exist', async () => {
+      findUserByIdMock.mockResolvedValue(null);
+
+      await expect(
+        service.changePassword('nonexistent-uuid', changePasswordDto),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(findUserByIdMock).toHaveBeenCalledWith('nonexistent-uuid');
+    });
+
+    it('should hash new password, update it in repository, and return success', async () => {
+      const user = buildUser({ isFirstLogin: true });
+      findUserByIdMock.mockResolvedValue(user);
+      hashMock.mockResolvedValue('new_hashed_password');
+      updatePasswordMock.mockResolvedValue(undefined);
+
+      const result = await service.changePassword(user.id, changePasswordDto);
+
+      expect(result).toEqual({
+        success: true,
+        message: 'Contraseña actualizada correctamente',
+      });
+      expect(findUserByIdMock).toHaveBeenCalledWith(user.id);
+      expect(hashMock).toHaveBeenCalledWith(changePasswordDto.newPassword, 10);
+      expect(updatePasswordMock).toHaveBeenCalledWith(user.id, 'new_hashed_password');
     });
   });
 });

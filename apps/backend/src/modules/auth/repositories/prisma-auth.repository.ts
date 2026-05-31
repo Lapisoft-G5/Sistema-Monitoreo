@@ -21,6 +21,19 @@ export class PrismaAuthRepository implements AuthRepository {
     return user as unknown as User;
   }
 
+  async findUserById(id: string): Promise<User | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { role: true },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return user as unknown as User;
+  }
+
   async createSession(data: CreateSessionData): Promise<AuthSession> {
     const session = await this.prisma.authSession.create({
       data: {
@@ -41,6 +54,17 @@ export class PrismaAuthRepository implements AuthRepository {
     await this.prisma.user.update({
       where: { id: userId },
       data: { lastLoginAt: now },
+    });
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        isFirstLogin: false,
+        passwordChangedAt: new Date(),
+      },
     });
   }
 }

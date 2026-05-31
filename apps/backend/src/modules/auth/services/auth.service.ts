@@ -4,7 +4,8 @@ import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'node:crypto';
 import { AuthRepository } from '../repositories/auth.repository.js';
 import { LoginDto } from '../dto/login.dto.js';
-import { ILoginResponse } from '@sistema-monitoreo/shared-contracts';
+import { ChangePasswordDto } from '../dto/change-password.dto.js';
+import { ILoginResponse, IChangePasswordResponse } from '@sistema-monitoreo/shared-contracts';
 
 @Injectable()
 export class AuthService {
@@ -86,6 +87,26 @@ export class AuthService {
         role: user.role?.code ?? '',
         firstLogin: user.isFirstLogin,
       },
+    };
+  }
+
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<IChangePasswordResponse> {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
+
+    await this.authRepository.updatePassword(userId, passwordHash);
+
+    return {
+      success: true,
+      message: 'Contraseña actualizada correctamente',
     };
   }
 }

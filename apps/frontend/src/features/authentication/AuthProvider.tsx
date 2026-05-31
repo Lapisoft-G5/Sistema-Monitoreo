@@ -59,10 +59,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const changePassword = async (newPassword: string) => {
-    await new Promise((r) => setTimeout(r, 500));
-    console.log('Actualizando contraseña a:', newPassword.substring(0, 2) + '...');
-    if (user) setUser({ ...user, firstLogin: false });
-    setRequiresPasswordChange(false);
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No se encontró el token de acceso');
+      }
+
+      const response = await fetch(`${apiBaseUrl}/api/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.message || 'Error al actualizar la contraseña');
+      }
+
+      if (user) {
+        setUser({ ...user, firstLogin: false });
+      }
+      setRequiresPasswordChange(false);
+    } catch (error) {
+      console.error('Error during changePassword integration:', error);
+      throw error;
+    }
   };
 
   return (

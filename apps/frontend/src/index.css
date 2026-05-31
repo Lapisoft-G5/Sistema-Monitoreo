@@ -1,11 +1,43 @@
 @import "tailwindcss";
 
-html,
-body,
-#root {
-  min-height: 100%;
+@theme {
+  /* Azules institucionales basados en el Mockup */
+  --color-primary:       #0f52ba; /* Azul principal de botones y acentos */
+  --color-primary-hover: #0d44a0;
+  --color-primary-dark:  #0a3680;
+  --color-primary-light: #e6f0fa;
+
+  /* Paleta Light Mode para el Sistema */
+  --color-bg:            #f4f6f9; /* Fondo general grisáceo del panel */
+  --color-surface:       #ffffff; /* Tarjetas y paneles en blanco puro */
+  --color-border:        #e2e8f0; /* Bordes sutiles de tablas y divisiones */
+
+  /* Textos legibles sobre fondo claro */
+  --color-text:          #1e293b; /* Texto principal oscuro */
+  --color-text-muted:    #64748b; /* Subtítulos y etiquetas secundarias */
+  --color-text-dim:      #94a3b8; /* Placeholders */
+
+  /* Semáforo de Evaluación */
+  --color-success:       #22c55e;
+  --color-warning:       #eab308;
+  --color-danger:        #ef4444;
+
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
+
+html, body, #root { min-height: 100%; }
 
 body {
   margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
+
+* { box-sizing: border-box; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }

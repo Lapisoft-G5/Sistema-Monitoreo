@@ -29,6 +29,7 @@ Aplica a este monorepo (PNPM Workspaces) y debe seguirse desde el primer día de
 | Docker | Cualquier versión estable | Para levantar PostgreSQL local |
 | Git | 2.40+ | — |
 
+---
 
 ## 2. Configuración inicial del entorno
 

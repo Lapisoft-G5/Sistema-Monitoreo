@@ -55,7 +55,7 @@ function buildUser(overrides: Partial<User> = {}): User {
 
 describe('AuthService', () => {
   let service: InstanceType<typeof AuthService>;
-  let findUserByEmailMock: jest.MockedFunction<(email: string) => Promise<User | null>>;
+  let findUserByDniMock: jest.MockedFunction<(dni: string) => Promise<User | null>>;
   let createSessionMock: jest.MockedFunction<(data: unknown) => Promise<unknown>>;
   let updateLastLoginMock: jest.MockedFunction<(userId: string, date: Date) => Promise<void>>;
   let jwtSignAsyncMock: jest.MockedFunction<
@@ -63,7 +63,7 @@ describe('AuthService', () => {
   >;
 
   beforeEach(async () => {
-    findUserByEmailMock = jest.fn();
+    findUserByDniMock = jest.fn();
     createSessionMock = jest.fn();
     updateLastLoginMock = jest.fn();
     jwtSignAsyncMock = jest.fn();
@@ -74,7 +74,7 @@ describe('AuthService', () => {
         {
           provide: AuthRepository,
           useValue: {
-            findUserByEmail: findUserByEmailMock,
+            findUserByDni: findUserByDniMock,
             createSession: createSessionMock,
             updateLastLogin: updateLastLoginMock,
           },
@@ -93,7 +93,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     compareMock.mockReset();
-    findUserByEmailMock.mockReset();
+    findUserByDniMock.mockReset();
     createSessionMock.mockReset();
     updateLastLoginMock.mockReset();
     jwtSignAsyncMock.mockReset();
@@ -105,32 +105,32 @@ describe('AuthService', () => {
 
   describe('login', () => {
     const dto: LoginDto = Object.assign(new LoginDto(), {
-      email: 'test@example.com',
+      dni: '12345678',
       password: 'plain_password',
     });
 
     it('should throw UnauthorizedException when user is not found', async () => {
-      findUserByEmailMock.mockResolvedValue(null);
+      findUserByDniMock.mockResolvedValue(null);
 
       await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
-      expect(findUserByEmailMock).toHaveBeenCalledWith(dto.email);
+      expect(findUserByDniMock).toHaveBeenCalledWith(dto.dni);
     });
 
     it('should throw ForbiddenException when account is inactive', async () => {
-      findUserByEmailMock.mockResolvedValue(buildUser({ isActive: false }));
+      findUserByDniMock.mockResolvedValue(buildUser({ isActive: false }));
 
       await expect(service.login(dto)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ForbiddenException when account is locked', async () => {
       const lockedUntil = new Date(Date.now() + 60_000);
-      findUserByEmailMock.mockResolvedValue(buildUser({ lockedUntil }));
+      findUserByDniMock.mockResolvedValue(buildUser({ lockedUntil }));
 
       await expect(service.login(dto)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw UnauthorizedException when password is incorrect', async () => {
-      findUserByEmailMock.mockResolvedValue(buildUser());
+      findUserByDniMock.mockResolvedValue(buildUser());
       compareMock.mockResolvedValue(false);
 
       await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
@@ -138,7 +138,7 @@ describe('AuthService', () => {
 
     it('should return accessToken and user data on successful login', async () => {
       const user = buildUser();
-      findUserByEmailMock.mockResolvedValue(user);
+      findUserByDniMock.mockResolvedValue(user);
       compareMock.mockResolvedValue(true);
       createSessionMock.mockResolvedValue({});
       updateLastLoginMock.mockResolvedValue(undefined);
@@ -151,8 +151,11 @@ describe('AuthService', () => {
 
       expect(result.accessToken).toBe('signed.jwt.token');
       expect(result.user.id).toBe(user.id);
-      expect(result.user.email).toBe(user.email);
+      expect(result.user.dni).toBe(user.dni);
+      expect(result.user.nombres).toBe(user.firstName);
+      expect(result.user.apellidos).toBe(user.lastName);
       expect(result.user.role).toBe('ADMIN');
+      expect(result.user.firstLogin).toBe(user.isFirstLogin);
       expect(createSessionMock).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: user.id,
@@ -166,7 +169,7 @@ describe('AuthService', () => {
     it('should not throw when lockedUntil is in the past', async () => {
       const pastDate = new Date(Date.now() - 60_000);
       const user = buildUser({ lockedUntil: pastDate });
-      findUserByEmailMock.mockResolvedValue(user);
+      findUserByDniMock.mockResolvedValue(user);
       compareMock.mockResolvedValue(true);
       createSessionMock.mockResolvedValue({});
       updateLastLoginMock.mockResolvedValue(undefined);

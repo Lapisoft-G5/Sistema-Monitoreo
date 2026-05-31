@@ -5,7 +5,7 @@ import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 
 type MockPrismaUser = {
   id: string;
-  email: string;
+  dni: string;
   role: {
     code: string;
   };
@@ -40,11 +40,11 @@ describe('PrismaAuthRepository', () => {
     expect(repository).toBeDefined();
   });
 
-  describe('findUserByEmail', () => {
+  describe('findUserByDni', () => {
     it('should return a user if found', async () => {
       const mockPrismaUser: MockPrismaUser = {
         id: '123e4567-e89b-12d3-a456-426614174000',
-        email: 'test@example.com',
+        dni: '76358911',
         role: {
           code: 'ADMIN',
         },
@@ -52,14 +52,14 @@ describe('PrismaAuthRepository', () => {
 
       findUniqueMock.mockResolvedValue(mockPrismaUser);
 
-      const result = await repository.findUserByEmail('test@example.com');
+      const result = await repository.findUserByDni('76358911');
 
       expect(result).toBeDefined();
       expect(result?.id).toBe('123e4567-e89b-12d3-a456-426614174000');
 
       expect(findUniqueMock).toHaveBeenCalledWith({
         where: {
-          email: 'test@example.com',
+          dni: '76358911',
         },
         include: {
           role: true,
@@ -70,13 +70,13 @@ describe('PrismaAuthRepository', () => {
     it('should return null if user is not found', async () => {
       findUniqueMock.mockResolvedValue(null);
 
-      const result = await repository.findUserByEmail('notfound@example.com');
+      const result = await repository.findUserByDni('00000000');
 
       expect(result).toBeNull();
 
       expect(findUniqueMock).toHaveBeenCalledWith({
         where: {
-          email: 'notfound@example.com',
+          dni: '00000000',
         },
         include: {
           role: true,

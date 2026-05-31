@@ -8,9 +8,9 @@ import { AuthSession } from '../entities/auth-session.entity.js';
 export class PrismaAuthRepository implements AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findUserByEmail(email: string): Promise<User | null> {
+  async findUserByDni(dni: string): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { dni },
       include: { role: true },
     });
 
@@ -18,7 +18,7 @@ export class PrismaAuthRepository implements AuthRepository {
       return null;
     }
 
-    return user;
+    return user as unknown as User;
   }
 
   async createSession(data: CreateSessionData): Promise<AuthSession> {

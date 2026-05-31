@@ -18,10 +18,10 @@ export class AuthService {
     meta?: { ipAddress?: string; userAgent?: string },
   ): Promise<ILoginResponse> {
     // ── 1. Buscar usuario ─────────────────────────────────────────────────
-    const user = await this.authRepository.findUserByEmail(dto.email);
+    const user = await this.authRepository.findUserByDni(dto.dni);
 
     if (!user) {
-      // No revelamos si el correo existe o no (seguridad)
+      // No revelamos si el DNI existe o no (seguridad)
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -51,7 +51,7 @@ export class AuthService {
 
     const payload = {
       sub: user.id,
-      email: user.email,
+      dni: user.dni,
       role: user.role?.code ?? '',
       jti,
     };
@@ -80,10 +80,11 @@ export class AuthService {
       accessToken,
       user: {
         id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        dni: user.dni,
+        nombres: `${user.firstName}`,
+        apellidos: `${user.lastName}`,
         role: user.role?.code ?? '',
+        firstLogin: user.isFirstLogin,
       },
     };
   }

@@ -150,6 +150,9 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@sistema-monitoreo/shared-contracts':
+        specifier: workspace:*
+        version: link:../../packages/shared-contracts
       react:
         specifier: ^19.2.6
         version: 19.2.6

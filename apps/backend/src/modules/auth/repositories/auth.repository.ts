@@ -7,6 +7,8 @@ export abstract class AuthRepository {
   abstract findUserById(id: string): Promise<User | null>;
   abstract findUserByDniAndEmail(dni: string, email: string): Promise<User | null>;
   abstract createSession(data: CreateSessionData): Promise<AuthSession>;
+  abstract invalidateSession(sessionJti: string, reason: string): Promise<void>;
+  abstract isSessionActive(sessionJti: string): Promise<boolean>;
   abstract createPasswordResetToken(data: CreateResetTokenData): Promise<void>;
   abstract findResetToken(tokenHash: string): Promise<PasswordResetToken | null>;
   abstract useResetToken(tokenId: string, userId: string, passwordHash: string): Promise<void>;

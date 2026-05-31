@@ -21,6 +21,9 @@ describe('PrismaAuthRepository', () => {
   let findUniqueTokenMock: jest.Mock<(args: unknown) => Promise<unknown>>;
   let updateTokenMock: jest.Mock<(args: unknown) => Promise<unknown>>;
   let transactionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
+  let createSessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
+  let updateManySessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
+  let findUniqueSessionMock: jest.Mock<(args: unknown) => Promise<unknown>>;
 
   beforeEach(async () => {
     findUniqueMock = jest.fn();
@@ -30,6 +33,9 @@ describe('PrismaAuthRepository', () => {
     findUniqueTokenMock = jest.fn();
     updateTokenMock = jest.fn();
     transactionMock = jest.fn();
+    createSessionMock = jest.fn();
+    updateManySessionMock = jest.fn();
+    findUniqueSessionMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -47,6 +53,11 @@ describe('PrismaAuthRepository', () => {
               create: createTokenMock,
               findUnique: findUniqueTokenMock,
               update: updateTokenMock,
+            },
+            authSession: {
+              create: createSessionMock,
+              updateMany: updateManySessionMock,
+              findUnique: findUniqueSessionMock,
             },
           },
         },
@@ -243,6 +254,72 @@ describe('PrismaAuthRepository', () => {
       await repository.useResetToken('token-uuid', 'user-uuid', 'new_pwd_hash');
 
       expect(transactionMock).toHaveBeenCalled();
+    });
+  });
+
+  describe('createSession', () => {
+    it('should insert session into DB', async () => {
+      const expiresAt = new Date();
+      createSessionMock.mockResolvedValue({ id: 'session-uuid' });
+
+      const result = await repository.createSession({
+        userId: 'user-uuid',
+        sessionJti: 'session-jti',
+        ipAddress: '127.0.0.1',
+        userAgent: 'Jest',
+        expiresAt,
+      });
+
+      expect(result).toBeDefined();
+      expect(createSessionMock).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          userId: 'user-uuid',
+          sessionJti: 'session-jti',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Jest',
+          expiresAt,
+          isActive: true,
+        }),
+      });
+    });
+  });
+
+  describe('invalidateSession', () => {
+    it('should update session and set isActive to false and terminatedReason', async () => {
+      updateManySessionMock.mockResolvedValue({});
+
+      await repository.invalidateSession('session-jti', 'LOGOUT');
+
+      expect(updateManySessionMock).toHaveBeenCalledWith({
+        where: { sessionJti: 'session-jti' },
+        data: expect.objectContaining({
+          isActive: false,
+          terminatedReason: 'LOGOUT',
+          loggedOutAt: expect.any(Date),
+        }),
+      });
+    });
+  });
+
+  describe('isSessionActive', () => {
+    it('should return true if session is active', async () => {
+      findUniqueSessionMock.mockResolvedValue({ isActive: true });
+
+      const result = await repository.isSessionActive('session-jti');
+
+      expect(result).toBe(true);
+      expect(findUniqueSessionMock).toHaveBeenCalledWith({
+        where: { sessionJti: 'session-jti' },
+        select: { isActive: true },
+      });
+    });
+
+    it('should return false if session is inactive or not found', async () => {
+      findUniqueSessionMock.mockResolvedValue(null);
+
+      const result = await repository.isSessionActive('session-jti');
+
+      expect(result).toBe(false);
     });
   });
 });

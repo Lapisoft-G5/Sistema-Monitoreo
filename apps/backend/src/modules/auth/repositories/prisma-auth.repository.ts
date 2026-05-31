@@ -67,6 +67,25 @@ export class PrismaAuthRepository implements AuthRepository {
     return session;
   }
 
+  async invalidateSession(sessionJti: string, reason: string): Promise<void> {
+    await this.prisma.authSession.updateMany({
+      where: { sessionJti },
+      data: {
+        isActive: false,
+        loggedOutAt: new Date(),
+        terminatedReason: reason,
+      },
+    });
+  }
+
+  async isSessionActive(sessionJti: string): Promise<boolean> {
+    const session = await this.prisma.authSession.findUnique({
+      where: { sessionJti },
+      select: { isActive: true },
+    });
+    return session?.isActive === true;
+  }
+
   async createPasswordResetToken(data: CreateResetTokenData): Promise<void> {
     await this.prisma.passwordResetToken.create({
       data: {

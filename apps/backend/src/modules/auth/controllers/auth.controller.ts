@@ -7,7 +7,7 @@ import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { AuthGuard } from '../guards/auth.guard.js';
 import { AllowFirstLogin } from '../decorators/allow-first-login.decorator.js';
-import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse } from '@sistema-monitoreo/shared-contracts';
+import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse, ILogoutResponse } from '@sistema-monitoreo/shared-contracts';
 
 @Controller('auth')
 export class AuthController {
@@ -67,5 +67,17 @@ export class AuthController {
     @Body() dto: ResetPasswordDto,
   ): Promise<IResetPasswordResponse> {
     return this.authService.resetPassword(dto);
+  }
+
+  /**
+   * POST /api/auth/logout
+   * Cierra de sesión manual e invalida la sesión activa.
+   */
+  @Post('logout')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async logout(@Req() req: any): Promise<ILogoutResponse> {
+    const sessionJti = req.user.jti;
+    return this.authService.logout(sessionJti);
   }
 }

@@ -9,12 +9,14 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { ALLOW_FIRST_LOGIN_KEY } from '../decorators/allow-first-login.decorator.js';
+import { AuthRepository } from '../repositories/auth.repository.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
+    private readonly authRepository: AuthRepository,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -26,6 +28,12 @@ export class AuthGuard implements CanActivate {
     try {
       const payload = await this.jwtService.verifyAsync(token);
       request['user'] = payload;
+
+      // Verificar que la sesión del JWT esté activa en BD (evita tokens de sesiones cerradas)
+      const isSessionActive = await this.authRepository.isSessionActive(payload.jti);
+      if (!isSessionActive) {
+        throw new UnauthorizedException('Sesión invalidada o cerrada');
+      }
 
       // Detectar primer acceso y forzar cambio de contraseña temporal
       if (payload.firstLogin === true) {
@@ -40,7 +48,7 @@ export class AuthGuard implements CanActivate {
         }
       }
     } catch (err) {
-      if (err instanceof ForbiddenException) {
+      if (err instanceof ForbiddenException || err instanceof UnauthorizedException) {
         throw err;
       }
       throw new UnauthorizedException('Token inválido o expirado');

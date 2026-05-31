@@ -5,11 +5,13 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from './auth.guard.js';
 import { ALLOW_FIRST_LOGIN_KEY } from '../decorators/allow-first-login.decorator.js';
+import { AuthRepository } from '../repositories/auth.repository.js';
 
 describe('AuthGuard', () => {
   let guard: AuthGuard;
   let jwtService: jest.Mocked<JwtService>;
   let reflector: jest.Mocked<Reflector>;
+  let authRepository: jest.Mocked<AuthRepository>;
 
   beforeEach(async () => {
     const jwtMock = {
@@ -18,18 +20,23 @@ describe('AuthGuard', () => {
     const reflectorMock = {
       getAllAndOverride: jest.fn<any>(),
     };
+    const authRepoMock = {
+      isSessionActive: jest.fn<any>().mockResolvedValue(true), // Default active session
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthGuard,
         { provide: JwtService, useValue: jwtMock },
         { provide: Reflector, useValue: reflectorMock },
+        { provide: AuthRepository, useValue: authRepoMock },
       ],
     }).compile();
 
     guard = module.get<AuthGuard>(AuthGuard);
     jwtService = module.get(JwtService) as jest.Mocked<JwtService>;
     reflector = module.get(Reflector) as jest.Mocked<Reflector>;
+    authRepository = module.get(AuthRepository) as jest.Mocked<AuthRepository>;
   });
 
   function createMockContext(authHeader?: string): ExecutionContext {
@@ -70,7 +77,7 @@ describe('AuthGuard', () => {
 
   it('should return true and assign user to request if token is valid and firstLogin is false', async () => {
     const context = createMockContext('Bearer valid-token');
-    const payload = { sub: 'user-uuid', firstLogin: false };
+    const payload = { sub: 'user-uuid', firstLogin: false, jti: 'session-jti' };
     jwtService.verifyAsync.mockResolvedValue(payload);
 
     const result = await guard.canActivate(context);
@@ -78,6 +85,16 @@ describe('AuthGuard', () => {
     
     const request = context.switchToHttp().getRequest();
     expect(request.user).toEqual(payload);
+  });
+
+  it('should throw UnauthorizedException if session is inactive in database', async () => {
+    const context = createMockContext('Bearer valid-token');
+    const payload = { sub: 'user-uuid', firstLogin: false, jti: 'session-jti' };
+    jwtService.verifyAsync.mockResolvedValue(payload);
+    authRepository.isSessionActive.mockResolvedValue(false); // Inactive session
+
+    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+    expect(authRepository.isSessionActive).toHaveBeenCalledWith('session-jti');
   });
 
   it('should throw ForbiddenException if user has firstLogin=true and endpoint does not allow it', async () => {

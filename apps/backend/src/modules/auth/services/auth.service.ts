@@ -7,7 +7,7 @@ import { LoginDto } from '../dto/login.dto.js';
 import { ChangePasswordDto } from '../dto/change-password.dto.js';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
-import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse } from '@sistema-monitoreo/shared-contracts';
+import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse, ILogoutResponse } from '@sistema-monitoreo/shared-contracts';
 
 @Injectable()
 export class AuthService {
@@ -181,6 +181,14 @@ export class AuthService {
     return {
       success: true,
       message: 'Su contraseña ha sido restablecida con éxito.',
+    };
+  }
+
+  async logout(sessionJti: string): Promise<ILogoutResponse> {
+    await this.authRepository.invalidateSession(sessionJti, 'LOGOUT');
+    return {
+      success: true,
+      message: 'Sesión cerrada correctamente',
     };
   }
 }

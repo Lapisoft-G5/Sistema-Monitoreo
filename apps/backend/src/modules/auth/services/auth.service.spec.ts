@@ -71,6 +71,7 @@ describe('AuthService', () => {
   let resetFailedAttemptsMock: jest.MockedFunction<(userId: string) => Promise<void>>;
   let findResetTokenMock: jest.MockedFunction<(tokenHash: string) => Promise<any>>;
   let useResetTokenMock: jest.MockedFunction<(tokenId: string, userId: string, passwordHash: string) => Promise<void>>;
+  let invalidateSessionMock: jest.MockedFunction<(sessionJti: string, reason: string) => Promise<void>>;
   let jwtSignAsyncMock: jest.MockedFunction<
     (payload: unknown, options?: unknown) => Promise<string>
   >;
@@ -83,6 +84,7 @@ describe('AuthService', () => {
     createPasswordResetTokenMock = jest.fn();
     findResetTokenMock = jest.fn();
     useResetTokenMock = jest.fn();
+    invalidateSessionMock = jest.fn();
     updateLastLoginMock = jest.fn();
     updatePasswordMock = jest.fn();
     incrementFailedAttemptsMock = jest.fn();
@@ -103,6 +105,7 @@ describe('AuthService', () => {
             createPasswordResetToken: createPasswordResetTokenMock,
             findResetToken: findResetTokenMock,
             useResetToken: useResetTokenMock,
+            invalidateSession: invalidateSessionMock,
             updateLastLogin: updateLastLoginMock,
             updatePassword: updatePasswordMock,
             incrementFailedAttempts: incrementFailedAttemptsMock,
@@ -132,6 +135,7 @@ describe('AuthService', () => {
     createPasswordResetTokenMock.mockReset();
     findResetTokenMock.mockReset();
     useResetTokenMock.mockReset();
+    invalidateSessionMock.mockReset();
     updateLastLoginMock.mockReset();
     updatePasswordMock.mockReset();
     incrementFailedAttemptsMock.mockReset();
@@ -388,6 +392,18 @@ describe('AuthService', () => {
       expect(result.message).toContain('restablecida con éxito');
       expect(hashMock).toHaveBeenCalledWith(resetPasswordDto.newPassword, 10);
       expect(useResetTokenMock).toHaveBeenCalledWith('token-uuid', 'user-uuid', 'new_hashed_pwd');
+    });
+  });
+
+  describe('logout', () => {
+    it('should invalidate session and return success', async () => {
+      invalidateSessionMock.mockResolvedValue(undefined);
+
+      const result = await service.logout('session-jti');
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('cerrada correctamente');
+      expect(invalidateSessionMock).toHaveBeenCalledWith('session-jti', 'LOGOUT');
     });
   });
 });

@@ -8,15 +8,25 @@ interface Props {
 }
 
 const LOGO_SRC = '/logo-ugel.png';
+const MAX_ATTEMPTS = 3;
 
 export const LoginPage = ({ onForgotPassword }: Props) => {
-  const { login } = useAuth();
+  // Extraemos de useAuth los estados calculados de manera segura en el proveedor
+  const { login, attempts, isPenalized, timeLeft, showFailedModal, setShowFailedModal } = useAuth();
+
   const [dni, setDni] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [logoError, setLogoError] = useState(false);
+
+  // Formateador de segundos a MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,14 +36,67 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
     }
     setLoading(true);
     setError('');
+
     const result = await login(dni, password);
     setLoading(false);
-    if (!result.success) setError(result.error ?? 'Error al iniciar sesión');
+
+    if (!result.success) {
+      setError(result.error ?? 'Error al iniciar sesión');
+    }
   };
 
+  if (isPenalized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-[#0a1931] font-sans">
+        <div className="w-full max-w-[430px] bg-[#112240] border border-slate-700/60 rounded-2xl p-8 shadow-2xl text-center animate-fade-in">
+          <div className="mb-4">
+            {!logoError ? (
+              <img
+                src={LOGO_SRC}
+                alt="Logo UGEL"
+                onError={() => setLogoError(true)}
+                className="w-16 h-16 mx-auto object-contain opacity-80"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-xl mx-auto flex items-center justify-center bg-blue-600">
+                🛡️
+              </div>
+            )}
+          </div>
+          <h1 className="text-2xl font-black text-white">UGEL Lampa</h1>
+          <p className="text-xs text-slate-400 mt-0.5 mb-6">Sistema de Monitoreo</p>
+
+          <div className="bg-red-500/80 text-white text-xs font-bold tracking-widest py-2 px-6 rounded-full uppercase mb-6 inline-block w-full">
+            Acceso de Sistema
+          </div>
+
+          <p className="text-[0.68rem] text-slate-400 font-bold tracking-wider uppercase mb-2">
+            Tiempo de Penalización
+          </p>
+
+          <div className="bg-[#061124] border border-slate-700 rounded-xl py-3 px-6 text-3xl font-mono font-bold text-slate-200 tracking-widest mb-6 w-3/4 mx-auto">
+            {formatTime(timeLeft)}
+          </div>
+
+          <p className="text-sm text-slate-300 px-2 leading-relaxed mb-8">
+            La opción de inicio de sesión esta desactivada muchos intentos fallidos.
+            <br />
+            Intenta el inicio de sesión mas tarde
+          </p>
+
+          <span className="text-xs font-bold uppercase tracking-wider text-red-400/40 select-none">
+            Bloqueado por Seguridad
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // VISTA ESTÁNDAR + MODAL AZUL DE INTENTOS
+  // ==========================================
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-[#0a1931] relative overflow-hidden">
-      {/* Orbs de fondo suavizados */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
           style={{
@@ -64,7 +127,6 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
       </div>
 
       <div className="relative z-10 w-full max-w-[430px] flex flex-col items-center">
-        {/* Logo + título */}
         <div className="text-center mb-6">
           {!logoError ? (
             <img
@@ -93,7 +155,6 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
           <p className="text-xs text-slate-400 mt-1">Sistema de Monitoreo</p>
         </div>
 
-        {/* Card contenedor plano y serio */}
         <div className="w-full bg-[#112240] border border-slate-700/60 rounded-2xl p-8 shadow-2xl">
           <div className="flex justify-center mb-5">
             <span className="bg-blue-600 text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase">
@@ -105,7 +166,6 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Usuario */}
             <div>
               <label className="block text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Usuario
@@ -135,7 +195,6 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
               </div>
             </div>
 
-            {/* Contraseña */}
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase">
@@ -144,7 +203,7 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                 <button
                   type="button"
                   onClick={() => setShowPass((p) => !p)}
-                  className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1.5 cursor-pointer bg-transparent border-none outline-none"
+                  className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1.5 cursor-pointer bg-transparent border-none"
                 >
                   <svg
                     width="14"
@@ -196,16 +255,15 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                 <button
                   type="button"
                   onClick={onForgotPassword}
-                  className="text-blue-400 hover:text-blue-300 text-xs underline cursor-pointer bg-transparent border-none outline-none"
+                  className="text-blue-400 hover:text-blue-300 text-xs underline cursor-pointer bg-transparent border-none"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
               </div>
             </div>
 
-            {/* Error */}
-            {error && (
-              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-xs">
+            {error && !showFailedModal && (
+              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-xs animate-fade-in">
                 <svg
                   width="15"
                   height="15"
@@ -222,36 +280,51 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
               </div>
             )}
 
-            {/* Botón */}
             <button
               type="submit"
               disabled={loading}
               className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-bold text-sm tracking-wider rounded-xl transition-all shadow-lg shadow-blue-600/20 mt-2 cursor-pointer disabled:cursor-not-allowed border-none"
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span
-                    className="w-4 h-4 border-2 border-white/30 border-top-white rounded-full animate-spin"
-                    style={{ borderTopColor: '#fff' }}
-                  />
-                  Verificando...
-                </span>
-              ) : (
-                'INICIO DE SESIÓN'
-              )}
+              {loading ? 'Verificando...' : 'INICIO DE SESIÓN'}
             </button>
           </form>
-
-          <p className="text-center text-slate-500 text-[0.72rem] mt-5">
-            Demo: DNI <span className="text-slate-400 font-semibold">76358911</span> · contraseña =
-            DNI
-          </p>
         </div>
-
-        <p className="text-slate-500 text-[0.7rem] mt-5">
-          Plataforma de Desempeño Escolar © Puno, Perú 2024
-        </p>
       </div>
+
+      {/* --- MODAL EMERGENTE AZUL --- */}
+      {showFailedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-[340px] bg-[#0052cc] rounded-xl p-6 text-center shadow-2xl border border-blue-400/20">
+            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2.5"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              {attempts === 1 ? 'Primer intento fallido' : 'Segundo intento fallido'}
+            </h3>
+            <p className="text-sm text-blue-100 mb-6 font-medium">
+              Le queda {MAX_ATTEMPTS - attempts}{' '}
+              {MAX_ATTEMPTS - attempts === 1 ? 'intento' : 'intentos'}
+            </p>
+            <button
+              onClick={() => setShowFailedModal(false)}
+              className="w-full py-2.5 bg-[#071d49] hover:bg-[#0c2a66] text-white text-xs font-bold tracking-widest rounded-lg transition-colors border-none cursor-pointer uppercase"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -8,12 +8,14 @@ import { ChangePasswordDto } from '../dto/change-password.dto.js';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse, ILogoutResponse } from '@sistema-monitoreo/shared-contracts';
+import { MailerService } from '../../../shared/mailer/mailer.service.js';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
+    private readonly mailerService: MailerService,
   ) {}
 
   async login(
@@ -59,6 +61,9 @@ export class AuthService {
       throw new ForbiddenException({
         message: 'Cuenta bloqueada temporalmente. Intente más tarde.',
         lockedUntil: user.lockedUntil.toISOString(),
+        failedAttempts: user.failedLoginAttempts,
+        failedLoginAttempts: user.failedLoginAttempts,
+        remainingAttempts: 0,
       });
     }
 
@@ -86,6 +91,9 @@ export class AuthService {
         throw new ForbiddenException({
           message: 'Cuenta bloqueada temporalmente. Intente más tarde.',
           lockedUntil: lockUntil.toISOString(),
+          failedAttempts: updatedAttempts,
+          failedLoginAttempts: updatedAttempts,
+          remainingAttempts: 0,
         });
       }
 
@@ -96,7 +104,12 @@ export class AuthService {
         ipAddress: meta?.ipAddress,
         userAgent: meta?.userAgent,
       });
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException({
+        message: 'Credenciales inválidas',
+        failedAttempts: updatedAttempts,
+        failedLoginAttempts: updatedAttempts,
+        remainingAttempts: 3 - updatedAttempts,
+      });
     }
 
     // Si el login es exitoso, limpiamos intentos fallidos acumulados o bloqueos expirados
@@ -241,6 +254,8 @@ export class AuthService {
 
     // Registramos en consola para poder testearlo y consumirlo sin correo real en dev
     console.log(`[DEV ONLY] Enlace de recuperación generado para el DNI ${dto.dni}: token=${token}`);
+
+    await this.mailerService.sendPasswordResetEmail(user.email, user.dni, token);
 
     return {
       success: true,

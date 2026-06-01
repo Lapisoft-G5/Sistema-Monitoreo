@@ -22,7 +22,10 @@ describe('AuthModule', () => {
         authSession: { create: jest.fn() },
       })
       .overrideProvider(ConfigService)
-      .useValue({ getOrThrow: jest.fn().mockReturnValue('test_secret') })
+      .useValue({
+        getOrThrow: jest.fn().mockReturnValue('test_secret'),
+        get: jest.fn().mockReturnValue(undefined),
+      })
       .compile();
   });
 

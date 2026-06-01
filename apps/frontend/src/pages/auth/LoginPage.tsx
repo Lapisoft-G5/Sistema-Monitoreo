@@ -18,12 +18,16 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState<number | null>(null);
   const [logoError, setLogoError] = useState(false);
+  const [failedLoginAttempts, setFailedLoginAttempts] = useState<number | null>(null);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
 
   useEffect(() => {
     if (countdown === null) return;
     if (countdown <= 0) {
       setCountdown(null);
       setError('');
+      setFailedLoginAttempts(null);
+      setRemainingAttempts(null);
       return;
     }
     const timer = setTimeout(() => {
@@ -45,6 +49,8 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
     setLoading(false);
     if (!result.success) {
       setError(result.error ?? 'Error al iniciar sesión');
+      setFailedLoginAttempts(result.failedLoginAttempts ?? null);
+      setRemainingAttempts(result.remainingAttempts ?? null);
       if (result.lockedUntil) {
         const lockedTime = new Date(result.lockedUntil).getTime();
         const diff = Math.ceil((lockedTime - Date.now()) / 1000);
@@ -52,6 +58,9 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
           setCountdown(diff);
         }
       }
+    } else {
+      setFailedLoginAttempts(null);
+      setRemainingAttempts(null);
     }
   };
 
@@ -235,20 +244,41 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-xs">
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                {countdown !== null ? `${error} (Intente de nuevo en ${formatTime(countdown)})` : error}
+              <div className="flex flex-col gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-xs transition-all">
+                <div className="flex items-center gap-2 text-red-400 font-semibold">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="shrink-0"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>{countdown !== null ? `${error} (Intente de nuevo en ${formatTime(countdown)})` : error}</span>
+                </div>
+                {failedLoginAttempts !== null && remainingAttempts !== null && remainingAttempts > 0 && (
+                  <div className="mt-1 text-slate-300 border-t border-red-500/20 pt-2 flex flex-col gap-1">
+                    <div className="flex justify-between items-center text-[0.7rem]">
+                      <span>Intentos fallidos:</span>
+                      <span className="font-bold text-red-400">{failedLoginAttempts} / 3</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[0.7rem]">
+                      <span>Intentos restantes antes del bloqueo:</span>
+                      <span className="font-bold text-emerald-400">{remainingAttempts} {remainingAttempts === 1 ? 'intento' : 'intentos'}</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-1.5 mt-1 overflow-hidden">
+                      <div
+                        className="bg-red-500 h-1.5 transition-all duration-500"
+                        style={{ width: `${(failedLoginAttempts / 3) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

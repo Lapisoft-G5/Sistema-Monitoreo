@@ -6,6 +6,7 @@ import { AuthRepository } from '../repositories/auth.repository.js';
 import { LoginDto } from '../dto/login.dto.js';
 import { User } from '../entities/user.entity.js';
 import { Role } from '../entities/role.entity.js';
+import { MailerService } from '../../../shared/mailer/mailer.service.js';
 
 const compareMock = jest.fn() as jest.MockedFunction<
   (password: string, hash: string) => Promise<boolean>
@@ -77,6 +78,9 @@ describe('AuthService', () => {
   let jwtSignAsyncMock: jest.MockedFunction<
     (payload: unknown, options?: unknown) => Promise<string>
   >;
+  let sendPasswordResetEmailMock: jest.MockedFunction<
+    (to: string, dni: string, token: string) => Promise<void>
+  >;
 
   beforeEach(async () => {
     findUserByDniMock = jest.fn();
@@ -95,6 +99,7 @@ describe('AuthService', () => {
     resetFailedAttemptsMock = jest.fn();
     logAuthEventMock = jest.fn();
     jwtSignAsyncMock = jest.fn();
+    sendPasswordResetEmailMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -125,6 +130,12 @@ describe('AuthService', () => {
             signAsync: jwtSignAsyncMock,
           },
         },
+        {
+          provide: MailerService,
+          useValue: {
+            sendPasswordResetEmail: sendPasswordResetEmailMock,
+          },
+        },
       ],
     }).compile();
 
@@ -150,6 +161,7 @@ describe('AuthService', () => {
     resetFailedAttemptsMock.mockReset();
     logAuthEventMock.mockReset();
     jwtSignAsyncMock.mockReset();
+    sendPasswordResetEmailMock.mockReset();
   });
 
   it('should be defined', () => {
@@ -375,6 +387,7 @@ describe('AuthService', () => {
       expect(result.message).toContain('recibirá un correo');
       expect(findUserByDniAndEmailMock).toHaveBeenCalledWith(forgotPasswordDto.dni, forgotPasswordDto.email);
       expect(createPasswordResetTokenMock).not.toHaveBeenCalled();
+      expect(sendPasswordResetEmailMock).not.toHaveBeenCalled();
       expect(logAuthEventMock).toHaveBeenCalledWith(
         expect.objectContaining({
           eventType: 'PASSWORD_RESET_REQUEST_UNREGISTERED',
@@ -414,6 +427,7 @@ describe('AuthService', () => {
           userAgent: 'Jest',
         }),
       );
+      expect(sendPasswordResetEmailMock).toHaveBeenCalledWith(user.email, user.dni, expect.any(String));
     });
 
     it('should throw BadRequestException if user exists but has an active parallel session', async () => {
@@ -428,6 +442,7 @@ describe('AuthService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
       expect(createPasswordResetTokenMock).not.toHaveBeenCalled();
+      expect(sendPasswordResetEmailMock).not.toHaveBeenCalled();
       expect(logAuthEventMock).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: user.id,

@@ -4,7 +4,13 @@ import type { User } from '../../entities/user';
 interface AuthContextType {
   user: User | null;
   requiresPasswordChange: boolean;
-  login: (dni: string, password: string) => Promise<{ success: boolean; error?: string; lockedUntil?: string | null }>;
+  login: (dni: string, password: string) => Promise<{
+    success: boolean;
+    error?: string;
+    lockedUntil?: string | null;
+    failedLoginAttempts?: number | null;
+    remainingAttempts?: number | null;
+  }>;
   logout: () => void;
   changePassword: (newPassword: string) => Promise<void>;
   forgotPassword: (dni: string, email: string) => Promise<{ success: boolean; error?: string }>;

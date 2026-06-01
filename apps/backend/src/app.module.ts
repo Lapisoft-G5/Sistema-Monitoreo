@@ -5,6 +5,14 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, HealthModule, AuthModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../../.env', './apps/backend/.env'],
+    }),
+    PrismaModule,
+    HealthModule,
+    AuthModule,
+  ],
 })
 export class AppModule {}

@@ -2,37 +2,66 @@ import { useState } from 'react';
 import { useAuth } from '../../features/authentication/useAuth';
 
 interface Props {
-  onBack: () => void;
+  onSuccess: () => void;
 }
+
+const validate = (p: string) => ({
+  length: p.length >= 8,
+  uppercase: /[A-Z]/.test(p),
+  number: /[0-9]/.test(p),
+});
 
 const LOGO_SRC = '/logo-ugel.png';
 
-export const ForgotPasswordPage = ({ onBack }: Props) => {
-  const { forgotPassword } = useAuth();
-  const [step, setStep] = useState<'form' | 'sent'>('form');
-  const [dni, setDni] = useState('');
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
+export const ResetPasswordPage = ({ onSuccess }: Props) => {
+  const { resetPassword } = useAuth();
+  const [pwd, setPwd] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [logoError, setLogoError] = useState(false);
+  const [step, setStep] = useState<'form' | 'success'>('form');
+
+  const rules = validate(pwd);
+  const allValid = rules.length && rules.uppercase && rules.number;
+
+  const token = new URLSearchParams(window.location.search).get('token') || '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (dni.length < 8 || !email) return;
+    if (!token) {
+      setError('Enlace de recuperación inválido: token ausente.');
+      return;
+    }
+    if (!allValid) {
+      setError('La contraseña no cumple los requisitos de complejidad.');
+      return;
+    }
+    if (pwd !== confirm) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
     setLoading(true);
-    setError(null);
-    const result = await forgotPassword(dni, email);
+    setError('');
+    const result = await resetPassword(token, pwd);
     setLoading(false);
     if (result.success) {
-      setStep('sent');
+      setStep('success');
     } else {
-      setError(result.error || 'Ocurrió un error inesperado');
+      setError(result.error || 'Error al restablecer la contraseña');
     }
   };
 
+  const ruleItems = [
+    { key: 'length' as const, label: 'Mínimo 8 caracteres' },
+    { key: 'uppercase' as const, label: 'Al menos una mayúscula' },
+    { key: 'number' as const, label: 'Al menos un número' },
+  ];
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-[#0a1931] relative overflow-hidden">
-      {/* Orbs de fondo suavizados idénticos al Login */}
+      {/* Orbs de fondo suavizados */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
           style={{
@@ -94,111 +123,126 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
 
         {/* Card Contenedor Principal */}
         <div className="w-full bg-[#112240] border border-slate-700/60 rounded-2xl p-8 shadow-2xl">
-          {/* Botón de retorno superior */}
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-blue-400 text-xs hover:text-blue-300 transition-colors cursor-pointer bg-transparent border-none outline-none mb-5 p-0"
-          >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Volver al inicio de sesión
-          </button>
-
           {step === 'form' ? (
             <div>
               <div className="flex justify-center mb-4">
                 <span className="bg-blue-600 text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase">
-                  Recuperar Acceso
+                  Nueva Contraseña
                 </span>
               </div>
 
               <h2 className="text-white text-lg font-bold text-center mb-2">
-                ¿Olvidaste tu contraseña?
+                Restablecer Contraseña
               </h2>
               <p className="text-center text-xs text-slate-400 mb-6 leading-relaxed">
-                Ingresa tu DNI y tu Correo electrónico registrado para enviarte las instrucciones de restablecimiento.
+                Establece tu nueva contraseña de acceso. Asegúrate de cumplir con todos los requisitos de seguridad descritos a continuación.
               </p>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 {/* Alerta de Error */}
                 {error && (
-                  <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 text-xs leading-relaxed text-center">
+                  <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 text-xs leading-relaxed text-center animate-pulse">
                     {error}
                   </div>
                 )}
 
-                {/* Campo DNI */}
+                {/* Nueva Contraseña */}
                 <div>
                   <label className="block text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
-                    DNI de Usuario
+                    Nueva contraseña
                   </label>
                   <div className="flex items-center bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors">
                     <span className="pl-3 text-slate-500">
-                      <svg
-                        width="17"
-                        height="17"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <rect x="2" y="5" width="20" height="14" rx="2" />
-                        <line x1="2" y1="10" x2="22" y2="10" />
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
                     </span>
                     <input
-                      type="text"
-                      placeholder="Ingrese su DNI"
-                      value={dni}
-                      onChange={(e) => setDni(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                      maxLength={8}
+                      type={show ? 'text' : 'password'}
+                      placeholder="Mínimo 8 caracteres"
+                      value={pwd}
+                      onChange={(e) => setPwd(e.target.value)}
+                      required
                       className="w-full bg-transparent border-none outline-none text-white text-sm px-3 py-3"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShow(!show)}
+                      className="pr-3 text-slate-500 hover:text-slate-300 transition-colors bg-transparent border-none cursor-pointer outline-none"
+                    >
+                      {show ? (
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                      ) : (
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
                 </div>
 
-                {/* Campo Correo Electrónico */}
+                {/* Confirmar Contraseña */}
                 <div>
                   <label className="block text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
-                    Correo Electrónico
+                    Confirmar nueva contraseña
                   </label>
                   <div className="flex items-center bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors">
                     <span className="pl-3 text-slate-500">
-                      <svg
-                        width="17"
-                        height="17"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                        <polyline points="22,6 12,13 2,6" />
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
                     </span>
                     <input
-                      type="email"
-                      placeholder="Ingrese su correo registrado"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      type={show ? 'text' : 'password'}
+                      placeholder="Repita su contraseña"
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
                       required
                       className="w-full bg-transparent border-none outline-none text-white text-sm px-3 py-3"
                     />
                   </div>
                 </div>
 
-                {/* Botón de Envío */}
+                {/* Reglas de Complejidad */}
+                <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-4.5 flex flex-col gap-2.5 mt-1">
+                  <p className="text-[0.68rem] font-bold tracking-wider text-slate-400 uppercase mb-1">
+                    Requisitos de seguridad
+                  </p>
+                  {ruleItems.map((item) => {
+                    const valid = rules[item.key];
+                    return (
+                      <div key={item.key} className="flex items-center gap-2.5">
+                        <span className={`flex items-center justify-center w-4.5 h-4.5 rounded-full border transition-all ${valid
+                            ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                            : 'border-slate-700 text-slate-600'
+                          }`}>
+                          {valid ? (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          ) : (
+                            <span className="w-1 h-1 rounded-full bg-slate-500" />
+                          )}
+                        </span>
+                        <span className={`text-[0.72rem] transition-colors ${valid ? 'text-slate-300 font-medium' : 'text-slate-500'
+                          }`}>
+                          {item.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Botón de Guardado */}
                 <button
                   type="submit"
-                  disabled={loading || dni.length < 8 || !email}
+                  disabled={loading || !allValid || !confirm}
                   className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/40 disabled:text-slate-500 font-bold text-sm tracking-wider rounded-xl transition-all shadow-lg shadow-blue-600/20 mt-2 cursor-pointer disabled:cursor-not-allowed border-none text-white"
                 >
                   {loading ? (
@@ -207,17 +251,16 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
                         className="w-4 h-4 border-2 border-white/30 border-top-white rounded-full animate-spin"
                         style={{ borderTopColor: '#fff' }}
                       />
-                      Enviando...
+                      Guardando...
                     </span>
                   ) : (
-                    'ENVIAR INSTRUCCIONES'
+                    'RESTABLECER CONTRASEÑA'
                   )}
                 </button>
               </form>
             </div>
           ) : (
             <div className="text-center py-2">
-              {/* Icono de éxito alineado al color success global */}
               <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-green-500/5">
                 <svg
                   width="28"
@@ -232,16 +275,16 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
                 </svg>
               </div>
 
-              <h2 className="text-white text-xl font-bold mb-2">¡Instrucciones enviadas!</h2>
+              <h2 className="text-white text-xl font-bold mb-2">¡Contraseña restablecida!</h2>
               <p className="text-slate-400 text-xs leading-relaxed mb-6">
-                Si los datos ingresados corresponden a un usuario activo, recibirás un correo de recuperación a la brevedad.
+                Tu contraseña ha sido actualizada exitosamente en el sistema. Ya puedes iniciar sesión con tus nuevas credenciales.
               </p>
 
               <button
-                onClick={onBack}
+                onClick={onSuccess}
                 className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 font-bold text-sm tracking-wider rounded-xl transition-all shadow-lg cursor-pointer border-none text-white"
               >
-                VOLVER AL INICIO
+                INICIAR SESIÓN
               </button>
             </div>
           )}

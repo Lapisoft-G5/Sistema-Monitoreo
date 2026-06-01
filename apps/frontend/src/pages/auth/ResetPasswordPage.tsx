@@ -218,11 +218,10 @@ export const ResetPasswordPage = ({ onSuccess }: Props) => {
                     const valid = rules[item.key];
                     return (
                       <div key={item.key} className="flex items-center gap-2.5">
-                        <span className={`flex items-center justify-center w-4.5 h-4.5 rounded-full border transition-all ${
-                          valid 
-                            ? 'bg-green-500/10 border-green-500/30 text-green-400' 
+                        <span className={`flex items-center justify-center w-4.5 h-4.5 rounded-full border transition-all ${valid
+                            ? 'bg-green-500/10 border-green-500/30 text-green-400'
                             : 'border-slate-700 text-slate-600'
-                        }`}>
+                          }`}>
                           {valid ? (
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                               <polyline points="20 6 9 17 4 12" />
@@ -231,9 +230,8 @@ export const ResetPasswordPage = ({ onSuccess }: Props) => {
                             <span className="w-1 h-1 rounded-full bg-slate-500" />
                           )}
                         </span>
-                        <span className={`text-[0.72rem] transition-colors ${
-                          valid ? 'text-slate-300 font-medium' : 'text-slate-500'
-                        }`}>
+                        <span className={`text-[0.72rem] transition-colors ${valid ? 'text-slate-300 font-medium' : 'text-slate-500'
+                          }`}>
                           {item.label}
                         </span>
                       </div>

@@ -12,10 +12,9 @@ type UnauthView = 'login' | 'forgot-password';
 const AuthRouter = () => {
   const { isAuthenticated, requiresPasswordChange } = useAuth();
   const [view, setView] = useState<UnauthView>('login');
-
-  // Detectar token en URL para el flujo de restablecimiento de contraseña
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
+  const [token, setToken] = useState<string | null>(() => {
+    return new URLSearchParams(window.location.search).get('token');
+  });
 
   if (token) {
     return (
@@ -23,6 +22,7 @@ const AuthRouter = () => {
         onSuccess={() => {
           // Limpiar el parámetro token de la URL tras el cambio exitoso
           window.history.replaceState({}, document.title, window.location.pathname);
+          setToken(null);
           setView('login');
         }}
       />

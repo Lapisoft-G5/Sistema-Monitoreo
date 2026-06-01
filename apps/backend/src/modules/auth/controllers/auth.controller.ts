@@ -84,6 +84,7 @@ export class AuthController {
    */
   @Post('logout')
   @UseGuards(AuthGuard, RolesGuard)
+  @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: any): Promise<ILogoutResponse> {
     const sessionJti = req.user.jti;

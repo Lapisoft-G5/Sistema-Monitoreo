@@ -86,19 +86,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     const token = localStorage.getItem('accessToken');
     if (token) {
-      fetch(`${apiBaseUrl}/api/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      }).catch((err) => {
+      try {
+        await fetch(`${apiBaseUrl}/api/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+      } catch (err) {
         console.error('Error invalidating session in backend on logout:', err);
-      });
+      }
     }
     localStorage.removeItem('accessToken');
     setUser(null);

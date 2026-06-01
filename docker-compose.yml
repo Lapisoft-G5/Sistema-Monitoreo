@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:17
+    container_name: monitoring-postgres
     restart: always
     environment:
       POSTGRES_USER: admin
@@ -13,6 +14,7 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
+    container_name: monitoring-mailpit
     restart: always
     ports:
       - "1025:1025" # SMTP server

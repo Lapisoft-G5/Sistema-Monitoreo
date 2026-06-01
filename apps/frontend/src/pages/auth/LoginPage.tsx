@@ -8,6 +8,7 @@ interface Props {
 }
 
 const LOGO_SRC = '/logo-ugel.png';
+const MAX_ATTEMPTS = 3;
 
 export const LoginPage = ({ onForgotPassword }: Props) => {
   const { login } = useAuth();
@@ -20,47 +21,67 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
   const [logoError, setLogoError] = useState(false);
   const [failedLoginAttempts, setFailedLoginAttempts] = useState<number | null>(null);
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+  const [showFailedModal, setShowFailedModal] = useState(false);
 
   useEffect(() => {
     if (countdown === null) return;
+
     if (countdown <= 0) {
       setCountdown(null);
       setError('');
       setFailedLoginAttempts(null);
       setRemainingAttempts(null);
+      setShowFailedModal(false);
       return;
     }
+
     const timer = setTimeout(() => {
       setCountdown(countdown - 1);
     }, 1000);
+
     return () => clearTimeout(timer);
   }, [countdown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (countdown !== null) return;
+
     if (!dni || !password) {
       setError('Complete todos los campos');
       return;
     }
+
     setLoading(true);
     setError('');
+
     const result = await login(dni, password);
+
     setLoading(false);
+
     if (!result.success) {
       setError(result.error ?? 'Error al iniciar sesión');
       setFailedLoginAttempts(result.failedLoginAttempts ?? null);
       setRemainingAttempts(result.remainingAttempts ?? null);
+
       if (result.lockedUntil) {
         const lockedTime = new Date(result.lockedUntil).getTime();
         const diff = Math.ceil((lockedTime - Date.now()) / 1000);
         if (diff > 0) {
           setCountdown(diff);
+          setShowFailedModal(false);
         }
+      } else if (
+        result.failedLoginAttempts !== undefined &&
+        result.failedLoginAttempts !== null &&
+        result.failedLoginAttempts > 0 &&
+        result.failedLoginAttempts < MAX_ATTEMPTS
+      ) {
+        setShowFailedModal(true);
       }
     } else {
       setFailedLoginAttempts(null);
       setRemainingAttempts(null);
+      setShowFailedModal(false);
     }
   };
 
@@ -70,9 +91,65 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  if (countdown !== null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-[#0a1931] font-sans">
+        <div className="w-full max-w-[430px] bg-[#112240] border border-slate-700/60 rounded-2xl p-8 shadow-2xl text-center animate-fade-in">
+          <div className="mb-4">
+            {!logoError ? (
+              <img
+                src={LOGO_SRC}
+                alt="Logo UGEL"
+                onError={() => setLogoError(true)}
+                className="w-16 h-16 mx-auto object-contain opacity-80"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-xl mx-auto flex items-center justify-center bg-blue-600">
+                🛡️
+              </div>
+            )}
+          </div>
+
+          <h1 className="text-2xl font-black text-white">UGEL Lampa</h1>
+          <p className="text-xs text-slate-400 mt-0.5 mb-6">Sistema de Monitoreo</p>
+
+          <button
+            type="button"
+            onClick={() => {
+              setCountdown(null);
+              setError('');
+              setFailedLoginAttempts(null);
+              setRemainingAttempts(null);
+            }}
+            className="bg-red-500/80 hover:bg-red-600/90 active:scale-98 text-white text-xs font-bold tracking-widest py-2 px-6 rounded-full uppercase mb-6 inline-block w-full cursor-pointer transition-all border-none"
+          >
+            Acceso de Sistema
+          </button>
+
+          <p className="text-[0.68rem] text-slate-400 font-bold tracking-wider uppercase mb-2">
+            Tiempo de Penalización
+          </p>
+
+          <div className="bg-[#061124] border border-slate-700 rounded-xl py-3 px-6 text-3xl font-mono font-bold text-slate-200 tracking-widest mb-6 w-3/4 mx-auto">
+            {formatTime(countdown)}
+          </div>
+
+          <p className="text-sm text-slate-300 px-2 leading-relaxed mb-8">
+            La opción de inicio de sesión está desactivada por demasiados intentos fallidos.
+            <br />
+            Intenta nuevamente más tarde.
+          </p>
+
+          <span className="text-xs font-bold uppercase tracking-wider text-red-400/40 select-none">
+            Bloqueado por Seguridad
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-[#0a1931] relative overflow-hidden">
-      {/* Orbs de fondo suavizados */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
           style={{
@@ -103,7 +180,6 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
       </div>
 
       <div className="relative z-10 w-full max-w-[430px] flex flex-col items-center">
-        {/* Logo + título */}
         <div className="text-center mb-6">
           {!logoError ? (
             <img
@@ -132,19 +208,18 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
           <p className="text-xs text-slate-400 mt-1">Sistema de Monitoreo</p>
         </div>
 
-        {/* Card contenedor plano y serio */}
         <div className="w-full bg-[#112240] border border-slate-700/60 rounded-2xl p-8 shadow-2xl">
           <div className="flex justify-center mb-5">
             <span className="bg-blue-600 text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase">
               Acceso de Sistema
             </span>
           </div>
+
           <p className="text-center text-xs text-slate-400 mb-6">
             Valide su credencial pedagógica digital para iniciar
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Usuario */}
             <div>
               <label className="block text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Usuario
@@ -174,7 +249,6 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
               </div>
             </div>
 
-            {/* Contraseña */}
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase">
@@ -209,6 +283,7 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                   {showPass ? 'ocultar' : 'mostrar'}
                 </button>
               </div>
+
               <div className="flex items-center bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors">
                 <span className="pl-3 text-slate-500">
                   <svg
@@ -231,6 +306,7 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                   className="w-full bg-transparent border-none outline-none text-white text-sm px-3 py-3"
                 />
               </div>
+
               <div className="flex justify-end mt-2">
                 <button
                   type="button"
@@ -242,8 +318,7 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
               </div>
             </div>
 
-            {/* Error */}
-            {error && (
+{/*             {error && (
               <div className="flex flex-col gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-xs transition-all">
                 <div className="flex items-center gap-2 text-red-400 font-semibold">
                   <svg
@@ -259,9 +334,14 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                     <line x1="12" y1="8" x2="12" y2="12" />
                     <line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
-                  <span>{countdown !== null ? `${error} (Intente de nuevo en ${formatTime(countdown)})` : error}</span>
+                  <span>
+                    {countdown !== null
+                      ? `${error} (Intente de nuevo en ${formatTime(countdown)})`
+                      : error}
+                  </span>
                 </div>
-                {failedLoginAttempts !== null && remainingAttempts !== null && remainingAttempts > 0 && (
+
+                {failedLoginAttempts !== null && remainingAttempts !== null && (
                   <div className="mt-1 text-slate-300 border-t border-red-500/20 pt-2 flex flex-col gap-1">
                     <div className="flex justify-between items-center text-[0.7rem]">
                       <span>Intentos fallidos:</span>
@@ -269,8 +349,11 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                     </div>
                     <div className="flex justify-between items-center text-[0.7rem]">
                       <span>Intentos restantes antes del bloqueo:</span>
-                      <span className="font-bold text-emerald-400">{remainingAttempts} {remainingAttempts === 1 ? 'intento' : 'intentos'}</span>
+                      <span className="font-bold text-emerald-400">
+                        {remainingAttempts} {remainingAttempts === 1 ? 'intento' : 'intentos'}
+                      </span>
                     </div>
+
                     <div className="w-full bg-slate-800 rounded-full h-1.5 mt-1 overflow-hidden">
                       <div
                         className="bg-red-500 h-1.5 transition-all duration-500"
@@ -280,9 +363,7 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                   </div>
                 )}
               </div>
-            )}
-
-            {/* Botón */}
+            )} */}
             <button
               type="submit"
               disabled={loading || countdown !== null}
@@ -291,8 +372,7 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span
-                    className="w-4 h-4 border-2 border-white/30 border-top-white rounded-full animate-spin"
-                    style={{ borderTopColor: '#fff' }}
+                    className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
                   />
                   Verificando...
                 </span>
@@ -314,6 +394,40 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
           Plataforma de Desempeño Escolar © Puno, Perú 2024
         </p>
       </div>
+
+      {showFailedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-[340px] bg-[#0052cc] rounded-xl p-6 text-center shadow-2xl border border-blue-400/20">
+            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2.5"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              {failedLoginAttempts === 1 ? 'Primer intento fallido' : 'Segundo intento fallido'}
+            </h3>
+            <p className="text-sm text-blue-100 mb-6 font-medium">
+              Le queda {remainingAttempts ?? 0}{' '}
+              {(remainingAttempts ?? 0) === 1 ? 'intento' : 'intentos'}
+            </p>
+            <button
+              onClick={() => setShowFailedModal(false)}
+              className="w-full py-2.5 bg-[#071d49] hover:bg-[#0c2a66] text-white text-xs font-bold tracking-widest rounded-lg transition-colors border-none cursor-pointer uppercase"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -28,10 +28,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        // Si el tiempo llegó a 1, el próximo paso es 0 (finalizar penalización)
         if (prev <= 1) {
           localStorage.removeItem('ugel_penalty_expiry');
-          // Cambiamos los estados de manera asíncrona diferida para no bloquear el render actual
           setTimeout(() => {
             setIsPenalized(false);
             setAttempts(0);
@@ -43,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPenalized]); // Únicamente depende de si está penalizado o no
+  }, [isPenalized]);
 
   const login = async (dni: string, password: string) => {
     if (isPenalized) {
@@ -76,7 +74,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    // Login Exitoso
     setAttempts(0);
     localStorage.removeItem('ugel_penalty_expiry');
     const isFirstLogin = password === dni;

@@ -1,25 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  /* Azules institucionales basados en el Mockup */
-  --color-primary:       #0f52ba; /* Azul principal de botones y acentos */
-  --color-primary-hover: #0d44a0;
-  --color-primary-dark:  #0a3680;
-  --color-primary-light: #e6f0fa;
+  /* Nuevo color de Acento Guinda/Carmesí Institucional UGEL */
+  --color-primary:       #990537; /* rgb(153, 5, 55) */
+  --color-primary-hover: #80042e;
+  --color-primary-dark:  #660324;
+  --color-primary-light: #fdf2f5; /* Fondo rosa/carmesí pastel sutil */
 
-  /* Paleta Light Mode para el Sistema */
-  --color-bg:            #f4f6f9; /* Fondo general grisáceo del panel */
-  --color-surface:       #ffffff; /* Tarjetas y paneles en blanco puro */
-  --color-border:        #e2e8f0; /* Bordes sutiles de tablas y divisiones */
+  /* Paleta Light Mode para todo el Sistema */
+  --color-bg:            #f4f6f9; /* Fondo general grisáceo muy claro */
+  --color-surface:       #ffffff; /* Tarjetas y paneles blancos */
+  --color-border:        #e2e8f0; /* Separadores limpios */
 
-  /* Textos legibles sobre fondo claro */
-  --color-text:          #1e293b; /* Texto principal oscuro */
-  --color-text-muted:    #64748b; /* Subtítulos y etiquetas secundarias */
-  --color-text-dim:      #94a3b8; /* Placeholders */
+  /* Textos */
+  --color-text:          #1e293b; /* Slate oscuro para máxima legibilidad */
+  --color-text-muted:    #64748b;
+  --color-text-dim:      #94a3b8;
 
-  /* Semáforo de Evaluación */
-  --color-success:       #22c55e;
-  --color-warning:       #eab308;
+  /* Semáforos y Alertas */
+  --color-success:       #10b981;
+  --color-warning:       #f59e0b;
   --color-danger:        #ef4444;
 
   --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;

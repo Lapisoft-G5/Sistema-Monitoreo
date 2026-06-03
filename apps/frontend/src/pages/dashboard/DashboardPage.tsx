@@ -66,185 +66,93 @@ const MONITOREOS = [
   },
 ];
 
+// Colores semáforo: estos vienen de datos dinámicos, se usan inline inevitablemente
 const ESTADO_COLOR: Record<string, string> = {
-  SATISFACTORIO: '#22c55e',
-  'EN PROCESO': '#f97316',
+  SATISFACTORIO: '#10b981',
+  'EN PROCESO': '#f59e0b',
   CRÍTICO: '#ef4444',
 };
 
-// Paleta Light Mode basada exactamente en tu mockup
-const bgApp = '#f8fafc';
-const cardBg = '#ffffff';
-const textPrimary = '#1e293b';
-const textSecondary = '#64748b';
-const accentBlue = '#0046c7';
-const cardShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)';
-const borderLight = '1px solid #e2e8f0';
+const total = EVALUATIONS.reduce((s, e) => s + e.count, 0);
 
 export const DashboardPage = () => {
   const { user } = useAuth();
 
   return (
-    <div
-      style={{
-        background: bgApp,
-        padding: 24,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 24,
-        color: textPrimary,
-        minHeight: '100vh',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
+    <div className="bg-bg min-h-screen p-6 flex flex-col gap-6 text-text">
+      {/* ── Header ── */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: textPrimary }}>
-            Panel de Control
-          </h1>
+          <h1 className="text-2xl font-bold text-text m-0">Panel de Control</h1>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            color: textSecondary,
-            fontSize: '0.87rem',
-          }}
-        >
-          <span>
-            Bienvenido,{' '}
-            <strong>
-              {user?.nombres || 'Usuario'} {user?.apellidos || 'Especialista'}
-            </strong>
-          </span>
+        <div className="text-text-muted text-sm">
+          Bienvenido,{' '}
+          <strong className="text-text">
+            {user?.nombres ?? 'Usuario'} {user?.apellidos ?? 'Especialista'}
+          </strong>
         </div>
       </div>
 
-      {/* KPIs */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 16,
-        }}
-      >
+      {/* ── KPIs ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {STATS.map((s, i) => (
           <div
             key={i}
-            style={{
-              borderRadius: 12,
-              padding: '20px',
-              boxShadow: s.accent ? 'none' : cardShadow,
-              border: s.accent ? 'none' : borderLight,
-              background: s.accent ? accentBlue : cardBg,
-              color: s.accent ? '#ffffff' : textPrimary,
-            }}
+            className={`rounded-xl p-5 ${
+              s.accent
+                ? 'bg-primary text-white'
+                : 'bg-surface border border-border shadow-sm text-text'
+            }`}
           >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 12,
-              }}
-            >
+            <div className="flex justify-between items-center mb-3">
               <span
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  color: s.accent ? 'rgba(255,255,255,0.8)' : textSecondary,
-                }}
+                className={`text-xs font-semibold uppercase tracking-wide ${
+                  s.accent ? 'text-white/80' : 'text-text-muted'
+                }`}
               >
                 {s.label}
               </span>
               {s.trend && (
-                <span
-                  style={{
-                    background: '#e6f4ea',
-                    color: '#137333',
-                    fontSize: '0.75rem',
-                    padding: '2px 8px',
-                    borderRadius: 20,
-                    fontWeight: 600,
-                  }}
-                >
+                <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">
                   {s.trend}
                 </span>
               )}
             </div>
-            <span style={{ fontSize: '2rem', fontWeight: 700, lineHeight: 1 }}>{s.value}</span>
+            <span className="text-3xl font-bold leading-none">{s.value}</span>
           </div>
         ))}
       </div>
 
-      {/* Middle row */}
-      <div
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 20, alignItems: 'start' }}
-      >
-        {/* Estado evaluación */}
-        <div
-          style={{
-            background: cardBg,
-            border: borderLight,
-            boxShadow: cardShadow,
-            borderRadius: 12,
-            padding: 20,
-          }}
-        >
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 16px', color: textPrimary }}>
-            Estado de Evaluación
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+      {/* ── Fila central ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.5fr] gap-5 items-start">
+        {/* Estado de Evaluación */}
+        <div className="bg-surface border border-border shadow-sm rounded-xl p-5">
+          <h3 className="text-base font-bold text-text mb-4">Estado de Evaluación</h3>
+
+          <div className="flex flex-col gap-3 mb-5">
             {EVALUATIONS.map((ev, i) => (
               <div
                 key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '12px 14px',
-                  borderRadius: 8,
-                  background: '#f8fafc',
-                  border: borderLight,
-                }}
+                className="flex items-center gap-3 px-3.5 py-3 rounded-lg bg-bg border border-border"
               >
-                <span
-                  style={{ fontSize: '1.5rem', fontWeight: 700, minWidth: 40, color: textPrimary }}
-                >
-                  {ev.count}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <p
-                    style={{
-                      color: textSecondary,
-                      fontSize: '0.85rem',
-                      margin: '0 0 4px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {ev.label}
-                  </p>
+                <span className="text-2xl font-bold min-w-[40px] text-text">{ev.count}</span>
+                <div className="flex-1">
+                  <p className="text-text-muted text-sm font-medium m-0">{ev.label}</p>
+                  {/* barra proporcional — color dinámico, inline inevitable */}
+                  <div className="mt-1.5 h-1 bg-border rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${(ev.count / total) * 100}%`,
+                        background: ev.color,
+                      }}
+                    />
+                  </div>
                 </div>
+                {/* badge de color semáforo — inline inevitable */}
                 <span
-                  style={{
-                    fontSize: '0.68rem',
-                    fontWeight: 700,
-                    padding: '3px 12px',
-                    borderRadius: 20,
-                    background: ev.color,
-                    color: '#ffffff',
-                  }}
+                  className="text-[0.65rem] font-bold px-3 py-0.5 rounded-full text-white"
+                  style={{ background: ev.color }}
                 >
                   {ev.badge}
                 </span>
@@ -253,98 +161,25 @@ export const DashboardPage = () => {
           </div>
 
           {/* Cobertura */}
-          <div style={{ paddingTop: 16, borderTop: borderLight }}>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '0.8rem',
-                color: textSecondary,
-                marginBottom: 8,
-                fontWeight: 500,
-              }}
-            >
+          <div className="pt-4 border-t border-border">
+            <div className="flex justify-between text-xs text-text-muted font-medium mb-2">
               <span>Resumen de Cobertura</span>
             </div>
-            <div
-              style={{
-                height: 8,
-                background: '#e2e8f0',
-                borderRadius: 4,
-                overflow: 'hidden',
-                position: 'relative',
-              }}
-            >
-              <div
-                style={{
-                  height: '100%',
-                  width: '23.8%',
-                  background: '#22c55e',
-                  borderRadius: 4,
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  left: '23.8%',
-                  top: 0,
-                  height: '100%',
-                  width: '50%',
-                  background: '#f97316',
-                }}
-              />
+            <div className="h-2 bg-border rounded-full overflow-hidden relative">
+              <div className="h-full w-[23.8%] bg-success rounded-full" />
             </div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '0.75rem',
-                color: textSecondary,
-                marginTop: 6,
-              }}
-            >
+            <div className="flex justify-between text-xs text-text-dim mt-1.5">
               <span>META 2024: 100%</span>
               <span>ACTUAL: 23.8%</span>
             </div>
           </div>
         </div>
 
-        {/* Mapa */}
-        <div
-          style={{
-            background: cardBg,
-            border: borderLight,
-            boxShadow: cardShadow,
-            borderRadius: 12,
-            padding: 20,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 16,
-            }}
-          >
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: textPrimary }}>
-              Mapa Georeferencial - Lampa
-            </h3>
-            <button
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 12px',
-                background: '#ffffff',
-                border: borderLight,
-                color: textSecondary,
-                fontSize: '0.75rem',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontWeight: 500,
-              }}
-            >
+        {/* Mapa Georeferencial */}
+        <div className="bg-surface border border-border shadow-sm rounded-xl p-5">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-base font-bold text-text m-0">Mapa Georeferencial — Lampa</h3>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-surface border border-border text-text-muted text-xs rounded-lg cursor-pointer hover:bg-bg transition-colors font-medium">
               <svg
                 width="12"
                 height="12"
@@ -358,21 +193,8 @@ export const DashboardPage = () => {
               Filtrar
             </button>
           </div>
-          <div
-            style={{
-              height: 280,
-              background: '#f8fafc',
-              borderRadius: 8,
-              border: borderLight,
-              overflow: 'hidden',
-            }}
-          >
-            <svg
-              viewBox="0 0 340 280"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ width: '100%', height: '100%' }}
-            >
-              {/* Distritos con colores pasteles/vivos idénticos a la imagen */}
+          <div className="h-[280px] bg-bg rounded-lg border border-border overflow-hidden">
+            <svg viewBox="0 0 340 280" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
               <path
                 d="M80 40 L140 30 L160 60 L130 90 L90 80 Z"
                 fill="#4dd0e1"
@@ -422,7 +244,6 @@ export const DashboardPage = () => {
                 strokeWidth="1.5"
               />
 
-              {/* Textos de Distritos */}
               {(
                 [
                   [105, 60, 'Ocuviri'],
@@ -448,14 +269,12 @@ export const DashboardPage = () => {
                 </text>
               ))}
 
-              {/* Indicadores Georeferenciales (Puntos del Mockup) */}
               <circle cx="178" cy="128" r="5" fill="#ef4444" stroke="#fff" strokeWidth="1" />
-              <circle cx="272" cy="118" r="5" fill="#0046c7" stroke="#fff" strokeWidth="1" />
+              <circle cx="272" cy="118" r="5" fill="#990537" stroke="#fff" strokeWidth="1" />
               <circle cx="158" cy="190" r="5" fill="#e65100" stroke="#fff" strokeWidth="1" />
               <circle cx="248" cy="185" r="5" fill="#22c55e" stroke="#fff" strokeWidth="1" />
               <circle cx="137" cy="228" r="5" fill="#e65100" stroke="#fff" strokeWidth="1" />
 
-              {/* Nueva Leyenda Flotante Clara */}
               <rect
                 x="8"
                 y="215"
@@ -469,14 +288,14 @@ export const DashboardPage = () => {
               {(
                 [
                   ['#22c55e', 'Satisfactorio', 16, 228],
-                  ['#f97316', 'En Seguimiento', 16, 243],
+                  ['#f59e0b', 'En Seguimiento', 16, 243],
                   ['#ef4444', 'Crítico', 16, 258],
                   ['#cbd5e1', 'Sin Registro', 16, 271],
                 ] as [string, string, number, number][]
               ).map(([c, t, x, y], i) => (
                 <g key={i}>
                   <circle cx={x - 6} cy={y - 3} r="3" fill={c} />
-                  <text x={x} y={y} fill={textPrimary} fontSize="7.5" fontWeight="500">
+                  <text x={x} y={y} fill="#1e293b" fontSize="7.5" fontWeight="500">
                     {t}
                   </text>
                 </g>
@@ -486,42 +305,17 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Tabla monitoreos recientes */}
-      <div
-        style={{
-          background: cardBg,
-          border: borderLight,
-          boxShadow: cardShadow,
-          borderRadius: 12,
-          padding: 20,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 20,
-          }}
-        >
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: textPrimary }}>
-            Monitoreos Recientes
-          </h3>
-          <button
-            style={{
-              color: accentBlue,
-              fontSize: '0.85rem',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
+      {/* ── Tabla monitoreos recientes ── */}
+      <div className="bg-surface border border-border shadow-sm rounded-xl p-5">
+        <div className="flex justify-between items-center mb-5">
+          <h3 className="text-base font-bold text-text m-0">Monitoreos Recientes</h3>
+          <button className="text-primary text-sm font-semibold bg-transparent border-none cursor-pointer hover:text-primary-hover transition-colors">
             Ver reporte detallado →
           </button>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
             <thead>
               <tr>
                 {[
@@ -533,16 +327,7 @@ export const DashboardPage = () => {
                 ].map((h) => (
                   <th
                     key={h}
-                    style={{
-                      textAlign: 'left',
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      color: textSecondary,
-                      padding: '0 16px 12px',
-                      borderBottom: '2px solid #f1f5f9',
-                    }}
+                    className="text-left text-[0.72rem] font-bold uppercase tracking-wide text-text-muted px-4 pb-3 border-b-2 border-bg"
                   >
                     {h}
                   </th>
@@ -551,82 +336,38 @@ export const DashboardPage = () => {
             </thead>
             <tbody>
               {MONITOREOS.map((m, i) => (
-                <tr key={i} style={{ backgroundColor: i % 2 === 0 ? 'transparent' : '#f8fafc' }}>
-                  <td style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                    <p
-                      style={{
-                        fontSize: '0.87rem',
-                        fontWeight: 600,
-                        margin: 0,
-                        color: textPrimary,
-                      }}
-                    >
-                      {m.ie}
-                    </p>
-                    <p style={{ color: textSecondary, fontSize: '0.75rem', margin: '2px 0 0' }}>
-                      Cód. Modular: {m.cod}
-                    </p>
+                <tr key={i} className={i % 2 !== 0 ? 'bg-bg' : ''}>
+                  <td className="px-4 py-3.5 border-b border-bg">
+                    <p className="text-sm font-semibold text-text m-0">{m.ie}</p>
+                    <p className="text-text-muted text-xs m-0 mt-0.5">Cód. Modular: {m.cod}</p>
                   </td>
-                  <td style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                    <p style={{ fontSize: '0.85rem', margin: 0, color: textPrimary }}>{m.nivel}</p>
-                    <p
-                      style={{
-                        color: textSecondary,
-                        fontSize: '0.75rem',
-                        margin: '2px 0 0',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {m.dist}
-                    </p>
+                  <td className="px-4 py-3.5 border-b border-bg">
+                    <p className="text-sm text-text m-0">{m.nivel}</p>
+                    <p className="text-text-muted text-xs m-0 mt-0.5 uppercase">{m.dist}</p>
                   </td>
-                  <td style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: '50%',
-                          background: '#e0e7ff',
-                          color: '#4338ca',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}
-                      >
+                  <td className="px-4 py-3.5 border-b border-bg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
                         {m.esp[0]}
                         {m.esp.split(' ')[1]?.[0]}
                       </div>
-                      <span style={{ fontSize: '0.85rem', color: textPrimary }}>{m.esp}</span>
+                      <span className="text-sm text-text">{m.esp}</span>
                     </div>
                   </td>
-                  <td
-                    style={{
-                      padding: '14px 16px',
-                      borderBottom: '1px solid #f1f5f9',
-                      color: textSecondary,
-                      fontSize: '0.85rem',
-                    }}
-                  >
+                  <td className="px-4 py-3.5 border-b border-bg text-text-muted text-sm">
                     {m.fecha}
                   </td>
-                  <td style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                  <td className="px-4 py-3.5 border-b border-bg">
+                    {/* color semáforo dinámico — inline inevitable aquí */}
                     <span
+                      className="text-[0.72rem] font-bold px-3 py-1 rounded-md whitespace-nowrap"
                       style={{
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        padding: '4px 12px',
-                        borderRadius: 6,
-                        whiteSpace: 'nowrap',
                         color: ESTADO_COLOR[m.estado],
-                        background: `${ESTADO_COLOR[m.estado]}15`,
-                        border: `1px solid ${ESTADO_COLOR[m.estado]}30`,
+                        background: `${ESTADO_COLOR[m.estado]}18`,
+                        border: `1px solid ${ESTADO_COLOR[m.estado]}35`,
                       }}
                     >
-                      {m.logro.toFixed(1)} - {m.estado}
+                      {m.logro.toFixed(1)} — {m.estado}
                     </span>
                   </td>
                 </tr>

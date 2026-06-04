@@ -18,7 +18,11 @@ export class PrismaAuthRepository implements AuthRepository {
       },
       include: {
         role: true,
-        persona: true,
+        persona: {
+          include: {
+            docente: true,
+          },
+        },
       },
     });
 

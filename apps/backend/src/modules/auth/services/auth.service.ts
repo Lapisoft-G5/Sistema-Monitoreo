@@ -9,6 +9,7 @@ import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse, ILogoutResponse } from '@sistema-monitoreo/shared-contracts';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 @Injectable()
 export class AuthService {
@@ -121,13 +122,21 @@ export class AuthService {
     const jti = randomUUID();
     const jwtExpiresInSeconds = 8 * 60 * 60; // 8 horas
 
-    const payload = {
+    const payload: any = {
       sub: user.id,
       dni: user.persona?.dni ?? '',
       role: user.role?.code ?? '',
       jti,
       firstLogin: user.isFirstLogin,
     };
+
+    if (
+      user.role?.code === RoleCode.DIRECTOR_INSTITUCION &&
+      user.persona?.docente?.institucionId
+    ) {
+      payload.institucion_id = user.persona.docente.institucionId;
+      payload.colegio_id = user.persona.docente.institucionId;
+    }
 
     const accessToken = await this.jwtService.signAsync(payload, {
       expiresIn: jwtExpiresInSeconds,

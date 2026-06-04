@@ -1,0 +1,283 @@
+import { MOCK_ESPECIALISTAS } from '../../features/authentication/specialists.mock';
+import { ROL_ESPECIALISTA_LABELS } from '../../entities/specialist/specialist.types';
+
+interface Props {
+  especialistaId: string;
+  onBack: () => void;
+  onNavigateEdit: (id: string) => void;
+}
+
+const ROL_COLORS: Record<string, string> = {
+  especialista_admin: 'bg-primary/10 text-primary border-primary/25',
+  especialista_medio: 'bg-warning/10 text-warning border-warning/25',
+  especialista_bajo: 'bg-success/10 text-success border-success/25',
+};
+
+const CAMPO = ({ label, value }: { label: string; value: string }) => (
+  <div>
+    <p className="text-text-muted text-[0.68rem] font-bold uppercase tracking-wider mb-1">
+      {label}
+    </p>
+    <p className="text-text text-sm font-medium">{value}</p>
+  </div>
+);
+
+export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit }: Props) => {
+  const esp = MOCK_ESPECIALISTAS.find((e) => e.id === especialistaId);
+
+  if (!esp) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-full bg-danger/10 border border-danger/25 flex items-center justify-center mx-auto mb-4">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="text-danger"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <p className="text-text font-semibold mb-1">Especialista no encontrado</p>
+          <button
+            onClick={onBack}
+            className="text-primary text-sm underline cursor-pointer bg-transparent border-none"
+          >
+            Volver al listado
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 max-w-[820px] mx-auto flex flex-col gap-5">
+      {/* ── Encabezado ── */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="p-2 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer"
+          >
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-text">Detalle de Especialista</h1>
+            <p className="text-text-muted text-sm">Información completa del especialista</p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNavigateEdit(esp.id)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl border-none cursor-pointer transition-colors shadow-sm"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          Editar
+        </button>
+      </div>
+
+      {/* ── Tarjeta de perfil ── */}
+      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-primary to-primary-hover h-20" />
+        <div className="px-6 pb-5">
+          <div className="flex items-end justify-between gap-4 -mt-8 mb-4 flex-wrap">
+            {/* Avatar */}
+            <div className="w-16 h-16 rounded-2xl bg-surface border-4 border-surface flex items-center justify-center text-primary text-xl font-black shadow-sm flex-shrink-0">
+              {esp.nombres.split(' ')[0][0]}
+              {esp.nombres.split(' ')[1]?.[0]}
+            </div>
+            {/* Estado */}
+            <span
+              className={`text-xs font-bold px-3 py-1.5 rounded-full border mb-1 ${
+                esp.activo
+                  ? 'bg-success/10 text-success border-success/25'
+                  : 'bg-border text-text-muted border-border'
+              }`}
+            >
+              {esp.activo ? '● Activo' : '○ Inactivo'}
+            </span>
+          </div>
+          <h2 className="text-lg font-bold text-text">{esp.nombres}</h2>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span
+              className={`text-[0.68rem] font-bold px-2.5 py-1 rounded-full border ${ROL_COLORS[esp.rol]}`}
+            >
+              {ROL_ESPECIALISTA_LABELS[esp.rol]}
+            </span>
+            <span className="text-text-muted text-xs">
+              · Desde{' '}
+              {new Date(esp.fechaCreacion).toLocaleDateString('es-PE', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Bloque 1: Información Personal ── */}
+      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-bg">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-text">Información Personal</h2>
+            <p className="text-text-dim text-xs">Datos de identificación</p>
+          </div>
+        </div>
+
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="sm:col-span-2">
+            <CAMPO label="Nombres y Apellidos" value={esp.nombres} />
+          </div>
+          <CAMPO label="DNI" value={esp.dni} />
+          <CAMPO label="Especialidad" value={esp.especialidad} />
+          <CAMPO label="Correo Electrónico" value={esp.correo} />
+          <CAMPO label="Núm. Celular" value={esp.celular} />
+        </div>
+      </div>
+
+      {/* ── Bloque 2: Configuración de Rol ── */}
+      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-bg">
+          <div className="w-8 h-8 rounded-lg bg-warning/10 text-warning flex items-center justify-center flex-shrink-0">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-text">Configuración de Rol</h2>
+            <p className="text-text-dim text-xs">Nivel de acceso asignado</p>
+          </div>
+        </div>
+
+        <div className="p-5">
+          <div className={`flex items-start gap-3.5 p-4 rounded-xl border ${ROL_COLORS[esp.rol]}`}>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="flex-shrink-0 mt-0.5"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <div>
+              <p className="text-sm font-bold">{ROL_ESPECIALISTA_LABELS[esp.rol]}</p>
+              <p className="text-xs mt-0.5 opacity-80">
+                {
+                  {
+                    especialista_admin:
+                      'Acceso completo: Dashboard, Monitoreo, Instituciones, Especialistas, Reportes y Configuración.',
+                    especialista_medio:
+                      'Acceso a Dashboard, Monitoreo, Instituciones, Reportes y Configuración.',
+                    especialista_bajo: 'Acceso a Dashboard, Monitoreo, Reportes y Configuración.',
+                  }[esp.rol]
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Bloque 3: Niveles de Institución ── */}
+      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-bg">
+          <div className="w-8 h-8 rounded-lg bg-success/10 text-success flex items-center justify-center flex-shrink-0">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-text">Niveles de Institución</h2>
+            <p className="text-text-dim text-xs">Niveles educativos asignados al especialista</p>
+          </div>
+        </div>
+
+        <div className="p-5">
+          {esp.niveles.length === 0 ? (
+            <p className="text-text-muted text-sm">Sin niveles asignados.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {esp.niveles.map((n) => (
+                <span
+                  key={n}
+                  className="flex items-center gap-1.5 bg-success/10 text-success border border-success/25 text-xs font-semibold px-3 py-1.5 rounded-full"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                  {n}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

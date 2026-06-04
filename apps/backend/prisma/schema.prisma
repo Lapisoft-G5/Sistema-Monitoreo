@@ -7,6 +7,10 @@ datasource db {
   provider = "postgresql"
 }
 
+// ==========================================
+// 1. GESTIÓN DE ROLES E IDENTIDAD CENTRAL
+// ==========================================
+
 model Role {
   id          String   @id @default(uuid()) @db.Uuid
   code        String   @unique @db.VarChar(50)
@@ -21,13 +25,30 @@ model Role {
   @@map("roles")
 }
 
+model Persona {
+  id          String   @id @default(uuid()) @db.Uuid
+  dni         String   @unique @db.VarChar(8)
+  nombres     String   @db.VarChar(120)
+  apellidos   String   @db.VarChar(120)
+  correo      String?  @unique @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user        User?
+  especialista Especialista?
+  docente     Docente?
+
+  @@map("personas")
+}
+
+// ==========================================
+// 2. IDENTIDAD DIGITAL Y SEGURIDAD (AUTH)
+// ==========================================
+
 model User {
   id                   String    @id @default(uuid()) @db.Uuid
+  personaId            String    @unique @map("persona_id") @db.Uuid
   roleId               String    @map("role_id") @db.Uuid
-  dni                  String    @unique @db.VarChar(8)
-  email                String    @unique @db.VarChar(255)
-  firstName            String    @map("first_name") @db.VarChar(120)
-  lastName             String    @map("last_name") @db.VarChar(120)
   passwordHash         String    @map("password_hash") @db.VarChar(255)
   isActive             Boolean   @default(true) @map("is_active")
   isFirstLogin         Boolean   @default(true) @map("is_first_login")
@@ -39,11 +60,13 @@ model User {
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at")
 
+  persona              Persona               @relation(fields: [personaId], references: [id])
   role                 Role                  @relation(fields: [roleId], references: [id])
   authSessions         AuthSession[]
   passwordResetTokens  PasswordResetToken[]
   authAuditLogs        AuthAuditLog[]
 
+  @@index([personaId])
   @@index([roleId])
   @@index([isActive])
   @@index([lockedUntil])
@@ -65,23 +88,25 @@ model AuthSession {
 
   user             User      @relation(fields: [userId], references: [id])
 
+  @@index([sessionJti])
   @@index([userId, isActive])
   @@index([expiresAt])
   @@map("auth_sessions")
 }
 
 model PasswordResetToken {
-  id           String    @id @default(uuid()) @db.Uuid
-  userId       String    @map("user_id") @db.Uuid
-  tokenHash    String    @unique @map("token_hash") @db.VarChar(255)
-  expiresAt    DateTime  @map("expires_at")
-  isUsed       Boolean   @default(false) @map("is_used")
-  usedAt       DateTime? @map("used_at")
-  requestedIp  String?   @map("requested_ip") @db.VarChar(64)
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt   DateTime  @map("expires_at")
+  isUsed      Boolean   @default(false) @map("is_used")
+  usedAt      DateTime? @map("used_at")
+  requestedIp String?   @map("requested_ip") @db.VarChar(64)
+  createdAt   DateTime  @default(now()) @map("created_at")
 
-  user         User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
 
+  @@index([tokenHash])
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
@@ -102,4 +127,86 @@ model AuthAuditLog {
   @@index([eventType, createdAt])
   @@index([createdAt])
   @@map("auth_audit_logs")
+}
+
+// ==========================================
+// 3. MÓDULOS DE NEGOCIO: UGEL Y COLEGIOS
+// ==========================================
+
+model InstitucionEducativa {
+  id             String   @id @default(uuid()) @db.Uuid
+  codigoModular  String   @unique @map("codigo_modular") @db.VarChar(7)
+  nombre         String   @db.VarChar(100)
+  nivelEducativo String   @map("nivel_educativo") @db.VarChar(50)
+  departamento   String   @default("Puno") @db.VarChar(50)
+  provincia      String   @db.VarChar(50)
+  distrito       String   @db.VarChar(50)
+  direccion      String   @db.VarChar(150)
+  zona           String   @db.VarChar(20)
+  estado         String   @default("Activa") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  docentes       Docente[]
+
+  @@map("instituciones_educativas")
+}
+
+model Especialista {
+  id             String   @id @default(uuid()) @db.Uuid
+  personaId      String   @unique @map("persona_id") @db.Uuid
+  especialidad   String   @db.VarChar(100)
+  nivelEducativo String   @map("nivel_educativo") @db.VarChar(50)
+  estado         String   @default("Activo") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  persona        Persona  @relation(fields: [personaId], references: [id])
+
+  @@map("especialistas")
+}
+
+model Docente {
+  id             String   @id @default(uuid()) @db.Uuid
+  personaId      String   @unique @map("persona_id") @db.Uuid
+  institucionId  String   @map("institucion_id") @db.Uuid
+  gradoAcademico String?  @map("grado_academico") @db.VarChar(50)
+  nivelEducativo String   @map("nivel_educativo") @db.VarChar(50)
+  cursoAsignado  String?  @map("curso_asignado") @db.VarChar(150)
+  estado         String   @default("Activo") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  persona        Persona  @relation(fields: [personaId], references: [id])
+  institucion    InstitucionEducativa @relation(fields: [institucionId], references: [id])
+  docenteCargos  DocenteCargo[]
+
+  @@index([institucionId])
+  @@map("docentes")
+}
+
+// ==========================================
+// 4. HISTORIAL Y GESTIÓN DE CARGOS
+// ==========================================
+
+model Cargo {
+  id            String   @id @default(uuid()) @db.Uuid
+  nombre        String   @unique @db.VarChar(50)
+  docenteCargos DocenteCargo[]
+
+  @@map("cargos")
+}
+
+model DocenteCargo {
+  id          String    @id @default(uuid()) @db.Uuid
+  docenteId   String    @map("docente_id") @db.Uuid
+  cargoId     String    @map("cargo_id") @db.Uuid
+  fechaInicio DateTime  @default(now()) @map("fecha_inicio")
+  fechaFin    DateTime? @map("fecha_fin")
+
+  docente     Docente   @relation(fields: [docenteId], references: [id])
+  cargo       Cargo     @relation(fields: [cargoId], references: [id])
+
+  @@index([docenteId, cargoId, fechaInicio])
+  @@map("docente_cargos")
 }

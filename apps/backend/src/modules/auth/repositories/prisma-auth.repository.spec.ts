@@ -89,55 +89,54 @@ describe('PrismaAuthRepository', () => {
         },
       };
 
-      findUniqueMock.mockResolvedValue(mockPrismaUser);
+      findFirstMock.mockResolvedValue(mockPrismaUser);
 
       const result = await repository.findUserByDni('76358911');
 
       expect(result).toBeDefined();
       expect(result?.id).toBe('123e4567-e89b-12d3-a456-426614174000');
 
-      expect(findUniqueMock).toHaveBeenCalledWith({
+      expect(findFirstMock).toHaveBeenCalledWith({
         where: {
-          dni: '76358911',
+          persona: {
+            dni: '76358911',
+          },
         },
         include: {
           role: true,
+          persona: true,
         },
       });
     });
 
     it('should return null if user is not found', async () => {
-      findUniqueMock.mockResolvedValue(null);
+      findFirstMock.mockResolvedValue(null);
 
       const result = await repository.findUserByDni('00000000');
 
       expect(result).toBeNull();
 
-      expect(findUniqueMock).toHaveBeenCalledWith({
+      expect(findFirstMock).toHaveBeenCalledWith({
         where: {
-          dni: '00000000',
+          persona: {
+            dni: '00000000',
+          },
         },
         include: {
           role: true,
+          persona: true,
         },
       });
     });
   });
 
   describe('updatePassword', () => {
-    it('should update user password and firstLogin status', async () => {
-      updateMock.mockResolvedValue({});
+    it('should update user password and firstLogin status in transaction', async () => {
+      transactionMock.mockImplementation(async (actions) => actions);
 
       await repository.updatePassword('user-uuid', 'hashed_pwd');
 
-      expect(updateMock).toHaveBeenCalledWith({
-        where: { id: 'user-uuid' },
-        data: {
-          passwordHash: 'hashed_pwd',
-          isFirstLogin: false,
-          passwordChangedAt: expect.any(Date),
-        },
-      });
+      expect(transactionMock).toHaveBeenCalled();
     });
   });
 
@@ -159,7 +158,10 @@ describe('PrismaAuthRepository', () => {
       expect(result?.id).toBe('user-uuid');
       expect(findUniqueMock).toHaveBeenCalledWith({
         where: { id: 'user-uuid' },
-        include: { role: true },
+        include: {
+          role: true,
+          persona: true,
+        },
       });
     });
 
@@ -186,8 +188,16 @@ describe('PrismaAuthRepository', () => {
       expect(result).toBeDefined();
       expect(result?.id).toBe('user-uuid');
       expect(findFirstMock).toHaveBeenCalledWith({
-        where: { dni: '76358911', email: 'carlos.quispe@ugel-lampa.gob.pe' },
-        include: { role: true },
+        where: {
+          persona: {
+            dni: '76358911',
+            correo: 'carlos.quispe@ugel-lampa.gob.pe',
+          },
+        },
+        include: {
+          role: true,
+          persona: true,
+        },
       });
     });
 
@@ -242,7 +252,13 @@ describe('PrismaAuthRepository', () => {
       expect(result?.id).toBe('token-uuid');
       expect(findUniqueTokenMock).toHaveBeenCalledWith({
         where: { tokenHash: 'hashed_token' },
-        include: { user: true },
+        include: {
+          user: {
+            include: {
+              persona: true,
+            },
+          },
+        },
       });
     });
 

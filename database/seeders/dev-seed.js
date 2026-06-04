@@ -1,7 +1,13 @@
-import { PrismaService } from '../../apps/backend/dist/src/shared/prisma/prisma.service.js';
+import { PrismaClient } from '../../apps/backend/src/generated/prisma/client.js';
+import { PrismaPg } from '../../apps/backend/node_modules/@prisma/adapter-pg/dist/index.js';
 import bcrypt from '../../apps/backend/node_modules/bcrypt/bcrypt.js';
 
-const prisma = new PrismaService();
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL is not defined');
+}
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
 const MOCK_ROLES = [
   { code: 'director_ugel', name: 'Director UGEL', description: 'Director de la UGEL Lampa' },
@@ -65,8 +71,27 @@ const MOCK_USERS = [
   },
 ];
 
+const MOCK_CARGOS = [
+  { nombre: 'Director' },
+  { nombre: 'Subdirector' },
+  { nombre: 'Coordinador Pedagógico' },
+  { nombre: 'Docente de Aula' },
+];
+
+const MOCK_INSTITUCION = {
+  codigoModular: '0543210',
+  nombre: 'I.E. Huayta',
+  nivelEducativo: 'Secundaria',
+  departamento: 'Puno',
+  provincia: 'Lampa',
+  distrito: 'Lampa',
+  direccion: 'Jr. Bolognesi 123',
+  zona: 'Rural',
+  estado: 'Activa',
+};
+
 async function main() {
-  console.log('Starting database seeding...');
+  console.log('Starting database seeding (3NF)...');
 
   // 1. Seed Roles
   console.log('Seeding roles...');
@@ -88,41 +113,158 @@ async function main() {
   }
   console.log('Roles seeded successfully.');
 
-  // 2. Seed Users
-  console.log('Seeding users...');
+  // 2. Seed Cargos
+  console.log('Seeding cargos...');
+  const cargoMap = {};
+  for (const cargoData of MOCK_CARGOS) {
+    const cargo = await prisma.cargo.upsert({
+      where: { nombre: cargoData.nombre },
+      update: {},
+      create: {
+        nombre: cargoData.nombre,
+      },
+    });
+    cargoMap[cargoData.nombre] = cargo.id;
+  }
+  console.log('Cargos seeded successfully.');
+
+  // 3. Seed Institución Educativa
+  console.log('Seeding institucion educativa...');
+  const ie = await prisma.institucionEducativa.upsert({
+    where: { codigoModular: MOCK_INSTITUCION.codigoModular },
+    update: {
+      nombre: MOCK_INSTITUCION.nombre,
+      nivelEducativo: MOCK_INSTITUCION.nivelEducativo,
+      provincia: MOCK_INSTITUCION.provincia,
+      distrito: MOCK_INSTITUCION.distrito,
+      direccion: MOCK_INSTITUCION.direccion,
+      zona: MOCK_INSTITUCION.zona,
+      estado: MOCK_INSTITUCION.estado,
+    },
+    create: {
+      codigoModular: MOCK_INSTITUCION.codigoModular,
+      nombre: MOCK_INSTITUCION.nombre,
+      nivelEducativo: MOCK_INSTITUCION.nivelEducativo,
+      departamento: MOCK_INSTITUCION.departamento,
+      provincia: MOCK_INSTITUCION.provincia,
+      distrito: MOCK_INSTITUCION.distrito,
+      direccion: MOCK_INSTITUCION.direccion,
+      zona: MOCK_INSTITUCION.zona,
+      estado: MOCK_INSTITUCION.estado,
+    },
+  });
+  console.log('Institucion educativa seeded successfully.');
+
+  // 4. Seed Personas, Users, Especialistas, Docentes y DocenteCargos
+  console.log('Seeding personas and linked users/roles...');
   const saltRounds = 10;
   for (const userData of MOCK_USERS) {
     const roleId = roleMap[userData.role];
     if (!roleId) {
-      console.warn(`Role ${userData.role} not found, skipping user ${userData.dni}`);
+      console.warn(`Role ${userData.role} not found, skipping user/persona ${userData.dni}`);
       continue;
     }
 
-    const passwordHash = await bcrypt.hash(userData.dni, saltRounds);
-
-    await prisma.user.upsert({
+    // A. Upsert Persona
+    const persona = await prisma.persona.upsert({
       where: { dni: userData.dni },
       update: {
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
+        nombres: userData.firstName,
+        apellidos: userData.lastName,
+        correo: userData.email,
+      },
+      create: {
+        dni: userData.dni,
+        nombres: userData.firstName,
+        apellidos: userData.lastName,
+        correo: userData.email,
+      },
+    });
+
+    // B. Upsert User
+    const passwordHash = await bcrypt.hash(userData.dni, saltRounds);
+    await prisma.user.upsert({
+      where: { personaId: persona.id },
+      update: {
         roleId: roleId,
         isActive: true,
       },
       create: {
-        dni: userData.dni,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        passwordHash,
+        personaId: persona.id,
         roleId: roleId,
+        passwordHash,
         isActive: true,
         isFirstLogin: true,
       },
     });
+
+    // C. Si es un rol de Especialista
+    if (userData.role.startsWith('especialista')) {
+      await prisma.especialista.upsert({
+        where: { personaId: persona.id },
+        update: {
+          especialidad: 'Monitoreo Pedagógico',
+          nivelEducativo: 'Secundaria',
+          estado: 'Activo',
+        },
+        create: {
+          personaId: persona.id,
+          especialidad: 'Monitoreo Pedagógico',
+          nivelEducativo: 'Secundaria',
+          estado: 'Activo',
+        },
+      });
+    }
+
+    // D. Si es Director de Institución o Docente
+    if (userData.role === 'director_institucion' || userData.role === 'docente') {
+      const isDirector = userData.role === 'director_institucion';
+      
+      const docente = await prisma.docente.upsert({
+        where: { personaId: persona.id },
+        update: {
+          institucionId: ie.id,
+          nivelEducativo: 'Secundaria',
+          gradoAcademico: 'Licenciado',
+          estado: 'Activo',
+          cursoAsignado: isDirector ? null : 'Matemáticas',
+        },
+        create: {
+          personaId: persona.id,
+          institucionId: ie.id,
+          nivelEducativo: 'Secundaria',
+          gradoAcademico: 'Licenciado',
+          estado: 'Activo',
+          cursoAsignado: isDirector ? null : 'Matemáticas',
+        },
+      });
+
+      // E. Asociar cargo en DocenteCargo si no tiene ninguno registrado
+      const cargoNombre = isDirector ? 'Director' : 'Docente de Aula';
+      const cargoId = cargoMap[cargoNombre];
+      
+      if (cargoId) {
+        const existingCargo = await prisma.docenteCargo.findFirst({
+          where: {
+            docenteId: docente.id,
+            cargoId: cargoId,
+          },
+        });
+
+        if (!existingCargo) {
+          await prisma.docenteCargo.create({
+            data: {
+              docenteId: docente.id,
+              cargoId: cargoId,
+              fechaInicio: new Date(),
+            },
+          });
+        }
+      }
+    }
   }
-  console.log('Users seeded successfully.');
-  console.log('Database seeding completed.');
+
+  console.log('Database seeding completed successfully.');
 }
 
 main()

@@ -10,9 +10,16 @@ export class PrismaAuthRepository implements AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findUserByDni(dni: string): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { dni },
-      include: { role: true },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        persona: {
+          dni,
+        },
+      },
+      include: {
+        role: true,
+        persona: true,
+      },
     });
 
     if (!user) {
@@ -25,7 +32,10 @@ export class PrismaAuthRepository implements AuthRepository {
   async findUserById(id: string): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: { role: true },
+      include: {
+        role: true,
+        persona: true,
+      },
     });
 
     if (!user) {
@@ -38,10 +48,15 @@ export class PrismaAuthRepository implements AuthRepository {
   async findUserByDniAndEmail(dni: string, email: string): Promise<User | null> {
     const user = await this.prisma.user.findFirst({
       where: {
-        dni,
-        email,
+        persona: {
+          dni,
+          correo: email,
+        },
       },
-      include: { role: true },
+      include: {
+        role: true,
+        persona: true,
+      },
     });
 
     if (!user) {
@@ -113,7 +128,13 @@ export class PrismaAuthRepository implements AuthRepository {
   async findResetToken(tokenHash: string): Promise<PasswordResetToken | null> {
     const token = await this.prisma.passwordResetToken.findUnique({
       where: { tokenHash },
-      include: { user: true },
+      include: {
+        user: {
+          include: {
+            persona: true,
+          },
+        },
+      },
     });
 
     if (!token) {
@@ -142,6 +163,17 @@ export class PrismaAuthRepository implements AuthRepository {
           usedAt: new Date(),
         },
       }),
+      this.prisma.authSession.updateMany({
+        where: {
+          userId,
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+          loggedOutAt: new Date(),
+          terminatedReason: 'PASSWORD_RESET',
+        },
+      }),
     ]);
   }
 
@@ -153,14 +185,27 @@ export class PrismaAuthRepository implements AuthRepository {
   }
 
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        passwordHash,
-        isFirstLogin: false,
-        passwordChangedAt: new Date(),
-      },
-    });
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash,
+          isFirstLogin: false,
+          passwordChangedAt: new Date(),
+        },
+      }),
+      this.prisma.authSession.updateMany({
+        where: {
+          userId,
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+          loggedOutAt: new Date(),
+          terminatedReason: 'PASSWORD_CHANGED',
+        },
+      }),
+    ]);
   }
 
   async incrementFailedAttempts(userId: string, now: Date): Promise<number> {

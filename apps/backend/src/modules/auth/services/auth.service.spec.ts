@@ -8,6 +8,7 @@ import { User } from '../entities/user.entity.js';
 import { Role } from '../entities/role.entity.js';
 import { Persona } from '../entities/persona.entity.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 const compareMock = jest.fn() as jest.MockedFunction<
   (password: string, hash: string) => Promise<boolean>
@@ -268,6 +269,41 @@ describe('AuthService', () => {
           ipAddress: '127.0.0.1',
           userAgent: 'Jest',
         }),
+      );
+    });
+
+    it('should inject institucion_id and colegio_id in JWT payload on successful login for director_institucion role', async () => {
+      const directorRole = buildRole({ code: RoleCode.DIRECTOR_INSTITUCION });
+      const personaWithDocente = buildPersona({
+        docente: {
+          id: 'docente-uuid',
+          institucionId: 'ie-modular-uuid',
+          gradoAcademico: 'Licenciado',
+          nivelEducativo: 'Secundaria',
+          cursoAsignado: null,
+          estado: 'Activo',
+        },
+      });
+      const user = buildUser({
+        role: directorRole,
+        persona: personaWithDocente,
+      });
+
+      findUserByDniMock.mockResolvedValue(user);
+      compareMock.mockResolvedValue(true);
+      createSessionMock.mockResolvedValue({});
+      updateLastLoginMock.mockResolvedValue(undefined);
+      jwtSignAsyncMock.mockResolvedValue('signed.jwt.token');
+
+      await service.login(dto);
+
+      expect(jwtSignAsyncMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          role: RoleCode.DIRECTOR_INSTITUCION,
+          institucion_id: 'ie-modular-uuid',
+          colegio_id: 'ie-modular-uuid',
+        }),
+        expect.any(Object),
       );
     });
 

@@ -104,7 +104,11 @@ describe('PrismaAuthRepository', () => {
         },
         include: {
           role: true,
-          persona: true,
+          persona: {
+            include: {
+              docente: true,
+            },
+          },
         },
       });
     });
@@ -124,7 +128,11 @@ describe('PrismaAuthRepository', () => {
         },
         include: {
           role: true,
-          persona: true,
+          persona: {
+            include: {
+              docente: true,
+            },
+          },
         },
       });
     });

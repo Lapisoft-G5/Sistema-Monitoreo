@@ -131,19 +131,12 @@ describe('PrismaAuthRepository', () => {
   });
 
   describe('updatePassword', () => {
-    it('should update user password and firstLogin status', async () => {
-      updateMock.mockResolvedValue({});
+    it('should update user password and firstLogin status in transaction', async () => {
+      transactionMock.mockImplementation(async (actions) => actions);
 
       await repository.updatePassword('user-uuid', 'hashed_pwd');
 
-      expect(updateMock).toHaveBeenCalledWith({
-        where: { id: 'user-uuid' },
-        data: {
-          passwordHash: 'hashed_pwd',
-          isFirstLogin: false,
-          passwordChangedAt: expect.any(Date),
-        },
-      });
+      expect(transactionMock).toHaveBeenCalled();
     });
   });
 

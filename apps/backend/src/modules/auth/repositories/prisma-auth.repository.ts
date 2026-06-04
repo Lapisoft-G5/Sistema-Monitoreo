@@ -163,6 +163,17 @@ export class PrismaAuthRepository implements AuthRepository {
           usedAt: new Date(),
         },
       }),
+      this.prisma.authSession.updateMany({
+        where: {
+          userId,
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+          loggedOutAt: new Date(),
+          terminatedReason: 'PASSWORD_RESET',
+        },
+      }),
     ]);
   }
 
@@ -174,14 +185,27 @@ export class PrismaAuthRepository implements AuthRepository {
   }
 
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        passwordHash,
-        isFirstLogin: false,
-        passwordChangedAt: new Date(),
-      },
-    });
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash,
+          isFirstLogin: false,
+          passwordChangedAt: new Date(),
+        },
+      }),
+      this.prisma.authSession.updateMany({
+        where: {
+          userId,
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+          loggedOutAt: new Date(),
+          terminatedReason: 'PASSWORD_CHANGED',
+        },
+      }),
+    ]);
   }
 
   async incrementFailedAttempts(userId: string, now: Date): Promise<number> {

@@ -123,7 +123,7 @@ export class AuthService {
 
     const payload = {
       sub: user.id,
-      dni: user.dni,
+      dni: user.persona?.dni ?? '',
       role: user.role?.code ?? '',
       jti,
       firstLogin: user.isFirstLogin,
@@ -161,9 +161,9 @@ export class AuthService {
       accessToken,
       user: {
         id: user.id,
-        dni: user.dni,
-        nombres: `${user.firstName}`,
-        apellidos: `${user.lastName}`,
+        dni: user.persona?.dni ?? '',
+        nombres: `${user.persona?.nombres ?? ''}`,
+        apellidos: `${user.persona?.apellidos ?? ''}`,
         role: user.role?.code ?? '',
         firstLogin: user.isFirstLogin,
       },
@@ -255,7 +255,7 @@ export class AuthService {
     // Registramos en consola para poder testearlo y consumirlo sin correo real en dev
     console.log(`[DEV ONLY] Enlace de recuperación generado para el DNI ${dto.dni}: token=${token}`);
 
-    await this.mailerService.sendPasswordResetEmail(user.email, user.dni, token);
+    await this.mailerService.sendPasswordResetEmail(user.persona?.correo ?? '', user.persona?.dni ?? '', token);
 
     return {
       success: true,

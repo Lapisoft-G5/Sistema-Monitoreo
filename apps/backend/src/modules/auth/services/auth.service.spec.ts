@@ -6,6 +6,7 @@ import { AuthRepository } from '../repositories/auth.repository.js';
 import { LoginDto } from '../dto/login.dto.js';
 import { User } from '../entities/user.entity.js';
 import { Role } from '../entities/role.entity.js';
+import { Persona } from '../entities/persona.entity.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
 
 const compareMock = jest.fn() as jest.MockedFunction<
@@ -35,14 +36,24 @@ function buildRole(overrides: Partial<Role> = {}): Role {
   });
 }
 
+function buildPersona(overrides: Partial<Persona> = {}): Persona {
+  return Object.assign(new Persona(), {
+    id: 'persona-uuid',
+    dni: '12345678',
+    nombres: 'Juan',
+    apellidos: 'Pérez',
+    correo: 'test@example.com',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  });
+}
+
 function buildUser(overrides: Partial<User> = {}): User {
   return Object.assign(new User(), {
     id: 'user-uuid',
+    personaId: 'persona-uuid',
     roleId: 'role-uuid',
-    dni: '12345678',
-    email: 'test@example.com',
-    firstName: 'Juan',
-    lastName: 'Pérez',
     passwordHash: 'hashed_password',
     isActive: true,
     isFirstLogin: false,
@@ -53,6 +64,7 @@ function buildUser(overrides: Partial<User> = {}): User {
     passwordChangedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    persona: buildPersona(),
     role: buildRole(),
     ...overrides,
   });
@@ -236,9 +248,9 @@ describe('AuthService', () => {
 
       expect(result.accessToken).toBe('signed.jwt.token');
       expect(result.user.id).toBe(user.id);
-      expect(result.user.dni).toBe(user.dni);
-      expect(result.user.nombres).toBe(user.firstName);
-      expect(result.user.apellidos).toBe(user.lastName);
+      expect(result.user.dni).toBe(user.persona?.dni);
+      expect(result.user.nombres).toBe(user.persona?.nombres);
+      expect(result.user.apellidos).toBe(user.persona?.apellidos);
       expect(result.user.role).toBe('ADMIN');
       expect(result.user.firstLogin).toBe(user.isFirstLogin);
       expect(createSessionMock).toHaveBeenCalledWith(
@@ -427,7 +439,7 @@ describe('AuthService', () => {
           userAgent: 'Jest',
         }),
       );
-      expect(sendPasswordResetEmailMock).toHaveBeenCalledWith(user.email, user.dni, expect.any(String));
+      expect(sendPasswordResetEmailMock).toHaveBeenCalledWith(user.persona?.correo, user.persona?.dni, expect.any(String));
     });
 
     it('should throw BadRequestException if user exists but has an active parallel session', async () => {

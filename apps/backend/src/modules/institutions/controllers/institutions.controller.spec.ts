@@ -17,12 +17,14 @@ describe('InstitutionsController', () => {
   let createServiceMock: jest.Mock<(dto: any) => Promise<Institucion>>;
   let updateServiceMock: jest.Mock<(id: string, dto: any) => Promise<Institucion>>;
   let softDeleteServiceMock: jest.Mock<(id: string) => Promise<Institucion>>;
+  let restoreServiceMock: jest.Mock<(id: string) => Promise<Institucion>>;
   let findAllServiceMock: jest.Mock<(query: any) => Promise<any>>;
 
   beforeEach(async () => {
     createServiceMock = jest.fn();
     updateServiceMock = jest.fn();
     softDeleteServiceMock = jest.fn();
+    restoreServiceMock = jest.fn();
     findAllServiceMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -34,6 +36,7 @@ describe('InstitutionsController', () => {
             create: createServiceMock,
             update: updateServiceMock,
             softDelete: softDeleteServiceMock,
+            restore: restoreServiceMock,
             findAll: findAllServiceMock,
           },
         },
@@ -138,6 +141,19 @@ describe('InstitutionsController', () => {
         message: 'Institución dada de baja correctamente',
       });
       expect(softDeleteServiceMock).toHaveBeenCalledWith('ie-uuid');
+    });
+  });
+
+  describe('restore', () => {
+    it('should call service restore and return success response', async () => {
+      restoreServiceMock.mockResolvedValue({ id: 'ie-uuid', estado: 'Activa' } as Institucion);
+
+      const result = await controller.restore('ie-uuid');
+      expect(result).toEqual({
+        success: true,
+        message: 'Institución educativa reactivada correctamente',
+      });
+      expect(restoreServiceMock).toHaveBeenCalledWith('ie-uuid');
     });
   });
 });

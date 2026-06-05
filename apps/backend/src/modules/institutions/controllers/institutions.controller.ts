@@ -67,4 +67,21 @@ export class InstitutionsController {
       message: 'Institución dada de baja correctamente',
     };
   }
+
+  /**
+   * PATCH /api/instituciones/:id/alta
+   * Revierte la baja lógica cambiando el estado a "Activa".
+   * Requiere rol 'director_ugel' / 'admin_ugel'.
+   */
+  @Patch(':id/alta')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleCode.DIRECTOR_UGEL, 'admin_ugel')
+  @HttpCode(HttpStatus.OK)
+  async restore(@Param('id') id: string): Promise<IUpdateInstitucionResponse> {
+    await this.institutionsService.restore(id);
+    return {
+      success: true,
+      message: 'Institución educativa reactivada correctamente',
+    };
+  }
 }

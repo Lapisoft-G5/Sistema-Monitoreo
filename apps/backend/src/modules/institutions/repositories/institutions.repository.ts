@@ -9,5 +9,6 @@ export abstract class InstitutionsRepository {
   abstract findByCodigoModular(codigoModular: string): Promise<Institucion | null>;
   abstract update(id: string, data: UpdateInstitucionDto): Promise<Institucion>;
   abstract softDelete(id: string): Promise<Institucion>;
+  abstract restore(id: string): Promise<Institucion>;
   abstract findAll(query: QueryInstitucionDto): Promise<{ data: Institucion[]; total: number }>;
 }

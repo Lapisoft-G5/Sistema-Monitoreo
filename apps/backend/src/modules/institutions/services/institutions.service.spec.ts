@@ -15,6 +15,7 @@ describe('InstitutionsService', () => {
   let createMock: jest.Mock<(data: any) => Promise<Institucion>>;
   let updateMock: jest.Mock<(id: string, data: any) => Promise<Institucion>>;
   let softDeleteMock: jest.Mock<(id: string) => Promise<Institucion>>;
+  let restoreMock: jest.Mock<(id: string) => Promise<Institucion>>;
   let findAllMock: jest.Mock<(query: any) => Promise<{ data: Institucion[]; total: number }>>;
 
   beforeEach(async () => {
@@ -23,6 +24,7 @@ describe('InstitutionsService', () => {
     createMock = jest.fn();
     updateMock = jest.fn();
     softDeleteMock = jest.fn();
+    restoreMock = jest.fn();
     findAllMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -36,6 +38,7 @@ describe('InstitutionsService', () => {
             create: createMock,
             update: updateMock,
             softDelete: softDeleteMock,
+            restore: restoreMock,
             findAll: findAllMock,
           },
         },
@@ -130,6 +133,26 @@ describe('InstitutionsService', () => {
 
       await expect(service.softDelete('ie-uuid')).rejects.toThrow(NotFoundException);
       expect(softDeleteMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('restore', () => {
+    it('should reactivate and return record if it exists', async () => {
+      const mockRecord = { id: 'ie-uuid', nombre: 'Test IE', estado: 'Inactiva' } as Institucion;
+      findByIdMock.mockResolvedValue(mockRecord);
+      restoreMock.mockResolvedValue({ id: 'ie-uuid', nombre: 'Test IE', estado: 'Activa' } as Institucion);
+
+      const result = await service.restore('ie-uuid');
+      expect(result).toBeDefined();
+      expect(result.estado).toBe('Activa');
+      expect(restoreMock).toHaveBeenCalledWith('ie-uuid');
+    });
+
+    it('should throw NotFoundException on restore if record not found', async () => {
+      findByIdMock.mockResolvedValue(null);
+
+      await expect(service.restore('ie-uuid')).rejects.toThrow(NotFoundException);
+      expect(restoreMock).not.toHaveBeenCalled();
     });
   });
 

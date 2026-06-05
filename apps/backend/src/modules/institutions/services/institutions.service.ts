@@ -35,6 +35,11 @@ export class InstitutionsService {
     return this.institutionsRepository.softDelete(id);
   }
 
+  async restore(id: string): Promise<Institucion> {
+    await this.findById(id); // Valida existencia (lanza 404 si no existe)
+    return this.institutionsRepository.restore(id);
+  }
+
   async findAll(query: QueryInstitucionDto): Promise<{ data: Institucion[]; total: number; limit: number; offset: number }> {
     const limit = query.limit ?? 10;
     const offset = query.offset ?? 0;

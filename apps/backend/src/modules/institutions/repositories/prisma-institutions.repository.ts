@@ -61,6 +61,15 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     return record as Institucion;
   }
 
+  async restore(id: string): Promise<Institucion> {
+    // Cambiamos el estado de regreso a "Activa"
+    const record = await this.prisma.institucionEducativa.update({
+      where: { id },
+      data: { estado: 'Activa' },
+    });
+    return record as Institucion;
+  }
+
   async findAll(query: QueryInstitucionDto): Promise<{ data: Institucion[]; total: number }> {
     const { nombre, nivelEducativo, estado, limit = 10, offset = 0 } = query;
     const where: any = {};

@@ -68,6 +68,6 @@
     "typescript-eslint": "^8.20.0"
   },
   "prisma": {
-    "seed": "tsx --env-file=.env ../../database/seeders/dev-seed.js"
+    "seed": "node --env-file=.env --import tsx ../../database/seeders/dev-seed.js"
   }
 }

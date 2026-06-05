@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
+import type { EstadoMonitoreo, Institucion, Nivel } from './types';
+import { ESTADOS, ESTADO_COLOR, getInitials, MOCK_INSTITUCIONES, NIVELES, NIVEL_STYLE } from './types';
+import { InstitutionForm } from './InstitutionForm';
 
 /* ============================================================
  * Padrón de Instituciones — Vista (datos mock)
  * Estilo y paleta alineados al mockup / DashboardPage.
- * NOTA: datos de ejemplo en memoria. El "Director asignado",
- * el estado (Satisfactorio/En Proceso/Crítico) y las métricas
- * (Monitoreadas/Pendientes) son visuales por ahora; se conectarán
- * cuando exista el módulo de monitoreo y el CRUD real en el backend.
+ * El "Director asignado", el estado (Satisfactorio/En Proceso/Crítico)
+ * y las métricas (Monitoreadas/Pendientes) son visuales por ahora;
+ * se conectarán cuando exista el módulo de monitoreo y el CRUD real.
  * ============================================================ */
 
-// Paleta Light Mode (idéntica al Dashboard / mockup)
 const bgApp = '#f8fafc';
 const cardBg = '#ffffff';
 const textPrimary = '#1e293b';
@@ -18,60 +19,7 @@ const accentBlue = '#0046c7';
 const cardShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)';
 const borderLight = '1px solid #e2e8f0';
 
-type Nivel = 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA';
-type EstadoMonitoreo = 'Satisfactorio' | 'En Proceso' | 'Crítico';
-
-interface Institucion {
-  id: string;
-  codigoModular: string;
-  nombre: string;
-  direccion: string;
-  nivel: Nivel;
-  distrito: string;
-  director: string | null; // null = sin asignar
-  estado: EstadoMonitoreo;
-}
-
-const NIVELES: Nivel[] = ['INICIAL', 'PRIMARIA', 'SECUNDARIA'];
-const ESTADOS: EstadoMonitoreo[] = ['Satisfactorio', 'En Proceso', 'Crítico'];
-
-const NIVEL_STYLE: Record<Nivel, { bg: string; color: string }> = {
-  INICIAL: { bg: '#fae8ff', color: '#a21caf' },
-  PRIMARIA: { bg: '#dbeafe', color: '#1d4ed8' },
-  SECUNDARIA: { bg: '#dcfce7', color: '#15803d' },
-};
-
-const ESTADO_COLOR: Record<EstadoMonitoreo, string> = {
-  Satisfactorio: '#22c55e',
-  'En Proceso': '#f97316',
-  Crítico: '#ef4444',
-};
-
-const MOCK_INSTITUCIONES: Institucion[] = [
-  { id: '1', codigoModular: '0521482', nombre: 'I.E. 71007 Mariscal Castilla', direccion: 'Urb. Centro s/n', nivel: 'PRIMARIA', distrito: 'Lampa', director: 'Rosa Cáceres M.', estado: 'Satisfactorio' },
-  { id: '2', codigoModular: '1245890', nombre: 'I.E.S. Politécnico Regional', direccion: 'Av. Panamericana km 32', nivel: 'SECUNDARIA', distrito: 'Santa Lucía', director: null, estado: 'En Proceso' },
-  { id: '3', codigoModular: '0344561', nombre: 'I.E.I. Mis Primeros Pasos', direccion: 'Jr. Libertad 420', nivel: 'INICIAL', distrito: 'Pucará', director: 'Alberto Merino J.', estado: 'Crítico' },
-  { id: '4', codigoModular: '0512347', nombre: 'I.E. 70015 José Carlos Mariátegui', direccion: 'Jr. Puno 234', nivel: 'PRIMARIA', distrito: 'Lampa', director: 'Hilda Quispe T.', estado: 'Satisfactorio' },
-  { id: '5', codigoModular: '0623451', nombre: 'I.E.S. Túpac Amaru', direccion: 'Av. Progreso s/n', nivel: 'SECUNDARIA', distrito: 'Cabanilla', director: 'Marco Aquino R.', estado: 'Satisfactorio' },
-  { id: '6', codigoModular: '0734512', nombre: 'I.E.I. Los Angelitos', direccion: 'Jr. Grau 102', nivel: 'INICIAL', distrito: 'Lampa', director: null, estado: 'En Proceso' },
-  { id: '7', codigoModular: '0845123', nombre: 'I.E. 70023 Andrés A. Cáceres', direccion: 'Comunidad Palca', nivel: 'PRIMARIA', distrito: 'Palca', director: 'Néstor Mamani C.', estado: 'Crítico' },
-  { id: '8', codigoModular: '0956234', nombre: 'I.E.S. Agropecuario Paratía', direccion: 'Plaza Principal', nivel: 'SECUNDARIA', distrito: 'Paratía', director: 'Lucía Apaza V.', estado: 'En Proceso' },
-  { id: '9', codigoModular: '0167345', nombre: 'I.E.I. Semillitas del Saber', direccion: 'Jr. Bolívar 56', nivel: 'INICIAL', distrito: 'Santa Lucía', director: 'Carmen Flores Q.', estado: 'Satisfactorio' },
-  { id: '10', codigoModular: '0278456', nombre: 'I.E. 70034 Micaela Bastidas', direccion: 'Av. Lampa 789', nivel: 'PRIMARIA', distrito: 'Nicasio', director: null, estado: 'En Proceso' },
-  { id: '11', codigoModular: '0389567', nombre: 'I.E.S. Ciencias Vilavila', direccion: 'Jr. Lima 321', nivel: 'SECUNDARIA', distrito: 'Vilavila', director: 'Julio Condori H.', estado: 'Satisfactorio' },
-  { id: '12', codigoModular: '0490678', nombre: 'I.E.I. Mi Pequeño Mundo', direccion: 'Comunidad Ocuviri', nivel: 'INICIAL', distrito: 'Ocuviri', director: 'Rosa Huanca P.', estado: 'Crítico' },
-  { id: '13', codigoModular: '0501789', nombre: 'I.E. 70045 Daniel A. Carrión', direccion: 'Jr. Arequipa 45', nivel: 'PRIMARIA', distrito: 'Cabanilla', director: 'Pedro Ccama L.', estado: 'Satisfactorio' },
-  { id: '14', codigoModular: '0612890', nombre: 'I.E.S. José A. Encinas', direccion: 'Av. Educación s/n', nivel: 'SECUNDARIA', distrito: 'Lampa', director: 'Ana Ticona M.', estado: 'En Proceso' },
-];
-
 const PAGE_SIZE = 10;
-
-const getInitials = (name: string): string => {
-  const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? '';
-  const second = parts[1]?.[0] ?? '';
-  return (first + second).toUpperCase();
-};
 
 const getPageNumbers = (total: number, current: number): (number | 'ellipsis')[] => {
   if (total <= 7) {
@@ -122,15 +70,7 @@ const FilterSelect = ({
   allLabel: string;
 }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-    <label
-      style={{
-        fontSize: '0.72rem',
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-        color: textSecondary,
-      }}
-    >
+    <label style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: textSecondary }}>
       {label}
     </label>
     <div style={{ position: 'relative' }}>
@@ -157,17 +97,7 @@ const FilterSelect = ({
           </option>
         ))}
       </select>
-      <span
-        style={{
-          position: 'absolute',
-          right: 12,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          pointerEvents: 'none',
-          color: textSecondary,
-          display: 'flex',
-        }}
-      >
+      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: textSecondary, display: 'flex' }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -196,16 +126,7 @@ const NivelBadge = ({ nivel }: { nivel: Nivel }) => (
 const EstadoBadge = ({ estado }: { estado: EstadoMonitoreo }) => {
   const color = ESTADO_COLOR[estado];
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 7,
-        fontSize: '0.8rem',
-        fontWeight: 600,
-        color,
-      }}
-    >
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: '0.8rem', fontWeight: 600, color }}>
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
       {estado}
     </span>
@@ -318,14 +239,15 @@ const PageButton = ({
 /* ---------- Página ---------- */
 export const InstitutionsPage = () => {
   const [instituciones, setInstituciones] = useState<Institucion[]>(MOCK_INSTITUCIONES);
+  const [view, setView] = useState<'list' | 'create'>('list');
   const [nivelFilter, setNivelFilter] = useState('');
   const [distritoFilter, setDistritoFilter] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
   const [page, setPage] = useState(1);
 
   const distritos = useMemo(
-    () => [...new Set(MOCK_INSTITUCIONES.map((i) => i.distrito))].sort((a, b) => a.localeCompare(b)),
-    [],
+    () => [...new Set(instituciones.map((i) => i.distrito))].sort((a, b) => a.localeCompare(b)),
+    [instituciones],
   );
 
   const filtered = useMemo(
@@ -345,9 +267,10 @@ export const InstitutionsPage = () => {
   const from = filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const to = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
-  const handleCreate = () => {
-    // TODO: abrir formulario de nueva institución (CRUD real con backend)
-    console.log('TODO: nueva institución');
+  const handleSaveNew = (inst: Institucion) => {
+    setInstituciones((prev) => [inst, ...prev]);
+    setView('list');
+    setPage(1);
   };
   const handleView = (inst: Institucion) => {
     // TODO: vista de detalle de la institución
@@ -362,6 +285,10 @@ export const InstitutionsPage = () => {
       setInstituciones((prev) => prev.filter((i) => i.id !== inst.id));
     }
   };
+
+  if (view === 'create') {
+    return <InstitutionForm onCancel={() => setView('list')} onSave={handleSaveNew} />;
+  }
 
   const thStyle: React.CSSProperties = {
     textAlign: 'left',
@@ -394,25 +321,15 @@ export const InstitutionsPage = () => {
       }}
     >
       {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: textPrimary }}>
-            Gestión de Instituciones
-          </h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: textPrimary }}>Gestión de Instituciones</h1>
           <p style={{ margin: '4px 0 0', color: textSecondary, fontSize: '0.87rem' }}>
             Administración del padrón oficial de II.EE.
           </p>
         </div>
         <button
-          onClick={handleCreate}
+          onClick={() => setView('create')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -476,9 +393,7 @@ export const InstitutionsPage = () => {
             <div style={{ height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: '83%', background: '#22c55e', borderRadius: 4 }} />
             </div>
-            <span style={{ display: 'block', marginTop: 6, fontSize: '0.75rem', color: textSecondary }}>
-              83% del total general
-            </span>
+            <span style={{ display: 'block', marginTop: 6, fontSize: '0.75rem', color: textSecondary }}>83% del total general</span>
           </div>
         </div>
 

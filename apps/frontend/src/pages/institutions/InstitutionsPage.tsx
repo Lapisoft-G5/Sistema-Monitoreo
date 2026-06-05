@@ -3,6 +3,7 @@ import type { EstadoMonitoreo, Institucion, Nivel } from './types';
 import { ESTADOS, ESTADO_COLOR, getInitials, MOCK_INSTITUCIONES, NIVELES, NIVEL_STYLE } from './types';
 import { InstitutionForm } from './InstitutionForm';
 import { InstitutionEditForm } from './InstitutionEditForm';
+import { ConfirmModal } from './ConfirmModal';
 
 /* ============================================================
  * Padrón de Instituciones — Vista (datos mock)
@@ -242,6 +243,7 @@ export const InstitutionsPage = () => {
   const [instituciones, setInstituciones] = useState<Institucion[]>(MOCK_INSTITUCIONES);
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
   const [editing, setEditing] = useState<Institucion | null>(null);
+  const [deletingInst, setDeletingInst] = useState<Institucion | null>(null);
   const [nivelFilter, setNivelFilter] = useState('');
   const [distritoFilter, setDistritoFilter] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
@@ -288,9 +290,12 @@ export const InstitutionsPage = () => {
     setView('edit');
   };
   const handleDelete = (inst: Institucion) => {
-    if (window.confirm(`¿Eliminar la institución "${inst.nombre}"?`)) {
-      setInstituciones((prev) => prev.filter((i) => i.id !== inst.id));
-    }
+    setDeletingInst(inst);
+  };
+  const confirmDelete = () => {
+    if (!deletingInst) return;
+    setInstituciones((prev) => prev.filter((i) => i.id !== deletingInst.id));
+    setDeletingInst(null);
   };
 
   if (view === 'create') {
@@ -573,6 +578,18 @@ export const InstitutionsPage = () => {
           </div>
         </div>
       </div>
+
+      {deletingInst && (
+        <ConfirmModal
+          danger
+          title="¿Eliminar Institución?"
+          message="Esta acción es irreversible y eliminará el registro del padrón oficial. Asegúrese de que no existen dependencias activas."
+          confirmLabel="Eliminar Registro"
+          cancelLabel="Cancelar"
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingInst(null)}
+        />
+      )}
     </div>
   );
 };

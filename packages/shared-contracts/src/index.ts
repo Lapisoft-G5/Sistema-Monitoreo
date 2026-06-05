@@ -6,6 +6,7 @@ export * from './auth/logout.contract.js';
 export * from './institutions/create-institucion.contract.js';
 export * from './institutions/query-institucion.contract.js';
 export * from './institutions/update-institucion.contract.js';
+export * from './especialistas/especialistas.contract.js';
 
 
 

@@ -1,13 +1,16 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MOCK_ESPECIALISTAS } from '../../features/authentication/specialists.mock';
 import type { Especialista } from '../../entities/specialist/specialist.types';
 import { ROL_ESPECIALISTA_LABELS } from '../../entities/specialist/specialist.types';
 import { EspecialistaDeleteModal } from './EspecialistaDeleteModal';
+import { useAuth } from '../../features/authentication/useAuth';
+import { isReadOnlyRole } from '../../shared/constants/roles';
 
 interface Props {
-  onNavigateCreate: () => void;
-  onNavigateEdit: (id: string) => void;
-  onNavigateDetail: (id: string) => void;
+  onNavigateCreate?: () => void;
+  onNavigateEdit?: (id: string) => void;
+  onNavigateDetail?: (id: string) => void;
 }
 
 const ROL_COLORS: Record<string, string> = {
@@ -21,10 +24,39 @@ export const EspecialistasPage = ({
   onNavigateEdit,
   onNavigateDetail,
 }: Props) => {
+  // Inicialización segura del Router para entornos aislados
+  let navigate: ReturnType<typeof useNavigate> | null = null;
+  try {
+    navigate = useNavigate();
+  } catch (e) {
+    // Contexto independiente de React Router DOM
+  }
+
+  const { user } = useAuth();
+
+  // Si el rol es de solo lectura, oculta los controles de escritura (feature/teachers-management)
+  const isReadOnly = user ? isReadOnlyRole(user.role) : true;
+
   const [lista, setLista] = useState<Especialista[]>(MOCK_ESPECIALISTAS);
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState('todos');
   const [deleteTarget, setDeleteTarget] = useState<Especialista | null>(null);
+
+  // Manejo unificado de navegaciones e interacciones de salida
+  const handleCreate = () => {
+    if (onNavigateCreate) onNavigateCreate();
+    else if (navigate) navigate('/especialistas/nuevo');
+  };
+
+  const handleDetail = (id: string) => {
+    if (onNavigateDetail) onNavigateDetail(id);
+    else if (navigate) navigate(`/especialistas/${id}`);
+  };
+
+  const handleEdit = (id: string) => {
+    if (onNavigateEdit) onNavigateEdit(id);
+    else if (navigate) navigate(`/especialistas/${id}/editar`);
+  };
 
   const filtrados = lista.filter((e) => {
     const matchBusqueda =
@@ -43,38 +75,65 @@ export const EspecialistasPage = ({
   const toggleActivo = (id: string) =>
     setLista((prev) => prev.map((e) => (e.id === id ? { ...e, activo: !e.activo } : e)));
 
-  // Métricas para las tarjetas KPI
+  // Métricas para las tarjetas KPI (Origen: develop)
   const total = lista.length;
   const activos = lista.filter((e) => e.activo).length;
   const enMonitoreo = lista.filter((e) => e.activo && e.niveles.length > 0).length;
 
+  // Si no es lectura extendida o si posee callback de detalles, habilita la columna de acciones
+  const showActionsColumn = !isReadOnly || !!onNavigateDetail;
+
   return (
-    <div className="p-6 flex flex-col gap-5">
+    <div className="p-4 sm:p-6 flex flex-col gap-5">
       {/* ── Encabezado ── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-text">Especialistas</h1>
           <p className="text-text-muted text-sm mt-0.5">
-            Gestión del equipo de especialistas de monitoreo
+            {isReadOnly
+              ? 'Vista de solo lectura del equipo de especialistas'
+              : 'Gestión del equipo de especialistas de monitoreo'}
           </p>
         </div>
-        <button
-          onClick={onNavigateCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl border-none cursor-pointer transition-colors shadow-sm"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
+
+        {/* Botón "Nuevo" — Oculto si la cuenta es Read-Only */}
+        {!isReadOnly && (
+          <button
+            onClick={handleCreate}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl border-none cursor-pointer transition-colors shadow-sm"
           >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Nuevo Especialista
-        </button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Nuevo Especialista
+          </button>
+        )}
+
+        {/* Badge Informativo de Restricción */}
+        {isReadOnly && (
+          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/10 text-warning border border-warning/25 rounded-lg text-xs font-semibold">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Solo lectura
+          </span>
+        )}
       </div>
 
       {/* ── KPIs ── */}
@@ -227,7 +286,7 @@ export const EspecialistasPage = ({
                   'Rol',
                   'Niveles',
                   'Estado',
-                  'Acciones',
+                  ...(showActionsColumn ? ['Acciones'] : []),
                 ].map((h) => (
                   <th
                     key={h}
@@ -241,7 +300,10 @@ export const EspecialistasPage = ({
             <tbody>
               {filtrados.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-text-muted text-sm">
+                  <td
+                    colSpan={showActionsColumn ? 8 : 7}
+                    className="px-4 py-12 text-center text-text-muted text-sm"
+                  >
                     No se encontraron especialistas con los filtros aplicados.
                   </td>
                 </tr>
@@ -299,11 +361,17 @@ export const EspecialistasPage = ({
                       </div>
                     </td>
 
-                    {/* Estado toggle */}
+                    {/* Estado toggle — Deshabilitado para cuentas de Solo Lectura */}
                     <td className="px-4 py-3.5">
                       <button
-                        onClick={() => toggleActivo(esp.id)}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full border-none cursor-pointer transition-colors ${esp.activo ? 'bg-success' : 'bg-border'}`}
+                        onClick={() => !isReadOnly && toggleActivo(esp.id)}
+                        disabled={isReadOnly}
+                        title={isReadOnly ? 'Sin permisos de edición' : undefined}
+                        className={`
+                          relative inline-flex h-5 w-9 items-center rounded-full border-none transition-colors
+                          ${esp.activo ? 'bg-success' : 'bg-border'}
+                          ${isReadOnly ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+                        `}
                       >
                         <span
                           className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${esp.activo ? 'translate-x-4' : 'translate-x-0.5'}`}
@@ -311,70 +379,74 @@ export const EspecialistasPage = ({
                       </button>
                     </td>
 
-                    {/* Acciones: ver + editar + eliminar */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-1">
-                        {/* Ver detalle */}
-                        <button
-                          onClick={() => onNavigateDetail(esp.id)}
-                          title="Ver detalle"
-                          className="p-1.5 rounded-lg text-text-muted hover:text-[#4a6fa5] hover:bg-[#e8edf7] transition-all cursor-pointer bg-transparent border-none"
-                        >
-                          <svg
-                            width="15"
-                            height="15"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
+                    {/* Acciones unificadas */}
+                    {showActionsColumn && (
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1">
+                          {/* Ver detalle siempre disponible */}
+                          <button
+                            onClick={() => handleDetail(esp.id)}
+                            title="Ver detalle"
+                            className="p-1.5 rounded-lg text-text-muted hover:text-[#4a6fa5] hover:bg-[#e8edf7] transition-all cursor-pointer bg-transparent border-none"
                           >
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
-                        </button>
+                            <svg
+                              width="15"
+                              height="15"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          </button>
 
-                        {/* Editar */}
-                        <button
-                          onClick={() => onNavigateEdit(esp.id)}
-                          title="Editar"
-                          className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-all cursor-pointer bg-transparent border-none"
-                        >
-                          <svg
-                            width="15"
-                            height="15"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-
-                        {/* Eliminar */}
-                        <button
-                          onClick={() => setDeleteTarget(esp)}
-                          title="Eliminar"
-                          className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-all cursor-pointer bg-transparent border-none"
-                        >
-                          <svg
-                            width="15"
-                            height="15"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                            <path d="M10 11v6" />
-                            <path d="M14 11v6" />
-                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
+                          {/* Operaciones restringidas para perfiles de Solo Lectura */}
+                          {!isReadOnly && (
+                            <>
+                              <button
+                                onClick={() => handleEdit(esp.id)}
+                                title="Editar"
+                                className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-all cursor-pointer bg-transparent border-none"
+                              >
+                                <svg
+                                  width="15"
+                                  height="15"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget(esp)}
+                                title="Eliminar"
+                                className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-all cursor-pointer bg-transparent border-none"
+                              >
+                                <svg
+                                  width="15"
+                                  height="15"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                  <path d="M10 11v6" />
+                                  <path d="M14 11v6" />
+                                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -384,7 +456,7 @@ export const EspecialistasPage = ({
       </div>
 
       {/* ── Modal eliminar ── */}
-      {deleteTarget && (
+      {!isReadOnly && deleteTarget && (
         <EspecialistaDeleteModal
           especialista={deleteTarget}
           onConfirm={() => handleDelete(deleteTarget.id)}

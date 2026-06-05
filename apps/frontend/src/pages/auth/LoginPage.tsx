@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../features/authentication/useAuth';
 
 interface Props {
@@ -11,7 +11,9 @@ const LOGO_SRC = '/logo-ugel.png';
 const MAX_ATTEMPTS = 3;
 
 export const LoginPage = ({ onForgotPassword }: Props) => {
-  const { login } = useAuth();
+  // Consumo directo de los estados de seguridad unificados globales
+  const { login, attempts, isPenalized, timeLeft, showFailedModal, setShowFailedModal } = useAuth();
+
   const [dni, setDni] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -19,34 +21,9 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
   const [error, setError] = useState('');
   const [logoError, setLogoError] = useState(false);
 
-  // Estados de penalización y control síncronos traídos de develop
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const [failedLoginAttempts, setFailedLoginAttempts] = useState<number | null>(null);
-  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
-  const [showFailedModal, setShowFailedModal] = useState(false);
-
-  // Efecto del temporizador en tiempo real para el bloqueo temporal
-  useEffect(() => {
-    if (countdown === null) return;
-
-    if (countdown <= 0) {
-      setCountdown(null);
-      setFailedLoginAttempts(null);
-      setRemainingAttempts(null);
-      setShowFailedModal(false);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setCountdown(countdown - 1);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [countdown]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (countdown !== null) return;
+    if (isPenalized) return;
 
     if (!dni || !password) {
       setError('Complete todos los campos');
@@ -61,28 +38,6 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
 
     if (!result.success) {
       setError(result.error ?? 'Error al iniciar sesión');
-      setFailedLoginAttempts(result.failedLoginAttempts ?? null);
-      setRemainingAttempts(result.remainingAttempts ?? null);
-
-      if (result.lockedUntil) {
-        const lockedTime = new Date(result.lockedUntil).getTime();
-        const diff = Math.ceil((lockedTime - Date.now()) / 1000);
-        if (diff > 0) {
-          setCountdown(diff);
-          setShowFailedModal(false);
-        }
-      } else if (
-        result.failedLoginAttempts !== undefined &&
-        result.failedLoginAttempts !== null &&
-        result.failedLoginAttempts > 0 &&
-        result.failedLoginAttempts < MAX_ATTEMPTS
-      ) {
-        setShowFailedModal(true);
-      }
-    } else {
-      setFailedLoginAttempts(null);
-      setRemainingAttempts(null);
-      setShowFailedModal(false);
     }
   };
 
@@ -95,7 +50,7 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
   // ==========================================
   // VISTA DE PENALIZACIÓN (TEMA CLARO VIVO)
   // ==========================================
-  if (countdown !== null) {
+  if (isPenalized) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 bg-[#f8fafc] font-sans">
         <div className="w-full max-w-[430px] bg-white border border-slate-200 rounded-2xl p-8 shadow-xl text-center animate-fade-in">
@@ -120,12 +75,12 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
             Acceso de Sistema
           </div>
 
-          <p className="text-[0.68rem] text-slate-500 font-bold tracking-wider uppercase mb-2">
+          <p className="text-day text-slate-500 text-[0.68rem] font-bold tracking-wider uppercase mb-2">
             Tiempo de Penalización
           </p>
 
           <div className="bg-slate-900 border border-slate-800 rounded-xl py-3 px-6 text-3xl font-mono font-bold text-red-500 tracking-widest mb-6 w-3/4 mx-auto shadow-inner">
-            {formatTime(countdown)}
+            {formatTime(timeLeft)}
           </div>
 
           <p className="text-sm text-slate-600 px-2 leading-relaxed mb-8">
@@ -251,7 +206,7 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                   <svg
                     width="14"
                     height="14"
-                    viewBox="0 0 24 24"
+                    view viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
@@ -370,11 +325,11 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
               </svg>
             </div>
             <h3 className="text-xl font-bold text-white mb-2">
-              {failedLoginAttempts === 1 ? 'Primer intento fallido' : 'Segundo intento fallido'}
+              {attempts === 1 ? 'Primer intento fallido' : 'Segundo intento fallido'}
             </h3>
             <p className="text-sm text-sky-50 mb-6 font-medium">
-              Le queda {remainingAttempts ?? 0}{' '}
-              {(remainingAttempts ?? 0) === 1 ? 'intento' : 'intentos'}
+              Le queda {MAX_ATTEMPTS - attempts}{' '}
+              {MAX_ATTEMPTS - attempts === 1 ? 'intento' : 'intentos'}
             </p>
             <button
               onClick={() => setShowFailedModal(false)}

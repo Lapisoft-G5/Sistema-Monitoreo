@@ -1,3 +1,5 @@
+import type { User } from '../../entities/user';
+
 export type UserRole =
   | 'director_ugel'
   | 'especialista_admin'
@@ -29,53 +31,71 @@ export type MenuItem =
   | 'reportes'
   | 'configuracion';
 
+// ── CONFIGURACIÓN DE PERMISOS REUTILIZABLES ──
+const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
+
+const STAFF_PERMISSIONS: MenuItem[] = [
+  ...BASE_PERMISSIONS,
+  'dashboard',
+  'monitoreo',
+  'monitoreo_plan',
+  'monitoreo_gestion',
+];
+
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   director_ugel: [
-    'dashboard',
-    'monitoreo', 'monitoreo_plan', 'monitoreo_gestion',
-    'instituciones', 'instituciones_padron', 'instituciones_docentes',
-    'especialistas',
-    'reportes',
-    'configuracion',
-  ],
-  especialista_admin: [
-    'dashboard',
-    'monitoreo', 'monitoreo_plan', 'monitoreo_gestion',
-    'instituciones', 'instituciones_padron', 'instituciones_docentes',
-    'especialistas',
-    'reportes',
-    'configuracion',
-  ],
-  especialista_medio: [
-    'dashboard',
-    'monitoreo', 'monitoreo_plan', 'monitoreo_gestion',
-    'instituciones', 'instituciones_padron', 'instituciones_docentes',
-    'reportes',
-    'configuracion',
-  ],
-  especialista_bajo: [
-    'dashboard',
-    'monitoreo', 'monitoreo_plan', 'monitoreo_gestion',
-    'reportes',
-    'configuracion',
-  ],
-  director_institucion: [
-    'dashboard',
-    'monitoreo', 'monitoreo_plan', 'monitoreo_gestion',
+    ...STAFF_PERMISSIONS,
+    'instituciones',
+    'instituciones_padron',
     'instituciones_docentes',
-    'reportes',
-    'configuracion',
+    'especialistas',
   ],
-  docente: [
-    'reportes',
-    'configuracion',
+
+  especialista_admin: [
+    ...STAFF_PERMISSIONS,
+    'instituciones',
+    'instituciones_padron',
+    'instituciones_docentes',
+    'especialistas',
   ],
+
+  especialista_medio: [
+    ...STAFF_PERMISSIONS,
+    'instituciones',
+    'instituciones_padron',
+    'instituciones_docentes',
+  ],
+
+  especialista_bajo: [...STAFF_PERMISSIONS],
+
+  director_institucion: [
+    ...STAFF_PERMISSIONS,
+    'instituciones',          // Padre necesario para renderizar el contenedor del grupo en el Sidebar
+    'instituciones_docentes', // Único submenú con acceso permitido
+  ],
+
+  docente: [...BASE_PERMISSIONS],
+
   invitado: [
     'dashboard',
-    'monitoreo', 'monitoreo_plan', 'monitoreo_gestion',
-    'instituciones', 'instituciones_padron', 'instituciones_docentes',
+    'monitoreo',
+    'monitoreo_plan',
+    'monitoreo_gestion',
+    'instituciones',
+    'instituciones_padron',
+    'instituciones_docentes',
     'especialistas',
     'reportes',
     'configuracion',
   ],
 };
+
+const READ_ONLY_ROLES: UserRole[] = ['invitado'];
+
+// ── FUNCIONES DE VERIFICACIÓN Y UTILS ──
+
+export const hasPermission = (role: UserRole, item: MenuItem): boolean =>
+  ROLE_PERMISSIONS[role].includes(item);
+
+export const isReadOnlyRole = (role: UserRole): boolean =>
+  READ_ONLY_ROLES.includes(role);

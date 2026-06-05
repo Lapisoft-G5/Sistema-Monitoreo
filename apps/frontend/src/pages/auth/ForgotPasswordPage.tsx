@@ -16,7 +16,7 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
   const [loading, setLoading] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
-  // Lógica interactiva robusta integrada de la rama develop
+  // Lógica interactiva real integrada de la rama develop
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (dni.length < 8 || !email) return;
@@ -33,7 +33,7 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
       }
     } catch (err: any) {
       setError('No se pudo conectar con el servidor institucional');
-    } finally {
+    } finaly {
       setLoading(false);
     }
   };

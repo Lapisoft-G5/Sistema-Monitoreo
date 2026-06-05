@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/authentication/useAuth';
 import { ROLE_PERMISSIONS } from '../shared/constants/roles';
 import type { MenuItem } from '../shared/constants/roles';
 import { Sidebar } from '../widgets/Sidebar';
 import { TopBar } from '../widgets/TopBar';
+
+// Importaciones de páginas requeridas por la rama develop
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { PlaceholderPage } from '../shared/ui/PlaceholderPage';
 import { EspecialistasPage } from '../pages/administration/EspecialistasPage';
@@ -12,7 +15,14 @@ import { EspecialistaEditPage } from '../pages/administration/EspecialistaEditPa
 import { EspecialistaDetailPage } from '../pages/administration/EspecialistaDetailPage';
 import { InstitutionsPage } from '../pages/institutions/InstitutionsPage';
 
-// Vista activa: página simple o página con parámetro (Origen: feature branch)
+// ── CONFIGURACIONES Y TIPOS COMPARTIDOS ──
+
+const pathToMenuId = (pathname: string): string => {
+  const segments = pathname.replace(/^\//, '').split('/');
+  if (segments.length === 1) return segments[0];
+  return `${segments[0]}_${segments[1]}`;
+};
+
 type ActiveView =
   | { page: string }
   | { page: 'especialistas_create' }
@@ -69,7 +79,8 @@ const ForbiddenPage = () => (
     height: '70vh',
     color: '#0f172a',
     textAlign: 'center',
-    padding: '20px'
+    padding: '20px',
+    fontFamily: 'sans-serif'
   }}>
     <div style={{
       width: '80px',
@@ -99,18 +110,94 @@ const ForbiddenPage = () => (
 
 PAGE_MAP['forbidden'] = <ForbiddenPage />;
 
-export const AppShell = () => {
+
+/* ==========================================================================
+   VARIANTE A: IMPLEMENTACIÓN CON SEGUIMIENTO DE RUTA Y TAILWIND CSS
+   ========================================================================== */
+const AppShellTailwindRouter = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMobileOpen(false), 0);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) setMobileOpen(false);
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  if (!isAuthenticated) return null;
+
+  const activePage = pathToMenuId(location.pathname);
+
+  const handleNavigate = (page: string) => {
+    const route = page.includes('_') ? `/${page.replace('_', '/')}` : `/${page}`;
+    navigate(route);
+  };
+
+  return (
+    <div className="flex min-h-screen bg-bg">
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <div
+        className={`
+          fixed inset-y-0 left-0 z-40 md:static md:z-auto md:flex md:flex-shrink-0
+          transition-transform duration-300 ease-in-out
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
+        <Sidebar
+          activePage={activePage}
+          onNavigate={handleNavigate}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        />
+      </div>
+
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <TopBar activePage={activePage} onOpenMobileSidebar={() => setMobileOpen(true)} />
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+
+/* ==========================================================================
+   VARIANTE B: IMPLEMENTACIÓN CON ESTADOS CONDICIONALES E INLINE STYLES
+   ========================================================================== */
+const AppShellInlineConditional = () => {
   const { user } = useAuth();
 
-  // 1. Obtención segura de permisos (Origen: develop)
   const permissions = user && ROLE_PERMISSIONS[user.role] ? ROLE_PERMISSIONS[user.role] : [];
   const defaultPage = permissions.length > 0 ? permissions[0] : 'dashboard';
 
-  // 2. Inicialización del estado de tipo ActiveView (Origen: feature branch)
   const [view, setView] = useState<ActiveView>({ page: defaultPage });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // 3. Sistema de navegación con control de accesos (Origen: develop)
   const navigate = (page: string) => {
     if (permissions.includes(page as MenuItem)) {
       setView({ page });
@@ -119,21 +206,17 @@ export const AppShell = () => {
     }
   };
 
-  // 4. Cálculo de la sección activa para preservar el foco visual del menú lateral
   const activePage =
     ['especialistas_create', 'especialistas_edit', 'especialistas_detail'].includes(view.page)
       ? 'especialistas'
       : view.page;
 
-  // 5. Verificación de permisos extendida (Origen: develop + feature branch)
   const hasAccess = permissions.includes(activePage as MenuItem) || view.page === 'forbidden';
 
-  // 6. Renderizador unificado de contenidos
   const renderContent = () => {
     if (!hasAccess) return <ForbiddenPage />;
 
     switch (view.page) {
-      // ── Módulo Especialistas CRUD (Origen: feature branch) ─────────────────
       case 'especialistas':
         return (
           <EspecialistasPage
@@ -169,13 +252,11 @@ export const AppShell = () => {
           />
         );
 
-      // ── Páginas Generales / Fallback dinámico (Origen: develop) ────────────
       default:
         return PAGE_MAP[view.page] ?? PAGE_MAP[defaultPage];
     }
   };
 
-  // Estructura visual y Layout utilizando los estilos en línea actualizados de develop
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
       <Sidebar
@@ -192,4 +273,21 @@ export const AppShell = () => {
       </div>
     </div>
   );
+};
+
+
+/* ==========================================================================
+   COMPONENTE RAÍZ UNIFICADO (AppShell Gateway)
+   ========================================================================== */
+export const AppShell = () => {
+  // Evaluamos de forma segura si nos encontramos dentro del árbol de React Router
+  let isInsideRouter = false;
+  try {
+    isInsideRouter = !!useLocation();
+  } catch (e) {
+    isInsideRouter = false;
+  }
+
+  // Si existe contexto de rutas, se delega al Router de Tailwind; de lo contrario, al Layout condicional
+  return isInsideRouter ? <AppShellTailwindRouter /> : <AppShellInlineConditional />;
 };

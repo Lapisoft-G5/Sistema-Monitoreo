@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_ESPECIALISTAS } from '../../features/authentication/specialists.mock';
 import type { EspecialistaRol, NivelInstitucion } from '../../entities/specialist/specialist.types';
 import {
@@ -7,9 +8,9 @@ import {
 } from '../../entities/specialist/specialist.types';
 
 interface Props {
-  especialistaId: string;
-  onBack: () => void;
-  onSuccess: () => void;
+  especialistaId?: string;
+  onBack?: () => void;
+  onSuccess?: () => void;
 }
 
 interface FormData {
@@ -53,10 +54,35 @@ const buildInitialForm = (id: string): FormData | null => {
 };
 
 export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Props) => {
+  // Inicialización segura del Router para evitar caídas en entornos sin RouterProvider
+  let navigate: ReturnType<typeof useNavigate> | null = null;
+  let urlParams: Record<string, string | undefined> = {};
+  
+  try {
+    navigate = useNavigate();
+    urlParams = useParams<{ id: string }>();
+  } catch (e) {
+    // Contexto independiente de React Router DOM
+  }
+
+  // Resolución del identificador dinámico de ambas ramas
+  const targetId = especialistaId ?? urlParams.id ?? '';
+
   // useState con initializer function — se ejecuta solo en el primer render, sin useEffect
-  const [form, setForm] = useState<FormData | null>(() => buildInitialForm(especialistaId));
+  const [form, setForm] = useState<FormData | null>(() => buildInitialForm(targetId));
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading] = useState(false);
+
+  // Manejo unificado de retornos y navegación
+  const handleBack = () => {
+    if (onBack) onBack();
+    else if (navigate) navigate(-1);
+  };
+
+  const handleSuccess = () => {
+    if (onSuccess) onSuccess();
+    else if (navigate) navigate('/especialistas');
+  };
 
   // Si no se encontró el especialista, renderizamos el estado de error directamente
   if (form === null) {
@@ -80,11 +106,10 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
           </div>
           <p className="text-text font-semibold mb-1">Especialista no encontrado</p>
           <p className="text-text-muted text-sm mb-4">
-            El especialista con ID <span className="font-mono text-text">{especialistaId}</span> no
-            existe.
+            El especialista con ID <span className="font-mono text-text">{targetId}</span> no existe.
           </p>
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="text-primary text-sm underline cursor-pointer bg-transparent border-none hover:text-primary-hover transition-colors"
           >
             Volver al listado
@@ -125,7 +150,7 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    onSuccess();
+    handleSuccess();
   };
 
   return (
@@ -133,7 +158,8 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
       {/* ── Encabezado ── */}
       <div className="flex items-center gap-3">
         <button
-          onClick={onBack}
+          type="button"
+          onClick={handleBack}
           className="p-2 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer"
         >
           <svg
@@ -386,7 +412,7 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={onBack}
+            onClick={handleBack}
             className="px-5 py-2.5 bg-surface border border-border text-text-muted hover:text-text hover:bg-bg text-sm font-medium rounded-xl cursor-pointer transition-all"
           >
             Cancelar

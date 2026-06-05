@@ -1,16 +1,26 @@
+import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_ESPECIALISTAS } from '../../features/authentication/specialists.mock';
 import { ROL_ESPECIALISTA_LABELS } from '../../entities/specialist/specialist.types';
+import { useAuth } from '../../features/authentication/useAuth';
+import { isReadOnlyRole } from '../../shared/constants/roles';
 
 interface Props {
-  especialistaId: string;
-  onBack: () => void;
-  onNavigateEdit: (id: string) => void;
+  especialistaId?: string;
+  onBack?: () => void;
+  onNavigateEdit?: (id: string) => void;
 }
 
 const ROL_COLORS: Record<string, string> = {
   especialista_admin: 'bg-primary/10 text-primary border-primary/25',
   especialista_medio: 'bg-warning/10 text-warning border-warning/25',
   especialista_bajo: 'bg-success/10 text-success border-success/25',
+};
+
+const ROL_DESCRIPTIONS: Record<string, string> = {
+  especialista_admin:
+    'Acceso completo: Dashboard, Monitoreo, Instituciones, Especialistas, Reportes y Configuración.',
+  especialista_medio: 'Acceso a Dashboard, Monitoreo, Instituciones, Reportes y Configuración.',
+  especialista_bajo: 'Acceso a Dashboard, Monitoreo, Reportes y Configuración.',
 };
 
 const CAMPO = ({ label, value }: { label: string; value: string }) => (
@@ -23,7 +33,34 @@ const CAMPO = ({ label, value }: { label: string; value: string }) => (
 );
 
 export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit }: Props) => {
-  const esp = MOCK_ESPECIALISTAS.find((e) => e.id === especialistaId);
+  // Inicialización híbrida y segura del ecosistema de enrutamiento
+  let navigate: ReturnType<typeof useNavigate> | null = null;
+  let urlParams: Record<string, string | undefined> = {};
+  
+  try {
+    navigate = useNavigate();
+    urlParams = useParams<{ id: string }>();
+  } catch (e) {
+    // Silenciar error si se renderiza en un entorno sin RouterProvider
+  }
+
+  const { user } = useAuth();
+  const isReadOnly = user ? isReadOnlyRole(user.role) : true;
+
+  // Resolución del ID: Prioriza la propiedad explícita de develop, cae en useParams de la feature branch
+  const targetId = especialistaId ?? urlParams.id;
+  const esp = MOCK_ESPECIALISTAS.find((e) => e.id === targetId);
+
+  // Manejo de redirecciones unificadas
+  const handleBack = () => {
+    if (onBack) onBack();
+    else if (navigate) navigate('/especialistas');
+  };
+
+  const handleEdit = () => {
+    if (onNavigateEdit && esp) onNavigateEdit(esp.id);
+    else if (navigate && esp) navigate(`/especialistas/${esp.id}/editar`);
+  };
 
   if (!esp) {
     return (
@@ -46,7 +83,7 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
           </div>
           <p className="text-text font-semibold mb-1">Especialista no encontrado</p>
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="text-primary text-sm underline cursor-pointer bg-transparent border-none"
           >
             Volver al listado
@@ -62,7 +99,7 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="p-2 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer"
           >
             <svg
@@ -82,23 +119,44 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
           </div>
         </div>
 
-        <button
-          onClick={() => onNavigateEdit(esp.id)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl border-none cursor-pointer transition-colors shadow-sm"
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+        {/* Botón Editar — Oculto para roles con restricción de solo lectura */}
+        {!isReadOnly && (
+          <button
+            onClick={handleEdit}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl border-none cursor-pointer transition-colors shadow-sm"
           >
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-          Editar
-        </button>
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            Editar
+          </button>
+        )}
+
+        {/* Badge Informativo de Solo Lectura */}
+        {isReadOnly && (
+          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/10 text-warning border border-warning/25 rounded-lg text-xs font-semibold">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Solo lectura
+          </span>
+        )}
       </div>
 
       {/* ── Tarjeta de perfil ── */}
@@ -125,7 +183,7 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
           <h2 className="text-lg font-bold text-text">{esp.nombres}</h2>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span
-              className={`text-[0.68rem] font-bold px-2.5 py-1 rounded-full border ${ROL_COLORS[esp.rol]}`}
+              className={`text-[0.68rem] font-bold px-2.5 py-1 rounded-full border ${ROL_COLORS[esp.role]}`}
             >
               {ROL_ESPECIALISTA_LABELS[esp.rol]}
             </span>
@@ -213,15 +271,7 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
             <div>
               <p className="text-sm font-bold">{ROL_ESPECIALISTA_LABELS[esp.rol]}</p>
               <p className="text-xs mt-0.5 opacity-80">
-                {
-                  {
-                    especialista_admin:
-                      'Acceso completo: Dashboard, Monitoreo, Instituciones, Especialistas, Reportes y Configuración.',
-                    especialista_medio:
-                      'Acceso a Dashboard, Monitoreo, Instituciones, Reportes y Configuración.',
-                    especialista_bajo: 'Acceso a Dashboard, Monitoreo, Reportes y Configuración.',
-                  }[esp.rol]
-                }
+                {ROL_DESCRIPTIONS[esp.rol] ?? 'Sin descripción disponible para este rol.'}
               </p>
             </div>
           </div>

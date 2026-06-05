@@ -12,7 +12,7 @@ export interface AuthContextType {
   ) => Promise<{
     success: boolean;
     error?: string;
-    isBlocked?: boolean;                 // Origen: feature branch (UI lock)
+    isBlocked?: boolean;                  // Origen: feature branch (UI lock)
     lockedUntil?: string | null;          // Origen: develop (Backend lock timestamp)
     failedLoginAttempts?: number | null;  // Origen: develop
     remainingAttempts?: number | null;    // Origen: develop
@@ -35,4 +35,5 @@ export interface AuthContextType {
   setShowFailedModal: (show: boolean) => void; // Permite cerrar el modal con el botón "OK"
 }
 
+// Al exportar SOLO el contexto, ESLint no se queja
 export const AuthContext = createContext<AuthContextType | null>(null);

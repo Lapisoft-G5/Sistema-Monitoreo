@@ -3,11 +3,11 @@ import { AuthContext } from './AuthContext';
 import type { User } from '../../entities/user';
 import type { ILoginResponse } from '@sistema-monitoreo/shared-contracts';
 
-// Constantes de penalización local (Origen: feature branch)
+// Constantes de penalización de la UI
 const MAX_ATTEMPTS = 3;
 const PENALTY_TIME = 1800; // 30 minutos en segundos
 
-// Interceptor global de red Fetch (Origen: develop)
+// ── INTERCEPTOR GLOBAL DE RED FETCH (develop) ──
 const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   const response = await originalFetch(...args);
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
 
-  // Estados Globales de Seguridad / UI (Origen: feature branch)
+  // Estados Globales de Seguridad / UI para manejo de bloqueos
   const [timeLeft, setTimeLeft] = useState<number>(() => {
     const penaltyExpiry = localStorage.getItem('ugel_penalty_expiry');
     if (penaltyExpiry) {
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [attempts, setAttempts] = useState<number>(() => (timeLeft > 0 ? MAX_ATTEMPTS : 0));
   const [showFailedModal, setShowFailedModal] = useState<boolean>(false);
 
-  // Efecto 1: Escuchar invalidación de sesión desde el Interceptor (Origen: develop)
+  // Efecto 1: Escuchar invalidación de sesión desde el Interceptor (develop)
   useEffect(() => {
     const handleInvalidation = () => {
       setUser(null);
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Efecto 2: Cuenta regresiva para la penalización de UI (Origen: feature branch)
+  // Efecto 2: Cuenta regresiva para la penalización de UI
   useEffect(() => {
     if (!isPenalized) return;
 
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(timer);
   }, [isPenalized]);
 
-  // Método Login: Integra la petición HTTP real con el sistema local de bloqueos
+  // ── MÉTODO LOGIN (CONEXIÓN BACKEND + FLUJO DE INTENTOS) ──
   const login = async (dni: string, password: string) => {
     if (isPenalized) {
       return { success: false, error: 'Sistema penalizado temporalmente', isBlocked: true };
@@ -88,22 +88,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dni, password }),
       });
 
-      // Manejo de errores de autenticación e intentos
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        
-        // Sincroniza intentos: Prioriza lo que dicte el servidor, si no, usa el contador local
         const backendAttempts = errJson.failedLoginAttempts ?? errJson.failedAttempts;
         const nextAttempts = backendAttempts !== undefined ? backendAttempts : attempts + 1;
         setAttempts(nextAttempts);
 
-        // Si se exceden los intentos o el backend explícitamente bloquea la cuenta
+        // Si excede intentos locales o el backend devuelve marca de bloqueo temporal
         if (nextAttempts >= MAX_ATTEMPTS || errJson.lockedUntil) {
           const expiryTime = errJson.lockedUntil 
             ? new Date(errJson.lockedUntil).getTime() 
@@ -114,7 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem('ugel_penalty_expiry', expiryTime.toString());
           setIsPenalized(true);
           setTimeLeft(calculatedPenaltyTime);
-          setShowFailedModal(false); // Se oculta el modal azul para priorizar la pantalla roja
+          setShowFailedModal(false);
 
           return {
             success: false,
@@ -125,7 +120,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             remainingAttempts: 0,
           };
         } else {
-          // Intento fallido ordinario: muestra modal azul de advertencia (UI)
           setShowFailedModal(true);
           return {
             success: false,
@@ -137,16 +131,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Autenticación exitosa
       const data: ILoginResponse = await response.json();
       localStorage.setItem('accessToken', data.accessToken);
-      
-      // Limpieza preventiva de penalizaciones locales
       localStorage.removeItem('ugel_penalty_expiry');
       setAttempts(0);
 
       setRequiresPasswordChange(data.user.firstLogin);
-      
       setUser({
         id: data.user.id,
         dni: data.user.dni,
@@ -161,13 +151,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: true };
     } catch (error) {
       console.error('Error in login integration:', error);
-      return {
-        success: false,
-        error: 'No se pudo establecer conexión con el servidor',
-      };
+      return { success: false, error: 'No se pudo establecer conexión con el servidor' };
     }
   };
 
+  // ── MÉTODO LOGOUT REAL ──
   const logout = async () => {
     const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     const token = localStorage.getItem('accessToken');
@@ -189,13 +177,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRequiresPasswordChange(false);
   };
 
+  // ── MÉTODO CHANGE PASSWORD REAL ──
   const changePassword = async (newPassword: string) => {
     try {
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const token = localStorage.getItem('accessToken');
-      if (!token) {
-        throw new Error('No se encontró el token de acceso');
-      }
+      if (!token) throw new Error('No se encontró el token de acceso');
 
       const response = await fetch(`${apiBaseUrl}/api/auth/change-password`, {
         method: 'POST',
@@ -211,9 +198,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(errJson.message || 'Error al actualizar la contraseña');
       }
 
-      if (user) {
-        setUser({ ...user, firstLogin: false });
-      }
+      if (user) setUser({ ...user, firstLogin: false });
       setRequiresPasswordChange(false);
     } catch (error) {
       console.error('Error during changePassword integration:', error);
@@ -221,32 +206,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // ── MÉTODOS RECUPERACIÓN DE CUENTA ──
   const forgotPassword = async (dni: string, email: string) => {
     try {
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const response = await fetch(`${apiBaseUrl}/api/auth/forgot-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dni, email }),
       });
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        return {
-          success: false,
-          error: errJson.message || 'No se pudo procesar la solicitud de recuperación',
-        };
+        return { success: false, error: errJson.message || 'No se pudo procesar la solicitud' };
       }
-
       return { success: true };
     } catch (error) {
       console.error('Error in forgotPassword integration:', error);
-      return {
-        success: false,
-        error: 'No se pudo establecer conexión con el servidor',
-      };
+      return { success: false, error: 'No se pudo establecer conexión con el servidor' };
     }
   };
 
@@ -255,27 +232,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const response = await fetch(`${apiBaseUrl}/api/auth/reset-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword }),
       });
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        return {
-          success: false,
-          error: errJson.message || 'El enlace de recuperación es inválido o ha expirado',
-        };
+        return { success: false, error: errJson.message || 'El enlace de recuperación es inválido o expiró' };
       }
-
       return { success: true };
     } catch (error) {
       console.error('Error in resetPassword integration:', error);
-      return {
-        success: false,
-        error: 'No se pudo establecer conexión con el servidor',
-      };
+      return { success: false, error: 'No se pudo establecer conexión con el servidor' };
     }
   };
 

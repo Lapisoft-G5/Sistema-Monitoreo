@@ -69,14 +69,14 @@ const MONITOREOS = [
 
 // ── CONFIGURACIONES DE DATOS UNIFICADAS ──
 
-// Colores semáforo branch: feature/specialists-management
+// Colores semáforo branch: feature/teachers-management (Tailwind)
 const ESTADO_COLOR_TAILWIND: Record<string, string> = {
   SATISFACTORIO: '#10b981',
   'EN PROCESO': '#f59e0b',
   CRÍTICO: '#ef4444',
 };
 
-// Colores semáforo branch: develop
+// Colores semáforo branch: develop (Inline)
 const ESTADO_COLOR_INLINE: Record<string, string> = {
   SATISFACTORIO: '#22c55e',
   'EN PROCESO': '#f97316',
@@ -101,14 +101,14 @@ export const DashboardPage = () => {
 
   return (
     <div>
-      {/* Barra de control temporal para el equipo de desarrollo */}
+      {/* Barra de control de visualización exclusiva para desarrollo */}
       <div style={{ padding: '10px 24px', background: '#cbd5e1', display: 'flex', gap: '12px', alignItems: 'center', fontFamily: 'sans-serif' }}>
         <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>Control de Ramas Integradas:</span>
         <button 
           onClick={() => setViewMode('tailwind')}
           style={{ padding: '6px 12px', background: viewMode === 'tailwind' ? '#0046c7' : '#ffffff', color: viewMode === 'tailwind' ? '#ffffff' : '#1e293b', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
         >
-          Tailwind Version (specialists-management)
+          Tailwind Version (teachers-management)
         </button>
         <button 
           onClick={() => setViewMode('inline')}
@@ -120,7 +120,7 @@ export const DashboardPage = () => {
 
       {viewMode === 'tailwind' ? (
         /* ==========================================================================
-           VISTA A: IMPLEMENTACIÓN CON TAILWIND CSS (feature/specialists-management)
+           VISTA A: IMPLEMENTACIÓN CON TAILWIND CSS (feature/teachers-management)
            ========================================================================== */
         <div className="bg-bg min-h-screen p-6 flex flex-col gap-6 text-text">
           {/* ── Header ── */}

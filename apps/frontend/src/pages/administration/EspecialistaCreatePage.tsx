@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { EspecialistaRol, NivelInstitucion } from '../../entities/specialist/specialist.types';
 import {
   ROL_ESPECIALISTA_LABELS,
@@ -6,8 +7,8 @@ import {
 } from '../../entities/specialist/specialist.types';
 
 interface Props {
-  onBack: () => void;
-  onSuccess: () => void;
+  onBack?: () => void;
+  onSuccess?: () => void;
 }
 
 interface FormData {
@@ -45,7 +46,10 @@ const inputClass = `
   focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all
 `;
 
-export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
+/* ==========================================================================
+   COMPONENTE INTERNO: LÓGICA DE ESTADO Y MAQUETACIÓN DEL FORMULARIO
+   ========================================================================== */
+const EspecialistaCreatePageContent = ({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) => {
   const [form, setForm] = useState<FormData>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading] = useState(false);
@@ -200,7 +204,7 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
               </label>
               <input
                 type="text"
-                placeholder="Ej: Matemática, Comunicación..."
+                placeholder="Ej: Matemática, Communication..."
                 value={form.especialidad}
                 onChange={(e) => set('especialidad', e.target.value)}
                 className={inputClass}
@@ -365,4 +369,30 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
       </form>
     </div>
   );
+};
+
+/* ==========================================================================
+   WRAPPER ENRUTADO: SE EJECUTA SÓLO EN EL CONTEXTO DE REACT ROUTER
+   ========================================================================== */
+const EspecialistaCreatePageRouter = () => {
+  const navigate = useNavigate();
+  return (
+    <EspecialistaCreatePageContent
+      onBack={() => navigate('/especialistas')}
+      onSuccess={() => navigate('/especialistas')}
+    />
+  );
+};
+
+/* ==========================================================================
+   COMPONENTE RAÍZ EXPORTADO (GATEKEEPER COMPLIANT)
+   ========================================================================== */
+export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
+  // Si se reciben callbacks explícitos, significa que opera bajo la UI condicional de develop
+  if (onBack && onSuccess) {
+    return <EspecialistaCreatePageContent onBack={onBack} onSuccess={onSuccess} />;
+  }
+
+  // De lo contrario, se asume el esquema de URL dinámico de feature/teachers-management
+  return <EspecialistaCreatePageRouter />;
 };

@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_ESPECIALISTAS } from '../../features/authentication/specialists.mock';
-import { ROL_ESPECIALISTA_LABELS } from '../../entities/specialist/specialist.types';
 import { useAuth } from '../../features/authentication/useAuth';
 import { isReadOnlyRole } from '../../shared/constants/roles';
 
@@ -9,19 +8,6 @@ interface Props {
   onBack?: () => void;
   onNavigateEdit?: (id: string) => void;
 }
-
-const ROL_COLORS: Record<string, string> = {
-  especialista_admin: 'bg-primary/10 text-primary border-primary/25',
-  especialista_medio: 'bg-warning/10 text-warning border-warning/25',
-  especialista_bajo: 'bg-success/10 text-success border-success/25',
-};
-
-const ROL_DESCRIPTIONS: Record<string, string> = {
-  especialista_admin:
-    'Acceso completo: Dashboard, Monitoreo, Instituciones, Especialistas, Reportes y Configuración.',
-  especialista_medio: 'Acceso a Dashboard, Monitoreo, Instituciones, Reportes y Configuración.',
-  especialista_bajo: 'Acceso a Dashboard, Monitoreo, Reportes y Configuración.',
-};
 
 const CAMPO = ({ label, value }: { label: string; value: string }) => (
   <div>
@@ -182,13 +168,8 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
           </div>
           <h2 className="text-lg font-bold text-text">{esp.nombres}</h2>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span
-              className={`text-[0.68rem] font-bold px-2.5 py-1 rounded-full border ${ROL_COLORS[esp.rol]}`}
-            >
-              {ROL_ESPECIALISTA_LABELS[esp.rol]}
-            </span>
             <span className="text-text-muted text-xs">
-              · Desde{' '}
+              Desde{' '}
               {new Date(esp.fechaCreacion).toLocaleDateString('es-PE', {
                 year: 'numeric',
                 month: 'long',
@@ -232,53 +213,7 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
         </div>
       </div>
 
-      {/* ── Bloque 2: Configuración de Rol ── */}
-      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-bg">
-          <div className="w-8 h-8 rounded-lg bg-warning/10 text-warning flex items-center justify-center flex-shrink-0">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-text">Configuración de Rol</h2>
-            <p className="text-text-dim text-xs">Nivel de acceso asignado</p>
-          </div>
-        </div>
-
-        <div className="p-5">
-          <div className={`flex items-start gap-3.5 p-4 rounded-xl border ${ROL_COLORS[esp.rol]}`}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="flex-shrink-0 mt-0.5"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            <div>
-              <p className="text-sm font-bold">{ROL_ESPECIALISTA_LABELS[esp.rol]}</p>
-              <p className="text-xs mt-0.5 opacity-80">
-                {ROL_DESCRIPTIONS[esp.rol] ?? 'Sin descripción disponible para este rol.'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Bloque 3: Niveles de Institución ── */}
+      {/* ── Bloque 2: Niveles de Institución ── */}
       <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
         <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-bg">
           <div className="w-8 h-8 rounded-lg bg-success/10 text-success flex items-center justify-center flex-shrink-0">

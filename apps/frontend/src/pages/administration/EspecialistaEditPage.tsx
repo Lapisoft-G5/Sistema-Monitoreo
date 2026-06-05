@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_ESPECIALISTAS } from '../../features/authentication/specialists.mock';
-import type { EspecialistaRol, NivelInstitucion } from '../../entities/specialist/specialist.types';
+import type { NivelInstitucion } from '../../entities/specialist/specialist.types';
 import {
-  ROL_ESPECIALISTA_LABELS,
   NIVELES_INSTITUCION,
 } from '../../entities/specialist/specialist.types';
 
@@ -19,18 +18,8 @@ interface FormData {
   correo: string;
   celular: string;
   especialidad: string;
-  rol: EspecialistaRol | '';
   niveles: NivelInstitucion[];
 }
-
-const ROLES: EspecialistaRol[] = ['especialista_admin', 'especialista_medio', 'especialista_bajo'];
-
-const ROL_DESCRIPTIONS: Record<EspecialistaRol, string> = {
-  especialista_admin:
-    'Acceso completo: Dashboard, Monitoreo, Instituciones, Especialistas, Reportes y Configuración.',
-  especialista_medio: 'Acceso a Dashboard, Monitoreo, Instituciones, Reportes y Configuración.',
-  especialista_bajo: 'Acceso a Dashboard, Monitoreo, Reportes y Configuración.',
-};
 
 const inputClass = `
   w-full bg-bg border border-border rounded-xl outline-none text-text text-sm
@@ -48,7 +37,6 @@ const buildInitialForm = (id: string): FormData | null => {
     correo: found.correo,
     celular: found.celular,
     especialidad: found.especialidad,
-    rol: found.rol,
     niveles: [...found.niveles],
   };
 };
@@ -119,7 +107,7 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
     );
   }
 
-  const set = (field: keyof FormData, value: string) =>
+  const set = (field: keyof FormData, value: string | NivelInstitucion[]) =>
     setForm((p) => (p ? { ...p, [field]: value } : p));
 
   const toggleNivel = (n: NivelInstitucion) =>
@@ -138,7 +126,6 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo)) e.correo = 'Correo inválido';
     if (!/^\d{9}$/.test(form.celular)) e.celular = 'El celular debe tener 9 dígitos';
     if (!form.especialidad.trim()) e.especialidad = 'La especialidad es requerida';
-    if (!form.rol) e.rol = 'Seleccione un rol';
     if (form.niveles.length === 0) e.niveles = 'Seleccione al menos un nivel';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -296,63 +283,7 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
           </div>
         </div>
 
-        {/* ── Bloque 2: Configuración de Rol ── */}
-        <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-bg">
-            <div className="w-8 h-8 rounded-lg bg-warning/10 text-warning flex items-center justify-center flex-shrink-0">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-text">Configuración de Rol</h2>
-              <p className="text-text-dim text-xs">Define el nivel de acceso del especialista</p>
-            </div>
-          </div>
-
-          <div className="p-5 flex flex-col gap-3">
-            {ROLES.map((rol) => (
-              <label
-                key={rol}
-                className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition-all ${
-                  form.rol === rol
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-bg hover:border-primary/40'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="rol"
-                  value={rol}
-                  checked={form.rol === rol}
-                  onChange={() => set('rol', rol)}
-                  className="mt-0.5 accent-primary cursor-pointer flex-shrink-0"
-                />
-                <div>
-                  <p
-                    className={`text-sm font-semibold ${form.rol === rol ? 'text-primary' : 'text-text'}`}
-                  >
-                    {ROL_ESPECIALISTA_LABELS[rol]}
-                  </p>
-                  <p className="text-text-muted text-xs mt-0.5 leading-relaxed">
-                    {ROL_DESCRIPTIONS[rol]}
-                  </p>
-                </div>
-              </label>
-            ))}
-            {errors.rol && <p className="text-danger text-xs">{errors.rol}</p>}
-          </div>
-        </div>
-
-        {/* ── Bloque 3: Nivel de Institución ── */}
+        {/* ── Bloque 2: Nivel de Institución ── */}
         <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
           <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-bg">
             <div className="w-8 h-8 rounded-lg bg-success/10 text-success flex items-center justify-center flex-shrink-0">

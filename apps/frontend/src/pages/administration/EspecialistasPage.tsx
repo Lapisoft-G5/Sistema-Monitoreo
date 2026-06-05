@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_ESPECIALISTAS } from '../../features/authentication/specialists.mock';
 import type { Especialista } from '../../entities/specialist/specialist.types';
-import { ROL_ESPECIALISTA_LABELS } from '../../entities/specialist/specialist.types';
 import { EspecialistaDeleteModal } from './EspecialistaDeleteModal';
 import { useAuth } from '../../features/authentication/useAuth';
 import { isReadOnlyRole } from '../../shared/constants/roles';
@@ -12,12 +11,6 @@ interface Props {
   onNavigateEdit?: (id: string) => void;
   onNavigateDetail?: (id: string) => void;
 }
-
-const ROL_COLORS: Record<string, string> = {
-  especialista_admin: 'bg-primary/10 text-primary border-primary/25',
-  especialista_medio: 'bg-warning/10 text-warning border-warning/25',
-  especialista_bajo: 'bg-success/10 text-success border-success/25',
-};
 
 export const EspecialistasPage = ({
   onNavigateCreate,
@@ -39,7 +32,6 @@ export const EspecialistasPage = ({
 
   const [lista, setLista] = useState<Especialista[]>(MOCK_ESPECIALISTAS);
   const [busqueda, setBusqueda] = useState('');
-  const [filtroRol, setFiltroRol] = useState('todos');
   const [deleteTarget, setDeleteTarget] = useState<Especialista | null>(null);
 
   // Manejo unificado de navegaciones e interacciones de salida
@@ -63,8 +55,7 @@ export const EspecialistasPage = ({
       e.nombres.toLowerCase().includes(busqueda.toLowerCase()) ||
       e.dni.includes(busqueda) ||
       e.especialidad.toLowerCase().includes(busqueda.toLowerCase());
-    const matchRol = filtroRol === 'todos' || e.rol === filtroRol;
-    return matchBusqueda && matchRol;
+    return matchBusqueda;
   });
 
   const handleDelete = (id: string) => {
@@ -212,7 +203,7 @@ export const EspecialistasPage = ({
         </div>
       </div>
 
-      {/* ── Barra de búsqueda y filtros ── */}
+      {/* ── Barra de búsqueda ── */}
       <div className="flex flex-wrap gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-[220px] bg-surface border border-border rounded-xl px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
           <svg
@@ -253,17 +244,6 @@ export const EspecialistasPage = ({
             </button>
           )}
         </div>
-
-        <select
-          value={filtroRol}
-          onChange={(e) => setFiltroRol(e.target.value)}
-          className="bg-surface border border-border rounded-xl px-3 py-2.5 text-text text-sm outline-none cursor-pointer focus:border-primary transition-colors"
-        >
-          <option value="todos">Todos los roles</option>
-          <option value="especialista_admin">Admin</option>
-          <option value="especialista_medio">Medio</option>
-          <option value="especialista_bajo">Bajo</option>
-        </select>
       </div>
 
       {/* ── Contador ── */}
@@ -283,7 +263,6 @@ export const EspecialistasPage = ({
                   'DNI',
                   'Contacto',
                   'Especialidad',
-                  'Rol',
                   'Niveles',
                   'Estado',
                   ...(showActionsColumn ? ['Acciones'] : []),
@@ -301,7 +280,7 @@ export const EspecialistasPage = ({
               {filtrados.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={showActionsColumn ? 8 : 7}
+                    colSpan={showActionsColumn ? 7 : 6}
                     className="px-4 py-12 text-center text-text-muted text-sm"
                   >
                     No se encontraron especialistas con los filtros aplicados.
@@ -337,15 +316,6 @@ export const EspecialistasPage = ({
 
                     {/* Especialidad */}
                     <td className="px-4 py-3.5 text-sm text-text">{esp.especialidad}</td>
-
-                    {/* Rol */}
-                    <td className="px-4 py-3.5">
-                      <span
-                        className={`text-[0.68rem] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${ROL_COLORS[esp.rol]}`}
-                      >
-                        {ROL_ESPECIALISTA_LABELS[esp.rol]}
-                      </span>
-                    </td>
 
                     {/* Niveles */}
                     <td className="px-4 py-3.5">

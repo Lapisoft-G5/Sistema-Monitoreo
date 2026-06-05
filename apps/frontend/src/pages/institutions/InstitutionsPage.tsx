@@ -4,6 +4,7 @@ import { ESTADOS, ESTADO_COLOR, getInitials, MOCK_INSTITUCIONES, NIVELES, NIVEL_
 import { InstitutionForm } from './InstitutionForm';
 import { InstitutionEditForm } from './InstitutionEditForm';
 import { ConfirmModal } from './ConfirmModal';
+import { InstitutionDetailPage } from './InstitutionDetailPage';
 
 /* ============================================================
  * Padrón de Instituciones — Vista (datos mock)
@@ -241,8 +242,9 @@ const PageButton = ({
 /* ---------- Página ---------- */
 export const InstitutionsPage = () => {
   const [instituciones, setInstituciones] = useState<Institucion[]>(MOCK_INSTITUCIONES);
-  const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
+  const [view, setView] = useState<'list' | 'create' | 'edit' | 'detail'>('list');
   const [editing, setEditing] = useState<Institucion | null>(null);
+  const [viewingInst, setViewingInst] = useState<Institucion | null>(null);
   const [deletingInst, setDeletingInst] = useState<Institucion | null>(null);
   const [nivelFilter, setNivelFilter] = useState('');
   const [distritoFilter, setDistritoFilter] = useState('');
@@ -282,8 +284,8 @@ export const InstitutionsPage = () => {
     setEditing(null);
   };
   const handleView = (inst: Institucion) => {
-    // TODO: vista de detalle de la institución
-    console.log('TODO: ver institución', inst.codigoModular);
+    setViewingInst(inst);
+    setView('detail');
   };
   const handleEdit = (inst: Institucion) => {
     setEditing(inst);
@@ -310,6 +312,21 @@ export const InstitutionsPage = () => {
           setEditing(null);
         }}
         onSubmit={handleUpdate}
+      />
+    );
+  }
+  if (view === 'detail' && viewingInst) {
+    return (
+      <InstitutionDetailPage
+        institucion={viewingInst}
+        onBack={() => {
+          setView('list');
+          setViewingInst(null);
+        }}
+        onEdit={() => {
+          setEditing(viewingInst);
+          setView('edit');
+        }}
       />
     );
   }

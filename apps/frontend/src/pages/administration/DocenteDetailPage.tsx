@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_DOCENTES } from '../../entities/teacher/teacher.mock';
 import { ESCALAS_MAGISTERIALES } from '../../entities/teacher/teacher.types';
+import { useAuth } from '../../features/authentication/useAuth';
 
 const CONDICION_COLORS: Record<string, string> = {
   Nombrado: 'bg-primary/10 text-primary border-primary/25',
@@ -19,6 +20,8 @@ const CAMPO = ({ label, value }: { label: string; value: string }) => (
 export const DocenteDetailPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const isJefeArea = user?.role === 'jefe_area';
 
   const doc = MOCK_DOCENTES.find((d) => d.id === id);
 
@@ -43,7 +46,7 @@ export const DocenteDetailPage = () => {
           </div>
           <p className="text-text font-semibold mb-1">Docente no encontrado</p>
           <button
-            onClick={() => navigate('/docentes')}
+            onClick={() => navigate('/instituciones/docentes')}
             className="text-primary text-sm underline cursor-pointer bg-transparent border-none"
           >
             Volver al listado
@@ -53,6 +56,7 @@ export const DocenteDetailPage = () => {
     );
   }
 
+  const isDirectivo = doc.cargo === 'Director' || doc.cargo === 'Coordinador Pedagógico' || isJefeArea;
   const escalaLabel =
     ESCALAS_MAGISTERIALES.find((e) => e.value === doc.escala)?.label ?? doc.escala;
 
@@ -77,12 +81,16 @@ export const DocenteDetailPage = () => {
             </svg>
           </button>
           <div>
-            <h1 className="text-xl font-bold text-text">Detalle de Docente</h1>
-            <p className="text-text-muted text-sm">Información completa del docente</p>
+            <h1 className="text-xl font-bold text-text">
+              {isDirectivo ? 'Detalle de Directivo' : 'Detalle de Docente'}
+            </h1>
+            <p className="text-text-muted text-sm">
+              {isDirectivo ? 'Información completa del directivo' : 'Información completa del docente'}
+            </p>
           </div>
         </div>
         <button
-          onClick={() => navigate(`/docentes/${doc.id}/editar`)}
+          onClick={() => navigate(`/instituciones/docentes/${doc.id}/editar`)}
           className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl border-none cursor-pointer transition-colors shadow-sm"
         >
           <svg
@@ -185,10 +193,15 @@ export const DocenteDetailPage = () => {
           </div>
           <div>
             <h2 className="text-sm font-bold text-text">Detalles Laborales</h2>
-            <p className="text-text-dim text-xs">Información sobre la función del docente</p>
+            <p className="text-text-dim text-xs">
+              {isDirectivo ? 'Información sobre la función del directivo' : 'Información sobre la función del docente'}
+            </p>
           </div>
         </div>
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {isDirectivo && (
+            <CAMPO label="Cargo" value={doc.cargo || 'Director'} />
+          )}
           <CAMPO label="Nivel Educativo" value={doc.nivelEducativo} />
           <CAMPO label="Condición Laboral" value={doc.condicion} />
           <CAMPO label="Especialidad Principal" value={doc.especialidad} />
@@ -200,57 +213,59 @@ export const DocenteDetailPage = () => {
       </div>
 
       {/* ── Secciones a cargo ── */}
-      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-bg">
-          <div className="w-8 h-8 rounded-lg bg-success/10 text-success flex items-center justify-center flex-shrink-0">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-text">Grado / Secciones a Cargo</h2>
-            <p className="text-text-dim text-xs">
-              {doc.secciones.length} sección{doc.secciones.length !== 1 ? 'es' : ''} asignada
-              {doc.secciones.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
-        <div className="p-5">
-          {doc.secciones.length === 0 ? (
-            <p className="text-text-muted text-sm">Sin secciones asignadas.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {doc.secciones.map((s) => (
-                <span
-                  key={s.id}
-                  className="flex items-center gap-1.5 bg-success/10 text-success border border-success/25 text-xs font-semibold px-3 py-1.5 rounded-full"
-                >
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                  {s.grado}
-                </span>
-              ))}
+      {!isDirectivo && (
+        <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-bg">
+            <div className="w-8 h-8 rounded-lg bg-success/10 text-success flex items-center justify-center flex-shrink-0">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
             </div>
-          )}
+            <div>
+              <h2 className="text-sm font-bold text-text">Grado / Secciones a Cargo</h2>
+              <p className="text-text-dim text-xs">
+                {doc.secciones.length} sección{doc.secciones.length !== 1 ? 'es' : ''} asignada
+                {doc.secciones.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <div className="p-5">
+            {doc.secciones.length === 0 ? (
+              <p className="text-text-muted text-sm">Sin secciones asignadas.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {doc.secciones.map((s) => (
+                  <span
+                    key={s.id}
+                    className="flex items-center gap-1.5 bg-success/10 text-success border border-success/25 text-xs font-semibold px-3 py-1.5 rounded-full"
+                  >
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                    >
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                      <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                    {s.grado}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

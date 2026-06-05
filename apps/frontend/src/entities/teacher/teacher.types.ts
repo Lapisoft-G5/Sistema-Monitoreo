@@ -29,6 +29,7 @@ export interface Docente {
   institucionId:   string;
   activo:          boolean;
   fechaCreacion:   string;
+  cargo?:          string; // "Director" | "Coordinador Pedagógico" | "Docente de Aula"
 }
 
 export const CONDICION_LABORAL: CondicionLaboral[] = ['Nombrado', 'Contratado'];

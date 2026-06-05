@@ -26,6 +26,7 @@ interface FormData {
   cargaHoraria: string;
   secciones: SeccionDocente[];
   escala: EscalaMagisterial | '';
+  cargo?: string;
 }
 
 const EMPTY: FormData = {
@@ -39,6 +40,7 @@ const EMPTY: FormData = {
   cargaHoraria: '',
   secciones: [],
   escala: '',
+  cargo: 'Director',
 };
 
 const inputClass = `
@@ -59,16 +61,20 @@ const newSeccionId = () => `new-${++seccionCounter}`;
 export const DocenteCreatePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isJefeArea = user?.role === 'jefe_area';
 
-  const [form, setForm] = useState<FormData>(EMPTY);
+  const [form, setForm] = useState<FormData>({
+    ...EMPTY,
+    cargo: isJefeArea ? 'Director' : 'Docente de Aula',
+  });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData | 'secciones_items', string>>>(
     {},
   );
   const [loading, setLoading] = useState(false);
 
-  const nivelesDisponibles: NivelInstitucion[] = NIVELES_POR_INSTITUCION[user?.id ?? ''] ?? [
-    'Primaria',
-  ];
+  const nivelesDisponibles: NivelInstitucion[] = isJefeArea
+    ? ['Inicial', 'Primaria', 'Secundaria']
+    : (NIVELES_POR_INSTITUCION[user?.id ?? ''] ?? ['Primaria']);
 
   const set = (field: keyof FormData, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
@@ -95,9 +101,11 @@ export const DocenteCreatePage = () => {
     if (!form.especialidad.trim()) e.especialidad = 'La especialidad es requerida';
     if (!form.cargaHoraria || isNaN(Number(form.cargaHoraria)) || Number(form.cargaHoraria) <= 0)
       e.cargaHoraria = 'Ingrese una carga horaria válida';
-    if (form.secciones.length === 0) e.secciones = 'Agregue al menos una sección';
-    if (form.secciones.some((s) => !s.grado.trim()))
-      e.secciones_items = 'Complete todos los campos de sección';
+    if (!isJefeArea) {
+      if (form.secciones.length === 0) e.secciones = 'Agregue al menos una sección';
+      if (form.secciones.some((s) => !s.grado.trim()))
+        e.secciones_items = 'Complete todos los campos de sección';
+    }
     if (!form.escala) e.escala = 'Seleccione una escala';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -109,7 +117,7 @@ export const DocenteCreatePage = () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    navigate('/docentes');
+    navigate('/instituciones/docentes');
   };
 
   return (
@@ -132,9 +140,13 @@ export const DocenteCreatePage = () => {
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-bold text-text">Nuevo Docente</h1>
+          <h1 className="text-xl font-bold text-text">
+            {isJefeArea ? 'Nuevo Directivo' : 'Nuevo Docente'}
+          </h1>
           <p className="text-text-muted text-sm">
-            Complete los datos para registrar un nuevo docente
+            {isJefeArea
+              ? 'Complete los datos para registrar un nuevo director o coordinador'
+              : 'Complete los datos para registrar un nuevo docente'}
           </p>
         </div>
       </div>
@@ -158,7 +170,9 @@ export const DocenteCreatePage = () => {
             </div>
             <div>
               <h2 className="text-sm font-bold text-text">Información Personal</h2>
-              <p className="text-text-dim text-xs">Datos de identificación del docente</p>
+              <p className="text-text-dim text-xs">
+                {isJefeArea ? 'Datos de identificación del directivo' : 'Datos de identificación del docente'}
+              </p>
             </div>
           </div>
 
@@ -169,7 +183,7 @@ export const DocenteCreatePage = () => {
               </label>
               <input
                 type="text"
-                placeholder="Ej: Rosa Elena Mamani Ccopa"
+                placeholder={isJefeArea ? "Ej: Rosa Elena Mamani Ccopa" : "Ej: Juan Carlos Pérez Gómez"}
                 value={form.nombres}
                 onChange={(e) => set('nombres', e.target.value)}
                 className={inputClass}
@@ -210,7 +224,7 @@ export const DocenteCreatePage = () => {
               </label>
               <input
                 type="email"
-                placeholder="ejemplo@ie.edu.pe"
+                placeholder={isJefeArea ? "director@ugel.edu.pe" : "ejemplo@ie.edu.pe"}
                 value={form.correo}
                 onChange={(e) => set('correo', e.target.value)}
                 className={inputClass}
@@ -238,11 +252,28 @@ export const DocenteCreatePage = () => {
             </div>
             <div>
               <h2 className="text-sm font-bold text-text">Detalles Laborales</h2>
-              <p className="text-text-dim text-xs">Información sobre la función del docente</p>
+              <p className="text-text-dim text-xs">
+                {isJefeArea ? 'Información sobre la función del directivo' : 'Información sobre la función del docente'}
+              </p>
             </div>
           </div>
 
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {isJefeArea && (
+              <div>
+                <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
+                  Cargo <span className="text-danger">*</span>
+                </label>
+                <select
+                  value={form.cargo}
+                  onChange={(e) => set('cargo', e.target.value)}
+                  className={selectClass}
+                >
+                  <option value="Director">Director</option>
+                  <option value="Coordinador Pedagógico">Coordinador Pedagógico</option>
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Nivel Educativo <span className="text-danger">*</span>
@@ -285,7 +316,7 @@ export const DocenteCreatePage = () => {
               </label>
               <input
                 type="text"
-                placeholder="Ej: Comunicación Integral"
+                placeholder={isJefeArea ? "Ej: Gestión Pública / Pedagogía" : "Ej: Comunicación Integral"}
                 value={form.especialidad}
                 onChange={(e) => set('especialidad', e.target.value)}
                 className={inputClass}
@@ -301,7 +332,7 @@ export const DocenteCreatePage = () => {
               </label>
               <input
                 type="number"
-                placeholder="Ej: 30"
+                placeholder={isJefeArea ? "Ej: 40" : "Ej: 30"}
                 min={1}
                 max={60}
                 value={form.cargaHoraria}
@@ -332,89 +363,91 @@ export const DocenteCreatePage = () => {
             </div>
 
             {/* Secciones */}
-            <div className="sm:col-span-2">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-text-muted text-[0.68rem] font-bold tracking-wider uppercase">
-                  Grado / Secciones a cargo <span className="text-danger">*</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={addSeccion}
-                  className="flex items-center gap-1.5 text-primary hover:text-primary-hover text-xs font-semibold bg-primary/10 hover:bg-primary/15 px-3 py-1.5 rounded-lg border-none cursor-pointer transition-all"
-                >
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
+            {!isJefeArea && (
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-text-muted text-[0.68rem] font-bold tracking-wider uppercase">
+                    Grado / Secciones a cargo <span className="text-danger">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addSeccion}
+                    className="flex items-center gap-1.5 text-primary hover:text-primary-hover text-xs font-semibold bg-primary/10 hover:bg-primary/15 px-3 py-1.5 rounded-lg border-none cursor-pointer transition-all"
                   >
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  Agregar sección
-                </button>
-              </div>
-              {form.secciones.length === 0 ? (
-                <div
-                  onClick={addSeccion}
-                  className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all gap-2"
-                >
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    className="text-text-dim"
-                  >
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  <p className="text-text-dim text-xs">Haga clic para agregar una sección</p>
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Agregar sección
+                  </button>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {form.secciones.map((s, idx) => (
-                    <div key={s.id} className="flex items-center gap-2">
-                      <span className="text-text-dim text-xs w-5 text-right flex-shrink-0">
-                        {idx + 1}.
-                      </span>
-                      <input
-                        type="text"
-                        placeholder="Ej: 4to A"
-                        value={s.grado}
-                        onChange={(e) => updateSeccion(s.id, e.target.value)}
-                        className="flex-1 bg-bg border border-border rounded-xl outline-none text-text text-sm px-3 py-2 placeholder:text-text-dim focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeSeccion(s.id)}
-                        className="p-2 rounded-lg text-text-dim hover:text-danger hover:bg-danger/10 transition-all cursor-pointer bg-transparent border-none flex-shrink-0"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
+                {form.secciones.length === 0 ? (
+                  <div
+                    onClick={addSeccion}
+                    className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all gap-2"
+                  >
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      className="text-text-dim"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <p className="text-text-dim text-xs">Haga clic para agregar una sección</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {form.secciones.map((s, idx) => (
+                      <div key={s.id} className="flex items-center gap-2">
+                        <span className="text-text-dim text-xs w-5 text-right flex-shrink-0">
+                          {idx + 1}.
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Ej: 4to A"
+                          value={s.grado}
+                          onChange={(e) => updateSeccion(s.id, e.target.value)}
+                          className="flex-1 bg-bg border border-border rounded-xl outline-none text-text text-sm px-3 py-2 placeholder:text-text-dim focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSeccion(s.id)}
+                          className="p-2 rounded-lg text-text-dim hover:text-danger hover:bg-danger/10 transition-all cursor-pointer bg-transparent border-none flex-shrink-0"
                         >
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {errors.secciones && <p className="text-danger text-xs mt-2">{errors.secciones}</p>}
-              {errors.secciones_items && (
-                <p className="text-danger text-xs mt-1">{errors.secciones_items}</p>
-              )}
-            </div>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {errors.secciones && <p className="text-danger text-xs mt-2">{errors.secciones}</p>}
+                {errors.secciones_items && (
+                  <p className="text-danger text-xs mt-1">{errors.secciones_items}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -451,7 +484,7 @@ export const DocenteCreatePage = () => {
                   <polyline points="17 21 17 13 7 13 7 21" />
                   <polyline points="7 3 7 8 15 8" />
                 </svg>
-                Guardar Docente
+                {isJefeArea ? 'Guardar Directivo' : 'Guardar Docente'}
               </>
             )}
           </button>

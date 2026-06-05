@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_DOCENTES } from '../../entities/teacher/teacher.mock';
 import type { Docente } from '../../entities/teacher/teacher.types';
 import { DocenteDeleteModal } from './DocenteDeleteModal';
+import { useAuth } from '../../features/authentication/useAuth';
 
 const CONDICION_COLORS: Record<string, string> = {
   Nombrado: 'bg-primary/10 text-primary border-primary/25',
@@ -11,13 +12,26 @@ const CONDICION_COLORS: Record<string, string> = {
 
 export const DocentesPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isJefeArea = user?.role === 'jefe_area';
 
   const [lista, setLista] = useState<Docente[]>(MOCK_DOCENTES);
   const [busqueda, setBusqueda] = useState('');
   const [filtroCondicion, setFiltroCondicion] = useState('todos');
   const [deleteTarget, setDeleteTarget] = useState<Docente | null>(null);
 
-  const filtrados = lista.filter((d) => {
+  // Filtrar según rol primero
+  const roleFilteredLista = useMemo(() => {
+    if (isJefeArea) {
+      // Jefe de Área solo ve Directores y Coordinadores Pedagógicos
+      return lista.filter((d) => d.cargo === 'Director' || d.cargo === 'Coordinador Pedagógico');
+    } else {
+      // Director de IE ve solo docentes regulares
+      return lista.filter((d) => d.cargo !== 'Director' && d.cargo !== 'Coordinador Pedagógico');
+    }
+  }, [lista, isJefeArea]);
+
+  const filtrados = roleFilteredLista.filter((d) => {
     const matchBusqueda =
       d.nombres.toLowerCase().includes(busqueda.toLowerCase()) ||
       d.dni.includes(busqueda) ||
@@ -33,18 +47,22 @@ export const DocentesPage = () => {
   const toggleActivo = (id: string) =>
     setLista((prev) => prev.map((d) => (d.id === id ? { ...d, activo: !d.activo } : d)));
 
-  const total = lista.length;
-  const nombrados = lista.filter((d) => d.condicion === 'Nombrado').length;
-  const contratados = lista.filter((d) => d.condicion === 'Contratado').length;
+  const total = roleFilteredLista.length;
+  const nombrados = roleFilteredLista.filter((d) => d.condicion === 'Nombrado').length;
+  const contratados = roleFilteredLista.filter((d) => d.condicion === 'Contratado').length;
 
   return (
     <div className="p-6 flex flex-col gap-5">
       {/* ── Encabezado ── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-text">Padrón de Docentes</h1>
+          <h1 className="text-xl font-bold text-text">
+            {isJefeArea ? 'Gestión de Directores y Coordinadores' : 'Padrón de Docentes'}
+          </h1>
           <p className="text-text-muted text-sm mt-0.5">
-            Gestión del personal docente de la institución educativa
+            {isJefeArea
+              ? 'Administración de directores de I.E. y coordinadores pedagógicos'
+              : 'Gestión del personal docente de la institución educativa'}
           </p>
         </div>
         <button
@@ -62,7 +80,7 @@ export const DocentesPage = () => {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Nuevo Docente
+          {isJefeArea ? 'Nuevo Directivo' : 'Nuevo Docente'}
         </button>
       </div>
 
@@ -71,7 +89,7 @@ export const DocentesPage = () => {
         <div className="bg-surface border border-border rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-text-muted text-[0.68rem] font-bold uppercase tracking-wider mb-1">
-              Total Docentes
+              {isJefeArea ? 'Total Directivos' : 'Total Docentes'}
             </p>
             <p className="text-3xl font-black text-text">{String(total).padStart(2, '0')}</p>
           </div>
@@ -157,7 +175,7 @@ export const DocentesPage = () => {
           </svg>
           <input
             type="text"
-            placeholder="Buscar por nombre, DNI o especialidad..."
+            placeholder={isJefeArea ? "Buscar por nombre, DNI o cargo..." : "Buscar por nombre, DNI o especialidad..."}
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="flex-1 bg-transparent border-none outline-none text-text text-sm py-2.5 placeholder:text-text-dim"
@@ -194,7 +212,7 @@ export const DocentesPage = () => {
 
       <p className="text-text-muted text-xs -mt-1">
         Mostrando <strong className="text-text">{filtrados.length}</strong> de{' '}
-        <strong className="text-text">{lista.length}</strong> docentes
+        <strong className="text-text">{roleFilteredLista.length}</strong> {isJefeArea ? 'directivos' : 'docentes'}
       </p>
 
       {/* ── Tabla ── */}
@@ -204,10 +222,10 @@ export const DocentesPage = () => {
             <thead>
               <tr className="border-b border-border bg-bg">
                 {[
-                  'Docente',
+                  isJefeArea ? 'Directivo' : 'Docente',
                   'DNI',
                   'Contacto',
-                  'Especialidad',
+                  isJefeArea ? 'Cargo' : 'Especialidad',
                   'Nivel',
                   'Condición',
                   'Secciones',
@@ -227,7 +245,7 @@ export const DocentesPage = () => {
               {filtrados.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-12 text-center text-text-muted text-sm">
-                    No se encontraron docentes con los filtros aplicados.
+                    No se encontraron {isJefeArea ? 'directivos' : 'docentes'} con los filtros aplicados.
                   </td>
                 </tr>
               ) : (
@@ -253,7 +271,7 @@ export const DocentesPage = () => {
                       <p className="text-xs text-text-muted mt-0.5">{d.celular}</p>
                     </td>
                     <td className="px-4 py-3.5 text-sm text-text whitespace-nowrap">
-                      {d.especialidad}
+                      {isJefeArea ? d.cargo : d.especialidad}
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="text-[0.68rem] font-semibold px-2 py-0.5 rounded-md bg-border text-text-muted">

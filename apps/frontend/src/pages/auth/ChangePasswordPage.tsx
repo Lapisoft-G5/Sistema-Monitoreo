@@ -25,6 +25,7 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
   const rules = validate(pwd);
   const allValid = rules.length && rules.uppercase && rules.number;
 
+  // Manejo del formulario unificado con el try/catch/finally robusto de develop
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!allValid) {
@@ -35,10 +36,18 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
       setError('Las contraseñas no coinciden');
       return;
     }
+
     setLoading(true);
-    await changePassword(pwd);
-    setLoading(false);
-    onSuccess();
+    setError(''); // Limpieza preventiva de errores previos
+    
+    try {
+      await changePassword(pwd);
+      onSuccess();
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar la nueva contraseña');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const ruleItems = [
@@ -49,14 +58,14 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-bg relative overflow-hidden">
-      {/* Orbs de fondo */}
+      {/* Orbs de fondo fluidos usando tokens del tema (Sin estilos en línea hardcodeados) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute w-[600px] h-[600px] rounded-full opacity-[0.07] blur-[120px] bg-primary -top-[150px] -left-[150px]" />
         <div className="absolute w-[400px] h-[400px] rounded-full opacity-[0.05] blur-[100px] bg-primary-hover -bottom-[100px] -right-[100px]" />
       </div>
 
       <div className="relative z-10 w-full max-w-[430px] flex flex-col items-center">
-        {/* Logo institucional */}
+        {/* Encabezado: Logo institucional */}
         <div className="text-center mb-6">
           {!logoError ? (
             <img
@@ -85,7 +94,7 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
           <p className="text-xs text-text-muted mt-1">Sistema de Monitoreo</p>
         </div>
 
-        {/* Card */}
+        {/* Card Contenedor Principal (Paleta Light Mode Semántica) */}
         <div className="w-full bg-surface border border-border rounded-2xl p-8 shadow-sm">
           <div className="flex justify-center mb-5">
             <span className="bg-primary text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase">
@@ -94,12 +103,11 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
           </div>
 
           <p className="text-center text-xs text-text-muted mb-6">
-            Bienvenido/a, <span className="text-primary font-semibold">{user?.nombres}</span>. Por
-            seguridad institucional, configure una nueva contraseña.
+            Bienvenido/a, <span className="text-primary font-semibold">{user?.nombres}</span>. Por seguridad institucional, configure una nueva contraseña.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Nueva contraseña */}
+            {/* Campo: Nueva Contraseña */}
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="text-text-muted text-[0.68rem] font-bold tracking-wider uppercase">
@@ -161,26 +169,29 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
               </div>
             </div>
 
-            {/* Reglas de seguridad */}
+            {/* Panel Dinámico de Reglas de Seguridad (Estructura clara de develop + tokens semánticos) */}
             <div className="bg-bg border border-border rounded-xl p-3.5 flex flex-col gap-2.5">
-              {ruleItems.map((r) => (
-                <div
-                  key={r.key}
-                  className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${
-                    rules[r.key] ? 'text-success' : 'text-text-dim'
-                  }`}
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0 transition-all duration-200 ${
-                      rules[r.key] ? 'bg-success scale-110' : 'bg-transparent border border-border'
+              {ruleItems.map((r) => {
+                const isValid = rules[r.key];
+                return (
+                  <div
+                    key={r.key}
+                    className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${
+                      isValid ? 'text-success' : 'text-text-dim'
                     }`}
-                  />
-                  {r.label}
-                </div>
-              ))}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full flex-shrink-0 transition-all duration-200 ${
+                        isValid ? 'bg-success scale-110' : 'bg-transparent border border-border'
+                      }`}
+                    />
+                    {r.label}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Confirmar contraseña */}
+            {/* Campo: Confirmar Contraseña */}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Confirmar Contraseña
@@ -211,9 +222,9 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
               </div>
             </div>
 
-            {/* Error */}
+            {/* Alerta de Error Semántica */}
             {error && (
-              <div className="flex items-center gap-2 bg-danger/10 border border-danger/30 rounded-xl p-3 text-danger text-xs">
+              <div className="flex items-center gap-2 bg-danger/10 border border-danger/30 rounded-xl p-3 text-danger text-xs animate-pulse">
                 <svg
                   width="15"
                   height="15"
@@ -230,7 +241,7 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
               </div>
             )}
 
-            {/* Botón submit */}
+            {/* Botón de Envío */}
             <button
               type="submit"
               disabled={loading || !allValid}

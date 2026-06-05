@@ -1,15 +1,16 @@
+import { useState, lazy, Suspense } from 'react';
 import { RouterProvider, createBrowserRouter, Navigate } from 'react-router-dom';
 import { useAuth } from '../features/authentication/useAuth';
 import { AuthProvider } from '../features/authentication/AuthProvider';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { ChangePasswordPage } from '../pages/auth/ChangePasswordPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
 import { AppShell } from './AppShell';
 import { ProtectedRoute } from '../shared/ui/ProtectedRoute';
 import { PageSkeleton } from '../shared/ui/PageSkeleton';
-import { lazy, Suspense, useState } from 'react';
 
-// ── Lazy imports de páginas ───────────────────────────────────────────────────
+// ── Lazy imports de páginas (feature/teachers-management) ─────────────────────
 const DashboardPage = lazy(() =>
   import('../pages/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 );
@@ -57,16 +58,46 @@ const Lazy = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
 );
 
-// ── AuthRouter — DEBE ir ANTES de createBrowserRouter ────────────────────────
-type AuthView = 'login' | 'forgot-password';
+// ── AuthRouter Unificado (Conserva la lógica de tokens de develop) ──────────────
+interface AuthRouterProps {
+  mode: 'router' | 'conditional';
+}
 
-const AuthRouter = () => {
+const AuthRouter = ({ mode }: AuthRouterProps) => {
   const { isAuthenticated, requiresPasswordChange } = useAuth();
-  const [view, setView] = useState<AuthView>('login');
+  const [view, setView] = useState<'login' | 'forgot-password'>('login');
+  
+  // Captura de token para ResetPasswordPage (develop)
+  const [token, setToken] = useState<string | null>(() => {
+    return new URLSearchParams(window.location.search).get('token');
+  });
 
-  if (isAuthenticated && !requiresPasswordChange) return <Navigate to="/dashboard" replace />;
-  if (isAuthenticated && requiresPasswordChange) return <ChangePasswordPage onSuccess={() => {}} />;
-  if (view === 'forgot-password') return <ForgotPasswordPage onBack={() => setView('login')} />;
+  if (token) {
+    return (
+      <ResetPasswordPage
+        onSuccess={() => {
+          // Limpiar el parámetro token de la URL tras el cambio exitoso
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setToken(null);
+          setView('login');
+        }}
+      />
+    );
+  }
+
+  if (isAuthenticated && requiresPasswordChange) {
+    return <ChangePasswordPage onSuccess={() => {}} />;
+  }
+
+  if (isAuthenticated) {
+    // Si estamos usando la arquitectura de develop, renderiza el Shell directamente
+    // Si usamos react-router-dom, redirige programáticamente a la ruta del dashboard
+    return mode === 'conditional' ? <AppShell /> : <Navigate to="/dashboard" replace />;
+  }
+
+  if (view === 'forgot-password') {
+    return <ForgotPasswordPage onBack={() => setView('login')} />;
+  }
 
   return (
     <LoginPage
@@ -77,7 +108,7 @@ const AuthRouter = () => {
   );
 };
 
-// ── Router con todas las rutas ────────────────────────────────────────────────
+// ── Router con todas las rutas estructuradas (feature/teachers-management) ─────
 const router = createBrowserRouter([
   {
     path: '/',
@@ -252,14 +283,39 @@ const router = createBrowserRouter([
     ],
   },
 
-  // Rutas de auth (fuera del AppShell, sin sidebar)
-  { path: '/login', element: <AuthRouter /> },
+  // Rutas de auth independientes
+  { path: '/login', element: <AuthRouter mode="router" /> },
   { path: '*', element: <Navigate to="/dashboard" replace /> },
 ]);
 
-// ── Componente raíz ───────────────────────────────────────────────────────────
-export const App = () => (
-  <AuthProvider>
-    <RouterProvider router={router} />
-  </AuthProvider>
-);
+// ── Componente Raíz de la Aplicación con Selector de Estrategia ────────────────
+export const App = () => {
+  // Permite al equipo decidir qué motor de renderizado y flujo de vistas usar durante el merge
+  const [routingMode, setRoutingMode] = useState<'router' | 'conditional'>('router');
+
+  return (
+    <AuthProvider>
+      {/* Panel de control de arquitectura exclusivo para el entorno de desarrollo */}
+      <div style={{ position: 'fixed', bottom: 12, left: 12, display: 'flex', gap: 6, zIndex: 99999, background: '#0f172a', padding: 6, borderRadius: 8, boxShadow: '0 4px 14px rgba(0,0,0,0.3)' }}>
+        <button
+          onClick={() => setRoutingMode('router')}
+          style={{ padding: '4px 10px', fontSize: '11px', background: routingMode === 'router' ? '#22c55e' : '#334155', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}
+        >
+          React Router Architecture (teachers-management)
+        </button>
+        <button
+          onClick={() => setRoutingMode('conditional')}
+          style={{ padding: '4px 10px', fontSize: '11px', background: routingMode === 'conditional' ? '#0f52ba' : '#334155', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}
+        >
+          Conditional Base Layout (develop)
+        </button>
+      </div>
+
+      {routingMode === 'router' ? (
+        <RouterProvider router={router} />
+      ) : (
+        <AuthRouter mode="conditional" />
+      )}
+    </AuthProvider>
+  );
+};

@@ -108,8 +108,8 @@ export const TopBar = ({ activePage, onOpenMobileSidebar }: Props) => {
           >
             {/* Avatar */}
             <div className="w-7 h-7 rounded-full flex-shrink-0 bg-primary flex items-center justify-center text-white text-[0.68rem] font-bold">
-              {user?.nombres[0]}
-              {user?.apellidos[0]}
+              {user?.nombres?.[0] ?? 'U'}
+              {user?.apellidos?.[0] ?? 'E'}
             </div>
 
             {/* Nombre + rol — solo visible en sm+ */}
@@ -121,7 +121,6 @@ export const TopBar = ({ activePage, onOpenMobileSidebar }: Props) => {
                 {user ? ROLE_LABELS[user.role] : ''}
               </span>
             </div>
-
             <svg
               width="13"
               height="13"

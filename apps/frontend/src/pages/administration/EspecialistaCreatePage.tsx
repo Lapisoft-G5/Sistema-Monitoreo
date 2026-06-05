@@ -6,6 +6,11 @@ import {
   NIVELES_INSTITUCION,
 } from '../../entities/specialist/specialist.types';
 
+interface Props {
+  onBack?: () => void;
+  onSuccess?: () => void;
+}
+
 interface FormData {
   nombres: string;
   dni: string;
@@ -41,9 +46,10 @@ const inputClass = `
   focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all
 `;
 
-export const EspecialistaCreatePage = () => {
-  const navigate = useNavigate();
-
+/* ==========================================================================
+   COMPONENTE INTERNO: LÓGICA DE ESTADO Y MAQUETACIÓN DEL FORMULARIO
+   ========================================================================== */
+const EspecialistaCreatePageContent = ({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) => {
   const [form, setForm] = useState<FormData>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading] = useState(false);
@@ -75,7 +81,7 @@ export const EspecialistaCreatePage = () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    navigate('/especialistas');
+    onSuccess();
   };
 
   return (
@@ -83,7 +89,7 @@ export const EspecialistaCreatePage = () => {
       {/* ── Encabezado ── */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate('/especialistas')}
+          onClick={onBack}
           className="p-2 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer"
         >
           <svg
@@ -129,6 +135,7 @@ export const EspecialistaCreatePage = () => {
           </div>
 
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Nombres */}
             <div className="sm:col-span-2">
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Nombres y Apellidos <span className="text-danger">*</span>
@@ -143,6 +150,7 @@ export const EspecialistaCreatePage = () => {
               {errors.nombres && <p className="text-danger text-xs mt-1">{errors.nombres}</p>}
             </div>
 
+            {/* DNI */}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 DNI <span className="text-danger">*</span>
@@ -158,6 +166,7 @@ export const EspecialistaCreatePage = () => {
               {errors.dni && <p className="text-danger text-xs mt-1">{errors.dni}</p>}
             </div>
 
+            {/* Celular */}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Núm. Celular <span className="text-danger">*</span>
@@ -173,6 +182,7 @@ export const EspecialistaCreatePage = () => {
               {errors.celular && <p className="text-danger text-xs mt-1">{errors.celular}</p>}
             </div>
 
+            {/* Correo */}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Correo Electrónico <span className="text-danger">*</span>
@@ -187,13 +197,14 @@ export const EspecialistaCreatePage = () => {
               {errors.correo && <p className="text-danger text-xs mt-1">{errors.correo}</p>}
             </div>
 
+            {/* Especialidad */}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Especialidad <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
-                placeholder="Ej: Matemática, Comunicación..."
+                placeholder="Ej: Matemática, Communication..."
                 value={form.especialidad}
                 onChange={(e) => set('especialidad', e.target.value)}
                 className={inputClass}
@@ -321,7 +332,7 @@ export const EspecialistaCreatePage = () => {
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={() => navigate('/especialistas')}
+            onClick={onBack}
             className="px-5 py-2.5 bg-surface border border-border text-text-muted hover:text-text hover:bg-bg text-sm font-medium rounded-xl cursor-pointer transition-all"
           >
             Cancelar
@@ -358,4 +369,30 @@ export const EspecialistaCreatePage = () => {
       </form>
     </div>
   );
+};
+
+/* ==========================================================================
+   WRAPPER ENRUTADO: SE EJECUTA SÓLO EN EL CONTEXTO DE REACT ROUTER
+   ========================================================================== */
+const EspecialistaCreatePageRouter = () => {
+  const navigate = useNavigate();
+  return (
+    <EspecialistaCreatePageContent
+      onBack={() => navigate('/especialistas')}
+      onSuccess={() => navigate('/especialistas')}
+    />
+  );
+};
+
+/* ==========================================================================
+   COMPONENTE RAÍZ EXPORTADO (GATEKEEPER COMPLIANT)
+   ========================================================================== */
+export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
+  // Si se reciben callbacks explícitos, significa que opera bajo la UI condicional de develop
+  if (onBack && onSuccess) {
+    return <EspecialistaCreatePageContent onBack={onBack} onSuccess={onSuccess} />;
+  }
+
+  // De lo contrario, se asume el esquema de URL dinámico de feature/teachers-management
+  return <EspecialistaCreatePageRouter />;
 };

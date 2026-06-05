@@ -7,6 +7,12 @@ import {
   NIVELES_INSTITUCION,
 } from '../../entities/specialist/specialist.types';
 
+interface Props {
+  especialistaId?: string;
+  onBack?: () => void;
+  onSuccess?: () => void;
+}
+
 interface FormData {
   nombres: string;
   dni: string;
@@ -32,6 +38,7 @@ const inputClass = `
   focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all
 `;
 
+// Construye el FormData inicial fuera del componente — sin useEffect
 const buildInitialForm = (id: string): FormData | null => {
   const found = MOCK_ESPECIALISTAS.find((e) => e.id === id);
   if (!found) return null;
@@ -46,14 +53,38 @@ const buildInitialForm = (id: string): FormData | null => {
   };
 };
 
-export const EspecialistaEditPage = () => {
-  const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Props) => {
+  // Inicialización segura del Router para evitar caídas en entornos sin RouterProvider
+  let navigate: ReturnType<typeof useNavigate> | null = null;
+  let urlParams: Record<string, string | undefined> = {};
+  
+  try {
+    navigate = useNavigate();
+    urlParams = useParams<{ id: string }>();
+  } catch (e) {
+    // Contexto independiente de React Router DOM
+  }
 
-  const [form, setForm] = useState<FormData | null>(() => buildInitialForm(id ?? ''));
+  // Resolución del identificador dinámico de ambas ramas
+  const targetId = especialistaId ?? urlParams.id ?? '';
+
+  // useState con initializer function — se ejecuta solo en el primer render, sin useEffect
+  const [form, setForm] = useState<FormData | null>(() => buildInitialForm(targetId));
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading] = useState(false);
 
+  // Manejo unificado de retornos y navegación
+  const handleBack = () => {
+    if (onBack) onBack();
+    else if (navigate) navigate(-1);
+  };
+
+  const handleSuccess = () => {
+    if (onSuccess) onSuccess();
+    else if (navigate) navigate('/especialistas');
+  };
+
+  // Si no se encontró el especialista, renderizamos el estado de error directamente
   if (form === null) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -75,10 +106,10 @@ export const EspecialistaEditPage = () => {
           </div>
           <p className="text-text font-semibold mb-1">Especialista no encontrado</p>
           <p className="text-text-muted text-sm mb-4">
-            El especialista con ID <span className="font-mono text-text">{id}</span> no existe.
+            El especialista con ID <span className="font-mono text-text">{targetId}</span> no existe.
           </p>
           <button
-            onClick={() => navigate('/especialistas')}
+            onClick={handleBack}
             className="text-primary text-sm underline cursor-pointer bg-transparent border-none hover:text-primary-hover transition-colors"
           >
             Volver al listado
@@ -119,7 +150,7 @@ export const EspecialistaEditPage = () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    navigate('/especialistas'); // ← onSuccess reemplazado
+    handleSuccess();
   };
 
   return (
@@ -127,7 +158,8 @@ export const EspecialistaEditPage = () => {
       {/* ── Encabezado ── */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate(-1)} // ← onBack reemplazado
+          type="button"
+          onClick={handleBack}
           className="p-2 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer"
         >
           <svg
@@ -380,7 +412,7 @@ export const EspecialistaEditPage = () => {
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={() => navigate(-1)} // ← onBack reemplazado
+            onClick={handleBack}
             className="px-5 py-2.5 bg-surface border border-border text-text-muted hover:text-text hover:bg-bg text-sm font-medium rounded-xl cursor-pointer transition-all"
           >
             Cancelar

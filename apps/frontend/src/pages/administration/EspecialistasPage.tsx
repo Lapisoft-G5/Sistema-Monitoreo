@@ -7,23 +7,56 @@ import { EspecialistaDeleteModal } from './EspecialistaDeleteModal';
 import { useAuth } from '../../features/authentication/useAuth';
 import { isReadOnlyRole } from '../../shared/constants/roles';
 
+interface Props {
+  onNavigateCreate?: () => void;
+  onNavigateEdit?: (id: string) => void;
+  onNavigateDetail?: (id: string) => void;
+}
+
 const ROL_COLORS: Record<string, string> = {
   especialista_admin: 'bg-primary/10 text-primary border-primary/25',
   especialista_medio: 'bg-warning/10 text-warning border-warning/25',
   especialista_bajo: 'bg-success/10 text-success border-success/25',
 };
 
-export const EspecialistasPage = () => {
-  const navigate = useNavigate();
+export const EspecialistasPage = ({
+  onNavigateCreate,
+  onNavigateEdit,
+  onNavigateDetail,
+}: Props) => {
+  // Inicialización segura del Router para entornos aislados
+  let navigate: ReturnType<typeof useNavigate> | null = null;
+  try {
+    navigate = useNavigate();
+  } catch (e) {
+    // Contexto independiente de React Router DOM
+  }
+
   const { user } = useAuth();
 
-  // Si el rol es de solo lectura, oculta todos los controles de escritura
+  // Si el rol es de solo lectura, oculta los controles de escritura (feature/teachers-management)
   const isReadOnly = user ? isReadOnlyRole(user.role) : true;
 
   const [lista, setLista] = useState<Especialista[]>(MOCK_ESPECIALISTAS);
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState('todos');
   const [deleteTarget, setDeleteTarget] = useState<Especialista | null>(null);
+
+  // Manejo unificado de navegaciones e interacciones de salida
+  const handleCreate = () => {
+    if (onNavigateCreate) onNavigateCreate();
+    else if (navigate) navigate('/especialistas/nuevo');
+  };
+
+  const handleDetail = (id: string) => {
+    if (onNavigateDetail) onNavigateDetail(id);
+    else if (navigate) navigate(`/especialistas/${id}`);
+  };
+
+  const handleEdit = (id: string) => {
+    if (onNavigateEdit) onNavigateEdit(id);
+    else if (navigate) navigate(`/especialistas/${id}/editar`);
+  };
 
   const filtrados = lista.filter((e) => {
     const matchBusqueda =
@@ -42,9 +75,13 @@ export const EspecialistasPage = () => {
   const toggleActivo = (id: string) =>
     setLista((prev) => prev.map((e) => (e.id === id ? { ...e, activo: !e.activo } : e)));
 
+  // Métricas para las tarjetas KPI (Origen: develop)
   const total = lista.length;
   const activos = lista.filter((e) => e.activo).length;
   const enMonitoreo = lista.filter((e) => e.activo && e.niveles.length > 0).length;
+
+  // Si no es lectura extendida o si posee callback de detalles, habilita la columna de acciones
+  const showActionsColumn = !isReadOnly || !!onNavigateDetail;
 
   return (
     <div className="p-4 sm:p-6 flex flex-col gap-5">
@@ -59,10 +96,10 @@ export const EspecialistasPage = () => {
           </p>
         </div>
 
-        {/* Botón "Nuevo" — solo para roles con escritura */}
+        {/* Botón "Nuevo" — Oculto si la cuenta es Read-Only */}
         {!isReadOnly && (
           <button
-            onClick={() => navigate('/especialistas/nuevo')}
+            onClick={handleCreate}
             className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl border-none cursor-pointer transition-colors shadow-sm"
           >
             <svg
@@ -80,7 +117,7 @@ export const EspecialistasPage = () => {
           </button>
         )}
 
-        {/* Badge informativo para invitado */}
+        {/* Badge Informativo de Restricción */}
         {isReadOnly && (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/10 text-warning border border-warning/25 rounded-lg text-xs font-semibold">
             <svg
@@ -101,6 +138,7 @@ export const EspecialistasPage = () => {
 
       {/* ── KPIs ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Total especialistas */}
         <div className="bg-surface border border-border rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-text-muted text-[0.68rem] font-bold uppercase tracking-wider mb-1">
@@ -125,6 +163,7 @@ export const EspecialistasPage = () => {
           </div>
         </div>
 
+        {/* Activos */}
         <div className="bg-surface border border-border rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-text-muted text-[0.68rem] font-bold uppercase tracking-wider mb-1">
@@ -149,6 +188,7 @@ export const EspecialistasPage = () => {
           </div>
         </div>
 
+        {/* En monitoreo */}
         <div className="bg-text rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-white/60 text-[0.68rem] font-bold uppercase tracking-wider mb-1">
@@ -172,9 +212,9 @@ export const EspecialistasPage = () => {
         </div>
       </div>
 
-      {/* ── Búsqueda y filtros ── */}
+      {/* ── Barra de búsqueda y filtros ── */}
       <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-[200px] bg-surface border border-border rounded-xl px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+        <div className="flex items-center gap-2 flex-1 min-w-[220px] bg-surface border border-border rounded-xl px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
           <svg
             width="16"
             height="16"
@@ -246,8 +286,7 @@ export const EspecialistasPage = () => {
                   'Rol',
                   'Niveles',
                   'Estado',
-                  // Columna acciones solo si no es read-only
-                  ...(!isReadOnly ? ['Acciones'] : []),
+                  ...(showActionsColumn ? ['Acciones'] : []),
                 ].map((h) => (
                   <th
                     key={h}
@@ -262,7 +301,7 @@ export const EspecialistasPage = () => {
               {filtrados.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isReadOnly ? 7 : 8}
+                    colSpan={showActionsColumn ? 8 : 7}
                     className="px-4 py-12 text-center text-text-muted text-sm"
                   >
                     No se encontraron especialistas con los filtros aplicados.
@@ -322,7 +361,7 @@ export const EspecialistasPage = () => {
                       </div>
                     </td>
 
-                    {/* Estado — deshabilitado en read-only */}
+                    {/* Estado toggle — Deshabilitado para cuentas de Solo Lectura */}
                     <td className="px-4 py-3.5">
                       <button
                         onClick={() => !isReadOnly && toggleActivo(esp.id)}
@@ -340,12 +379,13 @@ export const EspecialistasPage = () => {
                       </button>
                     </td>
 
-                    {/* Acciones — columna completa solo si no es read-only */}
-                    {!isReadOnly && (
+                    {/* Acciones unificadas */}
+                    {showActionsColumn && (
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-1">
+                          {/* Ver detalle siempre disponible */}
                           <button
-                            onClick={() => navigate(`/especialistas/${esp.id}`)}
+                            onClick={() => handleDetail(esp.id)}
                             title="Ver detalle"
                             className="p-1.5 rounded-lg text-text-muted hover:text-[#4a6fa5] hover:bg-[#e8edf7] transition-all cursor-pointer bg-transparent border-none"
                           >
@@ -361,43 +401,49 @@ export const EspecialistasPage = () => {
                               <circle cx="12" cy="12" r="3" />
                             </svg>
                           </button>
-                          <button
-                            onClick={() => navigate(`/especialistas/${esp.id}/editar`)}
-                            title="Editar"
-                            className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-all cursor-pointer bg-transparent border-none"
-                          >
-                            <svg
-                              width="15"
-                              height="15"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(esp)}
-                            title="Eliminar"
-                            className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-all cursor-pointer bg-transparent border-none"
-                          >
-                            <svg
-                              width="15"
-                              height="15"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                              <path d="M10 11v6" />
-                              <path d="M14 11v6" />
-                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                            </svg>
-                          </button>
+
+                          {/* Operaciones restringidas para perfiles de Solo Lectura */}
+                          {!isReadOnly && (
+                            <>
+                              <button
+                                onClick={() => handleEdit(esp.id)}
+                                title="Editar"
+                                className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-all cursor-pointer bg-transparent border-none"
+                              >
+                                <svg
+                                  width="15"
+                                  height="15"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget(esp)}
+                                title="Eliminar"
+                                className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-all cursor-pointer bg-transparent border-none"
+                              >
+                                <svg
+                                  width="15"
+                                  height="15"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                  <path d="M10 11v6" />
+                                  <path d="M14 11v6" />
+                                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     )}

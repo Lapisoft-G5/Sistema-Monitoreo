@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { EstadoMonitoreo, Institucion, Nivel } from './types';
 import { DISTRITOS_LAMPA, NIVELES, NIVEL_LABEL, PROVINCIAS, ZONAS } from './types';
+import { MOCK_DOCENTES } from '../../entities/teacher/teacher.mock';
 import {
   bgApp,
   FormButton,
@@ -55,9 +56,42 @@ export const InstitutionEditForm = ({ institucion, onCancel, onSubmit }: Props) 
     correo: institucion.directorCorreo ?? '',
   }));
   const [submitted, setSubmitted] = useState(false);
+  const [dniSearch, setDniSearch] = useState('');
+
+  const directors = useMemo(() => MOCK_DOCENTES.filter((d) => d.cargo === 'Director'), []);
+
+  const filteredDirectors = useMemo(() => {
+    return directors.filter((d) => (dniSearch ? d.dni.includes(dniSearch) : true));
+  }, [directors, dniSearch]);
+
+  const directorOptions = useMemo(() => {
+    return filteredDirectors.map((d) => ({
+      value: d.nombres,
+      label: `${d.nombres} (DNI: ${d.dni})`,
+    }));
+  }, [filteredDirectors]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleSelectDirector = (name: string) => {
+    const selectedDir = directors.find((d) => d.nombres === name);
+    if (selectedDir) {
+      setForm((prev) => ({
+        ...prev,
+        director: selectedDir.nombres,
+        telefono: selectedDir.celular,
+        correo: selectedDir.correo,
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        director: '',
+        telefono: '',
+        correo: '',
+      }));
+    }
+  };
 
   const errors = {
     nombre: !form.nombre.trim() ? 'El nombre es obligatorio' : '',
@@ -187,19 +221,26 @@ export const InstitutionEditForm = ({ institucion, onCancel, onSubmit }: Props) 
       <SectionCard title="Datos del Director">
         <div style={twoCols}>
           <TextField
-            label="Director Responsable"
-            value={form.director}
-            onChange={(v) => set('director', v)}
-            placeholder="Ej. Lic. Marina Quispe"
+            label="Buscar por DNI del Director"
+            value={dniSearch}
+            onChange={(v) => setDniSearch(v.replace(/\D/g, '').slice(0, 8))}
+            placeholder="Ej. 87654321"
           />
+          <SelectField
+            label="Asignar Director"
+            value={form.director}
+            onChange={(v) => handleSelectDirector(v)}
+            options={directorOptions}
+            placeholder={dniSearch ? "Seleccione Director encontrado" : "Seleccione un Director"}
+          />
+        </div>
+        <div style={{ ...twoCols, marginTop: 18 }}>
           <TextField
             label="Teléfono de Contacto"
             value={form.telefono}
             onChange={(v) => set('telefono', v)}
             placeholder="Ej. 951 432 789"
           />
-        </div>
-        <div style={{ marginTop: 18 }}>
           <TextField
             label="Correo Institucional"
             value={form.correo}

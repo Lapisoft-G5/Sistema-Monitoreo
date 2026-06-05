@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import type { EstadoMonitoreo, Institucion, Nivel } from './types';
-import { DISTRITOS_LAMPA, ESTADOS, NIVELES, NIVEL_LABEL, PROVINCIAS, ZONAS } from './types';
+import { useState, useMemo } from 'react';
+import type { Institucion, Nivel } from './types';
+import { DISTRITOS_LAMPA, NIVELES, NIVEL_LABEL, PROVINCIAS, ZONAS } from './types';
+import { MOCK_DOCENTES } from '../../entities/teacher/teacher.mock';
 import {
   bgApp,
   FormButton,
@@ -32,7 +33,9 @@ interface FormState {
   distrito: string;
   zona: string;
   direccion: string;
-  estado: EstadoMonitoreo;
+  director: string;
+  directorTelefono: string;
+  directorCorreo: string;
 }
 
 const INITIAL_FORM: FormState = {
@@ -43,7 +46,9 @@ const INITIAL_FORM: FormState = {
   distrito: '',
   zona: '',
   direccion: '',
-  estado: 'Satisfactorio',
+  director: '',
+  directorTelefono: '',
+  directorCorreo: '',
 };
 
 const BookIcon = () => (
@@ -58,19 +63,52 @@ const MapPinIcon = () => (
     <circle cx="12" cy="10" r="3" />
   </svg>
 );
-const CheckCircleIcon = () => (
+const UserIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
   </svg>
 );
 
 export const InstitutionForm = ({ onCancel, onSubmit }: Props) => {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [submitted, setSubmitted] = useState(false);
+  const [dniSearch, setDniSearch] = useState('');
+
+  const directors = useMemo(() => MOCK_DOCENTES.filter((d) => d.cargo === 'Director'), []);
+
+  const filteredDirectors = useMemo(() => {
+    return directors.filter((d) => (dniSearch ? d.dni.includes(dniSearch) : true));
+  }, [directors, dniSearch]);
+
+  const directorOptions = useMemo(() => {
+    return filteredDirectors.map((d) => ({
+      value: d.nombres,
+      label: `${d.nombres} (DNI: ${d.dni})`,
+    }));
+  }, [filteredDirectors]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleSelectDirector = (name: string) => {
+    const selectedDir = directors.find((d) => d.nombres === name);
+    if (selectedDir) {
+      setForm((prev) => ({
+        ...prev,
+        director: selectedDir.nombres,
+        directorTelefono: selectedDir.celular,
+        directorCorreo: selectedDir.correo,
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        director: '',
+        directorTelefono: '',
+        directorCorreo: '',
+      }));
+    }
+  };
 
   const codigoOk = /^\d{7}$/.test(form.codigoModular);
   const errors = {
@@ -101,8 +139,10 @@ export const InstitutionForm = ({ onCancel, onSubmit }: Props) => {
       provincia: form.provincia,
       distrito: form.distrito,
       zona: form.zona,
-      director: null,
-      estado: form.estado,
+      director: form.director.trim() || null,
+      directorTelefono: form.directorTelefono.trim() || undefined,
+      directorCorreo: form.directorCorreo.trim() || undefined,
+      estado: 'Satisfactorio',
     });
   };
 
@@ -207,21 +247,28 @@ export const InstitutionForm = ({ onCancel, onSubmit }: Props) => {
         </div>
       </SectionCard>
 
-      <SectionCard icon={<CheckCircleIcon />} title="Estado de la Institución">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: textSecondary, maxWidth: 480 }}>
-            Determine el estado según el monitoreo de la institución.
-          </p>
-          <div style={{ minWidth: 220 }}>
-            <SelectField
-              label="Estado"
-              value={form.estado}
-              onChange={(v) => set('estado', v as EstadoMonitoreo)}
-              options={toOptions(ESTADOS)}
-              placeholder="Seleccione Estado"
-            />
-          </div>
+      <SectionCard icon={<UserIcon />} title="Director de la Institución (Opcional)">
+        <div style={twoCols}>
+          <TextField
+            label="Buscar por DNI del Director"
+            value={dniSearch}
+            onChange={(v) => setDniSearch(v.replace(/\D/g, '').slice(0, 8))}
+            placeholder="Ej. 87654321"
+          />
+          <SelectField
+            label="Asignar Director"
+            value={form.director}
+            onChange={(v) => handleSelectDirector(v)}
+            options={directorOptions}
+            placeholder={dniSearch ? "Seleccione Director encontrado" : "Seleccione un Director"}
+          />
         </div>
+        {form.director && (
+          <div style={{ ...twoCols, marginTop: 18 }}>
+            <TextField label="Teléfono de Contacto" value={form.directorTelefono} onChange={() => {}} disabled />
+            <TextField label="Correo Electrónico" value={form.directorCorreo} onChange={() => {}} disabled />
+          </div>
+        )}
       </SectionCard>
     </div>
   );

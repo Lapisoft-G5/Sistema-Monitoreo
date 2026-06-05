@@ -1,21 +1,21 @@
 
 export type UserRole =
   | 'director_ugel'
-  | 'especialista_admin'
-  | 'especialista_medio'
-  | 'especialista_bajo'
+  | 'jefe_area'
+  | 'coordinador_pedagogico'
+  | 'especialista'
   | 'director_institucion'
   | 'docente'
   | 'invitado';
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  director_ugel:         'Director UGEL',
-  especialista_admin:    'Especialista Admin',
-  especialista_medio:    'Especialista Medio',
-  especialista_bajo:     'Especialista Bajo',
-  director_institucion:  'Director de Institución',
-  docente:               'Docente',
-  invitado:              'Invitado',
+  director_ugel:          'Director UGEL',
+  jefe_area:              'Jefe de Área',
+  coordinador_pedagogico: 'Coordinador Pedagógico',
+  especialista:           'Especialista',
+  director_institucion:   'Director de Institución',
+  docente:                'Docente',
+  invitado:               'Invitado',
 };
 
 export type MenuItem =
@@ -30,47 +30,39 @@ export type MenuItem =
   | 'reportes'
   | 'configuracion';
 
-// ── CONFIGURACIÓN DE PERMISOS REUTILIZABLES ──
 const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
-
-const STAFF_PERMISSIONS: MenuItem[] = [
-  ...BASE_PERMISSIONS,
-  'dashboard',
-  'monitoreo',
-  'monitoreo_plan',
-  'monitoreo_gestion',
-];
 
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   director_ugel: [
-    ...STAFF_PERMISSIONS,
-    'instituciones',
+    'dashboard',
+    ...BASE_PERMISSIONS,
+  ],
+
+  jefe_area: [
     'instituciones_padron',
     'instituciones_docentes',
+    ...BASE_PERMISSIONS,
+  ],
+
+  coordinador_pedagogico: [
+    'monitoreo',
+    'monitoreo_plan',
     'especialistas',
+    ...BASE_PERMISSIONS,
   ],
 
-  especialista_admin: [
-    ...STAFF_PERMISSIONS,
-    'instituciones',
-    'instituciones_padron',
-    'instituciones_docentes',
-    'especialistas',
+  especialista: [
+    'dashboard',
+    'monitoreo',
+    'monitoreo_gestion',
+    ...BASE_PERMISSIONS,
   ],
-
-  especialista_medio: [
-    ...STAFF_PERMISSIONS,
-    'instituciones',
-    'instituciones_padron',
-    'instituciones_docentes',
-  ],
-
-  especialista_bajo: [...STAFF_PERMISSIONS],
 
   director_institucion: [
-    ...STAFF_PERMISSIONS,
-    'instituciones',          // Padre necesario para renderizar el contenedor del grupo en el Sidebar
-    'instituciones_docentes', // Único submenú con acceso permitido
+    'monitoreo',
+    'monitoreo_gestion',
+    'instituciones_docentes',
+    ...BASE_PERMISSIONS,
   ],
 
   docente: [...BASE_PERMISSIONS],
@@ -80,7 +72,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo',
     'monitoreo_plan',
     'monitoreo_gestion',
-    'instituciones',
     'instituciones_padron',
     'instituciones_docentes',
     'especialistas',
@@ -98,3 +89,18 @@ export const hasPermission = (role: UserRole, item: MenuItem): boolean =>
 
 export const isReadOnlyRole = (role: UserRole): boolean =>
   READ_ONLY_ROLES.includes(role);
+
+export const getDefaultLandingPage = (role: UserRole): string => {
+  switch (role) {
+    case 'jefe_area':
+      return '/instituciones/padron';
+    case 'coordinador_pedagogico':
+      return '/monitoreo/plan';
+    case 'director_institucion':
+      return '/instituciones/docentes';
+    case 'docente':
+      return '/reportes';
+    default:
+      return '/dashboard';
+  }
+};

@@ -20,17 +20,17 @@ export const MOCK_USERS: Record<string, User> = {
   '45678901': {
     id: '2', dni: '45678901',
     nombres: 'Juan', apellidos: 'Pérez López',
-    role: 'especialista_admin', firstLogin: false,
+    role: 'jefe_area', firstLogin: false,
   },
   '32145678': {
     id: '3', dni: '32145678',
     nombres: 'María', apellidos: 'Gómez Ticona',
-    role: 'especialista_medio', firstLogin: false,
+    role: 'coordinador_pedagogico', firstLogin: false,
   },
   '12345678': {
     id: '4', dni: '12345678',
     nombres: 'Pedro', apellidos: 'Huanca Flores',
-    role: 'especialista_bajo', firstLogin: false,
+    role: 'especialista', firstLogin: false,
   },
   '87654321': {
     id: '5', dni: '87654321',

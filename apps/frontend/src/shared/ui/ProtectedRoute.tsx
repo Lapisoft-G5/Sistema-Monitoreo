@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../features/authentication/useAuth';
-import { hasPermission, isReadOnlyRole } from '../constants/roles';
+import { hasPermission, isReadOnlyRole, getDefaultLandingPage } from '../constants/roles';
 import type { MenuItem } from '../constants/roles';
 
 interface Props {
@@ -24,9 +24,9 @@ export const ProtectedRoute = ({ requiredPermission, requiresWrite = false, chil
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Sin permiso para esta sección → dashboard
+  // Sin permiso para esta sección → landing page por defecto
   if (!hasPermission(user.role, requiredPermission)) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDefaultLandingPage(user.role)} replace />;
   }
 
   // Rol read-only intentando acceder a ruta de escritura → listado de la sección

@@ -5,6 +5,7 @@ import type { MenuItem } from '../shared/constants/roles';
 import { Sidebar } from '../widgets/Sidebar';
 import { TopBar } from '../widgets/TopBar';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
+import { InstitutionsPage } from '../pages/institutions/InstitutionsPage';
 import { PlaceholderPage } from '../shared/ui/PlaceholderPage';
 
 const PAGE_MAP: Record<string, React.ReactNode> = {
@@ -21,12 +22,7 @@ const PAGE_MAP: Record<string, React.ReactNode> = {
       description="Registre y realice seguimiento a las visitas de monitoreo pedagógico realizadas."
     />
   ),
-  instituciones_padron: (
-    <PlaceholderPage
-      title="Padrón de Instituciones"
-      description="Administre el padrón completo de instituciones educativas de la UGEL Lampa."
-    />
-  ),
+  instituciones_padron: <InstitutionsPage />,
   instituciones_docentes: (
     <PlaceholderPage
       title="Padrón de Docentes"

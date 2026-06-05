@@ -47,11 +47,11 @@ function buildEspecialistaResponse(overrides: Partial<Record<string, unknown>> =
 
 describe('EspecialistaService', () => {
   let service: InstanceType<typeof EspecialistaService>;
-  let findAllMock: jest.Mock;
-  let findByIdMock: jest.Mock;
-  let createMock: jest.Mock;
-  let updateMock: jest.Mock;
-  let deleteMock: jest.Mock;
+  let findAllMock: jest.Mock<any>;
+  let findByIdMock: jest.Mock<any>;
+  let createMock: jest.Mock<any>;
+  let updateMock: jest.Mock<any>;
+  let deleteMock: jest.Mock<any>;
 
   beforeEach(async () => {
     findAllMock = jest.fn();

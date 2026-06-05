@@ -50,6 +50,11 @@ const DocenteDetailPage = lazy(() =>
     default: m.DocenteDetailPage,
   })),
 );
+const InstitutionsPage = lazy(() =>
+  import('../pages/institutions/InstitutionsPage').then((m) => ({
+    default: m.InstitutionsPage,
+  })),
+);
 const PlaceholderPage = lazy(() =>
   import('../shared/ui/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })),
 );
@@ -204,10 +209,7 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="instituciones_padron">
             <Lazy>
-              <PlaceholderPage
-                title="Padrón de Instituciones"
-                description="Administre el padrón completo de instituciones educativas de la UGEL Lampa."
-              />
+              <InstitutionsPage />
             </Lazy>
           </ProtectedRoute>
         ),
@@ -288,34 +290,11 @@ const router = createBrowserRouter([
   { path: '*', element: <Navigate to="/dashboard" replace /> },
 ]);
 
-// ── Componente Raíz de la Aplicación con Selector de Estrategia ────────────────
+// ── Componente Raíz de la Aplicación ───────────────────────────────────────────
 export const App = () => {
-  // Permite al equipo decidir qué motor de renderizado y flujo de vistas usar durante el merge
-  const [routingMode, setRoutingMode] = useState<'router' | 'conditional'>('router');
-
   return (
     <AuthProvider>
-      {/* Panel de control de arquitectura exclusivo para el entorno de desarrollo */}
-      <div style={{ position: 'fixed', bottom: 12, left: 12, display: 'flex', gap: 6, zIndex: 99999, background: '#0f172a', padding: 6, borderRadius: 8, boxShadow: '0 4px 14px rgba(0,0,0,0.3)' }}>
-        <button
-          onClick={() => setRoutingMode('router')}
-          style={{ padding: '4px 10px', fontSize: '11px', background: routingMode === 'router' ? '#22c55e' : '#334155', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}
-        >
-          React Router Architecture (teachers-management)
-        </button>
-        <button
-          onClick={() => setRoutingMode('conditional')}
-          style={{ padding: '4px 10px', fontSize: '11px', background: routingMode === 'conditional' ? '#0f52ba' : '#334155', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}
-        >
-          Conditional Base Layout (develop)
-        </button>
-      </div>
-
-      {routingMode === 'router' ? (
-        <RouterProvider router={router} />
-      ) : (
-        <AuthRouter mode="conditional" />
-      )}
+      <RouterProvider router={router} />
     </AuthProvider>
   );
 };

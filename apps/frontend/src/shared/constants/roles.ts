@@ -1,4 +1,3 @@
-import type { User } from '../../entities/user';
 
 export type UserRole =
   | 'director_ugel'

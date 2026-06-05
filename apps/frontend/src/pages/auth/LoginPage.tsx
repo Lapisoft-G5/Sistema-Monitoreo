@@ -206,7 +206,7 @@ export const LoginPage = ({ onForgotPassword }: Props) => {
                   <svg
                     width="14"
                     height="14"
-                    view viewBox="0 0 24 24"
+                    viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"

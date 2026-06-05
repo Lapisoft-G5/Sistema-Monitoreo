@@ -33,7 +33,7 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
       }
     } catch (err: any) {
       setError('No se pudo conectar con el servidor institucional');
-    } finaly {
+    } finally {
       setLoading(false);
     }
   };

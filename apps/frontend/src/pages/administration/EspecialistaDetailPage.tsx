@@ -183,7 +183,7 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
           <h2 className="text-lg font-bold text-text">{esp.nombres}</h2>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span
-              className={`text-[0.68rem] font-bold px-2.5 py-1 rounded-full border ${ROL_COLORS[esp.role]}`}
+              className={`text-[0.68rem] font-bold px-2.5 py-1 rounded-full border ${ROL_COLORS[esp.rol]}`}
             >
               {ROL_ESPECIALISTA_LABELS[esp.rol]}
             </span>

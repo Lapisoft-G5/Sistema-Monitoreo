@@ -3,6 +3,7 @@ export * from './auth/change-password.contract.js';
 export * from './auth/forgot-password.contract.js';
 export * from './auth/reset-password.contract.js';
 export * from './auth/logout.contract.js';
+export * from './teachers/teachers.contract.js';
 
 
 

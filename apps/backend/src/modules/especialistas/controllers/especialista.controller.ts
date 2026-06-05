@@ -6,11 +6,12 @@ import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { RolesGuard } from '../../auth/guards/roles.guard.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 
 @Controller('especialistas')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles('especialista_admin', 'director_ugel')
+@Roles(RoleCode.COORDINADOR_PEDAGOGICO)
 export class EspecialistaController {
   constructor(private readonly service: EspecialistaService) {}
 

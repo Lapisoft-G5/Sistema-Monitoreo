@@ -277,7 +277,7 @@ describe('TeachersService', () => {
 
     it('should successfully delegate update to repository if validation passes', async () => {
       findDocenteByIdMock.mockResolvedValue(mockDocente);
-      findCargoByIdMock.mockResolvedValue({ id: 'new-cargo-uuid', nombre: 'Coordinador Pedagógico' });
+      findCargoByIdMock.mockResolvedValue({ id: 'new-cargo-uuid', nombre: 'Docente de Aula' });
       findPersonaByEmailNotIdMock.mockResolvedValue(null); // Correo libre
 
       const expectedResult = { id: 'docente-uuid', cursoAsignado: 'Física' };

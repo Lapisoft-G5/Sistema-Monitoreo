@@ -19,7 +19,8 @@ export class InstitutionsController {
    * Valida código modular (7 dígitos). Conflicto (409) si ya existe.
    */
   @Post()
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateInstitucionDto): Promise<IInstitucionResponse> {
     return this.institutionsService.create(dto);
@@ -30,7 +31,8 @@ export class InstitutionsController {
    * Retorna listado de instituciones con filtros opcionales y paginación.
    */
   @Get()
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleCode.JEFE_AREA, RoleCode.DIRECTOR_UGEL, RoleCode.COORDINADOR_PEDAGOGICO)
   @HttpCode(HttpStatus.OK)
   async findAll(@Query() query: QueryInstitucionDto): Promise<IInstitucionListResponse> {
     return this.institutionsService.findAll(query);
@@ -42,7 +44,8 @@ export class InstitutionsController {
    * Descarta cualquier intento de modificar codigo_modular.
    */
   @Put(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.OK)
   async update(
     @Param('id') id: string,
@@ -54,11 +57,11 @@ export class InstitutionsController {
   /**
    * PATCH /api/instituciones/:id/baja
    * Realiza la baja lógica (Soft Delete) cambiando el estado a "Inactiva".
-   * Requiere rol 'director_ugel' / 'admin_ugel'.
+   * Requiere rol 'jefe_area'.
    */
   @Patch(':id/baja')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleCode.DIRECTOR_UGEL, 'admin_ugel')
+  @Roles(RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.OK)
   async softDelete(@Param('id') id: string): Promise<IUpdateInstitucionResponse> {
     await this.institutionsService.softDelete(id);
@@ -71,11 +74,11 @@ export class InstitutionsController {
   /**
    * PATCH /api/instituciones/:id/alta
    * Revierte la baja lógica cambiando el estado a "Activa".
-   * Requiere rol 'director_ugel' / 'admin_ugel'.
+   * Requiere rol 'jefe_area'.
    */
   @Patch(':id/alta')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleCode.DIRECTOR_UGEL, 'admin_ugel')
+  @Roles(RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.OK)
   async restore(@Param('id') id: string): Promise<IUpdateInstitucionResponse> {
     await this.institutionsService.restore(id);

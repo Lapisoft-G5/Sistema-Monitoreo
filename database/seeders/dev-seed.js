@@ -11,9 +11,9 @@ const prisma = new PrismaClient({ adapter });
 
 const MOCK_ROLES = [
   { code: 'director_ugel', name: 'Director UGEL', description: 'Director de la UGEL Lampa' },
-  { code: 'especialista_admin', name: 'Especialista Admin', description: 'Especialista de Monitoreo Administrativo' },
-  { code: 'especialista_medio', name: 'Especialista Medio', description: 'Especialista de Monitoreo de Nivel Medio' },
-  { code: 'especialista_bajo', name: 'Especialista Bajo', description: 'Especialista de Monitoreo de Nivel Bajo' },
+  { code: 'jefe_area', name: 'Jefe de Área', description: 'Jefe de Área de la UGEL' },
+  { code: 'coordinador_pedagogico', name: 'Coordinador Pedagógico', description: 'Coordinador Pedagógico de la UGEL Lampa' },
+  { code: 'especialista', name: 'Especialista', description: 'Especialista de Monitoreo de la UGEL' },
   { code: 'director_institucion', name: 'Director de Institución', description: 'Director de Institución Educativa' },
   { code: 'docente', name: 'Docente', description: 'Docente de Aula' },
   { code: 'invitado', name: 'Invitado', description: 'Usuario de Consulta e Invitado' },
@@ -32,21 +32,21 @@ const MOCK_USERS = [
     email: 'juan.perez@ugel-lampa.gob.pe',
     firstName: 'Juan',
     lastName: 'Pérez López',
-    role: 'especialista_admin',
+    role: 'jefe_area',
   },
   {
     dni: '32145678',
     email: 'maria.gomez@ugel-lampa.gob.pe',
     firstName: 'María',
     lastName: 'Gómez Ticona',
-    role: 'especialista_medio',
+    role: 'coordinador_pedagogico',
   },
   {
     dni: '12345678',
     email: 'pedro.huanca@ugel-lampa.gob.pe',
     firstName: 'Pedro',
     lastName: 'Huanca Flores',
-    role: 'especialista_bajo',
+    role: 'especialista',
   },
   {
     dni: '87654321',
@@ -199,7 +199,7 @@ async function main() {
     });
 
     // C. Si es un rol de Especialista
-    if (userData.role.startsWith('especialista')) {
+    if (userData.role === 'especialista') {
       await prisma.especialista.upsert({
         where: { personaId: persona.id },
         update: {

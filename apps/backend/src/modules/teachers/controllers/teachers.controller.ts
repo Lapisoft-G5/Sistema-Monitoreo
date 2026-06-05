@@ -13,21 +13,21 @@ export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}
 
   @Post()
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.DIRECTOR_UGEL)
+  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateDocenteDto, @Req() req: any) {
     return this.teachersService.createDocente(dto, req.user);
   }
 
   @Get()
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.DIRECTOR_UGEL)
+  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA, RoleCode.DIRECTOR_UGEL)
   @HttpCode(HttpStatus.OK)
   async findAll(@Req() req: any) {
     return this.teachersService.getDocentes(req.user);
   }
 
   @Put(':id')
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.DIRECTOR_UGEL)
+  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.OK)
   async update(
     @Param('id') id: string,
@@ -38,7 +38,7 @@ export class TeachersController {
   }
 
   @Patch(':id/baja')
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.DIRECTOR_UGEL)
+  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.OK)
   async deactivate(@Param('id') id: string, @Req() req: any) {
     return this.teachersService.bajaDocente(id, req.user);

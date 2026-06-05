@@ -3,14 +3,15 @@ import * as bcrypt from 'bcrypt';
 import { EspecialistaRepository } from '../repositories/especialista.repository.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';
+import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 
 @Injectable()
 export class EspecialistaService {
   constructor(private readonly repository: EspecialistaRepository) {}
 
-  async findAll(): Promise<IEspecialistaResponse[]> {
-    return this.repository.findAll();
+  async findAll(filters?: QueryEspecialistaDto): Promise<IEspecialistaResponse[]> {
+    return this.repository.findAll(filters);
   }
 
   async findById(id: string): Promise<IEspecialistaResponse | null> {

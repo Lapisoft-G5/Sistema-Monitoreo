@@ -1,7 +1,8 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards, Get, Put, Delete, Param } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards, Get, Put, Delete, Param, Query } from '@nestjs/common';
 import { EspecialistaService } from '../services/especialista.service.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';
+import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { RolesGuard } from '../../auth/guards/roles.guard.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
@@ -14,8 +15,8 @@ export class EspecialistaController {
   constructor(private readonly service: EspecialistaService) {}
 
   @Get()
-  async findAll(): Promise<IEspecialistaResponse[]> {
-    return this.service.findAll();
+  async findAll(@Query() query: QueryEspecialistaDto): Promise<IEspecialistaResponse[]> {
+    return this.service.findAll(query);
   }
 
   @Get(':id')

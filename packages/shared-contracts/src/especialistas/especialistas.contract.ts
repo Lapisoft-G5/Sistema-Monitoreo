@@ -22,6 +22,12 @@ export interface IEspecialistaResponse {
   };
 }
 
+export interface IQueryEspecialistaRequest {
+  estado?: string;
+  especialidad?: string;
+  nivelEducativo?: string;
+}
+
 export interface ICreateEspecialistaRequest {
   dni: string;
   nombres: string;

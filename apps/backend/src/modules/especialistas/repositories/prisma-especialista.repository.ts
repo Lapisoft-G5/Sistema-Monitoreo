@@ -1,14 +1,19 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { EspecialistaRepository } from './especialista.repository.js';
-import type { IEspecialistaResponse, ICreateEspecialistaRequest, IUpdateEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
+import type { IEspecialistaResponse, ICreateEspecialistaRequest, IUpdateEspecialistaRequest, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
 
 @Injectable()
 export class PrismaEspecialistaRepository implements EspecialistaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<IEspecialistaResponse[]> {
+  async findAll(filters?: IQueryEspecialistaRequest): Promise<IEspecialistaResponse[]> {
     const list = await this.prisma.especialista.findMany({
+      where: {
+        estado: filters?.estado ?? 'Activo',
+        ...(filters?.especialidad && { especialidad: filters.especialidad }),
+        ...(filters?.nivelEducativo && { nivelEducativo: filters.nivelEducativo }),
+      },
       include: {
         persona: true,
       },
@@ -201,6 +206,15 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     });
     if (!esp) {
       throw new NotFoundException(`Especialista con ID ${id} no encontrado.`);
+    }
+
+    const [{ count }] = await this.prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count FROM visitas_monitoreo WHERE especialista_id = ${id}::uuid
+    `;
+    if (count > 0n) {
+      throw new UnprocessableEntityException(
+        `No se puede inactivar: el especialista tiene ${count} visita(s) de monitoreo registrada(s).`,
+      );
     }
 
     return await this.prisma.$transaction(async (tx) => {

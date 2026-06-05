@@ -1,29 +1,48 @@
 @import "tailwindcss";
 
 @theme {
-  /* Nuevo color de Acento Guinda/Carmesí Institucional UGEL */
-  --color-primary:       #990537; /* rgb(153, 5, 55) */
-  --color-primary-hover: #80042e;
-  --color-primary-dark:  #660324;
-  --color-primary-light: #fdf2f5; /* Fondo rosa/carmesí pastel sutil */
+  /* ==========================================================================
+     PALETAS DE COLORES INSTITUCIONALES (FUSIÓN COMPLETA)
+     ========================================================================== */
+
+  /* Azules institucionales basados en el Mockup (Origen: develop) */
+  --color-primary:        #0f52ba; /* Azul principal de botones y acentos */
+  --color-primary-hover:  #0d44a0;
+  --color-primary-dark:   #0a3680;
+  --color-primary-light:  #e6f0fa;
+
+  /* Nuevo color de Acento Guinda/Carmesí Institucional UGEL (Origen: feature/specialists-management) */
+  --color-primary-guinda:        #990537; /* rgb(153, 5, 55) */
+  --color-primary-guinda-hover:  #80042e;
+  --color-primary-guinda-dark:   #660324;
+  --color-primary-guinda-light:  #fdf2f5; /* Fondo rosa/carmesí pastel sutil */
 
   /* Paleta Light Mode para todo el Sistema */
-  --color-bg:            #f4f6f9; /* Fondo general grisáceo muy claro */
-  --color-surface:       #ffffff; /* Tarjetas y paneles blancos */
-  --color-border:        #e2e8f0; /* Separadores limpios */
+  --color-bg:             #f4f6f9; /* Fondo general grisáceo del panel */
+  --color-surface:        #ffffff; /* Tarjetas y paneles en blanco puro */
+  --color-border:         #e2e8f0; /* Bordes sutiles de tablas y divisiones */
 
-  /* Textos */
-  --color-text:          #1e293b; /* Slate oscuro para máxima legibilidad */
-  --color-text-muted:    #64748b;
-  --color-text-dim:      #94a3b8;
+  /* Textos legibles sobre fondo claro */
+  --color-text:           #1e293b; /* Texto principal oscuro (Slate) */
+  --color-text-muted:     #64748b; /* Subtítulos y etiquetas secundarias */
+  --color-text-dim:       #94a3b8; /* Placeholders */
 
-  /* Semáforos y Alertas */
-  --color-success:       #10b981;
-  --color-warning:       #f59e0b;
-  --color-danger:        #ef4444;
+  /* Semáforos y Alertas (Se conservan ambas variantes de tono para flexibilidad) */
+  --color-success:        #22c55e; /* Verde estándar (Origen: develop) */
+  --color-success-emerald:#10b981; /* Verde esmeralda (Origen: feature) */
+  
+  --color-warning:        #eab308; /* Amarillo evaluación (Origen: develop) */
+  --color-warning-amber:  #f59e0b; /* Ámbar alerta (Origen: feature) */
+  
+  --color-danger:         #ef4444;
 
+  /* Tipografía */
   --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
+
+/* ==========================================================================
+   ESTILOS GLOBALES BASE
+   ========================================================================== */
 
 html, body, #root { min-height: 100%; }
 
@@ -37,6 +56,7 @@ body {
 
 * { box-sizing: border-box; }
 
+/* Personalización de Scrollbars */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }

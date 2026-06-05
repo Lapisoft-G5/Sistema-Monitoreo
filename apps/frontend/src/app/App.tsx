@@ -1,26 +1,42 @@
-import { useAuth } from '../features/authentication/useAuth';
+import { useState } from 'react';
 import { AuthProvider } from '../features/authentication/AuthProvider';
+import { useAuth } from '../features/authentication/useAuth';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { ChangePasswordPage } from '../pages/auth/ChangePasswordPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
 import { AppShell } from './AppShell';
-import { useState } from 'react';
 
-type AuthView = 'login' | 'forgot-password';
+type UnauthView = 'login' | 'forgot-password';
 
 const AuthRouter = () => {
   const { isAuthenticated, requiresPasswordChange } = useAuth();
-  const [view, setView] = useState<AuthView>('login');
+  const [view, setView] = useState<UnauthView>('login');
+  const [token, setToken] = useState<string | null>(() => {
+    return new URLSearchParams(window.location.search).get('token');
+  });
 
-  // 1. Autenticado y sin necesidad de cambiar contraseña → app principal
-  if (isAuthenticated && !requiresPasswordChange) return <AppShell />;
+  if (token) {
+    return (
+      <ResetPasswordPage
+        onSuccess={() => {
+          // Limpiar el parámetro token de la URL tras el cambio exitoso
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setToken(null);
+          setView('login');
+        }}
+      />
+    );
+  }
 
-  // 2. Autenticado pero primer login → forzar cambio de contraseña
   if (isAuthenticated && requiresPasswordChange) {
     return <ChangePasswordPage onSuccess={() => {}} />;
   }
 
-  // 3. No autenticado → flujo de login
+  if (isAuthenticated) {
+    return <AppShell />;
+  }
+
   if (view === 'forgot-password') {
     return <ForgotPasswordPage onBack={() => setView('login')} />;
   }

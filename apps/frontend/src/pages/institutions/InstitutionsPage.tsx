@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { EstadoMonitoreo, Institucion, Nivel } from './types';
 import { ESTADOS, ESTADO_COLOR, getInitials, MOCK_INSTITUCIONES, NIVELES, NIVEL_STYLE } from './types';
 import { InstitutionForm } from './InstitutionForm';
+import { InstitutionEditForm } from './InstitutionEditForm';
 
 /* ============================================================
  * Padrón de Instituciones — Vista (datos mock)
@@ -239,7 +240,8 @@ const PageButton = ({
 /* ---------- Página ---------- */
 export const InstitutionsPage = () => {
   const [instituciones, setInstituciones] = useState<Institucion[]>(MOCK_INSTITUCIONES);
-  const [view, setView] = useState<'list' | 'create'>('list');
+  const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
+  const [editing, setEditing] = useState<Institucion | null>(null);
   const [nivelFilter, setNivelFilter] = useState('');
   const [distritoFilter, setDistritoFilter] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
@@ -272,13 +274,18 @@ export const InstitutionsPage = () => {
     setView('list');
     setPage(1);
   };
+  const handleUpdate = (inst: Institucion) => {
+    setInstituciones((prev) => prev.map((i) => (i.id === inst.id ? inst : i)));
+    setView('list');
+    setEditing(null);
+  };
   const handleView = (inst: Institucion) => {
     // TODO: vista de detalle de la institución
     console.log('TODO: ver institución', inst.codigoModular);
   };
   const handleEdit = (inst: Institucion) => {
-    // TODO: formulario de edición
-    console.log('TODO: editar institución', inst.codigoModular);
+    setEditing(inst);
+    setView('edit');
   };
   const handleDelete = (inst: Institucion) => {
     if (window.confirm(`¿Eliminar la institución "${inst.nombre}"?`)) {
@@ -287,7 +294,19 @@ export const InstitutionsPage = () => {
   };
 
   if (view === 'create') {
-    return <InstitutionForm onCancel={() => setView('list')} onSave={handleSaveNew} />;
+    return <InstitutionForm onCancel={() => setView('list')} onSubmit={handleSaveNew} />;
+  }
+  if (view === 'edit' && editing) {
+    return (
+      <InstitutionEditForm
+        institucion={editing}
+        onCancel={() => {
+          setView('list');
+          setEditing(null);
+        }}
+        onSubmit={handleUpdate}
+      />
+    );
   }
 
   const thStyle: React.CSSProperties = {

@@ -19,6 +19,8 @@ export interface Institucion {
   estado: EstadoMonitoreo;
   provincia?: string;
   zona?: string;
+  directorTelefono?: string;
+  directorCorreo?: string;
 }
 
 export const NIVELES: Nivel[] = ['INICIAL', 'PRONOEI', 'PRIMARIA', 'SECUNDARIA'];

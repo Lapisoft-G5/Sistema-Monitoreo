@@ -52,7 +52,7 @@ const NAV_ITEMS = [
     ],
   },
   {
-    id: 'instituciones',
+    id: 'instituciones_padron',
     label: 'Instituciones',
     icon: (
       <svg
@@ -67,10 +67,27 @@ const NAV_ITEMS = [
         <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     ),
-    children: [
-      { id: 'instituciones_padron', label: 'Padrón de Instituciones' },
-      { id: 'instituciones_docentes', label: 'Padrón de Docentes' },
-    ],
+    children: [],
+  },
+  {
+    id: 'instituciones_docentes',
+    label: 'Docentes',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+    children: [],
   },
   {
     id: 'especialistas',
@@ -219,11 +236,16 @@ export const Sidebar = ({ activePage, onNavigate, collapsed, onToggleCollapse }:
           const isActive =
             activePage === item.id || visibleChildren.some((c) => c.id === activePage);
 
+          const isJefeArea = user?.role === 'jefe_area';
+          const displayLabel = item.id === 'instituciones_docentes'
+            ? (isJefeArea ? 'Directores' : 'Docentes')
+            : item.label;
+
           return (
             <div key={item.id}>
               <button
                 onClick={() => (visibleChildren.length ? toggle(item.id) : onNavigate(item.id))}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? displayLabel : undefined}
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border-none
                   cursor-pointer transition-all text-left text-[0.875rem] font-medium
@@ -235,7 +257,7 @@ export const Sidebar = ({ activePage, onNavigate, collapsed, onToggleCollapse }:
                 `}
               >
                 <span className="flex-shrink-0 flex">{item.icon}</span>
-                {!collapsed && <span className="flex-1">{item.label}</span>}
+                {!collapsed && <span className="flex-1">{displayLabel}</span>}
                 {!collapsed && visibleChildren.length > 0 && (
                   <span
                     className={`text-text-dim flex transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}

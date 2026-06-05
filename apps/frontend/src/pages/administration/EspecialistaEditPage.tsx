@@ -1,16 +1,11 @@
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_ESPECIALISTAS } from '../../features/authentication/specialists.mock';
 import type { EspecialistaRol, NivelInstitucion } from '../../entities/specialist/specialist.types';
 import {
   ROL_ESPECIALISTA_LABELS,
   NIVELES_INSTITUCION,
 } from '../../entities/specialist/specialist.types';
-
-interface Props {
-  especialistaId: string;
-  onBack: () => void;
-  onSuccess: () => void;
-}
 
 interface FormData {
   nombres: string;
@@ -37,7 +32,6 @@ const inputClass = `
   focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all
 `;
 
-// Construye el FormData inicial fuera del componente — sin useEffect
 const buildInitialForm = (id: string): FormData | null => {
   const found = MOCK_ESPECIALISTAS.find((e) => e.id === id);
   if (!found) return null;
@@ -52,13 +46,14 @@ const buildInitialForm = (id: string): FormData | null => {
   };
 };
 
-export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Props) => {
-  // useState con initializer function — se ejecuta solo en el primer render, sin useEffect
-  const [form, setForm] = useState<FormData | null>(() => buildInitialForm(especialistaId));
+export const EspecialistaEditPage = () => {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+
+  const [form, setForm] = useState<FormData | null>(() => buildInitialForm(id ?? ''));
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading] = useState(false);
 
-  // Si no se encontró el especialista, renderizamos el estado de error directamente
   if (form === null) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -80,11 +75,10 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
           </div>
           <p className="text-text font-semibold mb-1">Especialista no encontrado</p>
           <p className="text-text-muted text-sm mb-4">
-            El especialista con ID <span className="font-mono text-text">{especialistaId}</span> no
-            existe.
+            El especialista con ID <span className="font-mono text-text">{id}</span> no existe.
           </p>
           <button
-            onClick={onBack}
+            onClick={() => navigate('/especialistas')}
             className="text-primary text-sm underline cursor-pointer bg-transparent border-none hover:text-primary-hover transition-colors"
           >
             Volver al listado
@@ -125,7 +119,7 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    onSuccess();
+    navigate('/especialistas'); // ← onSuccess reemplazado
   };
 
   return (
@@ -133,7 +127,7 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
       {/* ── Encabezado ── */}
       <div className="flex items-center gap-3">
         <button
-          onClick={onBack}
+          onClick={() => navigate(-1)} // ← onBack reemplazado
           className="p-2 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer"
         >
           <svg
@@ -386,7 +380,7 @@ export const EspecialistaEditPage = ({ especialistaId, onBack, onSuccess }: Prop
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={onBack}
+            onClick={() => navigate(-1)} // ← onBack reemplazado
             className="px-5 py-2.5 bg-surface border border-border text-text-muted hover:text-text hover:bg-bg text-sm font-medium rounded-xl cursor-pointer transition-all"
           >
             Cancelar

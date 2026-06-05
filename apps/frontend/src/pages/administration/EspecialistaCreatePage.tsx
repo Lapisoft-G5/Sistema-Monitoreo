@@ -1,14 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { EspecialistaRol, NivelInstitucion } from '../../entities/specialist/specialist.types';
 import {
   ROL_ESPECIALISTA_LABELS,
   NIVELES_INSTITUCION,
 } from '../../entities/specialist/specialist.types';
-
-interface Props {
-  onBack: () => void;
-  onSuccess: () => void;
-}
 
 interface FormData {
   nombres: string;
@@ -45,7 +41,9 @@ const inputClass = `
   focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all
 `;
 
-export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
+export const EspecialistaCreatePage = () => {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState<FormData>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading] = useState(false);
@@ -77,7 +75,7 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    onSuccess();
+    navigate('/especialistas');
   };
 
   return (
@@ -85,7 +83,7 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
       {/* ── Encabezado ── */}
       <div className="flex items-center gap-3">
         <button
-          onClick={onBack}
+          onClick={() => navigate('/especialistas')}
           className="p-2 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer"
         >
           <svg
@@ -131,7 +129,6 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
           </div>
 
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Nombres */}
             <div className="sm:col-span-2">
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Nombres y Apellidos <span className="text-danger">*</span>
@@ -146,7 +143,6 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
               {errors.nombres && <p className="text-danger text-xs mt-1">{errors.nombres}</p>}
             </div>
 
-            {/* DNI */}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 DNI <span className="text-danger">*</span>
@@ -162,7 +158,6 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
               {errors.dni && <p className="text-danger text-xs mt-1">{errors.dni}</p>}
             </div>
 
-            {/* Celular */}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Núm. Celular <span className="text-danger">*</span>
@@ -178,7 +173,6 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
               {errors.celular && <p className="text-danger text-xs mt-1">{errors.celular}</p>}
             </div>
 
-            {/* Correo */}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Correo Electrónico <span className="text-danger">*</span>
@@ -193,7 +187,6 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
               {errors.correo && <p className="text-danger text-xs mt-1">{errors.correo}</p>}
             </div>
 
-            {/* Especialidad */}
             <div>
               <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Especialidad <span className="text-danger">*</span>
@@ -328,7 +321,7 @@ export const EspecialistaCreatePage = ({ onBack, onSuccess }: Props) => {
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={onBack}
+            onClick={() => navigate('/especialistas')}
             className="px-5 py-2.5 bg-surface border border-border text-text-muted hover:text-text hover:bg-bg text-sm font-medium rounded-xl cursor-pointer transition-all"
           >
             Cancelar

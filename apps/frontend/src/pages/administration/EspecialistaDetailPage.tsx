@@ -1,11 +1,8 @@
+import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_ESPECIALISTAS } from '../../features/authentication/specialists.mock';
 import { ROL_ESPECIALISTA_LABELS } from '../../entities/specialist/specialist.types';
-
-interface Props {
-  especialistaId: string;
-  onBack: () => void;
-  onNavigateEdit: (id: string) => void;
-}
+import { useAuth } from '../../features/authentication/useAuth';
+import { isReadOnlyRole } from '../../shared/constants/roles';
 
 const ROL_COLORS: Record<string, string> = {
   especialista_admin: 'bg-primary/10 text-primary border-primary/25',
@@ -22,8 +19,20 @@ const CAMPO = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit }: Props) => {
-  const esp = MOCK_ESPECIALISTAS.find((e) => e.id === especialistaId);
+const ROL_DESCRIPTIONS: Record<string, string> = {
+  especialista_admin:
+    'Acceso completo: Dashboard, Monitoreo, Instituciones, Especialistas, Reportes y Configuración.',
+  especialista_medio: 'Acceso a Dashboard, Monitoreo, Instituciones, Reportes y Configuración.',
+  especialista_bajo: 'Acceso a Dashboard, Monitoreo, Reportes y Configuración.',
+};
+
+export const EspecialistaDetailPage = () => {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+
+  const isReadOnly = user ? isReadOnlyRole(user.role) : true;
+  const esp = MOCK_ESPECIALISTAS.find((e) => e.id === id);
 
   if (!esp) {
     return (
@@ -46,7 +55,7 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
           </div>
           <p className="text-text font-semibold mb-1">Especialista no encontrado</p>
           <button
-            onClick={onBack}
+            onClick={() => navigate('/especialistas')}
             className="text-primary text-sm underline cursor-pointer bg-transparent border-none"
           >
             Volver al listado
@@ -62,7 +71,7 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <button
-            onClick={onBack}
+            onClick={() => navigate('/especialistas')}
             className="p-2 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer"
           >
             <svg
@@ -82,23 +91,44 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
           </div>
         </div>
 
-        <button
-          onClick={() => onNavigateEdit(esp.id)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl border-none cursor-pointer transition-colors shadow-sm"
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+        {/* Botón Editar — oculto para roles de solo lectura */}
+        {!isReadOnly && (
+          <button
+            onClick={() => navigate(`/especialistas/${esp.id}/editar`)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl border-none cursor-pointer transition-colors shadow-sm"
           >
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-          Editar
-        </button>
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            Editar
+          </button>
+        )}
+
+        {/* Badge solo lectura para invitado */}
+        {isReadOnly && (
+          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/10 text-warning border border-warning/25 rounded-lg text-xs font-semibold">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Solo lectura
+          </span>
+        )}
       </div>
 
       {/* ── Tarjeta de perfil ── */}
@@ -106,12 +136,10 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
         <div className="bg-gradient-to-r from-primary to-primary-hover h-20" />
         <div className="px-6 pb-5">
           <div className="flex items-end justify-between gap-4 -mt-8 mb-4 flex-wrap">
-            {/* Avatar */}
             <div className="w-16 h-16 rounded-2xl bg-surface border-4 border-surface flex items-center justify-center text-primary text-xl font-black shadow-sm flex-shrink-0">
               {esp.nombres.split(' ')[0][0]}
               {esp.nombres.split(' ')[1]?.[0]}
             </div>
-            {/* Estado */}
             <span
               className={`text-xs font-bold px-3 py-1.5 rounded-full border mb-1 ${
                 esp.activo
@@ -162,7 +190,6 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
             <p className="text-text-dim text-xs">Datos de identificación</p>
           </div>
         </div>
-
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div className="sm:col-span-2">
             <CAMPO label="Nombres y Apellidos" value={esp.nombres} />
@@ -195,7 +222,6 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
             <p className="text-text-dim text-xs">Nivel de acceso asignado</p>
           </div>
         </div>
-
         <div className="p-5">
           <div className={`flex items-start gap-3.5 p-4 rounded-xl border ${ROL_COLORS[esp.rol]}`}>
             <svg
@@ -212,17 +238,7 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
             </svg>
             <div>
               <p className="text-sm font-bold">{ROL_ESPECIALISTA_LABELS[esp.rol]}</p>
-              <p className="text-xs mt-0.5 opacity-80">
-                {
-                  {
-                    especialista_admin:
-                      'Acceso completo: Dashboard, Monitoreo, Instituciones, Especialistas, Reportes y Configuración.',
-                    especialista_medio:
-                      'Acceso a Dashboard, Monitoreo, Instituciones, Reportes y Configuración.',
-                    especialista_bajo: 'Acceso a Dashboard, Monitoreo, Reportes y Configuración.',
-                  }[esp.rol]
-                }
-              </p>
+              <p className="text-xs mt-0.5 opacity-80">{ROL_DESCRIPTIONS[esp.rol]}</p>
             </div>
           </div>
         </div>
@@ -249,7 +265,6 @@ export const EspecialistaDetailPage = ({ especialistaId, onBack, onNavigateEdit 
             <p className="text-text-dim text-xs">Niveles educativos asignados al especialista</p>
           </div>
         </div>
-
         <div className="p-5">
           {esp.niveles.length === 0 ? (
             <p className="text-text-muted text-sm">Sin niveles asignados.</p>

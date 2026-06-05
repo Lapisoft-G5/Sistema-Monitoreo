@@ -135,21 +135,23 @@ const NAV_ITEMS = [
 export const Sidebar = ({ activePage, onNavigate, collapsed, onToggleCollapse }: Props) => {
   const { user, logout } = useAuth();
   const [openMenus, setOpenMenus] = useState<string[]>(['monitoreo']);
+
   const permissions = user ? ROLE_PERMISSIONS[user.role] : [];
   const has = (id: string) => permissions.includes(id as MenuItem);
+
   const toggle = (id: string) =>
     setOpenMenus((p) => (p.includes(id) ? p.filter((m) => m !== id) : [...p, id]));
 
   return (
     <aside
       className={`
-        flex flex-col bg-surface border-r border-border min-h-screen flex-shrink-0
+        flex flex-col bg-surface border-r border-border h-full min-h-screen flex-shrink-0
         transition-[width] duration-300 ease-in-out
         ${collapsed ? 'w-[68px]' : 'w-[240px]'}
       `}
     >
       {/* ── Logo ── */}
-      <div className="flex items-center gap-3 px-4 py-[18px] border-b border-border min-h-[72px]">
+      <div className="flex items-center gap-3 px-4 py-[18px] border-b border-border min-h-[64px]">
         <div className="w-9 h-9 flex-shrink-0 rounded-[10px] bg-primary flex items-center justify-center shadow-[0_2px_10px_rgba(153,5,55,0.25)]">
           <svg viewBox="0 0 32 32" fill="none" width="20" height="20">
             <circle cx="16" cy="16" r="13" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
@@ -175,9 +177,10 @@ export const Sidebar = ({ activePage, onNavigate, collapsed, onToggleCollapse }:
           </div>
         )}
 
+        {/* Botón colapsar — oculto en móvil (el overlay se cierra tocando afuera) */}
         <button
           onClick={onToggleCollapse}
-          className="ml-auto p-1.5 rounded-lg bg-bg border border-border text-text-muted hover:text-text hover:bg-border flex-shrink-0 cursor-pointer transition-colors"
+          className="ml-auto p-1.5 rounded-lg bg-bg border border-border text-text-muted hover:text-text hover:bg-border hidden md:flex flex-shrink-0 cursor-pointer transition-colors"
         >
           <svg
             width="14"
@@ -232,9 +235,7 @@ export const Sidebar = ({ activePage, onNavigate, collapsed, onToggleCollapse }:
                 `}
               >
                 <span className="flex-shrink-0 flex">{item.icon}</span>
-
                 {!collapsed && <span className="flex-1">{item.label}</span>}
-
                 {!collapsed && visibleChildren.length > 0 && (
                   <span
                     className={`text-text-dim flex transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}

@@ -15,34 +15,60 @@ const PAGE_TITLES: Record<string, string> = {
 
 interface Props {
   activePage: string;
+  /** Callback para abrir el sidebar en móvil (hamburger) */
+  onOpenMobileSidebar: () => void;
 }
 
-export const TopBar = ({ activePage }: Props) => {
+export const TopBar = ({ activePage, onOpenMobileSidebar }: Props) => {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const title = PAGE_TITLES[activePage] ?? 'UGEL Lampa';
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 bg-surface/95 border-b border-border backdrop-blur-xl sticky top-0 z-50">
-      {/* ── Breadcrumb ── */}
-      <div className="flex items-center gap-2 text-[0.83rem]">
-        <span className="text-text-muted">UGEL Lampa</span>
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className="text-text-dim"
+    <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-surface/95 border-b border-border backdrop-blur-xl sticky top-0 z-20">
+      {/* ── Izquierda: hamburger (móvil) + breadcrumb ── */}
+      <div className="flex items-center gap-3">
+        {/* Hamburger — solo visible en móvil */}
+        <button
+          onClick={onOpenMobileSidebar}
+          className="p-2 rounded-lg text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer bg-transparent border-none md:hidden"
+          aria-label="Abrir menú"
         >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-        <span className="text-text font-semibold">{title}</span>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-[0.83rem]">
+          <span className="text-text-muted hidden sm:inline">UGEL Lampa</span>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="text-text-dim hidden sm:block"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+          <span className="text-text font-semibold">{title}</span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {/* ── Notificaciones ── */}
+      {/* ── Derecha: acciones + usuario ── */}
+      <div className="flex items-center gap-1 sm:gap-2">
+        {/* Notificaciones */}
         <button className="relative p-2 rounded-lg text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer bg-transparent border-none">
           <svg
             width="19"
@@ -58,8 +84,8 @@ export const TopBar = ({ activePage }: Props) => {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary border-2 border-surface" />
         </button>
 
-        {/* ── Ayuda ── */}
-        <button className="p-2 rounded-lg text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer bg-transparent border-none">
+        {/* Ayuda — oculto en móvil pequeño */}
+        <button className="p-2 rounded-lg text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer bg-transparent border-none hidden sm:block">
           <svg
             width="19"
             height="19"
@@ -74,16 +100,19 @@ export const TopBar = ({ activePage }: Props) => {
           </svg>
         </button>
 
-        {/* ── Usuario ── */}
+        {/* Usuario */}
         <div className="relative">
           <button
             onClick={() => setOpen((o) => !o)}
-            className="flex items-center gap-2.5 px-3 py-[7px] bg-bg border border-border rounded-[10px] cursor-pointer hover:bg-border transition-colors"
+            className="flex items-center gap-2 sm:gap-2.5 px-2 sm:px-3 py-[7px] bg-bg border border-border rounded-[10px] cursor-pointer hover:bg-border transition-colors"
           >
+            {/* Avatar */}
             <div className="w-7 h-7 rounded-full flex-shrink-0 bg-primary flex items-center justify-center text-white text-[0.68rem] font-bold">
               {user?.nombres[0]}
               {user?.apellidos[0]}
             </div>
+
+            {/* Nombre + rol — solo visible en sm+ */}
             <div className="flex-col text-left hidden sm:flex">
               <span className="text-text text-[0.78rem] font-semibold whitespace-nowrap">
                 {user?.nombres} {user?.apellidos}
@@ -92,6 +121,7 @@ export const TopBar = ({ activePage }: Props) => {
                 {user ? ROLE_LABELS[user.role] : ''}
               </span>
             </div>
+
             <svg
               width="13"
               height="13"
@@ -99,7 +129,7 @@ export const TopBar = ({ activePage }: Props) => {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className="text-text-muted"
+              className="text-text-muted hidden sm:block"
             >
               <polyline points="6 9 12 15 18 9" />
             </svg>

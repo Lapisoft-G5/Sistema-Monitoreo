@@ -1,144 +1,87 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/authentication/useAuth';
-import { ROLE_PERMISSIONS } from '../shared/constants/roles';
-import type { MenuItem } from '../shared/constants/roles';
 import { Sidebar } from '../widgets/Sidebar';
 import { TopBar } from '../widgets/TopBar';
-import { DashboardPage } from '../pages/dashboard/DashboardPage';
-import { PlaceholderPage } from '../shared/ui/PlaceholderPage';
-import { EspecialistasPage } from '../pages/administration/EspecialistasPage';
-import { EspecialistaCreatePage } from '../pages/administration/EspecialistaCreatePage';
-import { EspecialistaEditPage } from '../pages/administration/EspecialistaEditPage';
-import { EspecialistaDetailPage } from '../pages/administration/EspecialistaDetailPage';
 
-// Vista activa: página simple o página con parámetro
-type ActiveView =
-  | { page: string }
-  | { page: 'especialistas_create' }
-  | { page: 'especialistas_detail'; id: string }
-  | { page: 'especialistas_edit'; id: string };
+const pathToMenuId = (pathname: string): string => {
+  const segments = pathname.replace(/^\//, '').split('/');
+  if (segments.length === 1) return segments[0];
+  return `${segments[0]}_${segments[1]}`;
+};
 
 export const AppShell = () => {
-  const { user } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const permissions = user ? ROLE_PERMISSIONS[user.role] : [];
-  const defaultPage = permissions.length > 0 ? permissions[0] : 'dashboard';
-
-  const [view, setView] = useState<ActiveView>({ page: defaultPage });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navigate = (page: string) => {
-    if (permissions.includes(page as MenuItem)) setView({ page });
-  };
-
-  // activePage que el Sidebar y TopBar necesitan para resaltar el ítem correcto
-  const activePage =
-    view.page === 'especialistas_create' || view.page === 'especialistas_edit'
-      ? 'especialistas'
-      : view.page;
-
-  const renderContent = () => {
-    switch (view.page) {
-      // ── Especialistas ─────────────────────────────────────────────────────
-      case 'especialistas':
-        return (
-          <EspecialistasPage
-            onNavigateCreate={() => setView({ page: 'especialistas_create' })}
-            onNavigateEdit={(id) => setView({ page: 'especialistas_edit', id })}
-            onNavigateDetail={(id) => setView({ page: 'especialistas_detail', id })}
-          />
-        );
-
-      case 'especialistas_create':
-        return (
-          <EspecialistaCreatePage
-            onBack={() => setView({ page: 'especialistas' })}
-            onSuccess={() => setView({ page: 'especialistas' })}
-          />
-        );
-
-      case 'especialistas_detail':
-        return (
-          <EspecialistaDetailPage
-            especialistaId={(view as { page: 'especialistas_detail'; id: string }).id}
-            onBack={() => setView({ page: 'especialistas' })}
-            onNavigateEdit={(id) => setView({ page: 'especialistas_edit', id })}
-          />
-        );
-
-      case 'especialistas_edit':
-        return (
-          <EspecialistaEditPage
-            especialistaId={(view as { page: 'especialistas_edit'; id: string }).id}
-            onBack={() => setView({ page: 'especialistas' })}
-            onSuccess={() => setView({ page: 'especialistas' })}
-          />
-        );
-
-      // ── Dashboard ─────────────────────────────────────────────────────────
-      case 'dashboard':
-        return <DashboardPage />;
-
-      // ── Placeholders ──────────────────────────────────────────────────────
-      case 'monitoreo_plan':
-        return (
-          <PlaceholderPage
-            title="Plan de Monitoreo"
-            description="Gestione el cronograma anual de visitas de monitoreo a las instituciones educativas."
-          />
-        );
-      case 'monitoreo_gestion':
-        return (
-          <PlaceholderPage
-            title="Gestión de Monitoreo"
-            description="Registre y realice seguimiento a las visitas de monitoreo pedagógico realizadas."
-          />
-        );
-      case 'instituciones_padron':
-        return (
-          <PlaceholderPage
-            title="Padrón de Instituciones"
-            description="Administre el padrón completo de instituciones educativas de la UGEL Lampa."
-          />
-        );
-      case 'instituciones_docentes':
-        return (
-          <PlaceholderPage
-            title="Padrón de Docentes"
-            description="Gestione el registro de docentes por institución educativa."
-          />
-        );
-      case 'reportes':
-        return (
-          <PlaceholderPage
-            title="Reportes"
-            description="Genere y descargue reportes estadísticos sobre el desempeño educativo."
-          />
-        );
-      case 'configuracion':
-        return (
-          <PlaceholderPage
-            title="Configuración"
-            description="Gestione parámetros del sistema, usuarios y configuraciones generales."
-          />
-        );
-
-      default:
-        return <DashboardPage />;
+  // Redirigir a login si no está autenticado
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
     }
+  }, [isAuthenticated, navigate]);
+
+  // Cerrar sidebar móvil al cambiar de ruta
+  useEffect(() => {
+    const timer = setTimeout(() => setMobileOpen(false), 0);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  // Cerrar sidebar móvil al hacer resize a desktop
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) setMobileOpen(false);
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  if (!isAuthenticated) return null;
+
+  const activePage = pathToMenuId(location.pathname);
+
+  const handleNavigate = (page: string) => {
+    const route = page.includes('_') ? `/${page.replace('_', '/')}` : `/${page}`;
+    navigate(route);
   };
 
   return (
     <div className="flex min-h-screen bg-bg">
-      <Sidebar
-        activePage={activePage}
-        onNavigate={navigate}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar activePage={activePage} />
-        <main className="flex-1 overflow-y-auto">{renderContent()}</main>
+      {/* ── Overlay oscuro en móvil cuando el sidebar está abierto ── */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* ── Sidebar ── */}
+      <div
+        className={`
+          fixed inset-y-0 left-0 z-40 md:static md:z-auto md:flex md:flex-shrink-0
+          transition-transform duration-300 ease-in-out
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
+        <Sidebar
+          activePage={activePage}
+          onNavigate={handleNavigate}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        />
+      </div>
+
+      {/* ── Contenido principal ── */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <TopBar activePage={activePage} onOpenMobileSidebar={() => setMobileOpen(true)} />
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

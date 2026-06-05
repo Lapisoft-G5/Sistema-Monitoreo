@@ -25,6 +25,7 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
   const rules = validate(pwd);
   const allValid = rules.length && rules.uppercase && rules.number;
 
+  // Manejo del formulario unificado con el try/catch/finally robusto de develop
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!allValid) {
@@ -35,8 +36,10 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
       setError('Las contraseñas no coinciden');
       return;
     }
+
     setLoading(true);
-    setError('');
+    setError(''); // Limpieza preventiva de errores previos
+    
     try {
       await changePassword(pwd);
       onSuccess();
@@ -54,35 +57,11 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-[#0a1931] relative overflow-hidden">
-      {/* Orbs de fondo suavizados idénticos al Login */}
+    <div className="min-h-screen flex items-center justify-center px-4 bg-bg relative overflow-hidden">
+      {/* Orbs de fondo fluidos usando tokens del tema (Sin estilos en línea hardcodeados) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div
-          style={{
-            position: 'absolute',
-            width: 600,
-            height: 600,
-            borderRadius: '50%',
-            background: '#1a3a8f',
-            opacity: 0.15,
-            filter: 'blur(120px)',
-            top: -150,
-            left: -150,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: 400,
-            height: 400,
-            borderRadius: '50%',
-            background: '#1e4bd8',
-            opacity: 0.1,
-            filter: 'blur(100px)',
-            bottom: -100,
-            right: -100,
-          }}
-        />
+        <div className="absolute w-[600px] h-[600px] rounded-full opacity-[0.07] blur-[120px] bg-primary -top-[150px] -left-[150px]" />
+        <div className="absolute w-[400px] h-[400px] rounded-full opacity-[0.05] blur-[100px] bg-primary-hover -bottom-[100px] -right-[100px]" />
       </div>
 
       <div className="relative z-10 w-full max-w-[430px] flex flex-col items-center">
@@ -96,7 +75,7 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
               className="w-[88px] h-[88px] mx-auto mb-3 object-contain"
             />
           ) : (
-            <div className="w-[88px] h-[88px] rounded-2xl mx-auto mb-3 flex items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 shadow-lg">
+            <div className="w-[88px] h-[88px] rounded-2xl mx-auto mb-3 flex items-center justify-center bg-primary shadow-lg">
               <svg viewBox="0 0 64 64" fill="none" width="44" height="44">
                 <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
                 <path
@@ -111,33 +90,33 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
               </svg>
             </div>
           )}
-          <h1 className="text-3xl font-black text-white tracking-wide">UGEL Lampa</h1>
-          <p className="text-xs text-slate-400 mt-1">Sistema de Monitoreo</p>
+          <h1 className="text-3xl font-black text-text tracking-wide">UGEL Lampa</h1>
+          <p className="text-xs text-text-muted mt-1">Sistema de Monitoreo</p>
         </div>
 
-        {/* Card Contenedor Principal */}
-        <div className="w-full bg-[#112240] border border-slate-700/60 rounded-2xl p-8 shadow-2xl">
+        {/* Card Contenedor Principal (Paleta Light Mode Semántica) */}
+        <div className="w-full bg-surface border border-border rounded-2xl p-8 shadow-sm">
           <div className="flex justify-center mb-5">
-            <span className="bg-blue-600 text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase">
+            <span className="bg-primary text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase">
               Actualizar Credencial
             </span>
           </div>
-          <p className="text-center text-xs text-slate-400 mb-6 line-clamp-2">
-            Bienvenido/a, <span className="text-blue-400 font-semibold">{user?.nombres}</span>. Por
-            seguridad institucional, configure una nueva contraseña.
+
+          <p className="text-center text-xs text-text-muted mb-6">
+            Bienvenido/a, <span className="text-primary font-semibold">{user?.nombres}</span>. Por seguridad institucional, configure una nueva contraseña.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* Campo: Nueva Contraseña */}
             <div>
               <div className="flex justify-between items-center mb-1.5">
-                <label className="text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase">
+                <label className="text-text-muted text-[0.68rem] font-bold tracking-wider uppercase">
                   Nueva Contraseña
                 </label>
                 <button
                   type="button"
                   onClick={() => setShow((s) => !s)}
-                  className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1.5 cursor-pointer bg-transparent border-none outline-none"
+                  className="text-primary hover:text-primary-hover text-xs flex items-center gap-1.5 cursor-pointer bg-transparent border-none outline-none transition-colors"
                 >
                   <svg
                     width="14"
@@ -163,8 +142,8 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
                   {show ? 'ocultar' : 'mostrar'}
                 </button>
               </div>
-              <div className="flex items-center bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors">
-                <span className="pl-3 text-slate-500">
+              <div className="flex items-center bg-bg border border-border rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                <span className="pl-3 text-text-dim flex items-center">
                   <svg
                     width="17"
                     height="17"
@@ -185,22 +164,26 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
                     setPwd(e.target.value);
                     setError('');
                   }}
-                  className="w-full bg-transparent border-none outline-none text-white text-sm px-3 py-3"
+                  className="w-full bg-transparent border-none outline-none text-text text-sm px-3 py-3 placeholder:text-text-dim"
                 />
               </div>
             </div>
 
-            {/* Panel Dinámico de Reglas de Seguridad */}
-            <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-3.5 flex flex-col gap-2.5">
+            {/* Panel Dinámico de Reglas de Seguridad (Estructura clara de develop + tokens semánticos) */}
+            <div className="bg-bg border border-border rounded-xl p-3.5 flex flex-col gap-2.5">
               {ruleItems.map((r) => {
                 const isValid = rules[r.key];
                 return (
                   <div
                     key={r.key}
-                    className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${isValid ? 'text-green-400' : 'text-slate-400/70'}`}
+                    className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${
+                      isValid ? 'text-success' : 'text-text-dim'
+                    }`}
                   >
                     <span
-                      className={`w-2 h-2 rounded-full transition-all duration-200 ${isValid ? 'bg-green-500 shadow-sm shadow-green-500/50 scale-110' : 'bg-slate-750 border border-slate-600'}`}
+                      className={`w-2 h-2 rounded-full flex-shrink-0 transition-all duration-200 ${
+                        isValid ? 'bg-success scale-110' : 'bg-transparent border border-border'
+                      }`}
                     />
                     {r.label}
                   </div>
@@ -210,11 +193,11 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
 
             {/* Campo: Confirmar Contraseña */}
             <div>
-              <label className="block text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
+              <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                 Confirmar Contraseña
               </label>
-              <div className="flex items-center bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors">
-                <span className="pl-3 text-slate-500">
+              <div className="flex items-center bg-bg border border-border rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                <span className="pl-3 text-text-dim flex items-center">
                   <svg
                     width="17"
                     height="17"
@@ -234,14 +217,14 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
                     setConfirm(e.target.value);
                     setError('');
                   }}
-                  className="w-full bg-transparent border-none outline-none text-white text-sm px-3 py-3"
+                  className="w-full bg-transparent border-none outline-none text-text text-sm px-3 py-3 placeholder:text-text-dim"
                 />
               </div>
             </div>
 
-            {/* Alerta de Error */}
+            {/* Alerta de Error Semántica */}
             {error && (
-              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-xs animate-pulse">
+              <div className="flex items-center gap-2 bg-danger/10 border border-danger/30 rounded-xl p-3 text-danger text-xs animate-pulse">
                 <svg
                   width="15"
                   height="15"
@@ -262,14 +245,11 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
             <button
               type="submit"
               disabled={loading || !allValid}
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/40 disabled:text-slate-500 font-bold text-sm tracking-wider rounded-xl transition-all shadow-lg shadow-blue-600/20 mt-2 cursor-pointer disabled:cursor-not-allowed border-none text-white"
+              className="w-full py-3.5 mt-2 bg-primary hover:bg-primary-hover text-white font-bold text-sm tracking-wider rounded-xl border-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span
-                    className="w-4 h-4 border-2 border-white/30 border-top-white rounded-full animate-spin"
-                    style={{ borderTopColor: '#fff' }}
-                  />
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Guardando...
                 </span>
               ) : (
@@ -279,7 +259,7 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
           </form>
         </div>
 
-        <p className="text-slate-500 text-[0.7rem] mt-5">
+        <p className="text-text-dim text-[0.7rem] mt-5">
           Plataforma de Desempeño Escolar © Puno, Perú 2024
         </p>
       </div>

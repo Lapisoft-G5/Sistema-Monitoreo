@@ -16,50 +16,34 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
   const [loading, setLoading] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
+  // Lógica interactiva robusta integrada de la rama develop
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (dni.length < 8 || !email) return;
+
     setLoading(true);
     setError(null);
-    const result = await forgotPassword(dni, email);
-    setLoading(false);
-    if (result.success) {
-      setStep('sent');
-    } else {
-      setError(result.error || 'Ocurrió un error inesperado');
+
+    try {
+      const result = await forgotPassword(dni, email);
+      if (result.success) {
+        setStep('sent');
+      } else {
+        setError(result.error || 'Ocurrió un error inesperado');
+      }
+    } catch (err: any) {
+      setError('No se pudo conectar con el servidor institucional');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-[#0a1931] relative overflow-hidden">
-      {/* Orbs de fondo suavizados idénticos al Login */}
+    <div className="min-h-screen flex items-center justify-center px-4 bg-bg relative overflow-hidden">
+      {/* Orbs de fondo fluidos integrados con el tema */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div
-          style={{
-            position: 'absolute',
-            width: 600,
-            height: 600,
-            borderRadius: '50%',
-            background: '#1a3a8f',
-            opacity: 0.15,
-            filter: 'blur(120px)',
-            top: -150,
-            left: -150,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: 400,
-            height: 400,
-            borderRadius: '50%',
-            background: '#1e4bd8',
-            opacity: 0.1,
-            filter: 'blur(100px)',
-            bottom: -100,
-            right: -100,
-          }}
-        />
+        <div className="absolute w-[600px] h-[600px] rounded-full opacity-[0.07] blur-[120px] bg-primary -top-[150px] -left-[150px]" />
+        <div className="absolute w-[400px] h-[400px] rounded-full opacity-[0.05] blur-[100px] bg-primary-hover -bottom-[100px] -right-[100px]" />
       </div>
 
       <div className="relative z-10 w-full max-w-[430px] flex flex-col items-center">
@@ -73,7 +57,7 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
               className="w-[88px] h-[88px] mx-auto mb-3 object-contain"
             />
           ) : (
-            <div className="w-[88px] h-[88px] rounded-2xl mx-auto mb-3 flex items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 shadow-lg">
+            <div className="w-[88px] h-[88px] rounded-2xl mx-auto mb-3 flex items-center justify-center bg-primary shadow-lg">
               <svg viewBox="0 0 64 64" fill="none" width="44" height="44">
                 <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
                 <path
@@ -88,16 +72,16 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
               </svg>
             </div>
           )}
-          <h1 className="text-3xl font-black text-white tracking-wide">UGEL Lampa</h1>
-          <p className="text-xs text-slate-400 mt-1">Sistema de Monitoreo</p>
+          <h1 className="text-3xl font-black text-text tracking-wide">UGEL Lampa</h1>
+          <p className="text-xs text-text-muted mt-1">Sistema de Monitoreo</p>
         </div>
 
-        {/* Card Contenedor Principal */}
-        <div className="w-full bg-[#112240] border border-slate-700/60 rounded-2xl p-8 shadow-2xl">
+        {/* Card Contenedor Principal Semántico */}
+        <div className="w-full bg-surface border border-border rounded-2xl p-8 shadow-sm">
           {/* Botón de retorno superior */}
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-blue-400 text-xs hover:text-blue-300 transition-colors cursor-pointer bg-transparent border-none outline-none mb-5 p-0"
+            className="flex items-center gap-2 text-primary hover:text-primary-hover text-xs transition-colors cursor-pointer bg-transparent border-none outline-none mb-5 p-0"
           >
             <svg
               width="15"
@@ -115,33 +99,33 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
           {step === 'form' ? (
             <div>
               <div className="flex justify-center mb-4">
-                <span className="bg-blue-600 text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase">
+                <span className="bg-primary text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase">
                   Recuperar Acceso
                 </span>
               </div>
 
-              <h2 className="text-white text-lg font-bold text-center mb-2">
+              <h2 className="text-text text-lg font-bold text-center mb-2">
                 ¿Olvidaste tu contraseña?
               </h2>
-              <p className="text-center text-xs text-slate-400 mb-6 leading-relaxed">
+              <p className="text-center text-xs text-text-muted mb-6 leading-relaxed">
                 Ingresa tu DNI y tu Correo electrónico registrado para enviarte las instrucciones de restablecimiento.
               </p>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                {/* Alerta de Error */}
+                {/* Alerta de Error integrada con diseño unificado */}
                 {error && (
-                  <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 text-xs leading-relaxed text-center">
+                  <div className="p-3.5 rounded-xl bg-danger/10 border border-danger/25 text-danger text-xs leading-relaxed text-center animate-pulse">
                     {error}
                   </div>
                 )}
 
                 {/* Campo DNI */}
                 <div>
-                  <label className="block text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
+                  <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                     DNI de Usuario
                   </label>
-                  <div className="flex items-center bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors">
-                    <span className="pl-3 text-slate-500">
+                  <div className="flex items-center bg-bg border border-border rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                    <span className="pl-3 text-text-dim flex items-center">
                       <svg
                         width="17"
                         height="17"
@@ -160,18 +144,18 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
                       value={dni}
                       onChange={(e) => setDni(e.target.value.replace(/\D/g, '').slice(0, 8))}
                       maxLength={8}
-                      className="w-full bg-transparent border-none outline-none text-white text-sm px-3 py-3"
+                      className="w-full bg-transparent border-none outline-none text-text text-sm px-3 py-3 placeholder:text-text-dim"
                     />
                   </div>
                 </div>
 
                 {/* Campo Correo Electrónico */}
                 <div>
-                  <label className="block text-slate-400 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
+                  <label className="block text-text-muted text-[0.68rem] font-bold tracking-wider uppercase mb-1.5">
                     Correo Electrónico
                   </label>
-                  <div className="flex items-center bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors">
-                    <span className="pl-3 text-slate-500">
+                  <div className="flex items-center bg-bg border border-border rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                    <span className="pl-3 text-text-dim flex items-center">
                       <svg
                         width="17"
                         height="17"
@@ -190,7 +174,7 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="w-full bg-transparent border-none outline-none text-white text-sm px-3 py-3"
+                      className="w-full bg-transparent border-none outline-none text-text text-sm px-3 py-3 placeholder:text-text-dim"
                     />
                   </div>
                 </div>
@@ -199,14 +183,11 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
                 <button
                   type="submit"
                   disabled={loading || dni.length < 8 || !email}
-                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/40 disabled:text-slate-500 font-bold text-sm tracking-wider rounded-xl transition-all shadow-lg shadow-blue-600/20 mt-2 cursor-pointer disabled:cursor-not-allowed border-none text-white"
+                  className="w-full py-3.5 mt-2 bg-primary hover:bg-primary-hover text-white font-bold text-sm tracking-wider rounded-xl border-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <span
-                        className="w-4 h-4 border-2 border-white/30 border-top-white rounded-full animate-spin"
-                        style={{ borderTopColor: '#fff' }}
-                      />
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Enviando...
                     </span>
                   ) : (
@@ -217,29 +198,30 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
             </div>
           ) : (
             <div className="text-center py-2">
-              {/* Icono de éxito alineado al color success global */}
-              <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-green-500/5">
+              {/* Icono de éxito alineado al color success global del nuevo @theme */}
+              <div className="w-16 h-16 rounded-full bg-success/10 border border-success/30 flex items-center justify-center mx-auto mb-5 shadow-sm">
                 <svg
                   width="28"
                   height="28"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#22c55e"
+                  stroke="currentColor"
                   strokeWidth="2.5"
+                  className="text-success"
                 >
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
               </div>
 
-              <h2 className="text-white text-xl font-bold mb-2">¡Instrucciones enviadas!</h2>
-              <p className="text-slate-400 text-xs leading-relaxed mb-6">
+              <h2 className="text-text text-xl font-bold mb-2">¡Instrucciones enviadas!</h2>
+              <p className="text-text-muted text-xs leading-relaxed mb-6">
                 Si los datos ingresados corresponden a un usuario activo, recibirás un correo de recuperación a la brevedad.
               </p>
 
               <button
                 onClick={onBack}
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 font-bold text-sm tracking-wider rounded-xl transition-all shadow-lg cursor-pointer border-none text-white"
+                className="w-full py-3.5 bg-primary hover:bg-primary-hover text-white font-bold text-sm tracking-wider rounded-xl border-none cursor-pointer transition-all shadow-sm"
               >
                 VOLVER AL INICIO
               </button>
@@ -247,7 +229,7 @@ export const ForgotPasswordPage = ({ onBack }: Props) => {
           )}
         </div>
 
-        <p className="text-slate-500 text-[0.7rem] mt-5">
+        <p className="text-text-dim text-[0.7rem] mt-5">
           Plataforma de Desempeño Escolar © Puno, Perú 2024
         </p>
       </div>

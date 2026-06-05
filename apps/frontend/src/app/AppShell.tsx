@@ -5,8 +5,19 @@ import type { MenuItem } from '../shared/constants/roles';
 import { Sidebar } from '../widgets/Sidebar';
 import { TopBar } from '../widgets/TopBar';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
-import { InstitutionsPage } from '../pages/institutions/InstitutionsPage';
 import { PlaceholderPage } from '../shared/ui/PlaceholderPage';
+import { EspecialistasPage } from '../pages/administration/EspecialistasPage';
+import { EspecialistaCreatePage } from '../pages/administration/EspecialistaCreatePage';
+import { EspecialistaEditPage } from '../pages/administration/EspecialistaEditPage';
+import { EspecialistaDetailPage } from '../pages/administration/EspecialistaDetailPage';
+import { InstitutionsPage } from '../pages/institutions/InstitutionsPage';
+
+// Vista activa: página simple o página con parámetro (Origen: feature branch)
+type ActiveView =
+  | { page: string }
+  | { page: 'especialistas_create' }
+  | { page: 'especialistas_detail'; id: string }
+  | { page: 'especialistas_edit'; id: string };
 
 const PAGE_MAP: Record<string, React.ReactNode> = {
   dashboard: <DashboardPage />,
@@ -91,25 +102,80 @@ PAGE_MAP['forbidden'] = <ForbiddenPage />;
 export const AppShell = () => {
   const { user } = useAuth();
 
-  // 1. Obtenemos la lista de permisos del rol actual
+  // 1. Obtención segura de permisos (Origen: develop)
   const permissions = user && ROLE_PERMISSIONS[user.role] ? ROLE_PERMISSIONS[user.role] : [];
-
   const defaultPage = permissions.length > 0 ? permissions[0] : 'dashboard';
 
-  // 3. Inicializamos el estado dinámicamente con su página por defecto
-  const [activePage, setActivePage] = useState<string>(defaultPage);
+  // 2. Inicialización del estado de tipo ActiveView (Origen: feature branch)
+  const [view, setView] = useState<ActiveView>({ page: defaultPage });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  // 3. Sistema de navegación con control de accesos (Origen: develop)
   const navigate = (page: string) => {
     if (permissions.includes(page as MenuItem)) {
-      setActivePage(page);
+      setView({ page });
     } else {
-      setActivePage('forbidden');
+      setView({ page: 'forbidden' });
     }
   };
 
-  const hasAccess = permissions.includes(activePage as MenuItem) || activePage === 'forbidden';
+  // 4. Cálculo de la sección activa para preservar el foco visual del menú lateral
+  const activePage =
+    ['especialistas_create', 'especialistas_edit', 'especialistas_detail'].includes(view.page)
+      ? 'especialistas'
+      : view.page;
 
+  // 5. Verificación de permisos extendida (Origen: develop + feature branch)
+  const hasAccess = permissions.includes(activePage as MenuItem) || view.page === 'forbidden';
+
+  // 6. Renderizador unificado de contenidos
+  const renderContent = () => {
+    if (!hasAccess) return <ForbiddenPage />;
+
+    switch (view.page) {
+      // ── Módulo Especialistas CRUD (Origen: feature branch) ─────────────────
+      case 'especialistas':
+        return (
+          <EspecialistasPage
+            onNavigateCreate={() => setView({ page: 'especialistas_create' })}
+            onNavigateEdit={(id) => setView({ page: 'especialistas_edit', id })}
+            onNavigateDetail={(id) => setView({ page: 'especialistas_detail', id })}
+          />
+        );
+
+      case 'especialistas_create':
+        return (
+          <EspecialistaCreatePage
+            onBack={() => setView({ page: 'especialistas' })}
+            onSuccess={() => setView({ page: 'especialistas' })}
+          />
+        );
+
+      case 'especialistas_detail':
+        return (
+          <EspecialistaDetailPage
+            especialistaId={(view as { page: 'especialistas_detail'; id: string }).id}
+            onBack={() => setView({ page: 'especialistas' })}
+            onNavigateEdit={(id) => setView({ page: 'especialistas_edit', id })}
+          />
+        );
+
+      case 'especialistas_edit':
+        return (
+          <EspecialistaEditPage
+            especialistaId={(view as { page: 'especialistas_edit'; id: string }).id}
+            onBack={() => setView({ page: 'especialistas' })}
+            onSuccess={() => setView({ page: 'especialistas' })}
+          />
+        );
+
+      // ── Páginas Generales / Fallback dinámico (Origen: develop) ────────────
+      default:
+        return PAGE_MAP[view.page] ?? PAGE_MAP[defaultPage];
+    }
+  };
+
+  // Estructura visual y Layout utilizando los estilos en línea actualizados de develop
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
       <Sidebar
@@ -121,7 +187,7 @@ export const AppShell = () => {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <TopBar activePage={activePage} />
         <main style={{ flex: 1, overflowY: 'auto' }}>
-          {hasAccess ? (PAGE_MAP[activePage] ?? PAGE_MAP[defaultPage]) : <ForbiddenPage />}
+          {renderContent()}
         </main>
       </div>
     </div>

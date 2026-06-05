@@ -3,13 +3,17 @@ import { AuthContext } from './AuthContext';
 import type { User } from '../../entities/user';
 import type { ILoginResponse } from '@sistema-monitoreo/shared-contracts';
 
-// Interceptor global de red (Fetch) para capturar 401 y 403 (Sesiones revocadas o primer acceso incumplido)
+// Constantes de penalización local (Origen: feature branch)
+const MAX_ATTEMPTS = 3;
+const PENALTY_TIME = 1800; // 30 minutos en segundos
+
+// Interceptor global de red Fetch (Origen: develop)
 const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   const response = await originalFetch(...args);
   if (response.status === 401 || response.status === 403) {
     const url = typeof args[0] === 'string' ? args[0] : (args[0] as any).url || '';
-    // No interceptar llamadas base de login o recuperación para evitar bucles infinitos
+    // Evitar bucles infinitos en endpoints de autenticación
     if (
       !url.includes('/api/auth/login') &&
       !url.includes('/api/auth/forgot-password') &&
@@ -27,6 +31,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
 
+  // Estados Globales de Seguridad / UI (Origen: feature branch)
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    const penaltyExpiry = localStorage.getItem('ugel_penalty_expiry');
+    if (penaltyExpiry) {
+      const remaining = Math.ceil((parseInt(penaltyExpiry) - Date.now()) / 1000);
+      return remaining > 0 ? remaining : 0;
+    }
+    return 0;
+  });
+
+  const [isPenalized, setIsPenalized] = useState<boolean>(() => timeLeft > 0);
+  const [attempts, setAttempts] = useState<number>(() => (timeLeft > 0 ? MAX_ATTEMPTS : 0));
+  const [showFailedModal, setShowFailedModal] = useState<boolean>(false);
+
+  // Efecto 1: Escuchar invalidación de sesión desde el Interceptor (Origen: develop)
   useEffect(() => {
     const handleInvalidation = () => {
       setUser(null);
@@ -38,7 +57,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // Efecto 2: Cuenta regresiva para la penalización de UI (Origen: feature branch)
+  useEffect(() => {
+    if (!isPenalized) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          localStorage.removeItem('ugel_penalty_expiry');
+          setTimeout(() => {
+            setIsPenalized(false);
+            setAttempts(0);
+          }, 0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isPenalized]);
+
+  // Método Login: Integra la petición HTTP real con el sistema local de bloqueos
   const login = async (dni: string, password: string) => {
+    if (isPenalized) {
+      return { success: false, error: 'Sistema penalizado temporalmente', isBlocked: true };
+    }
+
     try {
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
@@ -49,19 +94,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ dni, password }),
       });
 
+      // Manejo de errores de autenticación e intentos
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        return {
-          success: false,
-          error: errJson.message || 'Credenciales o datos incorrectos',
-          lockedUntil: errJson.lockedUntil || null,
-          failedLoginAttempts: errJson.failedLoginAttempts !== undefined ? errJson.failedLoginAttempts : errJson.failedAttempts || null,
-          remainingAttempts: errJson.remainingAttempts !== undefined ? errJson.remainingAttempts : null,
-        };
+        
+        // Sincroniza intentos: Prioriza lo que dicte el servidor, si no, usa el contador local
+        const backendAttempts = errJson.failedLoginAttempts ?? errJson.failedAttempts;
+        const nextAttempts = backendAttempts !== undefined ? backendAttempts : attempts + 1;
+        setAttempts(nextAttempts);
+
+        // Si se exceden los intentos o el backend explícitamente bloquea la cuenta
+        if (nextAttempts >= MAX_ATTEMPTS || errJson.lockedUntil) {
+          const expiryTime = errJson.lockedUntil 
+            ? new Date(errJson.lockedUntil).getTime() 
+            : Date.now() + PENALTY_TIME * 1000;
+          
+          const calculatedPenaltyTime = Math.max(0, Math.ceil((expiryTime - Date.now()) / 1000)) || PENALTY_TIME;
+
+          localStorage.setItem('ugel_penalty_expiry', expiryTime.toString());
+          setIsPenalized(true);
+          setTimeLeft(calculatedPenaltyTime);
+          setShowFailedModal(false); // Se oculta el modal azul para priorizar la pantalla roja
+
+          return {
+            success: false,
+            error: errJson.message || 'Demasiados intentos fallidos. Acceso bloqueado.',
+            isBlocked: true,
+            lockedUntil: errJson.lockedUntil || null,
+            failedLoginAttempts: nextAttempts,
+            remainingAttempts: 0,
+          };
+        } else {
+          // Intento fallido ordinario: muestra modal azul de advertencia (UI)
+          setShowFailedModal(true);
+          return {
+            success: false,
+            error: errJson.message || 'Credenciales o datos incorrectos',
+            lockedUntil: null,
+            failedLoginAttempts: nextAttempts,
+            remainingAttempts: errJson.remainingAttempts !== undefined ? errJson.remainingAttempts : MAX_ATTEMPTS - nextAttempts,
+          };
+        }
       }
 
+      // Autenticación exitosa
       const data: ILoginResponse = await response.json();
       localStorage.setItem('accessToken', data.accessToken);
+      
+      // Limpieza preventiva de penalizaciones locales
+      localStorage.removeItem('ugel_penalty_expiry');
+      setAttempts(0);
 
       setRequiresPasswordChange(data.user.firstLogin);
       
@@ -208,6 +290,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         forgotPassword,
         resetPassword,
         isAuthenticated: !!user,
+        attempts,
+        isPenalized,
+        timeLeft,
+        showFailedModal,
+        setShowFailedModal,
       }}
     >
       {children}

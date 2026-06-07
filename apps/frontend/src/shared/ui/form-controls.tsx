@@ -1,18 +1,24 @@
-import type { CSSProperties, ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import type { ReactNode, CSSProperties } from 'react';
+import { cn } from '@shared/lib/utils';
+import { Input } from './input';
+import { Label } from './label';
+import { Textarea } from './textarea';
+import { Card, CardHeader, CardTitle, CardContent } from './card';
+import { Button } from './button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
 
 /* ============================================================
- * Controles de formulario reutilizables del módulo de
- * Instituciones (compartidos entre el alta y la edición).
+ * Controles de formulario reutilizables y responsivos,
+ * integrados y estilizados con componentes de shadcn/ui.
+ * Mantiene la misma API para evitar romper compatibilidad.
  * ============================================================ */
-
-export const bgApp = '#f8fafc';
-export const cardBg = '#ffffff';
-export const textPrimary = '#1e293b';
-export const textSecondary = '#64748b';
-export const accentBlue = '#0046c7';
-export const danger = '#ef4444';
-export const borderCol = '#e2e8f0';
-export const cardShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)';
 
 export interface Option {
   value: string;
@@ -21,6 +27,7 @@ export interface Option {
 
 export const toOptions = (values: string[]): Option[] => values.map((v) => ({ value: v, label: v }));
 
+// Estilos de grillas en formato CSSProperties para compatibilidad
 export const twoCols: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -44,39 +51,27 @@ export const SectionCard = ({
   headerRight?: ReactNode;
   children: ReactNode;
 }) => (
-  <div style={{ background: cardBg, border: `1px solid ${borderCol}`, boxShadow: cardShadow, borderRadius: 12, padding: 22 }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 18 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {icon && <span style={{ color: accentBlue, display: 'flex' }}>{icon}</span>}
-        <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: textPrimary }}>{title}</h2>
+  <Card className="border border-border shadow-xs">
+    <CardHeader className="flex flex-row items-center justify-between pb-3 pt-4 px-5 space-y-0">
+      <div className="flex items-center gap-2">
+        {icon && <span className="text-primary flex-shrink-0 flex">{icon}</span>}
+        <CardTitle className="text-sm font-bold text-text">{title}</CardTitle>
       </div>
       {headerRight}
-    </div>
-    {children}
-  </div>
+    </CardHeader>
+    <CardContent className="pb-4 pt-2 px-5">{children}</CardContent>
+  </Card>
 );
 
 export const FieldLabel = ({ label, required }: { label: string; required?: boolean }) => (
-  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: textPrimary, display: 'block', marginBottom: 6 }}>
+  <Label className="text-xs font-semibold text-text mb-1 block">
     {label}
-    {required && <span style={{ color: danger, marginLeft: 2 }}>*</span>}
-  </label>
+    {required && <span className="text-destructive ml-1">*</span>}
+  </Label>
 );
 
 export const ErrorText = ({ message }: { message?: string }) =>
-  message ? <span style={{ display: 'block', marginTop: 5, fontSize: '0.72rem', color: danger }}>{message}</span> : null;
-
-export const fieldStyle = (hasError: boolean): CSSProperties => ({
-  width: '100%',
-  padding: '10px 12px',
-  borderRadius: 8,
-  border: `1px solid ${hasError ? danger : borderCol}`,
-  background: cardBg,
-  color: textPrimary,
-  fontSize: '0.87rem',
-  outline: 'none',
-  boxSizing: 'border-box',
-});
+  message ? <span className="block mt-1 text-[0.72rem] text-destructive">{message}</span> : null;
 
 export const TextField = ({
   label,
@@ -97,25 +92,26 @@ export const TextField = ({
   disabled?: boolean;
   adornment?: ReactNode;
 }) => (
-  <div>
+  <div className="flex flex-col gap-1 w-full">
     <FieldLabel label={label} required={required} />
-    <div style={{ position: 'relative' }}>
-      <input
+    <div className="relative">
+      <Input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        style={{
-          ...fieldStyle(!!error),
-          paddingRight: adornment ? 38 : 12,
-          background: disabled ? '#eff6ff' : cardBg,
-          color: disabled ? textSecondary : textPrimary,
-          cursor: disabled ? 'not-allowed' : 'text',
-        }}
+        className={cn(
+          "w-full rounded-lg text-sm transition-all",
+          error && "border-destructive focus-visible:ring-destructive/30",
+          adornment && "pr-10",
+          disabled && "bg-muted cursor-not-allowed opacity-80"
+        )}
       />
       {adornment && (
-        <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}>{adornment}</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center text-text-muted">
+          {adornment}
+        </span>
       )}
     </div>
     <ErrorText message={error} />
@@ -139,34 +135,23 @@ export const SelectField = ({
   required?: boolean;
   error?: string;
 }) => (
-  <div>
+  <div className="flex flex-col gap-1 w-full">
     <FieldLabel label={label} required={required} />
-    <div style={{ position: 'relative' }}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          ...fieldStyle(!!error),
-          appearance: 'none',
-          WebkitAppearance: 'none',
-          paddingRight: 36,
-          color: value ? textPrimary : textSecondary,
-          cursor: 'pointer',
-        }}
-      >
-        <option value="">{placeholder}</option>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className={cn(
+        "w-full text-left text-sm rounded-lg h-9 border border-input bg-transparent", 
+        error && "border-destructive focus-visible:ring-destructive/30"
+      )}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent className="max-h-[300px] z-50">
         {options.map((o) => (
-          <option key={o.value} value={o.value}>
+          <SelectItem key={o.value} value={o.value} className="text-sm">
             {o.label}
-          </option>
+          </SelectItem>
         ))}
-      </select>
-      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: textSecondary, display: 'flex' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </span>
-    </div>
+      </SelectContent>
+    </Select>
     <ErrorText message={error} />
   </div>
 );
@@ -188,46 +173,42 @@ export const TextAreaField = ({
   error?: string;
   rows?: number;
 }) => (
-  <div>
+  <div className="flex flex-col gap-1 w-full">
     <FieldLabel label={label} required={required} />
-    <textarea
+    <Textarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      style={{ ...fieldStyle(!!error), resize: 'vertical', fontFamily: 'inherit' }}
+      className={cn(
+        "w-full rounded-lg text-sm transition-all min-h-[80px]",
+        error && "border-destructive focus-visible:ring-destructive/30"
+      )}
     />
     <ErrorText message={error} />
   </div>
 );
 
-/* Botón primario / secundario reutilizable para las acciones del formulario */
 export const FormButton = ({
   children,
   onClick,
   variant = 'primary',
+  disabled,
 }: {
   children: ReactNode;
   onClick: () => void;
   variant?: 'primary' | 'secondary';
+  disabled?: boolean;
 }) => (
-  <button
+  <Button
     onClick={onClick}
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 8,
-      padding: '10px 18px',
-      borderRadius: 10,
-      border: variant === 'primary' ? 'none' : `1px solid ${borderCol}`,
-      background: variant === 'primary' ? accentBlue : cardBg,
-      color: variant === 'primary' ? '#ffffff' : textSecondary,
-      fontSize: '0.87rem',
-      fontWeight: 600,
-      cursor: 'pointer',
-      boxShadow: variant === 'primary' ? '0 2px 10px rgba(0,70,199,0.25)' : 'none',
-    }}
+    variant={variant === 'primary' ? 'default' : 'outline'}
+    disabled={disabled}
+    className={cn(
+      "font-semibold rounded-lg text-sm px-4.5 py-2",
+      variant === 'primary' ? 'shadow-sm' : ''
+    )}
   >
     {children}
-  </button>
+  </Button>
 );

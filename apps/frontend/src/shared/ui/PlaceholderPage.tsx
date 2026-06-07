@@ -1,3 +1,5 @@
+import { FileText } from 'lucide-react';
+
 interface Props {
   title: string;
   description?: string;
@@ -9,17 +11,7 @@ export const PlaceholderPage = ({ title, description, icon }: Props) => (
     <div className="text-center max-w-[420px] bg-white/[0.03] border border-white/[0.07] rounded-2xl p-12">
       <div className="w-20 h-20 rounded-2xl bg-[rgb(153,5,55)]/10 border border-[rgb(153,5,55)]/20 flex items-center justify-center mx-auto mb-5 text-[rgb(220,80,110)]">
         {icon ?? (
-          <svg
-            width="38"
-            height="38"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <rect x="3" y="3" width="18" height="18" rx="3" />
-            <path d="M9 9h6M9 12h6M9 15h4" />
-          </svg>
+          <FileText className="h-[38px] w-[38px]" strokeWidth={1.5} />
         )}
       </div>
       <h2 className="text-white text-[1.45rem] font-bold mb-3">{title}</h2>

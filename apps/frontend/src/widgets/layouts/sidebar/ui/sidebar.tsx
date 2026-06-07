@@ -1,0 +1,190 @@
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useUser } from '@entities/model-user';
+import { ROLE_PERMISSIONS, ROLE_LABELS } from '@shared/constants/roles';
+import type { MenuItem } from '@shared/constants/roles';
+import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@shared/ui/avatar';
+import { Button } from '@shared/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
+import { LogoUgelIcon } from '@shared/assets/icons/LogoUgelIcon';
+
+// Importamos la configuración pura
+import { SIDEBAR_CONFIG } from '../config/config';
+
+export const Sidebar = () => {
+  // 1. Estados Locales y Hooks de Navegación
+  const { user, logout } = useUser();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const [collapsed, setCollapsed] = useState(false);
+  const [openMenus, setOpenMenus] = useState<string[]>(['monitoreo']);
+
+  // 2. Lógica de Permisos (Intacta de tu código original)
+  const permissions = user ? ROLE_PERMISSIONS[user.role] : [];
+  const has = (id: string) => permissions.includes(id as MenuItem);
+
+  const toggleMenu = (id: string) =>
+    setOpenMenus((p) => (p.includes(id) ? p.filter((m) => m !== id) : [...p, id]));
+
+  const isJefeArea = user?.role === 'jefe_area';
+
+  return (
+    <aside
+      className={`
+        flex flex-col bg-surface border-r border-border h-full min-h-screen flex-shrink-0
+        transition-[width] duration-300 ease-in-out
+        ${collapsed ? 'w-[68px]' : 'w-[240px]'}
+      `}
+    >
+      {/* ── Logo ── */}
+      <div className="flex items-center gap-3 px-4 py-[18px] border-b border-border min-h-[64px]">
+        <div className="w-9 h-9 flex-shrink-0 rounded-[10px] bg-primary flex items-center justify-center shadow-[0_2px_10px_rgba(153,5,55,0.25)]">
+          <LogoUgelIcon />
+        </div>
+
+        {!collapsed && (
+          <div className="flex flex-col overflow-hidden flex-1 animate-in fade-in-0 duration-200">
+            <span className="text-text font-extrabold text-[0.95rem] whitespace-nowrap">
+              UGEL Lampa
+            </span>
+            <span className="text-text-muted text-[0.63rem] whitespace-nowrap">
+              Gestión Pedagógica
+            </span>
+          </div>
+        )}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCollapsed(!collapsed)}
+          className="ml-auto h-7 w-7 rounded-lg text-text-muted hover:text-text hover:bg-muted hidden md:flex flex-shrink-0 cursor-pointer"
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* ── Tarjeta de usuario ── */}
+      {!collapsed && user && (
+        <div className="mx-2.5 my-3 px-3 py-2.5 rounded-xl bg-bg border border-border flex items-center gap-2.5 animate-in fade-in-0 duration-200">
+          <Avatar className="w-8 h-8">
+            <AvatarFallback className="bg-primary text-white text-[0.72rem] font-bold">
+              {user.nombres[0]}
+              {user.apellidos[0]}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-text text-[0.80rem] font-semibold truncate">
+              {user.nombres} {user.apellidos.split(' ')[0]}
+            </span>
+            <span className="text-text-muted text-[0.67rem]">{ROLE_LABELS[user.role]}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Navegación Dinámica ── */}
+      <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
+        {SIDEBAR_CONFIG.filter((item) => has(item.id as string)).map((item) => {
+          const visibleChildren = item.children.filter((c) => has(c.id as string));
+          const isOpen = openMenus.includes(item.id as string);
+          
+          // Lógica de estado activo por ruta (URL)
+          const isActive = item.path 
+            ? location.pathname.startsWith(item.path)
+            : visibleChildren.some((c) => location.pathname.startsWith(c.path));
+
+          const displayLabel = item.id === 'instituciones_docentes'
+            ? (isJefeArea ? 'Directores' : 'Docentes')
+            : item.id === 'instituciones_coordinadores'
+            ? (isJefeArea ? 'Jefes de Gestión' : 'Coordinadores')
+            : item.label;
+
+          const triggerClasses = `
+            w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border-none
+            cursor-pointer transition-all text-left text-[0.875rem] font-medium outline-none
+            ${
+              isActive
+                ? 'bg-primary-light text-primary'
+                : 'bg-transparent text-text-muted hover:bg-bg hover:text-text'
+            }
+          `;
+
+          const TriggerContent = (
+            <>
+              <span className="flex-shrink-0 flex">{item.icon}</span>
+              {!collapsed && <span className="flex-1 truncate">{displayLabel}</span>}
+              {!collapsed && visibleChildren.length > 0 && (
+                <span className={`text-text-dim flex transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </span>
+              )}
+            </>
+          );
+
+          // Renderizado con submenú (Collapsible)
+          if (visibleChildren.length > 0) {
+            return (
+              <Collapsible key={item.id} open={isOpen} onOpenChange={() => toggleMenu(item.id as string)} className="flex flex-col">
+                <CollapsibleTrigger asChild title={collapsed ? displayLabel : undefined}>
+                  <button className={triggerClasses}>{TriggerContent}</button>
+                </CollapsibleTrigger>
+                {!collapsed && (
+                  <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                    <div className="pl-10 flex flex-col gap-0.5 mt-0.5 pb-1">
+                      {visibleChildren.map((child) => (
+                        <button
+                          key={child.id}
+                          onClick={() => navigate(child.path)}
+                          className={`
+                            flex items-center gap-2 px-3 py-2 rounded-lg border-none
+                            cursor-pointer text-left text-[0.82rem] transition-all bg-transparent outline-none
+                            ${location.pathname.startsWith(child.path) ? 'text-primary font-semibold' : 'text-text-muted hover:text-text hover:bg-bg'}
+                          `}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
+                          {child.label}
+                        </button>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                )}
+              </Collapsible>
+            );
+          }
+
+          // Renderizado de botón normal
+          return (
+            <div key={item.id} className="flex flex-col">
+              <button
+                onClick={() => navigate(item.path!)}
+                title={collapsed ? displayLabel : undefined}
+                className={triggerClasses}
+              >
+                {TriggerContent}
+              </button>
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* ── Footer ── */}
+      <div className="p-2 border-t border-border flex flex-col gap-1">
+        {!collapsed && (
+          <button className="flex items-center gap-2.5 px-3 py-2 rounded-lg border-none bg-transparent text-text-muted text-[0.78rem] cursor-pointer hover:bg-bg hover:text-text transition-colors text-left outline-none">
+            <HelpCircle className="h-[15px] w-[15px]" />
+            Soporte técnico
+          </button>
+        )}
+        <button
+          onClick={logout}
+          title="Cerrar sesión"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg border-none bg-transparent text-danger text-[0.84rem] cursor-pointer hover:bg-danger/10 transition-colors text-left outline-none"
+        >
+          <LogOut className="h-[17px] w-[17px]" />
+          {!collapsed && <span>Cerrar sesión</span>}
+        </button>
+      </div>
+    </aside>
+  );
+};

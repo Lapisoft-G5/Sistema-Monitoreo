@@ -39,6 +39,7 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     children: [
       { id: 'monitoreo_plan', label: 'Plan de Monitoreo', path: '/monitoreo/plan' },
       { id: 'monitoreo_gestion', label: 'Gestión de Monitoreo', path: '/monitoreo/gestion' },
+      { id: 'monitoreo_reportes', label: 'Reportes', path: '/monitoreo/reportes' },
     ],
   },
   {

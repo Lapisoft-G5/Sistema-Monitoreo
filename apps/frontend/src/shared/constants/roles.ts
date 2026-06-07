@@ -22,6 +22,7 @@ export type MenuItem =
   | 'monitoreo'
   | 'monitoreo_plan'
   | 'monitoreo_gestion'
+  | 'monitoreo_reportes'
   | 'instituciones'
   | 'instituciones_padron'
   | 'instituciones_docentes'
@@ -39,7 +40,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', 'reportes'],
 
-  especialista: ['dashboard', 'monitoreo', 'monitoreo_gestion', ...BASE_PERMISSIONS],
+  especialista: ['monitoreo', 'monitoreo_reportes'],
 
   director_institucion: [
     'monitoreo',
@@ -55,6 +56,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo',
     'monitoreo_plan',
     'monitoreo_gestion',
+    'monitoreo_reportes',
+    'instituciones',
     'instituciones_padron',
     'instituciones_docentes',
     'instituciones_coordinadores',
@@ -79,6 +82,8 @@ export const getDefaultLandingPage = (role: UserRole): string => {
       return '/instituciones/padron';
     case 'coordinador_pedagogico':
       return '/monitoreo/plan';
+    case 'especialista':
+      return '/monitoreo/reportes';
     case 'director_institucion':
       return '/instituciones/docentes';
     case 'docente':

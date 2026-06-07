@@ -3,6 +3,7 @@ import { AppShell } from '@widgets/layouts/';
 import { LoginPage } from '@/pages/login/login';
 import { adminRoutes } from '@/pages/jefeArea/jefeArea.routes';
 import { coordinatorRoutes } from '@/pages/coordinador/coordinador.routes';
+import { especialistaRoutes } from '@/pages/especialista/especialista.routes';
 import { RootRedirect } from './RootRedirect';
 
 export const router = createBrowserRouter([
@@ -14,6 +15,7 @@ export const router = createBrowserRouter([
       
       ...adminRoutes, 
       ...coordinatorRoutes,
+      ...especialistaRoutes,
     ],
   },
   { path: '/login', element: <LoginPage /> },

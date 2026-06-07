@@ -10,6 +10,15 @@ const PlanMonitoreoPage = lazy(() =>
 const EspecialistasPage = lazy(() =>
   import('./EspecialistasPage').then((m) => ({ default: m.EspecialistasPage })),
 );
+const EspecialistaCreatePage = lazy(() =>
+  import('./EspecialistaCreatePage').then((m) => ({ default: m.EspecialistaCreatePage })),
+);
+const EspecialistaEditPage = lazy(() =>
+  import('./EspecialistaEditPage').then((m) => ({ default: m.EspecialistaEditPage })),
+);
+const EspecialistaDetailPage = lazy(() =>
+  import('./EspecialistaDetailPage').then((m) => ({ default: m.EspecialistaDetailPage })),
+);
 const ReportesPage = lazy(() =>
   import('./ReportesPage').then((m) => ({ default: m.ReportesPage })),
 );
@@ -36,6 +45,30 @@ export const coordinatorRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <EspecialistasPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'especialistas/nuevo',
+        element: (
+          <LazyLoader>
+            <EspecialistaCreatePage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'especialistas/:id/editar',
+        element: (
+          <LazyLoader>
+            <EspecialistaEditPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'especialistas/:id',
+        element: (
+          <LazyLoader>
+            <EspecialistaDetailPage />
           </LazyLoader>
         ),
       },

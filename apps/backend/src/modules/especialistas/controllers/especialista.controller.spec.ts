@@ -9,7 +9,9 @@ import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { RolesGuard } from '../../auth/guards/roles.guard.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 
-function buildEspecialistaResponse(overrides: Partial<Record<string, unknown>> = {}): IEspecialistaResponse {
+function buildEspecialistaResponse(
+  overrides: Partial<Record<string, unknown>> = {},
+): IEspecialistaResponse {
   return {
     id: 'esp-uuid',
     personaId: 'persona-uuid',

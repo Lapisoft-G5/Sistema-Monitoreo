@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import { AuthRepository, CreateSessionData, CreateResetTokenData, LogAuthEventData } from './auth.repository.js';
+import {
+  AuthRepository,
+  CreateSessionData,
+  CreateResetTokenData,
+  LogAuthEventData,
+} from './auth.repository.js';
 import { User } from '../entities/user.entity.js';
 import { AuthSession } from '../entities/auth-session.entity.js';
 import { PasswordResetToken } from '../entities/password-reset-token.entity.js';
@@ -30,7 +35,7 @@ export class PrismaAuthRepository implements AuthRepository {
       return null;
     }
 
-    return user as unknown as User;
+    return user;
   }
 
   async findUserById(id: string): Promise<User | null> {
@@ -46,7 +51,7 @@ export class PrismaAuthRepository implements AuthRepository {
       return null;
     }
 
-    return user as unknown as User;
+    return user;
   }
 
   async findUserByDniAndEmail(dni: string, email: string): Promise<User | null> {
@@ -67,7 +72,7 @@ export class PrismaAuthRepository implements AuthRepository {
       return null;
     }
 
-    return user as unknown as User;
+    return user;
   }
 
   async createSession(data: CreateSessionData): Promise<AuthSession> {
@@ -145,7 +150,7 @@ export class PrismaAuthRepository implements AuthRepository {
       return null;
     }
 
-    return token as unknown as PasswordResetToken;
+    return token;
   }
 
   async useResetToken(tokenId: string, userId: string, passwordHash: string): Promise<void> {

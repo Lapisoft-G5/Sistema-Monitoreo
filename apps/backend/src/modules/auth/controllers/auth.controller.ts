@@ -8,7 +8,13 @@ import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { AuthGuard } from '../guards/auth.guard.js';
 import { RolesGuard } from '../guards/roles.guard.js';
 import { AllowFirstLogin } from '../decorators/allow-first-login.decorator.js';
-import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse, ILogoutResponse } from '@sistema-monitoreo/shared-contracts';
+import {
+  ILoginResponse,
+  IChangePasswordResponse,
+  IForgotPasswordResponse,
+  IResetPasswordResponse,
+  ILogoutResponse,
+} from '@sistema-monitoreo/shared-contracts';
 
 @Controller('auth')
 export class AuthController {

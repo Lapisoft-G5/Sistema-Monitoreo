@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Body,
+  Param,
+  Req,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { TeachersService } from '../services/teachers.service.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
@@ -29,11 +41,7 @@ export class TeachersController {
   @Put(':id')
   @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.OK)
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateDocenteDto,
-    @Req() req: any,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdateDocenteDto, @Req() req: any) {
     return this.teachersService.updateDocente(id, dto, req.user);
   }
 

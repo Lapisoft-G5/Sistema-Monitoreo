@@ -18,7 +18,7 @@ describe('ResetPasswordDto', () => {
 
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors.find(e => e.property === 'token')).toBeDefined();
+    expect(errors.find((e) => e.property === 'token')).toBeDefined();
   });
 
   it('should fail when password is less than 8 characters', async () => {
@@ -28,7 +28,7 @@ describe('ResetPasswordDto', () => {
 
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    const pwdError = errors.find(e => e.property === 'newPassword');
+    const pwdError = errors.find((e) => e.property === 'newPassword');
     expect(pwdError).toBeDefined();
   });
 
@@ -39,7 +39,7 @@ describe('ResetPasswordDto', () => {
 
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    const pwdError = errors.find(e => e.property === 'newPassword');
+    const pwdError = errors.find((e) => e.property === 'newPassword');
     expect(pwdError).toBeDefined();
   });
 
@@ -50,7 +50,7 @@ describe('ResetPasswordDto', () => {
 
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    const pwdError = errors.find(e => e.property === 'newPassword');
+    const pwdError = errors.find((e) => e.property === 'newPassword');
     expect(pwdError).toBeDefined();
   });
 });

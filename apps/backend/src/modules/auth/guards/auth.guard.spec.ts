@@ -34,9 +34,9 @@ describe('AuthGuard', () => {
     }).compile();
 
     guard = module.get<AuthGuard>(AuthGuard);
-    jwtService = module.get(JwtService) as jest.Mocked<JwtService>;
-    reflector = module.get(Reflector) as jest.Mocked<Reflector>;
-    authRepository = module.get(AuthRepository) as jest.Mocked<AuthRepository>;
+    jwtService = module.get(JwtService);
+    reflector = module.get(Reflector);
+    authRepository = module.get(AuthRepository);
   });
 
   function createMockContext(authHeader?: string): ExecutionContext {
@@ -82,7 +82,7 @@ describe('AuthGuard', () => {
 
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
-    
+
     const request = context.switchToHttp().getRequest();
     expect(request.user).toEqual(payload);
   });
@@ -104,7 +104,10 @@ describe('AuthGuard', () => {
     reflector.getAllAndOverride.mockReturnValue(false); // Does NOT allow first login
 
     await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
-    expect(reflector.getAllAndOverride).toHaveBeenCalledWith(ALLOW_FIRST_LOGIN_KEY, expect.any(Array));
+    expect(reflector.getAllAndOverride).toHaveBeenCalledWith(
+      ALLOW_FIRST_LOGIN_KEY,
+      expect.any(Array),
+    );
   });
 
   it('should return true if user has firstLogin=true and endpoint allows it', async () => {

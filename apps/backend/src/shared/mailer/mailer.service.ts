@@ -17,7 +17,7 @@ export class MailerService {
 
     if (host) {
       this.logger.log(`Inicializando transportador SMTP: ${host}:${port}`);
-      
+
       const auth = user && pass ? { user, pass } : undefined;
 
       this.transporter = nodemailer.createTransport({
@@ -30,7 +30,9 @@ export class MailerService {
         },
       });
     } else {
-      this.logger.warn('SMTP_HOST no configurado. Los correos se imprimirán únicamente en la consola de desarrollo.');
+      this.logger.warn(
+        'SMTP_HOST no configurado. Los correos se imprimirán únicamente en la consola de desarrollo.',
+      );
     }
   }
 
@@ -68,9 +70,10 @@ export class MailerService {
   async sendPasswordResetEmail(to: string, dni: string, token: string): Promise<void> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
     const resetUrl = `${frontendUrl}/?token=${token}`;
-    
+
     const subject = 'Recuperación de Contraseña - UGEL Lampa';
-    const text = `Hola, se ha solicitado un restablecimiento de contraseña para el DNI ${dni}.\n\n` +
+    const text =
+      `Hola, se ha solicitado un restablecimiento de contraseña para el DNI ${dni}.\n\n` +
       `Para restablecerla, ingrese al siguiente enlace en su navegador:\n${resetUrl}\n\n` +
       `Este enlace expira en 1 hora. Si no solicitó este cambio, ignore este correo.`;
 

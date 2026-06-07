@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "feature-sliced-design": {
+      "source": "aiko-atami/fsd",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "ac5259604cbadf64e47003377be8918e18779f5619a7ddb6f20506da1e238f2b"
+    }
+  }
+}

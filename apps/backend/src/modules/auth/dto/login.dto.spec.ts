@@ -49,4 +49,3 @@ describe('LoginDto', () => {
     expect(errors[0].property).toBe('password');
   });
 });
-

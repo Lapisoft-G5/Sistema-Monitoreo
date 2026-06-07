@@ -75,17 +75,27 @@ describe('AuthService', () => {
   let service: InstanceType<typeof AuthService>;
   let findUserByDniMock: jest.MockedFunction<(dni: string) => Promise<User | null>>;
   let findUserByIdMock: jest.MockedFunction<(id: string) => Promise<User | null>>;
-  let findUserByDniAndEmailMock: jest.MockedFunction<(dni: string, email: string) => Promise<User | null>>;
+  let findUserByDniAndEmailMock: jest.MockedFunction<
+    (dni: string, email: string) => Promise<User | null>
+  >;
   let createSessionMock: jest.MockedFunction<(data: unknown) => Promise<unknown>>;
   let createPasswordResetTokenMock: jest.MockedFunction<(data: unknown) => Promise<void>>;
   let updateLastLoginMock: jest.MockedFunction<(userId: string, date: Date) => Promise<void>>;
-  let updatePasswordMock: jest.MockedFunction<(userId: string, passwordHash: string) => Promise<void>>;
-  let incrementFailedAttemptsMock: jest.MockedFunction<(userId: string, now: Date) => Promise<number>>;
+  let updatePasswordMock: jest.MockedFunction<
+    (userId: string, passwordHash: string) => Promise<void>
+  >;
+  let incrementFailedAttemptsMock: jest.MockedFunction<
+    (userId: string, now: Date) => Promise<number>
+  >;
   let lockAccountMock: jest.MockedFunction<(userId: string, until: Date) => Promise<void>>;
   let resetFailedAttemptsMock: jest.MockedFunction<(userId: string) => Promise<void>>;
   let findResetTokenMock: jest.MockedFunction<(tokenHash: string) => Promise<any>>;
-  let useResetTokenMock: jest.MockedFunction<(tokenId: string, userId: string, passwordHash: string) => Promise<void>>;
-  let invalidateSessionMock: jest.MockedFunction<(sessionJti: string, reason: string) => Promise<void>>;
+  let useResetTokenMock: jest.MockedFunction<
+    (tokenId: string, userId: string, passwordHash: string) => Promise<void>
+  >;
+  let invalidateSessionMock: jest.MockedFunction<
+    (sessionJti: string, reason: string) => Promise<void>
+  >;
   let hasActiveSessionMock: jest.MockedFunction<(userId: string) => Promise<boolean>>;
   let logAuthEventMock: jest.MockedFunction<(data: any) => Promise<void>>;
   let jwtSignAsyncMock: jest.MockedFunction<
@@ -381,9 +391,9 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if user does not exist', async () => {
       findUserByIdMock.mockResolvedValue(null);
 
-      await expect(
-        service.changePassword('nonexistent-uuid', changePasswordDto),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.changePassword('nonexistent-uuid', changePasswordDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
 
       expect(findUserByIdMock).toHaveBeenCalledWith('nonexistent-uuid');
     });
@@ -433,7 +443,10 @@ describe('AuthService', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('recibirá un correo');
-      expect(findUserByDniAndEmailMock).toHaveBeenCalledWith(forgotPasswordDto.dni, forgotPasswordDto.email);
+      expect(findUserByDniAndEmailMock).toHaveBeenCalledWith(
+        forgotPasswordDto.dni,
+        forgotPasswordDto.email,
+      );
       expect(createPasswordResetTokenMock).not.toHaveBeenCalled();
       expect(sendPasswordResetEmailMock).not.toHaveBeenCalled();
       expect(logAuthEventMock).toHaveBeenCalledWith(
@@ -458,7 +471,10 @@ describe('AuthService', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('recibirá un correo');
-      expect(findUserByDniAndEmailMock).toHaveBeenCalledWith(forgotPasswordDto.dni, forgotPasswordDto.email);
+      expect(findUserByDniAndEmailMock).toHaveBeenCalledWith(
+        forgotPasswordDto.dni,
+        forgotPasswordDto.email,
+      );
       expect(createPasswordResetTokenMock).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: user.id,
@@ -475,7 +491,11 @@ describe('AuthService', () => {
           userAgent: 'Jest',
         }),
       );
-      expect(sendPasswordResetEmailMock).toHaveBeenCalledWith(user.persona?.correo, user.persona?.dni, expect.any(String));
+      expect(sendPasswordResetEmailMock).toHaveBeenCalledWith(
+        user.persona?.correo,
+        user.persona?.dni,
+        expect.any(String),
+      );
     });
 
     it('should throw BadRequestException if user exists but has an active parallel session', async () => {

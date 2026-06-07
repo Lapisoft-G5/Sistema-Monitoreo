@@ -1,4 +1,16 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards, Get, Put, Delete, Param, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+  Get,
+  Put,
+  Delete,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { EspecialistaService } from '../services/especialista.service.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';

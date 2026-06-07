@@ -1,4 +1,3 @@
-
 export type UserRole =
   | 'director_ugel'
   | 'jefe_area'
@@ -9,13 +8,13 @@ export type UserRole =
   | 'invitado';
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  director_ugel:          'Director UGEL',
-  jefe_area:              'Jefe de Área',
+  director_ugel: 'Director UGEL',
+  jefe_area: 'Jefe de Área',
   coordinador_pedagogico: 'Coordinador Pedagógico',
-  especialista:           'Especialista',
-  director_institucion:   'Director de Institución',
-  docente:                'Docente',
-  invitado:               'Invitado',
+  especialista: 'Especialista',
+  director_institucion: 'Director de Institución',
+  docente: 'Docente',
+  invitado: 'Invitado',
 };
 
 export type MenuItem =
@@ -26,6 +25,7 @@ export type MenuItem =
   | 'instituciones'
   | 'instituciones_padron'
   | 'instituciones_docentes'
+  | 'instituciones_coordinadores'
   | 'especialistas'
   | 'reportes'
   | 'configuracion';
@@ -33,30 +33,13 @@ export type MenuItem =
 const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
 
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
-  director_ugel: [
-    'dashboard',
-    ...BASE_PERMISSIONS,
-  ],
+  director_ugel: ['dashboard', ...BASE_PERMISSIONS],
 
-  jefe_area: [
-    'instituciones_padron',
-    'instituciones_docentes',
-    ...BASE_PERMISSIONS,
-  ],
+  jefe_area: ['instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores'],
 
-  coordinador_pedagogico: [
-    'monitoreo',
-    'monitoreo_plan',
-    'especialistas',
-    ...BASE_PERMISSIONS,
-  ],
+  coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', ...BASE_PERMISSIONS],
 
-  especialista: [
-    'dashboard',
-    'monitoreo',
-    'monitoreo_gestion',
-    ...BASE_PERMISSIONS,
-  ],
+  especialista: ['dashboard', 'monitoreo', 'monitoreo_gestion', ...BASE_PERMISSIONS],
 
   director_institucion: [
     'monitoreo',
@@ -74,6 +57,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_gestion',
     'instituciones_padron',
     'instituciones_docentes',
+    'instituciones_coordinadores',
     'especialistas',
     'reportes',
     'configuracion',
@@ -87,8 +71,7 @@ const READ_ONLY_ROLES: UserRole[] = ['invitado'];
 export const hasPermission = (role: UserRole, item: MenuItem): boolean =>
   ROLE_PERMISSIONS[role].includes(item);
 
-export const isReadOnlyRole = (role: UserRole): boolean =>
-  READ_ONLY_ROLES.includes(role);
+export const isReadOnlyRole = (role: UserRole): boolean => READ_ONLY_ROLES.includes(role);
 
 export const getDefaultLandingPage = (role: UserRole): string => {
   switch (role) {

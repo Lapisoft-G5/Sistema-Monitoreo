@@ -37,7 +37,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   jefe_area: ['instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores'],
 
-  coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', ...BASE_PERMISSIONS],
+  coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', 'reportes'],
 
   especialista: ['dashboard', 'monitoreo', 'monitoreo_gestion', ...BASE_PERMISSIONS],
 

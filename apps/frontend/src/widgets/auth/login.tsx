@@ -22,7 +22,7 @@ export const LoginCardWidget = () => {
   const handleLoginSubmit = async (dni: string, password: string) => {
     const result = await login(dni, password);
     if (result.success) {
-      navigate('/dashboard', { replace: true });
+      navigate('/', { replace: true });
     }
   };
 

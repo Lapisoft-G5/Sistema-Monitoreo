@@ -1,10 +1,22 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthService } from './services/auth.service.js';
+
+import { AuthSessionService } from './services/auth-session.service.js';
+import { AuthTokenService } from './services/auth-token.service.js';
+import { AuthPasswordService } from './services/auth-password.service.js';
+
 import { AuthController } from './controllers/auth.controller.js';
-import { AuthRepository } from './repositories/auth.repository.js';
-import { PrismaAuthRepository } from './repositories/prisma-auth.repository.js';
+
+import { UserRepository } from './repositories/user.repository.js';
+import { PrismaUserRepository } from './repositories/prisma-user.repository.js';
+import { SessionRepository } from './repositories/session.repository.js';
+import { PrismaSessionRepository } from './repositories/prisma-session.repository.js';
+import { PasswordTokenRepository } from './repositories/password-token.repository.js';
+import { PrismaPasswordTokenRepository } from './repositories/prisma-password-token.repository.js';
+import { AuditRepository } from './repositories/audit.repository.js';
+import { PrismaAuditRepository } from './repositories/prisma-audit.repository.js';
+
 import { PrismaModule } from '../../shared/prisma/prisma.module.js';
 import { MailerModule } from '../../shared/mailer/mailer.module.js';
 import { AuthGuard } from './guards/auth.guard.js';
@@ -28,14 +40,25 @@ import { RolesGuard } from './guards/roles.guard.js';
   ],
   controllers: [AuthController],
   providers: [
-    AuthService,
-    {
-      provide: AuthRepository,
-      useClass: PrismaAuthRepository,
-    },
+    AuthSessionService,
+    AuthTokenService,
+    AuthPasswordService,
+    { provide: UserRepository, useClass: PrismaUserRepository },
+    { provide: SessionRepository, useClass: PrismaSessionRepository },
+    { provide: PasswordTokenRepository, useClass: PrismaPasswordTokenRepository },
+    { provide: AuditRepository, useClass: PrismaAuditRepository },
     AuthGuard,
     RolesGuard,
   ],
-  exports: [AuthService, AuthRepository, AuthGuard, RolesGuard, JwtModule],
+  exports: [
+    AuthSessionService,
+    AuthTokenService,
+    AuthPasswordService,
+    UserRepository,
+    SessionRepository,
+    AuthGuard,
+    RolesGuard,
+    JwtModule
+  ],
 })
 export class AuthModule {}

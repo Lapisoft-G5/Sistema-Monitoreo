@@ -4,7 +4,7 @@ import type { Docente } from '@entities/model-docentes';
 
 const PAGE_SIZE = 10;
 
-export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 'Coordinador Pedagógico' = 'Director') => {
+export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula' = 'Director') => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const searchQuery = searchParams.get('search') || '';

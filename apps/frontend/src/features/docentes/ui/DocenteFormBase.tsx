@@ -6,6 +6,7 @@ import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
 import { Button } from '@shared/ui/button';
+import { useUser } from '@entities/model-user';
 
 interface Props {
   onCancel: () => void;
@@ -43,11 +44,22 @@ export const DocenteFormBase = ({
   defaultCargo = 'Director',
   submitLabel,
 }: Props) => {
+  const { user } = useUser();
+  const isDirectorIe = user?.role === 'director_institucion';
+
   const [form, setForm] = useState<DocenteFormData>(() => {
     if (initialData) return initialData;
+    
+    let initialInstId = '';
+    if (isDirectorIe && user?.institucion) {
+      const userInst = instituciones.find((i) => i.nombre === user.institucion);
+      initialInstId = userInst?.id ?? '1';
+    }
+
     return {
       ...INITIAL_FORM,
       cargo: defaultCargo,
+      institucionId: initialInstId,
     };
   });
   const [submitted, setSubmitted] = useState(false);
@@ -164,15 +176,24 @@ export const DocenteFormBase = ({
       {/* Sección 2: Datos Laborales */}
       <SectionCard icon={<Briefcase className="w-5 h-5" />} title="Detalles Laborales">
         <div style={{ maxWidth: 'calc(50% - 9px)', minWidth: 240 }}>
-          <SelectField
-            label="Institución de Destino (I.E.)"
-            required
-            value={form.institucionId}
-            onChange={(v) => set('institucionId', v)}
-            options={instituciones.map((i) => ({ value: i.id, label: i.nombre }))}
-            placeholder="Seleccione I.E."
-            error={showError('institucionId')}
-          />
+          {isDirectorIe ? (
+            <div className="flex flex-col gap-1 w-full">
+              <label className="text-xs font-bold text-text-muted">Institución de Destino (I.E.)</label>
+              <div className="flex items-center h-9 px-3 rounded-lg border border-border bg-muted/30 text-text font-medium text-sm">
+                {instituciones.find((i) => i.id === form.institucionId)?.nombre || 'I.E. No Asignada'}
+              </div>
+            </div>
+          ) : (
+            <SelectField
+              label="Institución de Destino (I.E.)"
+              required
+              value={form.institucionId}
+              onChange={(v) => set('institucionId', v)}
+              options={instituciones.map((i) => ({ value: i.id, label: i.nombre }))}
+              placeholder="Seleccione I.E."
+              error={showError('institucionId')}
+            />
+          )}
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
           <SelectField

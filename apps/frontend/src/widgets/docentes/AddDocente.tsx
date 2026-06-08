@@ -7,7 +7,7 @@ import type { DocenteFormData } from '@entities/model-docentes/validator';
 
 interface Props {
   instituciones: { id: string; nombre: string }[];
-  targetCargo?: 'Director' | 'Coordinador Pedagógico';
+  targetCargo?: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula';
   routePrefix?: string;
   submitLabel?: string;
 }

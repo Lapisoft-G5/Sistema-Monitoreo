@@ -3,9 +3,10 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user';
 import { Sidebar } from '@widgets/layouts/sidebar';
 import { Topbar } from '@widgets/layouts/topbar';
+import { ChangePasswordPage } from '@/pages/login/changePassword';
 
 export const AppShell = () => {
-  const { isAuthenticated } = useUser();
+  const { user, isAuthenticated } = useUser();
   const navigate = useNavigate();
   
   // El AppShell solo gestiona el estado visual del menú adaptativo (móvil)
@@ -19,7 +20,19 @@ export const AppShell = () => {
   }, [isAuthenticated, navigate]);
 
   // Evita parpadeos visuales de interfaz mientras se procesa la redirección
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || !user) return null;
+
+  // Intercepta el primer login: fuerza cambio de contraseña antes de acceder al sistema
+  if (user.firstLogin) {
+    return (
+      <ChangePasswordPage
+        onSuccess={() => {
+          // El changePassword del contexto ya actualiza firstLogin a false,
+          // lo que provoca un re-render y muestra el layout normal
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bg">

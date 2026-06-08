@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User } from './model';
 
 export interface UserContextType {
@@ -6,6 +6,7 @@ export interface UserContextType {
   setUser: (user: User | null) => void;
   isAuthenticated: boolean;
   logout: () => void;
+  changePassword: (newPassword: string) => Promise<void>;
 }
 
 export const UserContext = createContext<UserContextType | null>(null);
@@ -35,6 +36,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
 
+  const changePassword = useCallback(async (_newPassword: string) => {
+    // TODO: Conectar con el endpoint real del backend
+    // await authApi.changePassword(newPassword);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    // Marca al usuario como que ya no es su primer login
+    setUser((prev) => (prev ? { ...prev, firstLogin: false } : null));
+  }, []);
+
   return (
     <UserContext.Provider
       value={{
@@ -42,6 +52,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setUser,
         isAuthenticated: !!user,
         logout,
+        changePassword,
       }}
     >
       {children}

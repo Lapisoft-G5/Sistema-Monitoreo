@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, createHash } from 'node:crypto';
 import { UserRepository } from '../repositories/user.repository.js';
@@ -9,7 +14,11 @@ import { MailerService } from '../../../shared/mailer/mailer.service.js';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { ChangePasswordDto } from '../dto/change-password.dto.js';
-import { IForgotPasswordResponse, IResetPasswordResponse, IChangePasswordResponse } from '@sistema-monitoreo/shared-contracts';
+import {
+  IForgotPasswordResponse,
+  IResetPasswordResponse,
+  IChangePasswordResponse,
+} from '@sistema-monitoreo/shared-contracts';
 
 @Injectable()
 export class AuthPasswordService {
@@ -21,22 +30,39 @@ export class AuthPasswordService {
     private readonly mailerService: MailerService,
   ) {}
 
-  async forgotPassword(dto: ForgotPasswordDto, meta?: { ipAddress?: string; userAgent?: string }): Promise<IForgotPasswordResponse> {
+  async forgotPassword(
+    dto: ForgotPasswordDto,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ): Promise<IForgotPasswordResponse> {
     const user = await this.userRepository.findUserByDniAndEmail(dto.dni, dto.email);
     if (!user) {
-      await this.auditRepository.logAuthEvent({ eventType: 'FORGOT_PASSWORD_FAILURE_NOT_FOUND', eventDetail: `DNI o email no coincide: ${dto.dni}`, ...meta });
+      await this.auditRepository.logAuthEvent({
+        eventType: 'FORGOT_PASSWORD_FAILURE_NOT_FOUND',
+        eventDetail: `DNI o email no coincide: ${dto.dni}`,
+        ...meta,
+      });
       return { success: true, message: 'Si los datos son correctos, recibirá un correo.' };
     }
 
     if (!user.isActive) {
-      await this.auditRepository.logAuthEvent({ userId: user.id, eventType: 'FORGOT_PASSWORD_FAILURE_INACTIVE', ...meta });
+      await this.auditRepository.logAuthEvent({
+        userId: user.id,
+        eventType: 'FORGOT_PASSWORD_FAILURE_INACTIVE',
+        ...meta,
+      });
       return { success: true, message: 'Si los datos son correctos, recibirá un correo.' };
     }
 
     const hasActiveSession = await this.sessionRepository.hasActiveSession(user.id);
     if (hasActiveSession) {
-      await this.auditRepository.logAuthEvent({ userId: user.id, eventType: 'FORGOT_PASSWORD_FAILURE_ACTIVE_SESSION', ...meta });
-      throw new ConflictException('El usuario tiene una sesión activa. Debe cerrar sesión o cambiar su contraseña desde su perfil.');
+      await this.auditRepository.logAuthEvent({
+        userId: user.id,
+        eventType: 'FORGOT_PASSWORD_FAILURE_ACTIVE_SESSION',
+        ...meta,
+      });
+      throw new ConflictException(
+        'El usuario tiene una sesión activa. Debe cerrar sesión o cambiar su contraseña desde su perfil.',
+      );
     }
 
     const rawToken = randomBytes(32).toString('hex');
@@ -51,18 +77,35 @@ export class AuthPasswordService {
     });
 
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
-    await this.mailerService.sendPasswordResetEmail(user.persona!.correo!, user.persona!.nombres, resetLink);
-    await this.auditRepository.logAuthEvent({ userId: user.id, eventType: 'PASSWORD_RESET_REQUESTED', ...meta });
+    await this.mailerService.sendPasswordResetEmail(
+      user.persona!.correo!,
+      user.persona!.nombres,
+      resetLink,
+    );
+    await this.auditRepository.logAuthEvent({
+      userId: user.id,
+      eventType: 'PASSWORD_RESET_REQUESTED',
+      ...meta,
+    });
 
-    return { success: true, message: 'Si los datos son correctos, recibirá un correo electrónico con instrucciones.' };
+    return {
+      success: true,
+      message: 'Si los datos son correctos, recibirá un correo electrónico con instrucciones.',
+    };
   }
 
-  async resetPassword(dto: ResetPasswordDto, meta?: { ipAddress?: string; userAgent?: string }): Promise<IResetPasswordResponse> {
+  async resetPassword(
+    dto: ResetPasswordDto,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ): Promise<IResetPasswordResponse> {
     const tokenHash = createHash('sha256').update(dto.token).digest('hex');
     const resetToken = await this.passwordTokenRepository.findResetToken(tokenHash);
 
     if (!resetToken || resetToken.isUsed || resetToken.expiresAt < new Date()) {
-      await this.auditRepository.logAuthEvent({ eventType: 'PASSWORD_RESET_FAILURE_INVALID_TOKEN', ...meta });
+      await this.auditRepository.logAuthEvent({
+        eventType: 'PASSWORD_RESET_FAILURE_INVALID_TOKEN',
+        ...meta,
+      });
       throw new BadRequestException('El enlace de recuperación es inválido o ha expirado.');
     }
 
@@ -71,13 +114,29 @@ export class AuthPasswordService {
     }
 
     const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
-    await this.passwordTokenRepository.useResetToken(resetToken.id, resetToken.userId, newPasswordHash);
-    await this.auditRepository.logAuthEvent({ userId: resetToken.userId, eventType: 'PASSWORD_RESET_SUCCESS', ...meta });
+    await this.passwordTokenRepository.useResetToken(
+      resetToken.id,
+      resetToken.userId,
+      newPasswordHash,
+    );
+    await this.auditRepository.logAuthEvent({
+      userId: resetToken.userId,
+      eventType: 'PASSWORD_RESET_SUCCESS',
+      ...meta,
+    });
 
-    return { success: true, message: 'Contraseña restablecida exitosamente. Ya puede iniciar sesión.' };
+    return {
+      success: true,
+      message: 'Contraseña restablecida exitosamente. Ya puede iniciar sesión.',
+    };
   }
 
-  async changePassword(userId: string, sessionJti: string, dto: ChangePasswordDto, meta?: { ipAddress?: string; userAgent?: string }): Promise<IChangePasswordResponse> {
+  async changePassword(
+    userId: string,
+    sessionJti: string,
+    dto: ChangePasswordDto,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ): Promise<IChangePasswordResponse> {
     const user = await this.userRepository.findUserById(userId);
     if (!user) throw new UnauthorizedException('Usuario no encontrado');
 
@@ -85,6 +144,10 @@ export class AuthPasswordService {
     await this.userRepository.updatePassword(userId, newPasswordHash);
     await this.auditRepository.logAuthEvent({ userId, eventType: 'PASSWORD_CHANGED', ...meta });
 
-    return { success: true, message: 'Contraseña cambiada exitosamente. Se ha cerrado la sesión en todos los dispositivos.' };
+    return {
+      success: true,
+      message:
+        'Contraseña cambiada exitosamente. Se ha cerrado la sesión en todos los dispositivos.',
+    };
   }
 }

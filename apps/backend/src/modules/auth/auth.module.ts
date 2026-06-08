@@ -58,7 +58,7 @@ import { RolesGuard } from './guards/roles.guard.js';
     SessionRepository,
     AuthGuard,
     RolesGuard,
-    JwtModule
+    JwtModule,
   ],
 })
 export class AuthModule {}

@@ -2,24 +2,12 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
-import { InstitucionEducativa, Cargo, Persona, Prisma } from '../../../generated/prisma/client.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 import { DocenteWithRelations, TeachersRepository } from './teachers.repository.js';
 
 @Injectable()
 export class PrismaTeachersRepository implements TeachersRepository {
   constructor(private readonly prisma: PrismaService) {}
-
-  async findInstitucionById(id: string): Promise<InstitucionEducativa | null> {
-    return this.prisma.institucionEducativa.findUnique({
-      where: { id },
-    });
-  }
-
-  async findCargoById(id: string): Promise<Cargo | null> {
-    return this.prisma.cargo.findUnique({
-      where: { id },
-    });
-  }
 
   async findDocenteById(id: string): Promise<DocenteWithRelations | null> {
     return this.prisma.docente.findUnique({
@@ -51,15 +39,6 @@ export class PrismaTeachersRepository implements TeachersRepository {
     });
   }
 
-  async findPersonaByEmailNotId(email: string, excludePersonaId: string): Promise<Persona | null> {
-    return this.prisma.persona.findFirst({
-      where: {
-        correo: email,
-        NOT: { id: excludePersonaId },
-      },
-    });
-  }
-
   async updateDocenteEstado(id: string, estado: string): Promise<DocenteWithRelations> {
     return this.prisma.docente.update({
       where: { id },
@@ -70,7 +49,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
           include: { cargo: true },
         },
       },
-    }) as unknown as DocenteWithRelations;
+    });
   }
 
   async createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteWithRelations> {

@@ -82,17 +82,8 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
   async create(
     data: ICreateEspecialistaRequest,
     passwordHash: string,
+    roleId: string,
   ): Promise<IEspecialistaResponse> {
-    // 1. Validar unicidad del DNI
-    const existingPersona = await this.prisma.persona.findUnique({
-      where: { dni: data.dni },
-    });
-    if (existingPersona) {
-      throw new ConflictException(
-        `La persona con DNI ${data.dni} ya está registrada en el sistema.`,
-      );
-    }
-
     // 2. Usar transaccion de Prisma para insertar ordenadamente
     return await this.prisma.$transaction(async (tx) => {
       // A. Crear Persona
@@ -105,19 +96,11 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         },
       });
 
-      // B. Buscar el Rol
-      const role = await tx.role.findUnique({
-        where: { code: data.rolCode },
-      });
-      if (!role) {
-        throw new NotFoundException(`El rol ${data.rolCode} no existe.`);
-      }
-
       // C. Crear Usuario
       const user = await tx.user.create({
         data: {
           personaId: persona.id,
-          roleId: role.id,
+          roleId: roleId,
           passwordHash,
           isActive: true,
           isFirstLogin: true,
@@ -142,15 +125,19 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         user: {
           id: user.id,
           role: {
-            code: role.code,
-            name: role.name,
+            code: data.rolCode,
+            name: data.rolCode,
           },
         },
       };
     });
   }
 
-  async update(id: string, data: IUpdateEspecialistaRequest): Promise<IEspecialistaResponse> {
+  async update(
+    id: string,
+    data: IUpdateEspecialistaRequest,
+    roleId?: string,
+  ): Promise<IEspecialistaResponse> {
     const esp = await this.prisma.especialista.findUnique({
       where: { id },
     });
@@ -169,15 +156,12 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         },
       });
 
-      // B. Buscar y actualizar Rol en tabla User si corresponde
-      const role = await tx.role.findUnique({
-        where: { code: data.rolCode },
-      });
-      if (role) {
+      // B. Actualizar Rol en tabla User si corresponde
+      if (roleId) {
         await tx.user.update({
           where: { personaId: esp.personaId },
           data: {
-            roleId: role.id,
+            roleId: roleId,
           },
         });
       }

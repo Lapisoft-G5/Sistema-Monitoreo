@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { TeachersModule } from './modules/teachers/teachers.module.js';
 import { InstitutionsModule } from './modules/institutions/institutions.module.js';
 import { EspecialistasModule } from './modules/especialistas/especialistas.module.js';
+import { CatalogsModule } from './modules/catalogs/catalogs.module.js';
 
 @Module({
   imports: [
@@ -25,16 +26,19 @@ import { EspecialistasModule } from './modules/especialistas/especialistas.modul
         autoLogging: false,
       },
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     PrismaModule,
     HealthModule,
     AuthModule,
     TeachersModule,
     InstitutionsModule,
     EspecialistasModule,
+    CatalogsModule,
   ],
   providers: [
     {

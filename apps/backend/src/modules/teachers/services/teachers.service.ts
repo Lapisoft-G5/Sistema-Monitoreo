@@ -9,12 +9,14 @@ import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import { TeachersRepository } from '../repositories/teachers.repository.js';
+import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
 
 @Injectable()
 export class TeachersService {
   constructor(
     @Inject(TeachersRepository)
     private readonly teachersRepository: TeachersRepository,
+    private readonly catalogsRepository: CatalogsRepository,
   ) {}
 
   async createDocente(
@@ -45,13 +47,13 @@ export class TeachersService {
     }
 
     // 3. Validar existencia de la institución educativa
-    const institucion = await this.teachersRepository.findInstitucionById(dto.institucionId);
+    const institucion = await this.catalogsRepository.findInstitucionById(dto.institucionId);
     if (!institucion) {
       throw new NotFoundException('La institución educativa especificada no existe.');
     }
 
     // 4. Validar existencia del cargo
-    const cargo = await this.teachersRepository.findCargoById(dto.cargoId);
+    const cargo = await this.catalogsRepository.findCargoById(dto.cargoId);
     if (!cargo) {
       throw new NotFoundException('El cargo especificado no existe.');
     }
@@ -139,7 +141,7 @@ export class TeachersService {
     }
 
     // 4. Validar que el cargo exista
-    const cargo = await this.teachersRepository.findCargoById(dto.cargoId);
+    const cargo = await this.catalogsRepository.findCargoById(dto.cargoId);
     if (!cargo) {
       throw new NotFoundException('El cargo especificado no existe.');
     }
@@ -162,7 +164,7 @@ export class TeachersService {
       }
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
-        const currentCargo = await this.teachersRepository.findCargoById(activeCargoObj.cargoId);
+        const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
           currentCargo &&
           currentCargo.nombre !== 'Director' &&
@@ -176,12 +178,12 @@ export class TeachersService {
     }
 
     // 7. Validar que el correo no esté duplicado por otra persona
-    if (dto.correo && dto.correo !== docente.persona.correo) {
-      const correoExists = await this.teachersRepository.findPersonaByEmailNotId(
+    if (dto.correo) {
+      const emailInUse = await this.catalogsRepository.findPersonaByEmailNotId(
         dto.correo,
         docente.personaId,
       );
-      if (correoExists) {
+      if (emailInUse) {
         throw new ConflictException('El correo electrónico ya está registrado para otra persona.');
       }
     }
@@ -229,7 +231,7 @@ export class TeachersService {
       }
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
-        const currentCargo = await this.teachersRepository.findCargoById(activeCargoObj.cargoId);
+        const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
           currentCargo &&
           (currentCargo.nombre === 'Director' || currentCargo.nombre === 'Coordinador Pedagógico')
@@ -245,7 +247,7 @@ export class TeachersService {
     if (currentUser.role === RoleCode.JEFE_AREA) {
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
-        const currentCargo = await this.teachersRepository.findCargoById(activeCargoObj.cargoId);
+        const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
           currentCargo &&
           currentCargo.nombre !== 'Director' &&

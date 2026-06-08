@@ -30,7 +30,11 @@ export class AuthController {
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<ILoginResponse> {
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ILoginResponse> {
     const result = await this.authSessionService.login(dto, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
@@ -43,12 +47,19 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<IRefreshTokenResponse> {
+  async refresh(
+    @Body() dto: RefreshTokenDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<IRefreshTokenResponse> {
     const refreshTokenToUse = req.cookies?.refreshToken || dto.refreshToken;
-    const result = await this.authSessionService.refreshToken({ refreshToken: refreshTokenToUse }, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    const result = await this.authSessionService.refreshToken(
+      { refreshToken: refreshTokenToUse },
+      {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    );
 
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
@@ -107,7 +118,10 @@ export class AuthController {
   @UseGuards(AuthGuard, RolesGuard)
   @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
-  async logout(@Req() req: any, @Res({ passthrough: true }) res: Response): Promise<ILogoutResponse> {
+  async logout(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ILogoutResponse> {
     const sessionJti = req.user.jti;
     const userId = req.user.sub;
     const result = await this.authSessionService.logout(userId, sessionJti, {
@@ -123,7 +137,7 @@ export class AuthController {
 
   private setAuthCookies(res: Response, accessToken?: string, refreshToken?: string) {
     const isProd = process.env.NODE_ENV === 'production';
-    
+
     if (accessToken) {
       res.cookie('accessToken', accessToken, {
         httpOnly: true,

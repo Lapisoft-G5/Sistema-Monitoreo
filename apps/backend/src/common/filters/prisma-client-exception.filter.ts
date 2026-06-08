@@ -29,7 +29,8 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
       case 'P2003':
         // Fallo de restricción de clave foránea (Foreign key constraint failed)
         status = HttpStatus.BAD_REQUEST;
-        message = 'No se puede procesar debido a una relación faltante o incorrecta en la base de datos.';
+        message =
+          'No se puede procesar debido a una relación faltante o incorrecta en la base de datos.';
         break;
       default:
         // Manejo por defecto (se registrará internamente)

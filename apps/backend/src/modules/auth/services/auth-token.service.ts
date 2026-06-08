@@ -25,7 +25,7 @@ export class AuthTokenService {
       },
     );
 
-    const decodedRefresh = this.jwtService.decode(refreshTokenJWT) as any;
+    const decodedRefresh = this.jwtService.decode(refreshTokenJWT);
     const refreshExpiresAt = new Date(decodedRefresh.exp * 1000);
 
     return { accessToken, refreshTokenJWT, refreshExpiresAt };

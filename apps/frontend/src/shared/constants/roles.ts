@@ -34,7 +34,7 @@ export type MenuItem =
 const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
 
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
-  director_ugel: ['dashboard', ...BASE_PERMISSIONS],
+  director_ugel: ['dashboard', 'reportes'],
 
   jefe_area: ['instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores'],
 

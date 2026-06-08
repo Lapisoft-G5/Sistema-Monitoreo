@@ -43,8 +43,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   especialista: ['monitoreo', 'monitoreo_reportes'],
 
   director_institucion: [
-    'monitoreo',
-    'monitoreo_gestion',
     'instituciones_docentes',
     'reportes',
   ],

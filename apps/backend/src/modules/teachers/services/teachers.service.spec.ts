@@ -86,14 +86,16 @@ describe('TeachersService', () => {
     it('should throw ForbiddenException if user has an invalid role', async () => {
       const invalidUser = { id: 'some-id', role: RoleCode.DOCENTE };
       await expect(service.createDocente(defaultDto, invalidUser)).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para realizar esta acción.')
+        new ForbiddenException('No tiene permisos para realizar esta acción.'),
       );
     });
 
     it('should throw ForbiddenException if director_institucion does not have an assigned institution in token', async () => {
       const directorWithoutSchool = { id: 'director-uuid', role: directorIeRole };
       await expect(service.createDocente(defaultDto, directorWithoutSchool)).rejects.toThrow(
-        new ForbiddenException('El director de IE no tiene una institución educativa asignada en su token.')
+        new ForbiddenException(
+          'El director de IE no tiene una institución educativa asignada en su token.',
+        ),
       );
     });
 
@@ -104,16 +106,18 @@ describe('TeachersService', () => {
         colegio_id: 'other-inst-uuid',
       };
       await expect(service.createDocente(defaultDto, directorForOtherSchool)).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para registrar un docente en otra institución educativa.')
+        new ForbiddenException(
+          'No tiene permisos para registrar un docente en otra institución educativa.',
+        ),
       );
     });
 
     it('should throw NotFoundException if institution does not exist', async () => {
       findInstitucionByIdMock.mockResolvedValue(null);
 
-      await expect(service.createDocente(defaultDto, { ...mockDirectorIeUser, role: directorIeRole })).rejects.toThrow(
-        new NotFoundException('La institución educativa especificada no existe.')
-      );
+      await expect(
+        service.createDocente(defaultDto, { ...mockDirectorIeUser, role: directorIeRole }),
+      ).rejects.toThrow(new NotFoundException('La institución educativa especificada no existe.'));
       expect(findInstitucionByIdMock).toHaveBeenCalledWith('inst-uuid');
     });
 
@@ -121,20 +125,23 @@ describe('TeachersService', () => {
       findInstitucionByIdMock.mockResolvedValue({ id: 'inst-uuid' });
       findCargoByIdMock.mockResolvedValue(null);
 
-      await expect(service.createDocente(defaultDto, { ...mockDirectorIeUser, role: directorIeRole })).rejects.toThrow(
-        new NotFoundException('El cargo especificado no existe.')
-      );
+      await expect(
+        service.createDocente(defaultDto, { ...mockDirectorIeUser, role: directorIeRole }),
+      ).rejects.toThrow(new NotFoundException('El cargo especificado no existe.'));
       expect(findCargoByIdMock).toHaveBeenCalledWith('cargo-uuid');
     });
 
     it('should successfully delegate creation to repository when validation passes', async () => {
       findInstitucionByIdMock.mockResolvedValue({ id: 'inst-uuid' });
       findCargoByIdMock.mockResolvedValue({ id: 'cargo-uuid', nombre: 'Docente de Aula' });
-      
+
       const expectedResult = { id: 'docente-uuid' };
       createDocenteWithTransactionMock.mockResolvedValue(expectedResult);
 
-      const result = await service.createDocente(defaultDto, { ...mockDirectorIeUser, role: directorIeRole });
+      const result = await service.createDocente(defaultDto, {
+        ...mockDirectorIeUser,
+        role: directorIeRole,
+      });
 
       expect(result).toBe(expectedResult);
       expect(createDocenteWithTransactionMock).toHaveBeenCalledWith(defaultDto);
@@ -157,19 +164,21 @@ describe('TeachersService', () => {
 
     it('should throw ForbiddenException if user role is not authorized', async () => {
       await expect(service.getDocentes({ role: RoleCode.DOCENTE })).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para realizar esta acción.')
+        new ForbiddenException('No tiene permisos para realizar esta acción.'),
       );
     });
 
     it('should throw ForbiddenException if director_institucion does not have school_id in token', async () => {
       await expect(service.getDocentes({ role: directorIeRole })).rejects.toThrow(
-        new ForbiddenException('El director de IE no tiene una institución educativa asignada en su token.')
+        new ForbiddenException(
+          'El director de IE no tiene una institución educativa asignada en su token.',
+        ),
       );
     });
 
     it('should return teachers filtered by institution for director_institucion', async () => {
       findDocentesMock.mockResolvedValue(mockTeachersList);
-      
+
       const result = await service.getDocentes({
         role: directorIeRole,
         colegio_id: 'inst-uuid',
@@ -231,17 +240,17 @@ describe('TeachersService', () => {
     };
 
     it('should throw ForbiddenException if user has invalid role', async () => {
-      await expect(service.updateDocente('docente-uuid', updateDto, { id: 'user', role: RoleCode.DOCENTE })).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para realizar esta acción.')
-      );
+      await expect(
+        service.updateDocente('docente-uuid', updateDto, { id: 'user', role: RoleCode.DOCENTE }),
+      ).rejects.toThrow(new ForbiddenException('No tiene permisos para realizar esta acción.'));
     });
 
     it('should throw NotFoundException if teacher does not exist', async () => {
       findDocenteByIdMock.mockResolvedValue(null);
 
-      await expect(service.updateDocente('nonexistent-uuid', updateDto, mockDirectorIeUser)).rejects.toThrow(
-        new NotFoundException('El docente especificado no existe.')
-      );
+      await expect(
+        service.updateDocente('nonexistent-uuid', updateDto, mockDirectorIeUser),
+      ).rejects.toThrow(new NotFoundException('El docente especificado no existe.'));
     });
 
     it('should throw ForbiddenException if director_institucion tries to edit teacher from another school', async () => {
@@ -250,8 +259,12 @@ describe('TeachersService', () => {
         institucionId: 'other-inst-uuid',
       });
 
-      await expect(service.updateDocente('docente-uuid', updateDto, mockDirectorIeUser)).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para editar un docente de otra institución educativa.')
+      await expect(
+        service.updateDocente('docente-uuid', updateDto, mockDirectorIeUser),
+      ).rejects.toThrow(
+        new ForbiddenException(
+          'No tiene permisos para editar un docente de otra institución educativa.',
+        ),
       );
     });
 
@@ -259,20 +272,28 @@ describe('TeachersService', () => {
       findDocenteByIdMock.mockResolvedValue(mockDocente);
       findCargoByIdMock.mockResolvedValue(null); // Cargo no existe
 
-      await expect(service.updateDocente('docente-uuid', updateDto, mockDirectorIeUser)).rejects.toThrow(
-        new NotFoundException('El cargo especificado no existe.')
-      );
+      await expect(
+        service.updateDocente('docente-uuid', updateDto, mockDirectorIeUser),
+      ).rejects.toThrow(new NotFoundException('El cargo especificado no existe.'));
     });
 
     it('should throw ConflictException if updated email is already in use by another person', async () => {
       findDocenteByIdMock.mockResolvedValue(mockDocente);
       findCargoByIdMock.mockResolvedValue({ id: 'new-cargo-uuid' });
-      findPersonaByEmailNotIdMock.mockResolvedValue({ id: 'other-person-uuid', email: 'juan.perez.new@example.com' });
+      findPersonaByEmailNotIdMock.mockResolvedValue({
+        id: 'other-person-uuid',
+        email: 'juan.perez.new@example.com',
+      });
 
-      await expect(service.updateDocente('docente-uuid', updateDto, mockDirectorIeUser)).rejects.toThrow(
-        new ConflictException('El correo electrónico ya está registrado para otra persona.')
+      await expect(
+        service.updateDocente('docente-uuid', updateDto, mockDirectorIeUser),
+      ).rejects.toThrow(
+        new ConflictException('El correo electrónico ya está registrado para otra persona.'),
       );
-      expect(findPersonaByEmailNotIdMock).toHaveBeenCalledWith('juan.perez.new@example.com', 'persona-uuid');
+      expect(findPersonaByEmailNotIdMock).toHaveBeenCalledWith(
+        'juan.perez.new@example.com',
+        'persona-uuid',
+      );
     });
 
     it('should successfully delegate update to repository if validation passes', async () => {
@@ -290,7 +311,7 @@ describe('TeachersService', () => {
         'docente-uuid',
         updateDto,
         mockDocente.docenteCargos[0],
-        'persona-uuid'
+        'persona-uuid',
       );
     });
   });
@@ -311,16 +332,16 @@ describe('TeachersService', () => {
     };
 
     it('should throw ForbiddenException if user has invalid role', async () => {
-      await expect(service.bajaDocente('docente-uuid', { id: 'user', role: RoleCode.DOCENTE })).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para realizar esta acción.')
-      );
+      await expect(
+        service.bajaDocente('docente-uuid', { id: 'user', role: RoleCode.DOCENTE }),
+      ).rejects.toThrow(new ForbiddenException('No tiene permisos para realizar esta acción.'));
     });
 
     it('should throw NotFoundException if teacher does not exist', async () => {
       findDocenteByIdMock.mockResolvedValue(null);
 
       await expect(service.bajaDocente('nonexistent-uuid', mockDirectorIeUser)).rejects.toThrow(
-        new NotFoundException('El docente especificado no existe.')
+        new NotFoundException('El docente especificado no existe.'),
       );
     });
 
@@ -331,13 +352,15 @@ describe('TeachersService', () => {
       });
 
       await expect(service.bajaDocente('docente-uuid', mockDirectorIeUser)).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para dar de baja a un docente de otra institución educativa.')
+        new ForbiddenException(
+          'No tiene permisos para dar de baja a un docente de otra institución educativa.',
+        ),
       );
     });
 
     it('should successfully delegate deactivation to repository', async () => {
       findDocenteByIdMock.mockResolvedValue(mockDocente);
-      
+
       const repositoryResponse = {
         id: 'docente-uuid',
         estado: 'Inactivo',

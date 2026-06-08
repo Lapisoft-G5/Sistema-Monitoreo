@@ -103,7 +103,9 @@ export class PrismaTeachersRepository implements TeachersRepository {
             where: { correo: dto.correo },
           });
           if (correoExists) {
-            throw new ConflictException('El correo electrónico ya está registrado para otra persona.');
+            throw new ConflictException(
+              'El correo electrónico ya está registrado para otra persona.',
+            );
           }
         }
 

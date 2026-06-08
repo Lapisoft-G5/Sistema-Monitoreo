@@ -8,7 +8,7 @@ export interface TeachersRepository {
   findDocentes(whereClause: any): Promise<any[]>;
   findPersonaByEmailNotId(email: string, excludePersonaId: string): Promise<any>;
   updateDocenteEstado(id: string, estado: string): Promise<any>;
-  
+
   createDocenteWithTransaction(dto: CreateDocenteDto): Promise<any>;
   updateDocenteWithTransaction(
     id: string,

@@ -37,10 +37,10 @@ export class AuthGuard implements CanActivate {
 
       // Detectar primer acceso y forzar cambio de contraseña temporal
       if (payload.firstLogin === true) {
-        const allowFirstLogin = this.reflector.getAllAndOverride<boolean>(
-          ALLOW_FIRST_LOGIN_KEY,
-          [context.getHandler(), context.getClass()],
-        );
+        const allowFirstLogin = this.reflector.getAllAndOverride<boolean>(ALLOW_FIRST_LOGIN_KEY, [
+          context.getHandler(),
+          context.getClass(),
+        ]);
         if (!allowFirstLogin) {
           throw new ForbiddenException(
             'Debe cambiar su contraseña temporal antes de acceder a otros recursos.',

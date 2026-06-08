@@ -1,7 +1,17 @@
-import { Injectable, ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { EspecialistaRepository } from './especialista.repository.js';
-import type { IEspecialistaResponse, ICreateEspecialistaRequest, IUpdateEspecialistaRequest, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IEspecialistaResponse,
+  ICreateEspecialistaRequest,
+  IUpdateEspecialistaRequest,
+  IQueryEspecialistaRequest,
+} from '@sistema-monitoreo/shared-contracts';
 
 @Injectable()
 export class PrismaEspecialistaRepository implements EspecialistaRepository {
@@ -69,13 +79,18 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     };
   }
 
-  async create(data: ICreateEspecialistaRequest, passwordHash: string): Promise<IEspecialistaResponse> {
+  async create(
+    data: ICreateEspecialistaRequest,
+    passwordHash: string,
+  ): Promise<IEspecialistaResponse> {
     // 1. Validar unicidad del DNI
     const existingPersona = await this.prisma.persona.findUnique({
       where: { dni: data.dni },
     });
     if (existingPersona) {
-      throw new ConflictException(`La persona con DNI ${data.dni} ya está registrada en el sistema.`);
+      throw new ConflictException(
+        `La persona con DNI ${data.dni} ya está registrada en el sistema.`,
+      );
     }
 
     // 2. Usar transaccion de Prisma para insertar ordenadamente

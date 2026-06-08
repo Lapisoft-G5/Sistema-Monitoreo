@@ -24,21 +24,21 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
         estado: data.estado ?? 'Activa',
       },
     });
-    return record as Institucion;
+    return record;
   }
 
   async findById(id: string): Promise<Institucion | null> {
     const record = await this.prisma.institucionEducativa.findUnique({
       where: { id },
     });
-    return record as Institucion | null;
+    return record;
   }
 
   async findByCodigoModular(codigoModular: string): Promise<Institucion | null> {
     const record = await this.prisma.institucionEducativa.findUnique({
       where: { codigoModular },
     });
-    return record as Institucion | null;
+    return record;
   }
 
   async update(id: string, data: UpdateInstitucionDto): Promise<Institucion> {
@@ -49,7 +49,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
       where: { id },
       data: updateData,
     });
-    return record as Institucion;
+    return record;
   }
 
   async softDelete(id: string): Promise<Institucion> {
@@ -58,7 +58,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
       where: { id },
       data: { estado: 'Inactiva' },
     });
-    return record as Institucion;
+    return record;
   }
 
   async restore(id: string): Promise<Institucion> {
@@ -67,7 +67,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
       where: { id },
       data: { estado: 'Activa' },
     });
-    return record as Institucion;
+    return record;
   }
 
   async findAll(query: QueryInstitucionDto): Promise<{ data: Institucion[]; total: number }> {
@@ -95,7 +95,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     ]);
 
     return {
-      data: data as Institucion[],
+      data: data,
       total,
     };
   }

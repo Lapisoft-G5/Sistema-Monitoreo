@@ -12,7 +12,9 @@ export class InstitutionsService {
   async create(dto: CreateInstitucionDto): Promise<Institucion> {
     const existing = await this.institutionsRepository.findByCodigoModular(dto.codigoModular);
     if (existing) {
-      throw new ConflictException(`La institución con código modular ${dto.codigoModular} ya existe en el sistema.`);
+      throw new ConflictException(
+        `La institución con código modular ${dto.codigoModular} ya existe en el sistema.`,
+      );
     }
     return this.institutionsRepository.create(dto);
   }
@@ -40,10 +42,12 @@ export class InstitutionsService {
     return this.institutionsRepository.restore(id);
   }
 
-  async findAll(query: QueryInstitucionDto): Promise<{ data: Institucion[]; total: number; limit: number; offset: number }> {
+  async findAll(
+    query: QueryInstitucionDto,
+  ): Promise<{ data: Institucion[]; total: number; limit: number; offset: number }> {
     const limit = query.limit ?? 10;
     const offset = query.offset ?? 0;
-    
+
     const { data, total } = await this.institutionsRepository.findAll({
       ...query,
       limit,

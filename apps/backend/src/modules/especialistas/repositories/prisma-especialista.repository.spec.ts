@@ -260,13 +260,19 @@ describe('PrismaEspecialistaRepository', () => {
     it('should throw NotFoundException when especialista does not exist', async () => {
       especialistaFindUniqueMock.mockResolvedValue(null);
 
-      await expect(repository.update('nonexistent-uuid', updateData)).rejects.toThrow(NotFoundException);
+      await expect(repository.update('nonexistent-uuid', updateData)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(transactionMock).not.toHaveBeenCalled();
     });
 
     it('should update persona, user role and especialista in transaction', async () => {
       especialistaFindUniqueMock.mockResolvedValue(mockEspecialista);
-      const updatedEspecialista = { ...mockEspecialista, especialidad: 'Ciencias', nivelEducativo: 'Primaria' };
+      const updatedEspecialista = {
+        ...mockEspecialista,
+        especialidad: 'Ciencias',
+        nivelEducativo: 'Primaria',
+      };
       const updatedRole = { ...mockRole, code: 'director_ugel', name: 'Director UGEL' };
       personaUpdateMock.mockResolvedValue(undefined);
       roleFindUniqueMock.mockResolvedValue(updatedRole);

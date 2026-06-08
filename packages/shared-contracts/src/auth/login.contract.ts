@@ -17,3 +17,11 @@ export interface ILoginResponse {
   };
 }
 
+export interface ILoginError {
+  message?: string;
+  failedLoginAttempts?: number;
+  lockedUntil?: string;
+  failedAttempts?: number;
+  remainingAttempts?: number;
+}
+

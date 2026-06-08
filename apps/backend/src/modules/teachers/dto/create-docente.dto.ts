@@ -1,4 +1,13 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Length, Matches, MaxLength, IsUUID } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MaxLength,
+  IsUUID,
+} from 'class-validator';
 import { ICreateDocenteRequest } from '@sistema-monitoreo/shared-contracts';
 
 export class CreateDocenteDto implements ICreateDocenteRequest {

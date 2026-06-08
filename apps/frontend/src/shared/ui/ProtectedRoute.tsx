@@ -1,39 +1,22 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../features/authentication/useAuth';
-import { hasPermission, isReadOnlyRole, getDefaultLandingPage } from '../constants/roles';
-import type { MenuItem } from '../constants/roles';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useUser } from '@entities/model-user';
+import { hasPermission, getDefaultLandingPage, type MenuItem } from '@shared/constants/roles';
 
-interface Props {
-  /** Permiso de menú requerido para acceder a esta ruta */
-  requiredPermission: MenuItem;
-  /**
-   * Si es true, los roles de solo lectura (invitado) serán redirigidos
-   * de vuelta a la vista de listado de esa sección.
-   * Úsalo en rutas de creación/edición.
-   */
-  requiresWrite?: boolean;
-  children: React.ReactNode;
+interface ProtectedRouteProps {
+  permission: MenuItem;
 }
 
-export const ProtectedRoute = ({ requiredPermission, requiresWrite = false, children }: Props) => {
-  const { user, isAuthenticated } = useAuth();
-  const location = useLocation();
+export const ProtectedRoute = ({ permission }: ProtectedRouteProps) => {
+  const { user, isAuthenticated } = useUser();
 
-  // Sin sesión → login
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  // Sin permiso para esta sección → landing page por defecto
-  if (!hasPermission(user.role, requiredPermission)) {
-    return <Navigate to={getDefaultLandingPage(user.role)} replace />;
+  if (user && !hasPermission(user.role, permission)) {
+    const landing = getDefaultLandingPage(user.role);
+    return <Navigate to={landing} replace />;
   }
 
-  // Rol read-only intentando acceder a ruta de escritura → listado de la sección
-  if (requiresWrite && isReadOnlyRole(user.role)) {
-    const basePath = `/${requiredPermission.replace('_', '/')}`;
-    return <Navigate to={basePath} replace />;
-  }
-
-  return <>{children}</>;
+  return <Outlet />;
 };

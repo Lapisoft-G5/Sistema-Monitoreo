@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
@@ -7,7 +12,13 @@ import { LoginDto } from '../dto/login.dto.js';
 import { ChangePasswordDto } from '../dto/change-password.dto.js';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
-import { ILoginResponse, IChangePasswordResponse, IForgotPasswordResponse, IResetPasswordResponse, ILogoutResponse } from '@sistema-monitoreo/shared-contracts';
+import {
+  ILoginResponse,
+  IChangePasswordResponse,
+  IForgotPasswordResponse,
+  IResetPasswordResponse,
+  ILogoutResponse,
+} from '@sistema-monitoreo/shared-contracts';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 
@@ -78,14 +89,15 @@ export class AuthService {
       }
 
       const updatedAttempts = await this.authRepository.incrementFailedAttempts(user.id, now);
-      
+
       if (updatedAttempts >= 3) {
         const lockUntil = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutos
         await this.authRepository.lockAccount(user.id, lockUntil);
         await this.authRepository.logAuthEvent({
           userId: user.id,
           eventType: 'ACCOUNT_LOCKED',
-          eventDetail: 'Cuenta bloqueada temporalmente por 15 minutos por alcanzar 3 intentos fallidos consecutivos',
+          eventDetail:
+            'Cuenta bloqueada temporalmente por 15 minutos por alcanzar 3 intentos fallidos consecutivos',
           ipAddress: meta?.ipAddress,
           userAgent: meta?.userAgent,
         });
@@ -130,10 +142,7 @@ export class AuthService {
       firstLogin: user.isFirstLogin,
     };
 
-    if (
-      user.role?.code === RoleCode.DIRECTOR_INSTITUCION &&
-      user.persona?.docente?.institucionId
-    ) {
+    if (user.role?.code === RoleCode.DIRECTOR_INSTITUCION && user.persona?.docente?.institucionId) {
       payload.institucion_id = user.persona.docente.institucionId;
       payload.colegio_id = user.persona.docente.institucionId;
     }
@@ -224,7 +233,8 @@ export class AuthService {
       });
       return {
         success: true,
-        message: 'Si el DNI y correo corresponden a un usuario activo, recibirá un correo con las instrucciones.',
+        message:
+          'Si el DNI y correo corresponden a un usuario activo, recibirá un correo con las instrucciones.',
       };
     }
 
@@ -233,16 +243,19 @@ export class AuthService {
       await this.authRepository.logAuthEvent({
         userId: user.id,
         eventType: 'PASSWORD_RESET_BLOCKED_ACTIVE_SESSION',
-        eventDetail: 'Solicitud de recuperación bloqueada: el usuario cuenta con una sesión activa en el sistema',
+        eventDetail:
+          'Solicitud de recuperación bloqueada: el usuario cuenta con una sesión activa en el sistema',
         ipAddress: meta?.ipAddress,
         userAgent: meta?.userAgent,
       });
-      throw new BadRequestException('No se puede generar un enlace de recuperación si existe una sesión activa en el sistema.');
+      throw new BadRequestException(
+        'No se puede generar un enlace de recuperación si existe una sesión activa en el sistema.',
+      );
     }
 
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(token).digest('hex');
-    
+
     // Expiración: 1 hora a partir de ahora
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -262,13 +275,20 @@ export class AuthService {
     });
 
     // Registramos en consola para poder testearlo y consumirlo sin correo real en dev
-    console.log(`[DEV ONLY] Enlace de recuperación generado para el DNI ${dto.dni}: token=${token}`);
+    console.log(
+      `[DEV ONLY] Enlace de recuperación generado para el DNI ${dto.dni}: token=${token}`,
+    );
 
-    await this.mailerService.sendPasswordResetEmail(user.persona?.correo ?? '', user.persona?.dni ?? '', token);
+    await this.mailerService.sendPasswordResetEmail(
+      user.persona?.correo ?? '',
+      user.persona?.dni ?? '',
+      token,
+    );
 
     return {
       success: true,
-      message: 'Si el DNI y correo corresponden a un usuario activo, recibirá un correo con las instrucciones.',
+      message:
+        'Si el DNI y correo corresponden a un usuario activo, recibirá un correo con las instrucciones.',
     };
   }
 

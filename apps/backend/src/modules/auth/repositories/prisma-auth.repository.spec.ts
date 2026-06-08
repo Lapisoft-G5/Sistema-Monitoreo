@@ -191,7 +191,10 @@ describe('PrismaAuthRepository', () => {
       };
       findFirstMock.mockResolvedValue(mockPrismaUser);
 
-      const result = await repository.findUserByDniAndEmail('76358911', 'carlos.quispe@ugel-lampa.gob.pe');
+      const result = await repository.findUserByDniAndEmail(
+        '76358911',
+        'carlos.quispe@ugel-lampa.gob.pe',
+      );
 
       expect(result).toBeDefined();
       expect(result?.id).toBe('user-uuid');

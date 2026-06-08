@@ -1,4 +1,16 @@
-import { Controller, Post, Get, Put, Patch, Body, Query, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Patch,
+  Body,
+  Query,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { InstitutionsService } from '../services/institutions.service.js';
 import { CreateInstitucionDto } from '../dto/create-institucion.dto.js';
 import { UpdateInstitucionDto } from '../dto/update-institucion.dto.js';
@@ -7,7 +19,11 @@ import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { RolesGuard } from '../../auth/guards/roles.guard.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
-import { IInstitucionResponse, IInstitucionListResponse, IUpdateInstitucionResponse } from '@sistema-monitoreo/shared-contracts';
+import {
+  IInstitucionResponse,
+  IInstitucionListResponse,
+  IUpdateInstitucionResponse,
+} from '@sistema-monitoreo/shared-contracts';
 
 @Controller('instituciones')
 export class InstitutionsController {

@@ -106,7 +106,12 @@ describe('InstitutionsController', () => {
       const query = new QueryInstitucionDto();
       query.nombre = 'Test IE';
 
-      const mockResult = { data: [{ id: 'ie-uuid', nombre: 'Test IE' } as Institucion], total: 1, limit: 10, offset: 0 };
+      const mockResult = {
+        data: [{ id: 'ie-uuid', nombre: 'Test IE' } as Institucion],
+        total: 1,
+        limit: 10,
+        offset: 0,
+      };
       findAllServiceMock.mockResolvedValue(mockResult);
 
       const result = await controller.findAll(query);

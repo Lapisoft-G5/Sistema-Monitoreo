@@ -16,7 +16,9 @@ jest.unstable_mockModule('bcrypt', () => ({
 
 const { EspecialistaService } = await import('./especialista.service.js');
 
-function buildEspecialistaResponse(overrides: Partial<Record<string, unknown>> = {}): IEspecialistaResponse {
+function buildEspecialistaResponse(
+  overrides: Partial<Record<string, unknown>> = {},
+): IEspecialistaResponse {
   return {
     id: 'esp-uuid',
     personaId: 'persona-uuid',

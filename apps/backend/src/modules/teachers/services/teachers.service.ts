@@ -1,4 +1,10 @@
-import { Injectable, Inject, ForbiddenException, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  ForbiddenException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
@@ -13,7 +19,7 @@ export class TeachersService {
 
   async createDocente(
     dto: CreateDocenteDto,
-    currentUser: { id: string; role: string; colegio_id?: string; institucion_id?: string }
+    currentUser: { id: string; role: string; colegio_id?: string; institucion_id?: string },
   ) {
     // 1. Control de accesos por rol
     if (
@@ -27,10 +33,14 @@ export class TeachersService {
     if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
       if (!userInstitucionId) {
-        throw new ForbiddenException('El director de IE no tiene una institución educativa asignada en su token.');
+        throw new ForbiddenException(
+          'El director de IE no tiene una institución educativa asignada en su token.',
+        );
       }
       if (dto.institucionId !== userInstitucionId) {
-        throw new ForbiddenException('No tiene permisos para registrar un docente en otra institución educativa.');
+        throw new ForbiddenException(
+          'No tiene permisos para registrar un docente en otra institución educativa.',
+        );
       }
     }
 
@@ -49,14 +59,18 @@ export class TeachersService {
     // 5. Si es Director de IE, validar que no intente asignar Director o Coordinador Pedagógico
     if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       if (cargo.nombre === 'Director' || cargo.nombre === 'Coordinador Pedagógico') {
-        throw new ForbiddenException('El Director de I.E. no puede asignar el cargo de Director o Coordinador Pedagógico.');
+        throw new ForbiddenException(
+          'El Director de I.E. no puede asignar el cargo de Director o Coordinador Pedagógico.',
+        );
       }
     }
 
     // 6. Si es Jefe de Área, validar que solo pueda registrar cargos Director o Coordinador Pedagógico
     if (currentUser.role === RoleCode.JEFE_AREA) {
       if (cargo.nombre !== 'Director' && cargo.nombre !== 'Coordinador Pedagógico') {
-        throw new ForbiddenException('El Jefe de Área solo puede registrar directores y coordinadores pedagógicos.');
+        throw new ForbiddenException(
+          'El Jefe de Área solo puede registrar directores y coordinadores pedagógicos.',
+        );
       }
     }
 
@@ -79,7 +93,9 @@ export class TeachersService {
     if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
       if (!userInstitucionId) {
-        throw new ForbiddenException('El director de IE no tiene una institución educativa asignada en su token.');
+        throw new ForbiddenException(
+          'El director de IE no tiene una institución educativa asignada en su token.',
+        );
       }
       whereClause.institucionId = userInstitucionId;
     }
@@ -91,7 +107,7 @@ export class TeachersService {
   async updateDocente(
     id: string,
     dto: UpdateDocenteDto,
-    currentUser: { id: string; role: string; colegio_id?: string; institucion_id?: string }
+    currentUser: { id: string; role: string; colegio_id?: string; institucion_id?: string },
   ) {
     // 1. Control de accesos por rol
     if (
@@ -111,10 +127,14 @@ export class TeachersService {
     if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
       if (!userInstitucionId) {
-        throw new ForbiddenException('El director de IE no tiene una institución educativa asignada en su token.');
+        throw new ForbiddenException(
+          'El director de IE no tiene una institución educativa asignada en su token.',
+        );
       }
       if (docente.institucionId !== userInstitucionId) {
-        throw new ForbiddenException('No tiene permisos para editar un docente de otra institución educativa.');
+        throw new ForbiddenException(
+          'No tiene permisos para editar un docente de otra institución educativa.',
+        );
       }
     }
 
@@ -127,27 +147,40 @@ export class TeachersService {
     // 5. Si es Director de IE, validar que no intente asignar Director o Coordinador Pedagógico
     if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       if (cargo.nombre === 'Director' || cargo.nombre === 'Coordinador Pedagógico') {
-        throw new ForbiddenException('El Director de I.E. no puede asignar el cargo de Director o Coordinador Pedagógico.');
+        throw new ForbiddenException(
+          'El Director de I.E. no puede asignar el cargo de Director o Coordinador Pedagógico.',
+        );
       }
     }
 
     // 6. Si es Jefe de Área, validar que el cargo a asignar y el cargo actual sean de Director o Coordinador Pedagógico
     if (currentUser.role === RoleCode.JEFE_AREA) {
       if (cargo.nombre !== 'Director' && cargo.nombre !== 'Coordinador Pedagógico') {
-        throw new ForbiddenException('El Jefe de Área solo puede asignar el cargo de Director o Coordinador Pedagógico.');
+        throw new ForbiddenException(
+          'El Jefe de Área solo puede asignar el cargo de Director o Coordinador Pedagógico.',
+        );
       }
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
         const currentCargo = await this.teachersRepository.findCargoById(activeCargoObj.cargoId);
-        if (currentCargo && currentCargo.nombre !== 'Director' && currentCargo.nombre !== 'Coordinador Pedagógico') {
-          throw new ForbiddenException('El Jefe de Área solo puede gestionar directores y coordinadores pedagógicos.');
+        if (
+          currentCargo &&
+          currentCargo.nombre !== 'Director' &&
+          currentCargo.nombre !== 'Coordinador Pedagógico'
+        ) {
+          throw new ForbiddenException(
+            'El Jefe de Área solo puede gestionar directores y coordinadores pedagógicos.',
+          );
         }
       }
     }
 
     // 7. Validar que el correo no esté duplicado por otra persona
     if (dto.correo && dto.correo !== docente.persona.correo) {
-      const correoExists = await this.teachersRepository.findPersonaByEmailNotId(dto.correo, docente.personaId);
+      const correoExists = await this.teachersRepository.findPersonaByEmailNotId(
+        dto.correo,
+        docente.personaId,
+      );
       if (correoExists) {
         throw new ConflictException('El correo electrónico ya está registrado para otra persona.');
       }
@@ -159,13 +192,13 @@ export class TeachersService {
       id,
       dto,
       activeCargo,
-      docente.personaId
+      docente.personaId,
     );
   }
 
   async bajaDocente(
     id: string,
-    currentUser: { id: string; role: string; colegio_id?: string; institucion_id?: string }
+    currentUser: { id: string; role: string; colegio_id?: string; institucion_id?: string },
   ) {
     // 1. Control de accesos por rol
     if (
@@ -185,16 +218,25 @@ export class TeachersService {
     if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
       if (!userInstitucionId) {
-        throw new ForbiddenException('El director de IE no tiene una institución educativa asignada en su token.');
+        throw new ForbiddenException(
+          'El director de IE no tiene una institución educativa asignada en su token.',
+        );
       }
       if (docente.institucionId !== userInstitucionId) {
-        throw new ForbiddenException('No tiene permisos para dar de baja a un docente de otra institución educativa.');
+        throw new ForbiddenException(
+          'No tiene permisos para dar de baja a un docente de otra institución educativa.',
+        );
       }
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
         const currentCargo = await this.teachersRepository.findCargoById(activeCargoObj.cargoId);
-        if (currentCargo && (currentCargo.nombre === 'Director' || currentCargo.nombre === 'Coordinador Pedagógico')) {
-          throw new ForbiddenException('El Director de I.E. no puede dar de baja a un Director o Coordinador Pedagógico.');
+        if (
+          currentCargo &&
+          (currentCargo.nombre === 'Director' || currentCargo.nombre === 'Coordinador Pedagógico')
+        ) {
+          throw new ForbiddenException(
+            'El Director de I.E. no puede dar de baja a un Director o Coordinador Pedagógico.',
+          );
         }
       }
     }
@@ -204,8 +246,14 @@ export class TeachersService {
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
         const currentCargo = await this.teachersRepository.findCargoById(activeCargoObj.cargoId);
-        if (currentCargo && currentCargo.nombre !== 'Director' && currentCargo.nombre !== 'Coordinador Pedagógico') {
-          throw new ForbiddenException('El Jefe de Área solo puede dar de baja a directores y coordinadores pedagógicos.');
+        if (
+          currentCargo &&
+          currentCargo.nombre !== 'Director' &&
+          currentCargo.nombre !== 'Coordinador Pedagógico'
+        ) {
+          throw new ForbiddenException(
+            'El Jefe de Área solo puede dar de baja a directores y coordinadores pedagógicos.',
+          );
         }
       }
     }

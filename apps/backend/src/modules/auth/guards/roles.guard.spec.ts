@@ -15,14 +15,11 @@ describe('RolesGuard', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RolesGuard,
-        { provide: Reflector, useValue: reflectorMock },
-      ],
+      providers: [RolesGuard, { provide: Reflector, useValue: reflectorMock }],
     }).compile();
 
     guard = module.get<RolesGuard>(RolesGuard);
-    reflector = module.get(Reflector) as jest.Mocked<Reflector>;
+    reflector = module.get(Reflector);
   });
 
   function createMockContext(user?: { role?: string }): ExecutionContext {

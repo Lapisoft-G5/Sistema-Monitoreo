@@ -69,7 +69,10 @@ describe('InstitutionsService', () => {
     });
 
     it('should throw ConflictException if codigoModular already exists', async () => {
-      findByCodigoModularMock.mockResolvedValue({ id: 'ie-uuid', codigoModular: '1234567' } as Institucion);
+      findByCodigoModularMock.mockResolvedValue({
+        id: 'ie-uuid',
+        codigoModular: '1234567',
+      } as Institucion);
 
       await expect(service.create(dto)).rejects.toThrow(ConflictException);
       expect(createMock).not.toHaveBeenCalled();
@@ -120,7 +123,11 @@ describe('InstitutionsService', () => {
     it('should soft delete and return record if it exists', async () => {
       const mockRecord = { id: 'ie-uuid', nombre: 'Test IE', estado: 'Activa' } as Institucion;
       findByIdMock.mockResolvedValue(mockRecord);
-      softDeleteMock.mockResolvedValue({ id: 'ie-uuid', nombre: 'Test IE', estado: 'Inactiva' } as Institucion);
+      softDeleteMock.mockResolvedValue({
+        id: 'ie-uuid',
+        nombre: 'Test IE',
+        estado: 'Inactiva',
+      } as Institucion);
 
       const result = await service.softDelete('ie-uuid');
       expect(result).toBeDefined();
@@ -140,7 +147,11 @@ describe('InstitutionsService', () => {
     it('should reactivate and return record if it exists', async () => {
       const mockRecord = { id: 'ie-uuid', nombre: 'Test IE', estado: 'Inactiva' } as Institucion;
       findByIdMock.mockResolvedValue(mockRecord);
-      restoreMock.mockResolvedValue({ id: 'ie-uuid', nombre: 'Test IE', estado: 'Activa' } as Institucion);
+      restoreMock.mockResolvedValue({
+        id: 'ie-uuid',
+        nombre: 'Test IE',
+        estado: 'Activa',
+      } as Institucion);
 
       const result = await service.restore('ie-uuid');
       expect(result).toBeDefined();

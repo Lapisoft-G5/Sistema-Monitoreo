@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { LoginDto } from '../dto/login.dto.js';
@@ -27,6 +28,7 @@ export class AuthController {
    * Valida credenciales, emite JWT y registra la sesión.
    */
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // Max 5 intentos por minuto
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<ILoginResponse> {
     const result = await this.authService.login(dto, {
@@ -87,6 +89,7 @@ export class AuthController {
    * Valida DNI e email del usuario y genera un token de recuperación seguro.
    */
   @Post('forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // Max 3 intentos por minuto
   @HttpCode(HttpStatus.OK)
   async forgotPassword(
     @Body() dto: ForgotPasswordDto,
@@ -103,6 +106,7 @@ export class AuthController {
    * Restablece la contraseña si el token es válido y no ha expirado.
    */
   @Post('reset-password')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // Max 3 intentos por minuto
   @HttpCode(HttpStatus.OK)
   async resetPassword(
     @Body() dto: ResetPasswordDto,

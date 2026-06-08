@@ -5,6 +5,7 @@ import { AppModule } from './app.module.js';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter.js';
 
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -14,6 +15,7 @@ async function bootstrap() {
     },
   });
 
+  app.use(helmet());
   app.use(cookieParser());
   app.setGlobalPrefix('api');
 

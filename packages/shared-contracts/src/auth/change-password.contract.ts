@@ -6,4 +6,5 @@ export interface IChangePasswordResponse {
   success: boolean;
   message: string;
   accessToken?: string;
+  refreshToken?: string;
 }

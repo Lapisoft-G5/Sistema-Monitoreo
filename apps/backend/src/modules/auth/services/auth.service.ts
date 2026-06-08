@@ -18,7 +18,9 @@ import {
   IForgotPasswordResponse,
   IResetPasswordResponse,
   ILogoutResponse,
+  IRefreshTokenResponse,
 } from '@sistema-monitoreo/shared-contracts';
+import { RefreshTokenDto } from '../dto/refresh-token.dto.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 
@@ -132,7 +134,8 @@ export class AuthService {
 
     // ── 5. Emitir JWT ─────────────────────────────────────────────────────
     const jti = randomUUID();
-    const jwtExpiresInSeconds = 8 * 60 * 60; // 8 horas
+    const accessTokenExpiresInSeconds = 15 * 60; // 15 minutos
+    const refreshTokenExpiresInSeconds = 7 * 24 * 60 * 60; // 7 días
 
     const payload: any = {
       sub: user.id,
@@ -148,11 +151,15 @@ export class AuthService {
     }
 
     const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: jwtExpiresInSeconds,
+      expiresIn: accessTokenExpiresInSeconds,
+    });
+    
+    const refreshToken = await this.jwtService.signAsync({ ...payload, type: 'refresh' }, {
+      expiresIn: refreshTokenExpiresInSeconds,
     });
 
     // ── 6. Persistir sesión ───────────────────────────────────────────────
-    const expiresAt = new Date(now.getTime() + jwtExpiresInSeconds * 1000);
+    const expiresAt = new Date(now.getTime() + refreshTokenExpiresInSeconds * 1000);
 
     await this.authRepository.createSession({
       userId: user.id,
@@ -177,6 +184,7 @@ export class AuthService {
     // ── 9. Construir respuesta ────────────────────────────────────────────
     return {
       accessToken,
+      refreshToken,
       user: {
         id: user.id,
         dni: user.persona?.dni ?? '',
@@ -205,7 +213,7 @@ export class AuthService {
     await this.authRepository.updatePassword(userId, passwordHash);
 
     // Generar un nuevo token con firstLogin = false
-    const jwtExpiresInSeconds = 8 * 60 * 60; // 8 horas
+    const accessTokenExpiresInSeconds = 15 * 60; // 15 minutos
     const payload: any = {
       sub: user.id,
       dni: user.persona?.dni ?? '',
@@ -220,7 +228,12 @@ export class AuthService {
     }
 
     const newAccessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: jwtExpiresInSeconds,
+      expiresIn: accessTokenExpiresInSeconds,
+    });
+    
+    // Opcional: Generar nuevo refresh token para consistencia
+    const newRefreshToken = await this.jwtService.signAsync({ ...payload, type: 'refresh' }, {
+      expiresIn: 7 * 24 * 60 * 60,
     });
 
     await this.authRepository.logAuthEvent({
@@ -235,7 +248,55 @@ export class AuthService {
       success: true,
       message: 'Contraseña actualizada correctamente',
       accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
     };
+  }
+
+  async refreshToken(
+    dto: RefreshTokenDto,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ): Promise<IRefreshTokenResponse> {
+    try {
+      const payload = await this.jwtService.verifyAsync(dto.refreshToken);
+      
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('El token proporcionado no es un refresh token');
+      }
+
+      const isSessionActive = await this.authRepository.isSessionActive(payload.jti);
+      if (!isSessionActive) {
+        throw new UnauthorizedException('La sesión ha sido invalidada o cerrada');
+      }
+
+      // Re-emitir access token
+      const accessTokenExpiresInSeconds = 15 * 60;
+      const newPayload: any = {
+        sub: payload.sub,
+        dni: payload.dni,
+        role: payload.role,
+        jti: payload.jti,
+        firstLogin: payload.firstLogin,
+      };
+
+      if (payload.institucion_id) {
+        newPayload.institucion_id = payload.institucion_id;
+        newPayload.colegio_id = payload.colegio_id;
+      }
+
+      const newAccessToken = await this.jwtService.signAsync(newPayload, {
+        expiresIn: accessTokenExpiresInSeconds,
+      });
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken: dto.refreshToken,
+      };
+    } catch (e) {
+      if (e instanceof UnauthorizedException) {
+        throw e;
+      }
+      throw new UnauthorizedException('Refresh token expirado o inválido');
+    }
   }
 
   async forgotPassword(

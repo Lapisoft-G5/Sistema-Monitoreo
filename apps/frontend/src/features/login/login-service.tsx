@@ -94,6 +94,9 @@ export const useLoginService = () => {
 
     // Manejo de éxito
     localStorage.setItem('accessToken', data.accessToken);
+    if (data.refreshToken) {
+      localStorage.setItem('refreshToken', data.refreshToken);
+    }
     localStorage.removeItem('ugel_penalty_expiry');
     setAttempts(0);
 

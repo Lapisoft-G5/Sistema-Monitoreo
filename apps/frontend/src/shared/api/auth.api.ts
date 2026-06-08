@@ -35,7 +35,7 @@ export const authApi = {
     }
   },
 
-  changePassword: async (token: string, newPassword: string): Promise<{ ok: boolean; data?: { accessToken?: string }; error?: unknown }> => {
+  changePassword: async (token: string, newPassword: string): Promise<{ ok: boolean; data?: { accessToken?: string; refreshToken?: string }; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/auth/change-password`, {
         method: 'POST',
@@ -85,6 +85,24 @@ export const authApi = {
         return { ok: false, error: errJson };
       }
       return { ok: true };
+    } catch {
+      return { ok: false, error: { message: 'No se pudo establecer conexión con el servidor' } };
+    }
+  },
+
+  refreshToken: async (refreshToken: string): Promise<{ ok: boolean; data?: { accessToken: string; refreshToken: string }; error?: unknown }> => {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        return { ok: false, error: errJson };
+      }
+      const data = await response.json();
+      return { ok: true, data };
     } catch {
       return { ok: false, error: { message: 'No se pudo establecer conexión con el servidor' } };
     }

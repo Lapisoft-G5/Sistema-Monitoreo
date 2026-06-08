@@ -57,6 +57,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       authApi.logout(token).catch(console.error);
     }
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('ugel_penalty_expiry');
     setUser(null);
   }, []);
@@ -72,6 +73,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
     if (res.data?.accessToken) {
       localStorage.setItem('accessToken', res.data.accessToken);
+    }
+    if (res.data?.refreshToken) {
+      localStorage.setItem('refreshToken', res.data.refreshToken);
     }
 
     // Marca al usuario como que ya no es su primer login

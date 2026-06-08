@@ -14,7 +14,9 @@ import {
   IForgotPasswordResponse,
   IResetPasswordResponse,
   ILogoutResponse,
+  IRefreshTokenResponse,
 } from '@sistema-monitoreo/shared-contracts';
+import { RefreshTokenDto } from '../dto/refresh-token.dto.js';
 
 @Controller('auth')
 export class AuthController {
@@ -28,6 +30,19 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Req() req: Request): Promise<ILoginResponse> {
     return this.authService.login(dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  /**
+   * POST /api/auth/refresh
+   * Emite un nuevo access token a partir de un refresh token válido.
+   */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request): Promise<IRefreshTokenResponse> {
+    return this.authService.refreshToken(dto, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });

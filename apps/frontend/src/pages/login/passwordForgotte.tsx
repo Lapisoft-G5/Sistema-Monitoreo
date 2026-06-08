@@ -1,6 +1,14 @@
 import { ForgotPasswordWidget } from '@widgets/auth';
+import { useUser } from '@entities/model-user';
+import { Navigate } from 'react-router-dom';
 
 export const ForgotPasswordPage = () => {
+  const { isAuthenticated } = useUser();
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-bg relative overflow-hidden">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">

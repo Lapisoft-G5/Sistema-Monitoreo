@@ -1,8 +1,6 @@
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
-import {
-  Prisma,
-} from '../../../generated/prisma/client.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 export type DocenteWithRelations = Prisma.DocenteGetPayload<{
   include: { persona: true; docenteCargos: { include: { cargo: true } } };

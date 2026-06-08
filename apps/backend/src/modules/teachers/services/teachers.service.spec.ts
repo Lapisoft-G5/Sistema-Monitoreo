@@ -6,6 +6,7 @@ import { TeachersRepository } from '../repositories/teachers.repository.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
 
 describe('TeachersService', () => {
   let service: TeachersService;
@@ -36,14 +37,19 @@ describe('TeachersService', () => {
         {
           provide: TeachersRepository,
           useValue: {
-            findInstitucionById: findInstitucionByIdMock,
-            findCargoById: findCargoByIdMock,
             findDocenteById: findDocenteByIdMock,
             findDocentes: findDocentesMock,
-            findPersonaByEmailNotId: findPersonaByEmailNotIdMock,
             updateDocenteEstado: updateDocenteEstadoMock,
             createDocenteWithTransaction: createDocenteWithTransactionMock,
             updateDocenteWithTransaction: updateDocenteWithTransactionMock,
+          },
+        },
+        {
+          provide: CatalogsRepository,
+          useValue: {
+            findInstitucionById: findInstitucionByIdMock,
+            findCargoById: findCargoByIdMock,
+            findPersonaByEmailNotId: findPersonaByEmailNotIdMock,
           },
         },
       ],

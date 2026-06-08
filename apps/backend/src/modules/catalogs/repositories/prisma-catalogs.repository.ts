@@ -1,12 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CatalogsRepository } from './catalogs.repository.js';
-import {
-  InstitucionEducativa,
-  Cargo,
-  Persona,
-  Role,
-} from '../../../generated/prisma/client.js';
+import { InstitucionEducativa, Cargo, Persona, Role } from '../../../generated/prisma/client.js';
 
 @Injectable()
 export class PrismaCatalogsRepository implements CatalogsRepository {

@@ -5,9 +5,10 @@ import { PrismaModule } from '../../shared/prisma/prisma.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { TeachersRepository } from './repositories/teachers.repository.js';
 import { PrismaTeachersRepository } from './repositories/prisma-teachers.repository.js';
+import { CatalogsModule } from '../catalogs/catalogs.module.js';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, CatalogsModule],
   controllers: [TeachersController],
   providers: [
     TeachersService,

@@ -15,16 +15,16 @@ const InstitucionCreatePage = lazy(() =>
 );
 
 const DirectoresPage = lazy(() =>
-  import('./DirectoresPage').then((m) => ({ default: m.DirectoresPage })),
+  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteListSwitcher })),
 );
 const DocenteCreatePage = lazy(() =>
-  import('./DocenteCreatePage').then((m) => ({ default: m.DocenteCreatePage })),
+  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteCreateSwitcher })),
 );
 const DocenteEditPage = lazy(() =>
-  import('./DocenteEditPage').then((m) => ({ default: m.DocenteEditPage })),
+  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteEditSwitcher })),
 );
 const DocenteDetailPage = lazy(() =>
-  import('./DocenteDetailPage').then((m) => ({ default: m.DocenteDetailPage })),
+  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteDetailSwitcher })),
 );
 
 const JefesGestionPage = lazy(() =>

@@ -1,23 +1,48 @@
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
-import { Prisma } from '../../../generated/prisma/client.js';
 
-export type DocenteWithRelations = Prisma.DocenteGetPayload<{
-  include: { persona: true; docenteCargos: { include: { cargo: true } } };
-}>;
+export interface DocenteEntity {
+  id: string;
+  personaId: string;
+  institucionId: string;
+  gradoAcademico: string | null;
+  nivelEducativo: string;
+  cursoAsignado: string | null;
+  estado: string;
+  createdAt: Date;
+  updatedAt: Date;
+  persona: {
+    id: string;
+    dni: string;
+    nombres: string;
+    apellidos: string;
+    correo: string | null;
+  };
+  docenteCargos: Array<{
+    id: string;
+    cargoId: string;
+    fechaInicio: Date;
+    fechaFin: Date | null;
+    cargo: {
+      id: string;
+      nombre: string;
+    };
+  }>;
+}
 
-export interface TeachersRepository {
-  findDocenteById(id: string): Promise<DocenteWithRelations | null>;
-  findDocentes(whereClause: Prisma.DocenteWhereInput): Promise<DocenteWithRelations[]>;
-  updateDocenteEstado(id: string, estado: string): Promise<DocenteWithRelations>;
+export interface DocenteFilter {
+  institucionId?: string;
+}
 
-  createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteWithRelations>;
-  updateDocenteWithTransaction(
+export abstract class TeachersRepository {
+  abstract findDocenteById(id: string): Promise<DocenteEntity | null>;
+  abstract findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]>;
+  abstract updateDocenteEstado(id: string, estado: string): Promise<DocenteEntity>;
+  abstract createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteEntity>;
+  abstract updateDocenteWithTransaction(
     id: string,
     dto: UpdateDocenteDto,
     activeCargo: any,
     personaId: string,
-  ): Promise<DocenteWithRelations>;
+  ): Promise<DocenteEntity>;
 }
-
-export const TeachersRepository = Symbol('TeachersRepository');

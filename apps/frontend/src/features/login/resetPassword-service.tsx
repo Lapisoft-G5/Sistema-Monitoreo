@@ -16,7 +16,7 @@ export const useResetPasswordService = () => {
     setLoading(false);
 
     if (!ok) {
-      const errJson = (apiError || {}) as any;
+      const errJson = (apiError || {}) as { message?: string };
       setError(errJson.message || 'Error al restablecer la contraseña.');
       return { success: false };
     }

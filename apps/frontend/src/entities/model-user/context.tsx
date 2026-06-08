@@ -1,24 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User } from './model';
 import { authApi } from '@/shared/api/auth.api';
-
-export interface UserContextType {
-  user: User | null;
-  setUser: (user: User | null) => void;
-  isAuthenticated: boolean;
-  logout: () => void;
-  changePassword: (newPassword: string) => Promise<void>;
-}
-
-export const UserContext = createContext<UserContextType | null>(null);
-
-export const useUser = () => {
-  const context = useContext(UserContext);
-  if (!context) {
-    throw new Error('useUser debe usarse dentro de un UserProvider');
-  }
-  return context;
-};
+import { UserContext } from './user-context';
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
@@ -53,7 +36,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(() => {
     // Llamamos a la API para invalidar sesión en BD sin esperar resultado para no bloquear UI
     authApi.logout().catch(console.error);
-    
+
     localStorage.removeItem('accessToken'); // Limpieza por si quedó de la versión anterior
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('ugel_penalty_expiry');

@@ -18,6 +18,12 @@ import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { RolesGuard } from '../../auth/guards/roles.guard.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import { Request } from 'express';
+import { JwtPayload } from '../../auth/services/auth-token.service.js';
+
+interface AuthenticatedRequest extends Request {
+  user: JwtPayload;
+}
 
 @Controller('docentes')
 @UseGuards(AuthGuard, RolesGuard)
@@ -27,28 +33,32 @@ export class TeachersController {
   @Post()
   @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateDocenteDto, @Req() req: any) {
+  async create(@Body() dto: CreateDocenteDto, @Req() req: AuthenticatedRequest) {
     return this.teachersService.createDocente(dto, req.user);
   }
 
   @Get()
   @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA, RoleCode.DIRECTOR_UGEL)
   @HttpCode(HttpStatus.OK)
-  async findAll(@Req() req: any) {
+  async findAll(@Req() req: AuthenticatedRequest) {
     return this.teachersService.getDocentes(req.user);
   }
 
   @Put(':id')
   @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.OK)
-  async update(@Param('id') id: string, @Body() dto: UpdateDocenteDto, @Req() req: any) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateDocenteDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.teachersService.updateDocente(id, dto, req.user);
   }
 
   @Patch(':id/baja')
   @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
   @HttpCode(HttpStatus.OK)
-  async deactivate(@Param('id') id: string, @Req() req: any) {
+  async deactivate(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.teachersService.bajaDocente(id, req.user);
   }
 }

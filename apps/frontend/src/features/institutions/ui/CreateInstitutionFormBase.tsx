@@ -28,12 +28,13 @@ const INITIAL_FORM: InstitutionRawInput = {
   zona: '', direccion: '', director: '', directorTelefono: '', directorCorreo: '',
 };
 
+const MOCK_DOCENTES = [{ dni: '87654321', nombres: 'Juan Pérez', cargo: 'Director', celular: '987654321', correo: 'juan@ugel.edu.pe' }];
+
 export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData }: Props) => {
   const [form, setForm] = useState<InstitutionRawInput>(initialData || INITIAL_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [dniSearch, setDniSearch] = useState('');
 
-  const MOCK_DOCENTES = [{ dni: '87654321', nombres: 'Juan Pérez', cargo: 'Director', celular: '987654321', correo: 'juan@ugel.edu.pe' }];
   const directors = useMemo(() => MOCK_DOCENTES.filter((d) => d.cargo === 'Director'), []);
   const filteredDirectors = useMemo(() => directors.filter((d) => (dniSearch ? d.dni.includes(dniSearch) : true)), [directors, dniSearch]);
   const directorOptions = useMemo(() => filteredDirectors.map((d) => ({ value: d.nombres, label: `${d.nombres} (DNI: ${d.dni})` })), [filteredDirectors]);

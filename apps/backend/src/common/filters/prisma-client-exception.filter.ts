@@ -15,12 +15,13 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
     let message = 'Error interno del servidor en la base de datos';
 
     switch (exception.code) {
-      case 'P2002':
+      case 'P2002': {
         // Violación de restricción de unicidad (Unique constraint failed)
         status = HttpStatus.CONFLICT;
         const fields = exception.meta?.target as string[];
         message = `Ya existe un registro con ese valor: ${fields?.join(', ') || 'duplicado'}`;
         break;
+      }
       case 'P2025':
         // Registro no encontrado (Record not found)
         status = HttpStatus.NOT_FOUND;

@@ -10,14 +10,24 @@ export class PrismaUserRepository implements UserRepository {
   async findUserByDni(dni: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: { persona: { dni } },
-      include: { role: true, persona: { include: { docente: true } } },
+      include: {
+        role: true,
+        persona: {
+          include: { docente: { include: { docenteCargos: { include: { cargo: true } } } } },
+        },
+      },
     });
   }
 
   async findUserById(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { id },
-      include: { role: true, persona: true },
+      include: {
+        role: true,
+        persona: {
+          include: { docente: { include: { docenteCargos: { include: { cargo: true } } } } },
+        },
+      },
     });
   }
 

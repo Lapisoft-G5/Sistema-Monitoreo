@@ -28,7 +28,7 @@ export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 
 
       return matchSearch && matchCondicion && matchNivel;
     });
-  }, [docentes, searchQuery, condicionFilter, nivelFilter]);
+  }, [docentes, searchQuery, condicionFilter, nivelFilter, targetCargo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(pageParam, totalPages);

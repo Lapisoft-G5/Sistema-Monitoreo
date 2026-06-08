@@ -65,7 +65,8 @@ export const useLoginService = () => {
 
     // Manejo de fracaso
     if (!ok || !data) {
-      const errJson = (apiError || {}) as any; 
+      interface ApiLoginError { failedLoginAttempts?: number; lockedUntil?: string; message?: string; }
+      const errJson = (apiError || {}) as ApiLoginError;
       const nextAttempts = errJson.failedLoginAttempts !== undefined ? errJson.failedLoginAttempts : attempts + 1;
       setAttempts(nextAttempts);
 

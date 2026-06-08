@@ -2,14 +2,14 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
-import { Prisma } from '../../../generated/prisma/client.js';
-import { DocenteWithRelations, TeachersRepository } from './teachers.repository.js';
+import { DocenteCargo, Persona, Prisma } from '../../../generated/prisma/client.js';
+import { DocenteEntity, DocenteFilter, TeachersRepository } from './teachers.repository.js';
 
 @Injectable()
 export class PrismaTeachersRepository implements TeachersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findDocenteById(id: string): Promise<DocenteWithRelations | null> {
+  async findDocenteById(id: string): Promise<DocenteEntity | null> {
     return this.prisma.docente.findUnique({
       where: { id },
       include: {
@@ -22,9 +22,13 @@ export class PrismaTeachersRepository implements TeachersRepository {
     });
   }
 
-  async findDocentes(whereClause: Prisma.DocenteWhereInput): Promise<DocenteWithRelations[]> {
+  async findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]> {
+    const where: Prisma.DocenteWhereInput = {};
+    if (filter?.institucionId) {
+      where.institucionId = filter.institucionId;
+    }
     return this.prisma.docente.findMany({
-      where: whereClause,
+      where,
       include: {
         persona: true,
         docenteCargos: {
@@ -39,7 +43,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
     });
   }
 
-  async updateDocenteEstado(id: string, estado: string): Promise<DocenteWithRelations> {
+  async updateDocenteEstado(id: string, estado: string): Promise<DocenteEntity> {
     return this.prisma.docente.update({
       where: { id },
       data: { estado },
@@ -52,7 +56,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
     });
   }
 
-  async createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteWithRelations> {
+  async createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteEntity> {
     return this.prisma.$transaction(async (tx) => {
       // Verificar si la persona con ese DNI ya existe
       const existingPersona = await tx.persona.findUnique({
@@ -61,7 +65,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
       });
 
       let personaId: string;
-      let finalPersona: any;
+      let finalPersona: Persona;
 
       if (existingPersona) {
         // Si la persona existe y ya tiene un registro de docente, lanzar conflicto
@@ -159,16 +163,16 @@ export class PrismaTeachersRepository implements TeachersRepository {
             },
           },
         ],
-      } as unknown as DocenteWithRelations;
+      };
     });
   }
 
   async updateDocenteWithTransaction(
     id: string,
     dto: UpdateDocenteDto,
-    activeCargo: any,
+    activeCargo: DocenteCargo | null,
     personaId: string,
-  ): Promise<DocenteWithRelations> {
+  ): Promise<DocenteEntity> {
     return this.prisma.$transaction(async (tx) => {
       // A. Actualizar datos de Persona
       const updatedPersona = await tx.persona.update({
@@ -244,7 +248,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
             nombre: dc.cargo.nombre,
           },
         })),
-      } as unknown as DocenteWithRelations;
+      };
     });
   }
 }

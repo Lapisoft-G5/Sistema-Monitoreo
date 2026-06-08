@@ -19,6 +19,12 @@ import {
   IRefreshTokenResponse,
 } from '@sistema-monitoreo/shared-contracts';
 import { RefreshTokenDto } from '../dto/refresh-token.dto.js';
+import { JwtPayload } from '../services/auth-token.service.js';
+
+interface AuthenticatedRequest extends Request {
+  cookies: Record<string, string>;
+  user: JwtPayload & { jti: string };
+}
 
 @Controller('auth')
 export class AuthController {
@@ -32,7 +38,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<ILoginResponse> {
     const result = await this.authSessionService.login(dto, {
@@ -49,7 +55,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Body() dto: RefreshTokenDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<IRefreshTokenResponse> {
     const refreshTokenToUse = req.cookies?.refreshToken || dto.refreshToken;
@@ -72,7 +78,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async changePassword(
     @Body() dto: ChangePasswordDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<IChangePasswordResponse> {
     const userId = req.user.sub;
@@ -93,7 +99,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async forgotPassword(
     @Body() dto: ForgotPasswordDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IForgotPasswordResponse> {
     return this.authPasswordService.forgotPassword(dto, {
       ipAddress: req.ip,
@@ -106,7 +112,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(
     @Body() dto: ResetPasswordDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IResetPasswordResponse> {
     return this.authPasswordService.resetPassword(dto, {
       ipAddress: req.ip,
@@ -119,7 +125,7 @@ export class AuthController {
   @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
   async logout(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<ILogoutResponse> {
     const sessionJti = req.user.jti;

@@ -1,6 +1,6 @@
 ## Resumen
 **¿Qué cambia y por qué?**
-<Descripción breve del cambio>
+
 
 ## Referencias
 - **Ticket / Tarea:** - **Módulo:** ## ✅ Checklist de Calidad (Innegociable)

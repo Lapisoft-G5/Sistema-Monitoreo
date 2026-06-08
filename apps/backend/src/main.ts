@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module.js';
+import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter.js';
 
 import cookieParser from 'cookie-parser';
 
@@ -23,6 +24,9 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
 
   await app.listen(process.env.PORT ?? 3000);
   console.log(`Backend running on ${await app.getUrl()}/api`);

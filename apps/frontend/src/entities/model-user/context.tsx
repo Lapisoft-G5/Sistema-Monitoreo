@@ -21,7 +21,26 @@ export const useUser = () => {
 };
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try {
+        return JSON.parse(stored) as User;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  // Sincronizar el usuario con localStorage cuando cambia
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleInvalidation = () => {

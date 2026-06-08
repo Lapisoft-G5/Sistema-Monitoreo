@@ -1,12 +1,22 @@
 import { authApi } from './auth.api';
 
 let isRefreshing = false;
-let refreshPromise: Promise<string | null> | null = null;
+let refreshPromise: Promise<boolean> | null = null;
 
 export const setupFetchInterceptor = () => {
   const originalFetch = window.fetch;
   
   window.fetch = async (...args) => {
+    // Configurar credentials por defecto
+    if (typeof args[0] === 'string' || args[0] instanceof URL) {
+      args[1] = args[1] || {};
+      if (args[1].credentials === undefined) {
+        args[1].credentials = 'include';
+      }
+    } else if (args[0] instanceof Request && args[0].credentials === 'omit') {
+      // Si fue creado con Request, no lo podemos mutar tan fácilmente, pero se asume que las configuraciones globales ya pasaron 'include'
+    }
+
     const response = await originalFetch(...args);
     
     if (response.status === 401) {
@@ -14,40 +24,28 @@ export const setupFetchInterceptor = () => {
       
       const isAuthUrl = url.includes('/api/auth/');
       if (!isAuthUrl) {
-        const refreshToken = localStorage.getItem('refreshToken');
+        if (!isRefreshing) {
+          isRefreshing = true;
+          // Llamamos a refresh() asumiendo que las cookies se enviarán automáticamente
+          refreshPromise = authApi.refreshToken('').then(res => {
+            isRefreshing = false;
+            return res.ok;
+          }).catch(() => {
+            isRefreshing = false;
+            return false;
+          });
+        }
         
-        if (refreshToken) {
-          if (!isRefreshing) {
-            isRefreshing = true;
-            refreshPromise = authApi.refreshToken(refreshToken).then(res => {
-              isRefreshing = false;
-              if (res.ok && res.data?.accessToken) {
-                localStorage.setItem('accessToken', res.data.accessToken);
-                if (res.data.refreshToken) {
-                  localStorage.setItem('refreshToken', res.data.refreshToken);
-                }
-                return res.data.accessToken;
-              }
-              return null;
-            }).catch(() => {
-              isRefreshing = false;
-              return null;
-            });
-          }
-          
-          const newAccessToken = await refreshPromise;
-          if (newAccessToken) {
-            // Reintentar la llamada original
-            if (typeof args[0] === 'string' || args[0] instanceof URL) {
-              const url = args[0];
-              const options = { ...(args[1] as RequestInit) };
-              options.headers = { ...options.headers, Authorization: `Bearer ${newAccessToken}` };
-              return await originalFetch(url, options);
-            } else if (args[0] instanceof Request) {
-              const req = args[0].clone();
-              req.headers.set('Authorization', `Bearer ${newAccessToken}`);
-              return await originalFetch(req, args[1] as RequestInit);
-            }
+        const success = await refreshPromise;
+        if (success) {
+          // Reintentar la llamada original
+          if (typeof args[0] === 'string' || args[0] instanceof URL) {
+            const url = args[0];
+            const options = { ...(args[1] as RequestInit) };
+            return await originalFetch(url, options);
+          } else if (args[0] instanceof Request) {
+            const req = args[0].clone();
+            return await originalFetch(req, args[1] as RequestInit);
           }
         }
 

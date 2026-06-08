@@ -7,6 +7,7 @@ export const authApi = {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/auth/login`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dni, password }),
       });
@@ -21,13 +22,13 @@ export const authApi = {
     }
   },
 
-  logout: async (token: string): Promise<void> => {
+  logout: async (): Promise<void> => {
     try {
       await fetch(`${getApiBaseUrl()}/api/auth/logout`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
       });
     } catch (err) {
@@ -35,13 +36,13 @@ export const authApi = {
     }
   },
 
-  changePassword: async (token: string, newPassword: string): Promise<{ ok: boolean; data?: { accessToken?: string; refreshToken?: string }; error?: unknown }> => {
+  changePassword: async (newPassword: string): Promise<{ ok: boolean; data?: { accessToken?: string; refreshToken?: string }; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/auth/change-password`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ newPassword }),
       });
@@ -60,6 +61,7 @@ export const authApi = {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/auth/forgot-password`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dni, email }),
       });
@@ -77,6 +79,7 @@ export const authApi = {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/auth/reset-password`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword }),
       });
@@ -94,6 +97,7 @@ export const authApi = {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/auth/refresh`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
       });

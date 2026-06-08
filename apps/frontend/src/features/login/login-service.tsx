@@ -93,11 +93,8 @@ export const useLoginService = () => {
     }
 
     // Manejo de éxito
-    localStorage.setItem('accessToken', data.accessToken);
-    if (data.refreshToken) {
-      localStorage.setItem('refreshToken', data.refreshToken);
-    }
     localStorage.removeItem('ugel_penalty_expiry');
+    // Ya no guardamos el accessToken ni refreshToken en localStorage porque el backend lo envía en cookies HttpOnly
     setAttempts(0);
 
     // Inyectamos el usuario en el contexto global (Entidad)

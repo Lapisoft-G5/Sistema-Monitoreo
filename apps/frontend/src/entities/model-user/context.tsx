@@ -51,31 +51,20 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const logout = useCallback(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      // Llamamos a la API para invalidar sesión en BD sin esperar resultado para no bloquear UI
-      authApi.logout(token).catch(console.error);
-    }
-    localStorage.removeItem('accessToken');
+    // Llamamos a la API para invalidar sesión en BD sin esperar resultado para no bloquear UI
+    authApi.logout().catch(console.error);
+    
+    localStorage.removeItem('accessToken'); // Limpieza por si quedó de la versión anterior
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('ugel_penalty_expiry');
     setUser(null);
   }, []);
 
   const changePassword = useCallback(async (newPassword: string) => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) throw new Error('No hay sesión activa');
-    
-    const res = await authApi.changePassword(token, newPassword);
+    // La sesión actual se maneja vía cookies HttpOnly en el backend
+    const res = await authApi.changePassword(newPassword);
     if (!res.ok) {
       throw new Error((res.error as { message?: string })?.message || 'Error al cambiar contraseña');
-    }
-
-    if (res.data?.accessToken) {
-      localStorage.setItem('accessToken', res.data.accessToken);
-    }
-    if (res.data?.refreshToken) {
-      localStorage.setItem('refreshToken', res.data.refreshToken);
     }
 
     // Marca al usuario como que ya no es su primer login

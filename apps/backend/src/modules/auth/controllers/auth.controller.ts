@@ -1,5 +1,5 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
-import type { Request } from 'express';
+import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { LoginDto } from '../dto/login.dto.js';
 import { ChangePasswordDto } from '../dto/change-password.dto.js';
@@ -28,11 +28,15 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Req() req: Request): Promise<ILoginResponse> {
-    return this.authService.login(dto, {
+  async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<ILoginResponse> {
+    const result = await this.authService.login(dto, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
+
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+
+    return result;
   }
 
   /**
@@ -41,11 +45,16 @@ export class AuthController {
    */
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request): Promise<IRefreshTokenResponse> {
-    return this.authService.refreshToken(dto, {
+  async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<IRefreshTokenResponse> {
+    const refreshTokenToUse = req.cookies?.refreshToken || dto.refreshToken;
+    const result = await this.authService.refreshToken({ refreshToken: refreshTokenToUse }, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
+
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+
+    return result;
   }
 
   /**
@@ -59,13 +68,18 @@ export class AuthController {
   async changePassword(
     @Body() dto: ChangePasswordDto,
     @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<IChangePasswordResponse> {
     const userId = req.user.sub;
     const sessionJti = req.user.jti;
-    return this.authService.changePassword(userId, sessionJti, dto, {
+    const result = await this.authService.changePassword(userId, sessionJti, dto, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
+
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+
+    return result;
   }
 
   /**
@@ -108,12 +122,39 @@ export class AuthController {
   @UseGuards(AuthGuard, RolesGuard)
   @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
-  async logout(@Req() req: any): Promise<ILogoutResponse> {
+  async logout(@Req() req: any, @Res({ passthrough: true }) res: Response): Promise<ILogoutResponse> {
     const sessionJti = req.user.jti;
     const userId = req.user.sub;
-    return this.authService.logout(sessionJti, userId, {
+    const result = await this.authService.logout(sessionJti, userId, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
+
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+
+    return result;
+  }
+
+  private setAuthCookies(res: Response, accessToken?: string, refreshToken?: string) {
+    const isProd = process.env.NODE_ENV === 'production';
+    
+    if (accessToken) {
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: 'strict',
+        maxAge: 15 * 60 * 1000, // 15 minutos
+      });
+    }
+
+    if (refreshToken) {
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
+      });
+    }
   }
 }

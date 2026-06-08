@@ -5,4 +5,5 @@ export interface IChangePasswordRequest {
 export interface IChangePasswordResponse {
   success: boolean;
   message: string;
+  accessToken?: string;
 }

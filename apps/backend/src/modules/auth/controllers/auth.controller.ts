@@ -46,7 +46,8 @@ export class AuthController {
     @Req() req: any,
   ): Promise<IChangePasswordResponse> {
     const userId = req.user.sub;
-    return this.authService.changePassword(userId, dto, {
+    const sessionJti = req.user.jti;
+    return this.authService.changePassword(userId, sessionJti, dto, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });

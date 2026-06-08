@@ -190,6 +190,7 @@ export class AuthService {
 
   async changePassword(
     userId: string,
+    sessionJti: string,
     dto: ChangePasswordDto,
     meta?: { ipAddress?: string; userAgent?: string },
   ): Promise<IChangePasswordResponse> {
@@ -203,6 +204,25 @@ export class AuthService {
 
     await this.authRepository.updatePassword(userId, passwordHash);
 
+    // Generar un nuevo token con firstLogin = false
+    const jwtExpiresInSeconds = 8 * 60 * 60; // 8 horas
+    const payload: any = {
+      sub: user.id,
+      dni: user.persona?.dni ?? '',
+      role: user.role?.code ?? '',
+      jti: sessionJti,
+      firstLogin: false, // ¡Forzamos false porque acaba de cambiar su contraseña!
+    };
+
+    if (user.role?.code === RoleCode.DIRECTOR_INSTITUCION && user.persona?.docente?.institucionId) {
+      payload.institucion_id = user.persona.docente.institucionId;
+      payload.colegio_id = user.persona.docente.institucionId;
+    }
+
+    const newAccessToken = await this.jwtService.signAsync(payload, {
+      expiresIn: jwtExpiresInSeconds,
+    });
+
     await this.authRepository.logAuthEvent({
       userId,
       eventType: 'PASSWORD_CHANGE',
@@ -214,6 +234,7 @@ export class AuthService {
     return {
       success: true,
       message: 'Contraseña actualizada correctamente',
+      accessToken: newAccessToken,
     };
   }
 

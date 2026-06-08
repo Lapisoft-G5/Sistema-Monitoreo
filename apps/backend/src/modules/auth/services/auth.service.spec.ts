@@ -391,7 +391,7 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if user does not exist', async () => {
       findUserByIdMock.mockResolvedValue(null);
 
-      await expect(service.changePassword('nonexistent-uuid', changePasswordDto)).rejects.toThrow(
+      await expect(service.changePassword('nonexistent-uuid', 'fake-jti', changePasswordDto)).rejects.toThrow(
         UnauthorizedException,
       );
 
@@ -404,7 +404,9 @@ describe('AuthService', () => {
       hashMock.mockResolvedValue('new_hashed_password');
       updatePasswordMock.mockResolvedValue(undefined);
 
-      const result = await service.changePassword(user.id, changePasswordDto, {
+      jwtSignAsyncMock.mockResolvedValue('new-fake-jwt-token');
+
+      const result = await service.changePassword(user.id, 'fake-jti', changePasswordDto, {
         ipAddress: '127.0.0.1',
         userAgent: 'Jest',
       });
@@ -412,6 +414,7 @@ describe('AuthService', () => {
       expect(result).toEqual({
         success: true,
         message: 'Contraseña actualizada correctamente',
+        accessToken: 'new-fake-jwt-token',
       });
       expect(findUserByIdMock).toHaveBeenCalledWith(user.id);
       expect(hashMock).toHaveBeenCalledWith(changePasswordDto.newPassword, 10);

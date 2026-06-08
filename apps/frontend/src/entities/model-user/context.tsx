@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User } from './model';
+import { authApi } from '@/shared/api/auth.api';
 
 export interface UserContextType {
   user: User | null;
@@ -30,16 +31,29 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('auth-invalidation', handleInvalidation);
   }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      // Llamamos a la API para invalidar sesión en BD sin esperar resultado para no bloquear UI
+      authApi.logout(token).catch(console.error);
+    }
     localStorage.removeItem('accessToken');
     localStorage.removeItem('ugel_penalty_expiry');
     setUser(null);
-  };
+  }, []);
 
-  const changePassword = useCallback(async (_newPassword: string) => {
-    // TODO: Conectar con el endpoint real del backend
-    // await authApi.changePassword(newPassword);
-    await new Promise((resolve) => setTimeout(resolve, 800));
+  const changePassword = useCallback(async (newPassword: string) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) throw new Error('No hay sesión activa');
+    
+    const res = await authApi.changePassword(token, newPassword);
+    if (!res.ok) {
+      throw new Error((res.error as { message?: string })?.message || 'Error al cambiar contraseña');
+    }
+
+    if (res.data?.accessToken) {
+      localStorage.setItem('accessToken', res.data.accessToken);
+    }
 
     // Marca al usuario como que ya no es su primer login
     setUser((prev) => (prev ? { ...prev, firstLogin: false } : null));

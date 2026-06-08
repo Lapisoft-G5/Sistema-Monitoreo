@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '@widgets/layouts/';
 import { LoginPage } from '@/pages/login/login';
+import { ForgotPasswordPage } from '@/pages/login/passwordForgotte';
 import { adminRoutes } from '@/pages/jefeArea/jefeArea.routes';
 import { coordinatorRoutes } from '@/pages/coordinador/coordinador.routes';
 import { especialistaRoutes } from '@/pages/especialista/especialista.routes';
@@ -21,5 +22,6 @@ export const router = createBrowserRouter([
     ],
   },
   { path: '/login', element: <LoginPage /> },
+  { path: '/recuperar-password', element: <ForgotPasswordPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ]);

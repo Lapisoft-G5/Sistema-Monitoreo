@@ -22,6 +22,9 @@ const EspecialistaDetailPage = lazy(() =>
 const ReportesPage = lazy(() =>
   import('./ReportesPage').then((m) => ({ default: m.ReportesPage })),
 );
+const GestionMonitoreoPage = lazy(() =>
+  import('../director/GestionMonitoreoPage').then((m) => ({ default: m.GestionMonitoreoPage })),
+);
 
 export const coordinatorRoutes: RouteObject[] = [
   {
@@ -32,6 +35,19 @@ export const coordinatorRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <PlanMonitoreoPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute permission="monitoreo_gestion" />,
+    children: [
+      {
+        path: 'monitoreo/gestion',
+        element: (
+          <LazyLoader>
+            <GestionMonitoreoPage />
           </LazyLoader>
         ),
       },

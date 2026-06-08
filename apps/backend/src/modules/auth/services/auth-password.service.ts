@@ -76,11 +76,10 @@ export class AuthPasswordService {
       requestedIp: meta?.ipAddress,
     });
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
     await this.mailerService.sendPasswordResetEmail(
       user.persona!.correo!,
       user.persona!.nombres,
-      resetLink,
+      rawToken,
     );
     await this.auditRepository.logAuthEvent({
       userId: user.id,

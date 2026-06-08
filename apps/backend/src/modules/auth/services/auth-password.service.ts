@@ -112,6 +112,13 @@ export class AuthPasswordService {
       throw new BadRequestException('La cuenta de usuario está inactiva.');
     }
 
+    const isSamePassword = await bcrypt.compare(dto.newPassword, resetToken.user!.passwordHash);
+    if (isSamePassword) {
+      throw new BadRequestException(
+        'La nueva contraseña no puede ser igual a la contraseña actual.',
+      );
+    }
+
     const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.passwordTokenRepository.useResetToken(
       resetToken.id,
@@ -138,6 +145,13 @@ export class AuthPasswordService {
   ): Promise<IChangePasswordResponse> {
     const user = await this.userRepository.findUserById(userId);
     if (!user) throw new UnauthorizedException('Usuario no encontrado');
+
+    const isSamePassword = await bcrypt.compare(dto.newPassword, user.passwordHash);
+    if (isSamePassword) {
+      throw new BadRequestException(
+        'La nueva contraseña no puede ser igual a la contraseña actual.',
+      );
+    }
 
     const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.userRepository.updatePassword(userId, newPasswordHash);

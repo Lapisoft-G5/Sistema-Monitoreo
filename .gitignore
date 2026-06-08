@@ -39,4 +39,4 @@ Thumbs.db
 .claude/
 .agents/
 mejora:txt
-skills
+skills-lock.json

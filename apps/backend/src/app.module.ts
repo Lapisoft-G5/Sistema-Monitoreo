@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from 'nestjs-pino';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { HealthModule } from './shared/health/health.module.js';
@@ -14,6 +15,15 @@ import { EspecialistasModule } from './modules/especialistas/especialistas.modul
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../../.env', './apps/backend/.env'],
+    }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { singleLine: true, colorize: true } }
+            : undefined,
+        autoLogging: false,
+      },
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000,

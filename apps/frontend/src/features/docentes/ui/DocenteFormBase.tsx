@@ -200,7 +200,7 @@ export const DocenteFormBase = ({
             label="Condición Laboral"
             required
             value={form.condicion}
-            onChange={(v) => set('condicion', v as any)}
+            onChange={(v) => set('condicion', v as DocenteFormData['condicion'])}
             options={CONDICION_LABORAL.map((c) => ({ value: c, label: c }))}
             placeholder="Seleccione Condición"
             error={showError('condicion')}
@@ -209,7 +209,7 @@ export const DocenteFormBase = ({
             label="Escala Magisterial"
             required
             value={form.escala}
-            onChange={(v) => set('escala', v as any)}
+            onChange={(v) => set('escala', v as DocenteFormData['escala'])}
             options={ESCALAS_MAGISTERIALES}
             placeholder="Seleccione Escala"
             error={showError('escala')}
@@ -220,7 +220,7 @@ export const DocenteFormBase = ({
             label="Nivel Educativo"
             required
             value={form.nivelEducativo}
-            onChange={(v) => set('nivelEducativo', v as any)}
+            onChange={(v) => set('nivelEducativo', v as DocenteFormData['nivelEducativo'])}
             options={NIVELES.map((n) => ({ value: n, label: NIVEL_LABEL[n] }))}
             placeholder="Seleccione Nivel"
             error={showError('nivelEducativo')}

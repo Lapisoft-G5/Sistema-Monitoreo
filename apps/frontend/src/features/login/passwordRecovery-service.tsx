@@ -16,7 +16,7 @@ export const usePasswordRecoveryService = () => {
     setLoading(false);
 
     if (!ok) {
-      const errJson = (apiError || {}) as any;
+      const errJson = (apiError || {}) as { message?: string };
       setError(errJson.message || 'No se pudo procesar la solicitud. Verifique sus datos.');
       return { success: false };
     }

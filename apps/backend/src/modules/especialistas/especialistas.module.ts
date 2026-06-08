@@ -5,9 +5,10 @@ import { EspecialistaRepository } from './repositories/especialista.repository.j
 import { PrismaEspecialistaRepository } from './repositories/prisma-especialista.repository.js';
 import { PrismaModule } from '../../shared/prisma/prisma.module.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { CatalogsModule } from '../catalogs/catalogs.module.js';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, CatalogsModule],
   controllers: [EspecialistaController],
   providers: [
     EspecialistaService,

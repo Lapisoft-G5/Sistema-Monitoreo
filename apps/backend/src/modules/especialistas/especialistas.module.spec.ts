@@ -5,6 +5,7 @@ import { EspecialistaService } from './services/especialista.service.js';
 import { EspecialistaRepository } from './repositories/especialista.repository.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { ConfigService } from '@nestjs/config';
+import { CatalogsRepository } from '../catalogs/repositories/catalogs.repository.js';
 
 describe('EspecialistasModule', () => {
   let module: TestingModule;
@@ -13,6 +14,11 @@ describe('EspecialistasModule', () => {
     module = await Test.createTestingModule({
       imports: [EspecialistasModule],
     })
+      .overrideProvider(CatalogsRepository)
+      .useValue({
+        findRoleByCode: jest.fn(),
+        findPersonaByDni: jest.fn(),
+      })
       .overrideProvider(PrismaService)
       .useValue({
         especialista: {

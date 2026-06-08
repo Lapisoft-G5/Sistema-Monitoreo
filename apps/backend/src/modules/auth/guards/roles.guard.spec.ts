@@ -43,6 +43,7 @@ describe('RolesGuard', () => {
 
     const result = guard.canActivate(context);
     expect(result).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(reflector.getAllAndOverride).toHaveBeenCalledWith(ROLES_KEY, expect.any(Array));
   });
 

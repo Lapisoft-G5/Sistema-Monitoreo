@@ -5,6 +5,7 @@ import { CreateInstitucionDto } from '../dto/create-institucion.dto.js';
 import { UpdateInstitucionDto } from '../dto/update-institucion.dto.js';
 import { QueryInstitucionDto } from '../dto/query-institucion.dto.js';
 import { Institucion } from '../entities/institucion.entity.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 @Injectable()
 export class PrismaInstitutionsRepository implements InstitutionsRepository {
@@ -72,7 +73,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
 
   async findAll(query: QueryInstitucionDto): Promise<{ data: Institucion[]; total: number }> {
     const { nombre, nivelEducativo, estado, limit = 10, offset = 0 } = query;
-    const where: any = {};
+    const where: Prisma.InstitucionEducativaWhereInput = {};
 
     if (nombre) {
       where.nombre = { contains: nombre, mode: 'insensitive' };

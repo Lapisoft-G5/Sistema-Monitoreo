@@ -11,7 +11,12 @@ export abstract class EspecialistaRepository {
   abstract create(
     data: ICreateEspecialistaRequest,
     passwordHash: string,
+    roleId: string,
   ): Promise<IEspecialistaResponse>;
-  abstract update(id: string, data: IUpdateEspecialistaRequest): Promise<IEspecialistaResponse>;
+  abstract update(
+    id: string,
+    data: IUpdateEspecialistaRequest,
+    roleId?: string,
+  ): Promise<IEspecialistaResponse>;
   abstract delete(id: string): Promise<IEspecialistaResponse>;
 }

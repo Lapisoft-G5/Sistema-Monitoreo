@@ -65,7 +65,8 @@ export const useLoginService = () => {
 
     // Manejo de fracaso
     if (!ok || !data) {
-      const errJson = (apiError || {}) as any; 
+      interface ApiLoginError { failedLoginAttempts?: number; lockedUntil?: string; message?: string; }
+      const errJson = (apiError || {}) as ApiLoginError;
       const nextAttempts = errJson.failedLoginAttempts !== undefined ? errJson.failedLoginAttempts : attempts + 1;
       setAttempts(nextAttempts);
 
@@ -93,8 +94,8 @@ export const useLoginService = () => {
     }
 
     // Manejo de éxito
-    localStorage.setItem('accessToken', data.accessToken);
     localStorage.removeItem('ugel_penalty_expiry');
+    // Ya no guardamos el accessToken ni refreshToken en localStorage porque el backend lo envía en cookies HttpOnly
     setAttempts(0);
 
     // Inyectamos el usuario en el contexto global (Entidad)

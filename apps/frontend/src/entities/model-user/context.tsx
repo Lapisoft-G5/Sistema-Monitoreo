@@ -1,26 +1,29 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User } from './model';
-
-export interface UserContextType {
-  user: User | null;
-  setUser: (user: User | null) => void;
-  isAuthenticated: boolean;
-  logout: () => void;
-  changePassword: (newPassword: string) => Promise<void>;
-}
-
-export const UserContext = createContext<UserContextType | null>(null);
-
-export const useUser = () => {
-  const context = useContext(UserContext);
-  if (!context) {
-    throw new Error('useUser debe usarse dentro de un UserProvider');
-  }
-  return context;
-};
+import { authApi } from '@/shared/api/auth.api';
+import { UserContext } from './user-context';
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try {
+        return JSON.parse(stored) as User;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  // Sincronizar el usuario con localStorage cuando cambia
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleInvalidation = () => {
@@ -30,16 +33,22 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('auth-invalidation', handleInvalidation);
   }, []);
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
+  const logout = useCallback(() => {
+    // Llamamos a la API para invalidar sesión en BD sin esperar resultado para no bloquear UI
+    authApi.logout().catch(console.error);
+
+    localStorage.removeItem('accessToken'); // Limpieza por si quedó de la versión anterior
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('ugel_penalty_expiry');
     setUser(null);
-  };
+  }, []);
 
-  const changePassword = useCallback(async (_newPassword: string) => {
-    // TODO: Conectar con el endpoint real del backend
-    // await authApi.changePassword(newPassword);
-    await new Promise((resolve) => setTimeout(resolve, 800));
+  const changePassword = useCallback(async (newPassword: string) => {
+    // La sesión actual se maneja vía cookies HttpOnly en el backend
+    const res = await authApi.changePassword(newPassword);
+    if (!res.ok) {
+      throw new Error((res.error as { message?: string })?.message || 'Error al cambiar contraseña');
+    }
 
     // Marca al usuario como que ya no es su primer login
     setUser((prev) => (prev ? { ...prev, firstLogin: false } : null));

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Institucion } from '@entities/model-instituciones';
+import type { Institucion, Nivel } from '@entities/model-instituciones';
 import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
 import type { InstitutionRawInput } from './ui/CreateInstitutionFormBase';
 
@@ -19,7 +19,7 @@ export const useInstitutionService = () => {
         codigoModular: formData.codigoModular,
         nombre: formData.nombre.trim(),
         direccion: formData.direccion.trim(),
-        nivel: formData.nivel as any,
+        nivel: formData.nivel as Nivel,
         provincia: formData.provincia,
         distrito: formData.distrito,
         zona: formData.zona,
@@ -53,7 +53,7 @@ export const useInstitutionService = () => {
         codigoModular: formData.codigoModular,
         nombre: formData.nombre.trim(),
         direccion: formData.direccion.trim(),
-        nivel: formData.nivel as any,
+        nivel: formData.nivel as Nivel,
         provincia: formData.provincia,
         distrito: formData.distrito,
         zona: formData.zona,

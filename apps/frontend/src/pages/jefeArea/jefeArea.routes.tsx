@@ -27,19 +27,6 @@ const DocenteDetailPage = lazy(() =>
   import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteDetailSwitcher })),
 );
 
-const JefesGestionPage = lazy(() =>
-  import('./JefesGestionPage').then((m) => ({ default: m.JefesGestionPage })),
-);
-const JefeGestionCreatePage = lazy(() =>
-  import('./JefeGestionCreatePage').then((m) => ({ default: m.JefeGestionCreatePage })),
-);
-const JefeGestionEditPage = lazy(() =>
-  import('./JefeGestionEditPage').then((m) => ({ default: m.JefeGestionEditPage })),
-);
-const JefeGestionDetailPage = lazy(() =>
-  import('./JefeGestionDetailPage').then((m) => ({ default: m.JefeGestionDetailPage })),
-);
-
 export const adminRoutes: RouteObject[] = [
   // 🚀 2. Padrón de Instituciones
   {
@@ -112,44 +99,6 @@ export const adminRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <DocenteDetailPage />
-          </LazyLoader>
-        ),
-      },
-    ],
-  },
-  // 🚀 4. Padrón de Jefes de Gestión (Coordinadores)
-  {
-    element: <ProtectedRoute permission="instituciones_coordinadores" />,
-    children: [
-      {
-        path: 'instituciones/coordinadores',
-        element: (
-          <LazyLoader>
-            <JefesGestionPage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/coordinadores/nuevo',
-        element: (
-          <LazyLoader>
-            <JefeGestionCreatePage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/coordinadores/:id/editar',
-        element: (
-          <LazyLoader>
-            <JefeGestionEditPage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/coordinadores/:id',
-        element: (
-          <LazyLoader>
-            <JefeGestionDetailPage />
           </LazyLoader>
         ),
       },

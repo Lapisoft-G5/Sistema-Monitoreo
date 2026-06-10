@@ -41,13 +41,10 @@ export const DirectoresPage = () => {
         }
       />
 
-      {/* 1. Indicadores */}
-      <DirectoresStatsWidget directores={soloDirectores} />
-
-      {/* 2. Barra de filtros (controlada por la URL) */}
+      {/* 1. Barra de filtros (controlada por la URL) */}
       <FilterDirectores />
 
-      {/* 3. Tabla de directores */}
+      {/* 2. Tabla de directores */}
       <DirectoresTableWidget
         directores={directores}
         setDirectores={setDirectores}
@@ -55,6 +52,9 @@ export const DirectoresPage = () => {
         onView={(dir) => navigate(`/instituciones/docentes/${dir.id}`)}
         onEdit={(dir) => navigate(`/instituciones/docentes/${dir.id}/editar`)}
       />
+
+      {/* 3. Indicadores (debajo de la tabla) */}
+      <DirectoresStatsWidget directores={soloDirectores} />
     </div>
   );
 };

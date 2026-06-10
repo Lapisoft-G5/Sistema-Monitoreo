@@ -10,7 +10,7 @@ export const institucionSchema = z.object({
     .regex(/^\d+$/, 'El código modular solo debe contener números'),
   nombre: z.string().min(4, 'El nombre de la institución es muy corto'),
   direccion: z.string().min(4, 'La dirección es requerida'),
-  nivel: z.enum(['INICIAL', 'PRONOEI', 'PRIMARIA', 'SECUNDARIA']),
+  nivel: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA']),
   distrito: z.string().min(2, 'Debe seleccionar un distrito'),
   director: z.string().nullable(), // Permitimos que no tenga director
   estado: z.enum(['Satisfactorio', 'En Proceso', 'Crítico']),

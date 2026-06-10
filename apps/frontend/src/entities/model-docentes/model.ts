@@ -10,7 +10,7 @@ export interface SeccionDocente {
   grado: string; // Ej. "4to A", "3ro B"
 }
 
-export type NivelEducativo = 'INICIAL' | 'PRONOEI' | 'PRIMARIA' | 'SECUNDARIA';
+export type NivelEducativo = 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA';
 
 export interface Docente {
   id: string;

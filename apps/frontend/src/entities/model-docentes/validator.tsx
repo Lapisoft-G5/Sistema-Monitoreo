@@ -18,7 +18,7 @@ export const docenteSchema = z.object({
   celular: z
     .string()
     .regex(/^9\d{8}$/, 'Debe ser un número de celular de 9 dígitos (ej. 987654321)'),
-  nivelEducativo: z.enum(['INICIAL', 'PRONOEI', 'PRIMARIA', 'SECUNDARIA']),
+  nivelEducativo: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA']),
   condicion: z.enum(['Nombrado', 'Contratado']),
   especialidad: z.string().min(3, 'La especialidad es requerida'),
   cargaHoraria: z

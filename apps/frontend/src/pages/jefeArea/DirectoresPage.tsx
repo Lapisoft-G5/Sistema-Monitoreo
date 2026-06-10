@@ -1,67 +1,59 @@
-import { useState, useMemo } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { useState } from 'react';
+import { PlusCircle, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { useNavigate } from 'react-router-dom';
 
 import { MOCK_DOCENTES } from '@entities/model-docentes';
 import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
-import { FilterDocentes } from '@features/docentes';
-import { DocentesStatsWidget, DocentesTableWidget } from '@widgets/docentes';
-import { useUser } from '@entities/model-user';
+import { FilterDirectores } from '@features/directores';
+import { DirectoresStatsWidget, DirectoresTableWidget } from '@widgets/directores';
 
 export const DirectoresPage = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
-  const [docentes, setDocentes] = useState(MOCK_DOCENTES);
+  const [directores, setDirectores] = useState(MOCK_DOCENTES);
 
-  const isDirectorIe = user?.role === 'director_institucion';
-
-  const userInstId = useMemo(() => {
-    if (!isDirectorIe || !user?.institucion) return null;
-    const found = MOCK_INSTITUCIONES.find((i) => i.nombre === user.institucion);
-    return found?.id ?? '1';
-  }, [isDirectorIe, user]);
-
-  const filteredDocentes = useMemo(() => {
-    if (!isDirectorIe || !userInstId) return docentes;
-    return docentes.filter((d) => d.institucionId === userInstId);
-  }, [docentes, isDirectorIe, userInstId]);
+  // Solo los directores (cargo Director) para los indicadores.
+  const soloDirectores = directores.filter((d) => d.cargo === 'Director');
 
   return (
     <div className="flex flex-col w-full gap-6">
       <PageHeader
-        title={isDirectorIe ? 'Gestión de Docentes' : 'Gestión de Directores y Docentes'}
-        description={
-          isDirectorIe
-            ? 'Administración y asignación del personal docente de la institución.'
-            : 'Administración y asignación del personal directivo y docente de la jurisdicción.'
-        }
+        title="Gestión de Directores"
+        description="Administra el padrón de directores de las instituciones educativas."
         action={
-          <Button
-            onClick={() => navigate('/instituciones/docentes/nuevo')}
-            className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white"
-          >
-            <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
-            {isDirectorIe ? 'Registrar Docente' : 'Registrar Personal'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 font-semibold cursor-pointer"
+            >
+              <FileSpreadsheet className="w-[18px] h-[18px]" strokeWidth={2} />
+              Importar desde Excel
+            </Button>
+            <Button
+              onClick={() => navigate('/instituciones/docentes/nuevo')}
+              className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white"
+            >
+              <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
+              Registrar Director
+            </Button>
+          </div>
         }
       />
 
-      {/* 1. Indicadores de Estado */}
-      <DocentesStatsWidget docentes={filteredDocentes} />
+      {/* 1. Indicadores */}
+      <DirectoresStatsWidget directores={soloDirectores} />
 
-      {/* 2. Barra de Filtros (Controlador de la URL) */}
-      <FilterDocentes />
+      {/* 2. Barra de filtros (controlada por la URL) */}
+      <FilterDirectores />
 
-      {/* 3. Tabla de Datos */}
-      <DocentesTableWidget
-        docentes={filteredDocentes}
-        setDocentes={setDocentes}
+      {/* 3. Tabla de directores */}
+      <DirectoresTableWidget
+        directores={directores}
+        setDirectores={setDirectores}
         instituciones={MOCK_INSTITUCIONES}
-        targetCargo={isDirectorIe ? 'Docente de Aula' : 'Director'}
-        itemName={isDirectorIe ? 'docentes' : 'directores/docentes'}
-        onView={(doc) => navigate(`/instituciones/docentes/${doc.id}`)}
+        onView={(dir) => navigate(`/instituciones/docentes/${dir.id}`)}
+        onEdit={(dir) => navigate(`/instituciones/docentes/${dir.id}/editar`)}
       />
     </div>
   );

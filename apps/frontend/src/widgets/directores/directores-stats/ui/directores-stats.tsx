@@ -15,11 +15,15 @@ export const DirectoresStatsWidget = ({ directores }: Props) => {
     ? [...directores].sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))[0]
     : null;
   const ultimoLabel = ultimo
-    ? new Date(ultimo.fechaCreacion).toLocaleDateString('es-PE', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      })
+    ? (() => {
+        // Parsear como fecha local (evita el corrimiento de zona horaria de 'YYYY-MM-DD').
+        const [y, m, d] = ultimo.fechaCreacion.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString('es-PE', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+      })()
     : '—';
 
   return (

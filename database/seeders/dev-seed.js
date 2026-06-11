@@ -96,6 +96,25 @@ const MOCK_INSTITUCION = {
   estado: 'Activa',
 };
 
+const MOCK_PERMISOS = [
+  { codigo: 'especialistas:read', nombre: 'Leer Especialistas', descripcion: 'Permite listar y ver detalles de especialistas' },
+  { codigo: 'especialistas:write', nombre: 'Gestionar Especialistas', descripcion: 'Permite crear, editar e inactivar especialistas' },
+  { codigo: 'instituciones:read', nombre: 'Leer Instituciones', descripcion: 'Permite listar y ver detalles de instituciones' },
+  { codigo: 'instituciones:write', nombre: 'Gestionar Instituciones', descripcion: 'Permite crear, editar y dar de baja instituciones' },
+  { codigo: 'docentes:read', nombre: 'Leer Docentes', descripcion: 'Permite listar y ver detalles de docentes' },
+  { codigo: 'docentes:write', nombre: 'Gestionar Docentes', descripcion: 'Permite registrar, editar y dar de baja docentes' },
+];
+
+const MOCK_ROL_PERMISOS = {
+  director_ugel: ['instituciones:read', 'docentes:read'],
+  jefe_area: ['instituciones:read', 'instituciones:write', 'docentes:read', 'docentes:write'],
+  coordinador_pedagogico: ['especialistas:read', 'especialistas:write', 'instituciones:read'],
+  especialista: [],
+  director_ie: ['docentes:read', 'docentes:write'],
+  docente: [],
+  invitado: [],
+};
+
 async function main() {
   console.log('Starting database seeding (3NF)...');
 
@@ -118,6 +137,53 @@ async function main() {
     roleMap[roleData.code] = role.id;
   }
   console.log('Roles seeded successfully.');
+
+  // 1b. Seed Permisos
+  console.log('Seeding permisos...');
+  const permisoMap = {};
+  for (const perm of MOCK_PERMISOS) {
+    const dbPerm = await prisma.permiso.upsert({
+      where: { codigo: perm.codigo },
+      update: {
+        nombre: perm.nombre,
+        descripcion: perm.descripcion,
+      },
+      create: {
+        codigo: perm.codigo,
+        nombre: perm.nombre,
+        descripcion: perm.descripcion,
+      },
+    });
+    permisoMap[perm.codigo] = dbPerm.id;
+  }
+  console.log('Permisos seeded successfully.');
+
+  // 1c. Seed RolPermisos
+  console.log('Seeding rol_permisos...');
+  for (const [roleCode, permCodigos] of Object.entries(MOCK_ROL_PERMISOS)) {
+    const rolId = roleMap[roleCode];
+    if (!rolId) continue;
+    
+    for (const permCodigo of permCodigos) {
+      const permisoId = permisoMap[permCodigo];
+      if (!permisoId) continue;
+
+      await prisma.rolPermiso.upsert({
+        where: {
+          rolId_permisoId: {
+            rolId,
+            permisoId,
+          },
+        },
+        update: {},
+        create: {
+          rolId,
+          permisoId,
+        },
+      });
+    }
+  }
+  console.log('RolPermisos seeded successfully.');
 
   // 2. Seed Cargos
   console.log('Seeding cargos...');

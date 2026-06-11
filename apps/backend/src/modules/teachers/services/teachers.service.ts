@@ -12,7 +12,10 @@ import { CatalogsRepository } from '../../catalogs/repositories/catalogs.reposit
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
 
 /** Subset of JwtPayload fields required by this service. Exported for use in tests. */
-export type CurrentUser = Pick<JwtPayload, 'sub' | 'role' | 'colegio_id' | 'institucion_id'>;
+export type CurrentUser = Pick<
+  JwtPayload,
+  'sub' | 'role' | 'permissions' | 'colegio_id' | 'institucion_id'
+>;
 
 @Injectable()
 export class TeachersService {
@@ -22,11 +25,8 @@ export class TeachersService {
   ) {}
 
   async createDocente(dto: CreateDocenteDto, currentUser: CurrentUser) {
-    // 1. Control de accesos por rol
-    if (
-      (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_INSTITUCION &&
-      (currentUser.role as RoleCode) !== RoleCode.JEFE_AREA
-    ) {
+    // 1. Control de accesos por permisos
+    if (!currentUser.permissions?.includes('docentes:write')) {
       throw new ForbiddenException('No tiene permisos para realizar esta acción.');
     }
 
@@ -80,12 +80,8 @@ export class TeachersService {
   }
 
   async getDocentes(currentUser: CurrentUser) {
-    // 1. Control de accesos por rol
-    if (
-      (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_INSTITUCION &&
-      (currentUser.role as RoleCode) !== RoleCode.JEFE_AREA &&
-      (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_UGEL
-    ) {
+    // 1. Control de accesos por permisos
+    if (!currentUser.permissions?.includes('docentes:read')) {
       throw new ForbiddenException('No tiene permisos para realizar esta acción.');
     }
 
@@ -106,11 +102,8 @@ export class TeachersService {
   }
 
   async updateDocente(id: string, dto: UpdateDocenteDto, currentUser: CurrentUser) {
-    // 1. Control de accesos por rol
-    if (
-      (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_INSTITUCION &&
-      (currentUser.role as RoleCode) !== RoleCode.JEFE_AREA
-    ) {
+    // 1. Control de accesos por permisos
+    if (!currentUser.permissions?.includes('docentes:write')) {
       throw new ForbiddenException('No tiene permisos para realizar esta acción.');
     }
 
@@ -184,7 +177,7 @@ export class TeachersService {
     }
 
     // 8. Actualizar docente llamando al repositorio
-    const activeCargo = docente.docenteCargos?.[0];
+    const activeCargo = docente.docenteCargos?.[0] || null;
     return this.teachersRepository.updateDocenteWithTransaction(
       id,
       dto,
@@ -194,11 +187,8 @@ export class TeachersService {
   }
 
   async bajaDocente(id: string, currentUser: CurrentUser) {
-    // 1. Control de accesos por rol
-    if (
-      (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_INSTITUCION &&
-      (currentUser.role as RoleCode) !== RoleCode.JEFE_AREA
-    ) {
+    // 1. Control de accesos por permisos
+    if (!currentUser.permissions?.includes('docentes:write')) {
       throw new ForbiddenException('No tiene permisos para realizar esta acción.');
     }
 

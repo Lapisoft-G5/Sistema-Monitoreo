@@ -132,8 +132,8 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           especialidad: data.especialidad,
           nivelEducativo: data.nivelEducativo,
           estado: 'Activo',
-          cargo: 'Especialista',
-          condicionLaboral: 'Nombrado',
+          cargo: data.cargo || 'Especialista',
+          condicionLaboral: data.condicionLaboral || 'Nombrado',
         },
       });
 
@@ -196,6 +196,8 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           especialidad: data.especialidad,
           nivelEducativo: data.nivelEducativo,
           estado: data.estado,
+          ...(data.cargo && { cargo: data.cargo }),
+          ...(data.condicionLaboral && { condicionLaboral: data.condicionLaboral }),
         },
       });
 

@@ -6,7 +6,7 @@ import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';
 import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class EspecialistaService {
@@ -24,6 +24,12 @@ export class EspecialistaService {
   }
 
   async create(dto: CreateEspecialistaDto): Promise<IEspecialistaResponse> {
+    if (dto.cargo === 'Jefe de Gestión' && dto.condicionLaboral !== 'Nombrado') {
+      throw new BadRequestException(
+        'La condición laboral de un Jefe de Gestión debe ser exactamente Nombrado.',
+      );
+    }
+
     const existingPersona = await this.catalogsRepository.findPersonaByDni(dto.dni);
     if (existingPersona) {
       throw new ConflictException(
@@ -43,6 +49,12 @@ export class EspecialistaService {
   }
 
   async update(id: string, dto: UpdateEspecialistaDto): Promise<IEspecialistaResponse> {
+    if (dto.cargo === 'Jefe de Gestión' && dto.condicionLaboral !== 'Nombrado') {
+      throw new BadRequestException(
+        'La condición laboral de un Jefe de Gestión debe ser exactamente Nombrado.',
+      );
+    }
+
     let roleId: string | undefined;
     if (dto.rolCode) {
       const role = await this.catalogsRepository.findRoleByCode(dto.rolCode);

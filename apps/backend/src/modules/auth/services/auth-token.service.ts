@@ -8,6 +8,7 @@ export interface JwtPayload {
   sub: string;
   dni: string;
   role: string;
+  permissions?: string[];
   nombres: string;
   apellidos: string;
   institucion_id?: string;
@@ -17,7 +18,15 @@ export interface JwtPayload {
 
 export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
   include: {
-    rol: true;
+    rol: {
+      include: {
+        rolPermisos: {
+          include: {
+            permiso: true;
+          };
+        };
+      };
+    };
     persona: {
       include: {
         docente: {
@@ -88,10 +97,13 @@ export class AuthTokenService {
       }
     }
 
+    const permissions = user.rol.rolPermisos?.map((rp) => rp.permiso.codigo) || [];
+
     return {
       sub: user.id,
       dni: user.persona.dni,
       role: user.rol.codigo,
+      permissions,
       nombres: user.persona.nombres,
       apellidos: user.persona.apellidos,
       institucion_id,

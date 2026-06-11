@@ -21,6 +21,7 @@ import { PrismaModule } from '../../shared/prisma/prisma.module.js';
 import { MailerModule } from '../../shared/mailer/mailer.module.js';
 import { AuthGuard } from './guards/auth.guard.js';
 import { RolesGuard } from './guards/roles.guard.js';
+import { PermissionsGuard } from './guards/permissions.guard.js';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { RolesGuard } from './guards/roles.guard.js';
     { provide: AuditRepository, useClass: PrismaAuditRepository },
     AuthGuard,
     RolesGuard,
+    PermissionsGuard,
   ],
   exports: [
     AuthSessionService,
@@ -58,6 +60,7 @@ import { RolesGuard } from './guards/roles.guard.js';
     SessionRepository,
     AuthGuard,
     RolesGuard,
+    PermissionsGuard,
     JwtModule,
   ],
 })

@@ -11,7 +11,15 @@ export class PrismaUserRepository implements UserRepository {
     return this.prisma.usuario.findFirst({
       where: { persona: { dni } },
       include: {
-        rol: true,
+        rol: {
+          include: {
+            rolPermisos: {
+              include: {
+                permiso: true,
+              },
+            },
+          },
+        },
         persona: {
           include: { docente: { include: { docenteCargos: { include: { cargo: true } } } } },
         },
@@ -23,7 +31,15 @@ export class PrismaUserRepository implements UserRepository {
     return this.prisma.usuario.findUnique({
       where: { id },
       include: {
-        rol: true,
+        rol: {
+          include: {
+            rolPermisos: {
+              include: {
+                permiso: true,
+              },
+            },
+          },
+        },
         persona: {
           include: { docente: { include: { docenteCargos: { include: { cargo: true } } } } },
         },

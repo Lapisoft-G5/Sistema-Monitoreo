@@ -15,9 +15,8 @@ import { TeachersService } from '../services/teachers.service.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
-import { RolesGuard } from '../../auth/guards/roles.guard.js';
-import { Roles } from '../../auth/decorators/roles.decorator.js';
-import { RoleCode } from '../../../common/enums/role.enum.js';
+import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
+import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import { Request } from 'express';
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
 
@@ -26,26 +25,26 @@ interface AuthenticatedRequest extends Request {
 }
 
 @Controller('docentes')
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, PermissionsGuard)
 export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}
 
   @Post()
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
+  @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateDocenteDto, @Req() req: AuthenticatedRequest) {
     return this.teachersService.createDocente(dto, req.user);
   }
 
   @Get()
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA, RoleCode.DIRECTOR_UGEL)
+  @RequirePermissions('docentes:read')
   @HttpCode(HttpStatus.OK)
   async findAll(@Req() req: AuthenticatedRequest) {
     return this.teachersService.getDocentes(req.user);
   }
 
   @Put(':id')
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
+  @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.OK)
   async update(
     @Param('id') id: string,
@@ -56,7 +55,7 @@ export class TeachersController {
   }
 
   @Patch(':id/baja')
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
+  @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.OK)
   async deactivate(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.teachersService.bajaDocente(id, req.user);

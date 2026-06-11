@@ -10,7 +10,10 @@ import {
   Delete,
   Param,
   Query,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
+import { JwtPayload } from '../../auth/services/auth-token.service.js';
 import { EspecialistaService } from '../services/especialista.service.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';
@@ -19,6 +22,10 @@ import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
+
+interface AuthenticatedRequest extends Request {
+  user: JwtPayload;
+}
 
 @Controller('especialistas')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -40,8 +47,11 @@ export class EspecialistaController {
   @Post()
   @RequirePermissions('especialistas:write')
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateEspecialistaDto): Promise<IEspecialistaResponse> {
-    return this.service.create(dto);
+  async create(
+    @Body() dto: CreateEspecialistaDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IEspecialistaResponse> {
+    return this.service.create(dto, req.user);
   }
 
   @Put(':id')
@@ -50,8 +60,9 @@ export class EspecialistaController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateEspecialistaDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IEspecialistaResponse> {
-    return this.service.update(id, dto);
+    return this.service.update(id, dto, req.user);
   }
 
   @Delete(':id')

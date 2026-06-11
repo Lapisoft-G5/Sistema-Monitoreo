@@ -127,9 +127,10 @@ describe('EspecialistaController', () => {
       const esp = buildEspecialistaResponse();
       createMock.mockResolvedValue(esp);
 
-      const result = await controller.create(dto);
+      const mockReq = { user: { sub: 'user-id', role: 'coordinador_pedagogico', permissions: ['especialistas:write'] } } as any;
+      const result = await controller.create(dto, mockReq);
       expect(result).toEqual(esp);
-      expect(createMock).toHaveBeenCalledWith(dto);
+      expect(createMock).toHaveBeenCalledWith(dto, mockReq.user);
     });
   });
 
@@ -146,9 +147,10 @@ describe('EspecialistaController', () => {
       const esp = buildEspecialistaResponse({ especialidad: 'Ciencias' });
       updateMock.mockResolvedValue(esp);
 
-      const result = await controller.update('esp-uuid', dto);
+      const mockReq = { user: { sub: 'user-id', role: 'coordinador_pedagogico', permissions: ['especialistas:write'] } } as any;
+      const result = await controller.update('esp-uuid', dto, mockReq);
       expect(result).toEqual(esp);
-      expect(updateMock).toHaveBeenCalledWith('esp-uuid', dto);
+      expect(updateMock).toHaveBeenCalledWith('esp-uuid', dto, mockReq.user);
     });
   });
 

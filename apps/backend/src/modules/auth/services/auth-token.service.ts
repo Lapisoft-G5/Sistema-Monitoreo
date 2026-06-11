@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'node:crypto';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 
 export interface JwtPayload {
@@ -90,7 +91,7 @@ export class AuthTokenService {
 
     if ((user.rol.codigo as RoleCode) === RoleCode.DIRECTOR_INSTITUCION && user.persona.docente) {
       const cargoDirector = user.persona.docente.docenteCargos?.find(
-        (dc) => dc.cargo.nombre === 'Director' && !dc.fechaFin,
+        (dc) => dc.cargo.nombre === CargoNombre.DIRECTOR && !dc.fechaFin,
       );
       if (cargoDirector) {
         colegio_id = user.persona.docente.institucionId;

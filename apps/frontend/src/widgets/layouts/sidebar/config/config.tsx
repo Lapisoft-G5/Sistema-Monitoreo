@@ -4,8 +4,9 @@ import {
   School,
   GraduationCap,
   Users,
+  Briefcase,
   BarChart3,
-  Settings,
+  Settings, 
 } from 'lucide-react';
 import type { MenuItem } from '@shared/constants/roles';
 
@@ -68,6 +69,13 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     label: 'Especialistas',
     icon: <Users className="h-[18px] w-[18px]" />,
     path: '/especialistas',
+    children: [],
+  },
+  {
+    id: 'jefes_area', 
+    label: 'Jefe de Área',
+    icon: <Briefcase className="h-[18px] w-[18px]" />,
+    path: '/jefes-area',
     children: [],
   },
   {

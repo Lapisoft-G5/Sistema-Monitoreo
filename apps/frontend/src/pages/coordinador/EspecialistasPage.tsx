@@ -10,7 +10,9 @@ import { EspecialistasStatsWidget, EspecialistasTableWidget } from '@widgets/esp
 
 export const EspecialistasPage = () => {
   const navigate = useNavigate();
-  const [especialistas, setEspecialistas] = useState(MOCK_ESPECIALISTAS);
+  const [especialistas, setEspecialistas] = useState(() => 
+  MOCK_ESPECIALISTAS.filter((esp) => esp.rol !== 'especialista_bajo')
+);
 
   return (
     <div className="flex flex-col w-full gap-6">

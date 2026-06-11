@@ -2,7 +2,6 @@ import type { CondicionDirectiva, CondicionLaboral, EscalaMagisterial } from './
 
 export const CONDICION_LABORAL: CondicionLaboral[] = ['Nombrado', 'Contratado'];
 
-// Condición laboral del Director (EDU-0006).
 export const CONDICION_DIRECTIVA: CondicionDirectiva[] = ['Asignado', 'Encargado', 'Por función'];
 
 export const CONDICION_DIRECTIVA_COLOR: Record<CondicionDirectiva, string> = {

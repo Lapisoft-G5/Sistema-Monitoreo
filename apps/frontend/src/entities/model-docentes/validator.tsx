@@ -43,7 +43,7 @@ export const docenteValidator = {
   },
 };
 
-// ── Director (EDU-0006): subconjunto de Docente con condición directiva ──
+
 export const directorSchema = z.object({
   nombres: z.string().min(2, 'El nombre es requerido'),
   apellidos: z.string().min(2, 'Los apellidos son requeridos'),

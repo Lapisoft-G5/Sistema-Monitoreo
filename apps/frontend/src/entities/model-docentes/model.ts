@@ -1,6 +1,6 @@
 export type CondicionLaboral = 'Nombrado' | 'Contratado';
 
-// Condición laboral específica del Director (EDU-0006): Asignado, Encargado o Por función.
+// Condición laboral específica del Director : Asignado, Encargado o Por función.
 export type CondicionDirectiva = 'Asignado' | 'Encargado' | 'Por función';
 
 export type EscalaMagisterial = 'I' | 'II' | 'III' | 'IV' | 'V' | 'VI' | 'VII' | 'VIII';

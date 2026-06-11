@@ -108,11 +108,11 @@ export class AuthPasswordService {
       throw new BadRequestException('El enlace de recuperación es inválido o ha expirado.');
     }
 
-    if (!resetToken.user!.isActive) {
+    if (!resetToken.usuario!.isActive) {
       throw new BadRequestException('La cuenta de usuario está inactiva.');
     }
 
-    const isSamePassword = await bcrypt.compare(dto.newPassword, resetToken.user!.passwordHash);
+    const isSamePassword = await bcrypt.compare(dto.newPassword, resetToken.usuario!.passwordHash);
     if (isSamePassword) {
       throw new BadRequestException(
         'La nueva contraseña no puede ser igual a la contraseña actual.',
@@ -122,11 +122,11 @@ export class AuthPasswordService {
     const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.passwordTokenRepository.useResetToken(
       resetToken.id,
-      resetToken.userId,
+      resetToken.usuarioId,
       newPasswordHash,
     );
     await this.auditRepository.logAuthEvent({
-      userId: resetToken.userId,
+      userId: resetToken.usuarioId,
       eventType: 'PASSWORD_RESET_SUCCESS',
       ...meta,
     });

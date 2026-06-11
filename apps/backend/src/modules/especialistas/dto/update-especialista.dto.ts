@@ -29,4 +29,12 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   @IsString()
   @IsNotEmpty()
   rolCode!: string;
+
+  @IsString()
+  @IsOptional()
+  cargo?: string;
+
+  @IsString()
+  @IsOptional()
+  condicionLaboral?: string;
 }

@@ -2,7 +2,7 @@
 export type UserRole = 
   | 'director_ugel'
   | 'jefe_area'
-  | 'coordinador_pedagogico'
+  | 'jefe_gestion'
   | 'especialista'
   | 'director_institucion'
   | 'docente'
@@ -12,7 +12,7 @@ export type UserRole =
 export const USER_ROLES_LABELS: Record<UserRole, string> = {
   director_ugel: 'Director de UGEL',
   jefe_area: 'Jefe de Área',
-  coordinador_pedagogico: 'Coordinador Pedagógico',
+  jefe_gestion: 'Jefe de Gestión',
   especialista: 'Especialista',
   director_institucion: 'Director de Institución',
   docente: 'Docente',

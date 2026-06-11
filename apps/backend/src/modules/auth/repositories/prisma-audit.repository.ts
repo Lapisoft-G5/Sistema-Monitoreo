@@ -7,9 +7,9 @@ export class PrismaAuditRepository implements AuditRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async logAuthEvent(data: LogAuthEventData): Promise<void> {
-    await this.prisma.authAuditLog.create({
+    await this.prisma.logAuditoria.create({
       data: {
-        userId: data.userId ?? null,
+        usuarioId: data.userId ?? null,
         eventType: data.eventType,
         eventDetail: data.eventDetail ?? null,
         ipAddress: data.ipAddress ?? null,

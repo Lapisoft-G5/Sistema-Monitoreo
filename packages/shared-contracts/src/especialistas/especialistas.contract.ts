@@ -36,6 +36,8 @@ export interface ICreateEspecialistaRequest {
   especialidad: string;
   nivelEducativo: string;
   rolCode: string;
+  cargo?: string;
+  condicionLaboral?: string;
 }
 
 export interface IUpdateEspecialistaRequest {
@@ -46,4 +48,6 @@ export interface IUpdateEspecialistaRequest {
   nivelEducativo: string;
   estado: string;
   rolCode: string;
+  cargo?: string;
+  condicionLaboral?: string;
 }

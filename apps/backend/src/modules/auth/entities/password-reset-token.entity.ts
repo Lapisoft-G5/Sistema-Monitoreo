@@ -1,8 +1,8 @@
-import { User } from './user.entity.js';
+import { Usuario } from './user.entity.js';
 
 export class PasswordResetToken {
   id!: string;
-  userId!: string;
+  usuarioId!: string;
   tokenHash!: string;
   expiresAt!: Date;
   isUsed!: boolean;
@@ -10,5 +10,5 @@ export class PasswordResetToken {
   requestedIp!: string | null;
   createdAt!: Date;
 
-  user?: User;
+  usuario?: Usuario;
 }

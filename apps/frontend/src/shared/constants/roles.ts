@@ -10,9 +10,9 @@ export type UserRole =
 export const ROLE_LABELS: Record<UserRole, string> = {
   director_ugel: 'Director UGEL',
   jefe_area: 'Jefe de Área',
-  coordinador_pedagogico: 'Coordinador Pedagógico',
+  coordinador_pedagogico: 'Jefe de Gestión',
   especialista: 'Especialista',
-  director_institucion: 'Director de Institución',
+  director_institucion: 'Coordinador Pedagógico',
   docente: 'Docente',
   invitado: 'Invitado',
 };
@@ -28,6 +28,7 @@ export type MenuItem =
   | 'instituciones_docentes'
   | 'instituciones_coordinadores'
   | 'especialistas'
+  | 'jefes_area'
   | 'reportes'
   | 'configuracion';
 
@@ -38,7 +39,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   jefe_area: ['instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores'],
 
-  coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', 'reportes'],
+  coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', 'jefes_area', 'reportes'],
 
   especialista: ['monitoreo', 'monitoreo_reportes'],
 

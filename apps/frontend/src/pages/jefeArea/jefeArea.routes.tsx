@@ -30,6 +30,11 @@ const DocenteDetailPage = lazy(() =>
 const JefesGestionPage = lazy(() =>
   import('./JefesGestionPage').then((m) => ({ default: m.JefesGestionPage })),
 );
+
+const JefesAreaPage = lazy(() =>
+  import('./JefesAreaPage').then((m) => ({ default: m.JefesAreaPage })),
+);
+
 const JefeGestionCreatePage = lazy(() =>
   import('./JefeGestionCreatePage').then((m) => ({ default: m.JefeGestionCreatePage })),
 );
@@ -39,6 +44,20 @@ const JefeGestionEditPage = lazy(() =>
 const JefeGestionDetailPage = lazy(() =>
   import('./JefeGestionDetailPage').then((m) => ({ default: m.JefeGestionDetailPage })),
 );
+
+// 🚀 Agregamos los imports lazy para las 3 nuevas páginas creadas:
+const JefeAreaCreatePage = lazy(() =>
+  import('./JefeAreaCreatePage').then((m) => ({ default: m.JefeAreaCreatePage })),
+);
+const JefeAreaEditPage = lazy(() =>
+  import('./JefeAreaEditPage').then((m) => ({ default: m.JefeAreaEditPage })),
+);
+const JefeAreaDetailPage = lazy(() =>
+  import('./JefeAreaDetailPage').then((m) => ({ default: m.JefeAreaDetailPage })),
+);
+
+
+
 
 export const adminRoutes: RouteObject[] = [
   // 🚀 2. Padrón de Instituciones
@@ -152,7 +171,18 @@ export const adminRoutes: RouteObject[] = [
             <JefeGestionDetailPage />
           </LazyLoader>
         ),
+        
       },
-    ],
-  },
+      ],
+    },
+    // 🚀 CORREGIDO Y EXPANDIDO: Bloque de Jefes de Área con CRUD Completo
+    {
+      element: <ProtectedRoute permission="jefes_area" />, 
+      children: [
+        { path: 'jefes-area', element: <LazyLoader><JefesAreaPage /></LazyLoader> },
+        { path: 'jefes-area/nuevo', element: <LazyLoader><JefeAreaCreatePage /></LazyLoader> },
+        { path: 'jefes-area/:id/editar', element: <LazyLoader><JefeAreaEditPage /></LazyLoader> },
+        { path: 'jefes-area/:id', element: <LazyLoader><JefeAreaDetailPage /></LazyLoader> },
+      ],
+    },
 ];

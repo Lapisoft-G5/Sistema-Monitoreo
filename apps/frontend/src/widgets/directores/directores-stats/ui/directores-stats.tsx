@@ -1,4 +1,4 @@
-import { Users, BadgeCheck, UserCog, Clock } from 'lucide-react';
+import { Users, BadgeCheck, UserCog, Briefcase } from 'lucide-react';
 import type { Docente } from '@entities/model-docentes';
 import { StatCard } from '@shared/ui/Stat-Card';
 
@@ -10,21 +10,7 @@ export const DirectoresStatsWidget = ({ directores }: Props) => {
   const total = directores.length;
   const asignados = directores.filter((d) => d.condicion === 'Asignado').length;
   const encargados = directores.filter((d) => d.condicion === 'Encargado').length;
-
-  const ultimo = directores.length
-    ? [...directores].sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))[0]
-    : null;
-  const ultimoLabel = ultimo
-    ? (() => {
-        // Parsear como fecha local (evita el corrimiento de zona horaria de 'YYYY-MM-DD').
-        const [y, m, d] = ultimo.fechaCreacion.split('-').map(Number);
-        return new Date(y, m - 1, d).toLocaleDateString('es-PE', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        });
-      })()
-    : '—';
+  const porFuncion = directores.filter((d) => d.condicion === 'Por función').length;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -49,10 +35,10 @@ export const DirectoresStatsWidget = ({ directores }: Props) => {
         trendType="warning"
       />
       <StatCard
-        title="Último Registro"
-        icon={<Clock className="w-5 h-5 text-primary" strokeWidth={2} />}
-        value={ultimoLabel}
-        trendText="Fecha de alta más reciente"
+        title="Por Función"
+        icon={<Briefcase className="w-5 h-5 text-blue-500" strokeWidth={2} />}
+        value={porFuncion}
+        trendText="Designado por función"
       />
     </div>
   );

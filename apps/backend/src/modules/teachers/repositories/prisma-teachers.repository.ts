@@ -2,15 +2,60 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
-import { DocenteCargo, Persona, Prisma } from '../../../generated/prisma/client.js';
+import { DocenteCargo, Prisma } from '../../../generated/prisma/client.js';
 import { DocenteEntity, DocenteFilter, TeachersRepository } from './teachers.repository.js';
+
+type DocenteWithRelations = Prisma.DocenteGetPayload<{
+  include: {
+    persona: true;
+    docenteCargos: {
+      include: { cargo: true };
+    };
+    docenteCursos: {
+      include: {
+        curso: true;
+      };
+    };
+  };
+}>;
 
 @Injectable()
 export class PrismaTeachersRepository implements TeachersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private mapDocente(docente: DocenteWithRelations): DocenteEntity {
+    return {
+      id: docente.id,
+      personaId: docente.personaId,
+      institucionId: docente.institucionId,
+      gradoAcademico: docente.gradoAcademico,
+      nivelEducativo: docente.nivelEducativo,
+      cursoAsignado: docente.docenteCursos?.[0]?.curso?.nombre || null,
+      estado: docente.estado,
+      createdAt: docente.createdAt,
+      updatedAt: docente.updatedAt,
+      persona: {
+        id: docente.persona.id,
+        dni: docente.persona.dni,
+        nombres: docente.persona.nombres,
+        apellidos: docente.persona.apellidos,
+        correo: docente.persona.correo,
+      },
+      docenteCargos: docente.docenteCargos.map((dc) => ({
+        id: dc.id,
+        cargoId: dc.cargoId,
+        fechaInicio: dc.fechaInicio,
+        fechaFin: dc.fechaFin,
+        cargo: {
+          id: dc.cargo.id,
+          nombre: dc.cargo.nombre,
+        },
+      })),
+    };
+  }
+
   async findDocenteById(id: string): Promise<DocenteEntity | null> {
-    return this.prisma.docente.findUnique({
+    const docente = await this.prisma.docente.findUnique({
       where: { id },
       include: {
         persona: true,
@@ -18,8 +63,15 @@ export class PrismaTeachersRepository implements TeachersRepository {
           where: { fechaFin: null },
           include: { cargo: true },
         },
+        docenteCursos: {
+          include: {
+            curso: true,
+          },
+        },
       },
     });
+    if (!docente) return null;
+    return this.mapDocente(docente);
   }
 
   async findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]> {
@@ -27,7 +79,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
     if (filter?.institucionId) {
       where.institucionId = filter.institucionId;
     }
-    return this.prisma.docente.findMany({
+    const list = await this.prisma.docente.findMany({
       where,
       include: {
         persona: true,
@@ -39,12 +91,18 @@ export class PrismaTeachersRepository implements TeachersRepository {
             cargo: true,
           },
         },
+        docenteCursos: {
+          include: {
+            curso: true,
+          },
+        },
       },
     });
+    return list.map((d) => this.mapDocente(d));
   }
 
   async updateDocenteEstado(id: string, estado: string): Promise<DocenteEntity> {
-    return this.prisma.docente.update({
+    const docente = await this.prisma.docente.update({
       where: { id },
       data: { estado },
       include: {
@@ -52,8 +110,14 @@ export class PrismaTeachersRepository implements TeachersRepository {
         docenteCargos: {
           include: { cargo: true },
         },
+        docenteCursos: {
+          include: {
+            curso: true,
+          },
+        },
       },
     });
+    return this.mapDocente(docente);
   }
 
   async createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteEntity> {
@@ -65,7 +129,6 @@ export class PrismaTeachersRepository implements TeachersRepository {
       });
 
       let personaId: string;
-      let finalPersona: Persona;
 
       if (existingPersona) {
         // Si la persona existe y ya tiene un registro de docente, lanzar conflicto
@@ -74,7 +137,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
         }
 
         // Si la persona existe pero no es docente, actualizar sus datos si cambiaron
-        const updatedPersona = await tx.persona.update({
+        await tx.persona.update({
           where: { id: existingPersona.id },
           data: {
             nombres: dto.nombres,
@@ -82,8 +145,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
             correo: dto.correo ?? existingPersona.correo,
           },
         });
-        personaId = updatedPersona.id;
-        finalPersona = updatedPersona;
+        personaId = existingPersona.id;
       } else {
         // Validar si el correo ya está registrado en otra persona (si se proporciona)
         if (dto.correo) {
@@ -107,7 +169,6 @@ export class PrismaTeachersRepository implements TeachersRepository {
           },
         });
         personaId = newPersona.id;
-        finalPersona = newPersona;
       }
 
       // Crear el registro de docente enlazado a la persona
@@ -117,53 +178,58 @@ export class PrismaTeachersRepository implements TeachersRepository {
           institucionId: dto.institucionId,
           gradoAcademico: dto.gradoAcademico ?? null,
           nivelEducativo: dto.nivelEducativo,
-          cursoAsignado: dto.cursoAsignado ?? null,
           estado: 'Activo',
         },
       });
 
+      // Registrar curso asignado si se proporciona
+      if (dto.cursoAsignado) {
+        const curso = await tx.curso.upsert({
+          where: {
+            nombre_nivelEducativo: {
+              nombre: dto.cursoAsignado,
+              nivelEducativo: dto.nivelEducativo,
+            },
+          },
+          update: {},
+          create: {
+            nombre: dto.cursoAsignado,
+            nivelEducativo: dto.nivelEducativo,
+          },
+        });
+
+        await tx.docenteCurso.create({
+          data: {
+            docenteId: docente.id,
+            cursoId: curso.id,
+          },
+        });
+      }
+
       // Registrar el cargo inicial asignado al docente
-      const docenteCargo = await tx.docenteCargo.create({
+      await tx.docenteCargo.create({
         data: {
           docenteId: docente.id,
           cargoId: dto.cargoId,
           fechaInicio: new Date(),
         },
+      });
+
+      const fullDocente = await tx.docente.findUniqueOrThrow({
+        where: { id: docente.id },
         include: {
-          cargo: true,
+          persona: true,
+          docenteCargos: {
+            include: { cargo: true },
+            orderBy: { fechaInicio: 'desc' },
+          },
+          docenteCursos: {
+            include: { curso: true },
+          },
         },
       });
 
-      return {
-        id: docente.id,
-        personaId: docente.personaId,
-        institucionId: docente.institucionId,
-        gradoAcademico: docente.gradoAcademico,
-        nivelEducativo: docente.nivelEducativo,
-        cursoAsignado: docente.cursoAsignado,
-        estado: docente.estado,
-        createdAt: docente.createdAt,
-        updatedAt: docente.updatedAt,
-        persona: {
-          id: finalPersona.id,
-          dni: finalPersona.dni,
-          nombres: finalPersona.nombres,
-          apellidos: finalPersona.apellidos,
-          correo: finalPersona.correo,
-        },
-        docenteCargos: [
-          {
-            id: docenteCargo.id,
-            cargoId: docenteCargo.cargoId,
-            fechaInicio: docenteCargo.fechaInicio,
-            fechaFin: docenteCargo.fechaFin,
-            cargo: {
-              id: docenteCargo.cargo.id,
-              nombre: docenteCargo.cargo.nombre,
-            },
-          },
-        ],
-      };
+      return this.mapDocente(fullDocente);
     });
   }
 
@@ -175,7 +241,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
   ): Promise<DocenteEntity> {
     return this.prisma.$transaction(async (tx) => {
       // A. Actualizar datos de Persona
-      const updatedPersona = await tx.persona.update({
+      await tx.persona.update({
         where: { id: personaId },
         data: {
           nombres: dto.nombres,
@@ -185,16 +251,43 @@ export class PrismaTeachersRepository implements TeachersRepository {
       });
 
       // B. Actualizar datos de Docente
-      const updatedDocente = await tx.docente.update({
+      await tx.docente.update({
         where: { id },
         data: {
           gradoAcademico: dto.gradoAcademico ?? null,
           nivelEducativo: dto.nivelEducativo,
-          cursoAsignado: dto.cursoAsignado ?? null,
         },
       });
 
-      // C. Manejo de cargo activo e histórico
+      // C. Actualizar curso asignado
+      await tx.docenteCurso.deleteMany({
+        where: { docenteId: id },
+      });
+
+      if (dto.cursoAsignado) {
+        const curso = await tx.curso.upsert({
+          where: {
+            nombre_nivelEducativo: {
+              nombre: dto.cursoAsignado,
+              nivelEducativo: dto.nivelEducativo,
+            },
+          },
+          update: {},
+          create: {
+            nombre: dto.cursoAsignado,
+            nivelEducativo: dto.nivelEducativo,
+          },
+        });
+
+        await tx.docenteCurso.create({
+          data: {
+            docenteId: id,
+            cursoId: curso.id,
+          },
+        });
+      }
+
+      // D. Manejo de cargo activo e histórico
       if (!activeCargo || activeCargo.cargoId !== dto.cargoId) {
         // Finalizar el cargo anterior si existe
         if (activeCargo) {
@@ -214,41 +307,21 @@ export class PrismaTeachersRepository implements TeachersRepository {
         });
       }
 
-      // Obtener todos los cargos actuales para retornar en la respuesta
-      const allCargos = await tx.docenteCargo.findMany({
-        where: { docenteId: id },
-        include: { cargo: true },
-        orderBy: { fechaInicio: 'desc' },
+      const fullDocente = await tx.docente.findUniqueOrThrow({
+        where: { id },
+        include: {
+          persona: true,
+          docenteCargos: {
+            include: { cargo: true },
+            orderBy: { fechaInicio: 'desc' },
+          },
+          docenteCursos: {
+            include: { curso: true },
+          },
+        },
       });
 
-      return {
-        id: updatedDocente.id,
-        personaId: updatedDocente.personaId,
-        institucionId: updatedDocente.institucionId,
-        gradoAcademico: updatedDocente.gradoAcademico,
-        nivelEducativo: updatedDocente.nivelEducativo,
-        cursoAsignado: updatedDocente.cursoAsignado,
-        estado: updatedDocente.estado,
-        createdAt: updatedDocente.createdAt,
-        updatedAt: updatedDocente.updatedAt,
-        persona: {
-          id: updatedPersona.id,
-          dni: updatedPersona.dni,
-          nombres: updatedPersona.nombres,
-          apellidos: updatedPersona.apellidos,
-          correo: updatedPersona.correo,
-        },
-        docenteCargos: allCargos.map((dc) => ({
-          id: dc.id,
-          cargoId: dc.cargoId,
-          fechaInicio: dc.fechaInicio,
-          fechaFin: dc.fechaFin,
-          cargo: {
-            id: dc.cargo.id,
-            nombre: dc.cargo.nombre,
-          },
-        })),
-      };
+      return this.mapDocente(fullDocente);
     });
   }
 }

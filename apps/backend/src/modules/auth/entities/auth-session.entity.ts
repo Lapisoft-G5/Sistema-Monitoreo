@@ -1,6 +1,6 @@
 export class AuthSession {
   id!: string;
-  userId!: string;
+  usuarioId!: string;
   sessionJti!: string;
   ipAddress!: string | null;
   userAgent!: string | null;

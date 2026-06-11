@@ -14,7 +14,7 @@ const MOCK_ROLES = [
   { code: 'jefe_area', name: 'Jefe de Área', description: 'Jefe de Área de la UGEL' },
   { code: 'coordinador_pedagogico', name: 'Coordinador Pedagógico', description: 'Coordinador Pedagógico de la UGEL Lampa' },
   { code: 'especialista', name: 'Especialista', description: 'Especialista de Monitoreo de la UGEL' },
-  { code: 'director_institucion', name: 'Director de Institución', description: 'Director de Institución Educativa' },
+  { code: 'director_ie', name: 'Director de Institución', description: 'Director de Institución Educativa' },
   { code: 'docente', name: 'Docente', description: 'Docente de Aula' },
   { code: 'invitado', name: 'Invitado', description: 'Usuario de Consulta e Invitado' },
 ];
@@ -53,7 +53,7 @@ const MOCK_USERS = [
     email: 'carlos.ruiz@ie-huayta.edu.pe',
     firstName: 'Carlos',
     lastName: 'Ruiz Condori',
-    role: 'director_institucion',
+    role: 'director_ie',
   },
   {
     dni: '11223344',
@@ -78,6 +78,12 @@ const MOCK_CARGOS = [
   { nombre: 'Docente de Aula' },
 ];
 
+const MOCK_CURSOS = [
+  { nombre: 'Matemáticas', nivelEducativo: 'Secundaria' },
+  { nombre: 'Comunicación', nivelEducativo: 'Secundaria' },
+  { nombre: 'Ciencia y Tecnología', nivelEducativo: 'Secundaria' },
+];
+
 const MOCK_INSTITUCION = {
   codigoModular: '0543210',
   nombre: 'I.E. Huayta',
@@ -98,15 +104,15 @@ async function main() {
   const roleMap = {};
   for (const roleData of MOCK_ROLES) {
     const role = await prisma.role.upsert({
-      where: { code: roleData.code },
+      where: { codigo: roleData.code },
       update: {
-        name: roleData.name,
-        description: roleData.description,
+        nombre: roleData.name,
+        descripcion: roleData.description,
       },
       create: {
-        code: roleData.code,
-        name: roleData.name,
-        description: roleData.description,
+        codigo: roleData.code,
+        nombre: roleData.name,
+        descripcion: roleData.description,
       },
     });
     roleMap[roleData.code] = role.id;
@@ -128,7 +134,28 @@ async function main() {
   }
   console.log('Cargos seeded successfully.');
 
-  // 3. Seed Institución Educativa
+  // 3. Seed Cursos
+  console.log('Seeding cursos...');
+  const cursoMap = {};
+  for (const cursoData of MOCK_CURSOS) {
+    const curso = await prisma.curso.upsert({
+      where: {
+        nombre_nivelEducativo: {
+          nombre: cursoData.nombre,
+          nivelEducativo: cursoData.nivelEducativo,
+        },
+      },
+      update: {},
+      create: {
+        nombre: cursoData.nombre,
+        nivelEducativo: cursoData.nivelEducativo,
+      },
+    });
+    cursoMap[cursoData.nombre] = curso.id;
+  }
+  console.log('Cursos seeded successfully.');
+
+  // 4. Seed Institución Educativa
   console.log('Seeding institucion educativa...');
   const ie = await prisma.institucionEducativa.upsert({
     where: { codigoModular: MOCK_INSTITUCION.codigoModular },
@@ -155,7 +182,7 @@ async function main() {
   });
   console.log('Institucion educativa seeded successfully.');
 
-  // 4. Seed Personas, Users, Especialistas, Docentes y DocenteCargos
+  // 5. Seed Personas, Users, Especialistas, Docentes y DocenteCargos
   console.log('Seeding personas and linked users/roles...');
   const saltRounds = 10;
   for (const userData of MOCK_USERS) {
@@ -181,17 +208,17 @@ async function main() {
       },
     });
 
-    // B. Upsert User
+    // B. Upsert Usuario
     const passwordHash = await bcrypt.hash(userData.dni, saltRounds);
-    await prisma.user.upsert({
+    await prisma.usuario.upsert({
       where: { personaId: persona.id },
       update: {
-        roleId: roleId,
+        rolId: roleId,
         isActive: true,
       },
       create: {
         personaId: persona.id,
-        roleId: roleId,
+        rolId: roleId,
         passwordHash,
         isActive: true,
         isFirstLogin: true,
@@ -203,22 +230,26 @@ async function main() {
       await prisma.especialista.upsert({
         where: { personaId: persona.id },
         update: {
-          especialidad: 'Monitoreo Pedagógico',
+          cargo: 'Especialista',
           nivelEducativo: 'Secundaria',
+          condicionLaboral: 'Nombrado',
+          cargaLaboral: 40,
           estado: 'Activo',
         },
         create: {
           personaId: persona.id,
-          especialidad: 'Monitoreo Pedagógico',
+          cargo: 'Especialista',
           nivelEducativo: 'Secundaria',
+          condicionLaboral: 'Nombrado',
+          cargaLaboral: 40,
           estado: 'Activo',
         },
       });
     }
 
     // D. Si es Director de Institución o Docente
-    if (userData.role === 'director_institucion' || userData.role === 'docente') {
-      const isDirector = userData.role === 'director_institucion';
+    if (userData.role === 'director_ie' || userData.role === 'docente') {
+      const isDirector = userData.role === 'director_ie';
       
       const docente = await prisma.docente.upsert({
         where: { personaId: persona.id },
@@ -227,7 +258,7 @@ async function main() {
           nivelEducativo: 'Secundaria',
           gradoAcademico: 'Licenciado',
           estado: 'Activo',
-          cursoAsignado: isDirector ? null : 'Matemáticas',
+          condicionLaboral: 'Nombrado',
         },
         create: {
           personaId: persona.id,
@@ -235,11 +266,31 @@ async function main() {
           nivelEducativo: 'Secundaria',
           gradoAcademico: 'Licenciado',
           estado: 'Activo',
-          cursoAsignado: isDirector ? null : 'Matemáticas',
+          condicionLaboral: 'Nombrado',
         },
       });
 
-      // E. Asociar cargo en DocenteCargo si no tiene ninguno registrado
+      // E. Asociar curso si es Docente
+      if (userData.role === 'docente') {
+        const cursoId = cursoMap['Matemáticas'];
+        if (cursoId) {
+          await prisma.docenteCurso.upsert({
+            where: {
+              docenteId_cursoId: {
+                docenteId: docente.id,
+                cursoId: cursoId,
+              },
+            },
+            update: {},
+            create: {
+              docenteId: docente.id,
+              cursoId: cursoId,
+            },
+          });
+        }
+      }
+
+      // F. Asociar cargo en DocenteCargo si no tiene ninguno registrado
       const cargoNombre = isDirector ? 'Director' : 'Docente de Aula';
       const cargoId = cargoMap[cargoNombre];
       

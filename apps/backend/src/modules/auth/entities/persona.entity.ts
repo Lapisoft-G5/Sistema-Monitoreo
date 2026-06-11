@@ -11,7 +11,6 @@ export class Persona {
     institucionId: string;
     gradoAcademico: string | null;
     nivelEducativo: string;
-    cursoAsignado: string | null;
     estado: string;
   } | null;
 }

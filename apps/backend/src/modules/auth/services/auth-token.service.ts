@@ -15,9 +15,9 @@ export interface JwtPayload {
   firstLogin: boolean;
 }
 
-export type AuthUserWithRelations = Prisma.UserGetPayload<{
+export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
   include: {
-    role: true;
+    rol: true;
     persona: {
       include: {
         docente: {
@@ -79,7 +79,7 @@ export class AuthTokenService {
     let institucion_id: string | undefined;
     let colegio_id: string | undefined;
 
-    if ((user.role.code as RoleCode) === RoleCode.DIRECTOR_INSTITUCION && user.persona.docente) {
+    if ((user.rol.codigo as RoleCode) === RoleCode.DIRECTOR_INSTITUCION && user.persona.docente) {
       const cargoDirector = user.persona.docente.docenteCargos?.find(
         (dc) => dc.cargo.nombre === 'Director' && !dc.fechaFin,
       );
@@ -91,7 +91,7 @@ export class AuthTokenService {
     return {
       sub: user.id,
       dni: user.persona.dni,
-      role: user.role.code,
+      role: user.rol.codigo,
       nombres: user.persona.nombres,
       apellidos: user.persona.apellidos,
       institucion_id,

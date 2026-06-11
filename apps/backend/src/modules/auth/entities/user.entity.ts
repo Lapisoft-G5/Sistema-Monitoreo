@@ -1,10 +1,10 @@
 import { Role } from './role.entity.js';
 import { Persona } from './persona.entity.js';
 
-export class User {
+export class Usuario {
   id!: string;
   personaId!: string;
-  roleId!: string;
+  rolId!: string;
   passwordHash!: string;
   isActive!: boolean;
   isFirstLogin!: boolean;
@@ -17,5 +17,5 @@ export class User {
   updatedAt!: Date;
 
   persona?: Persona;
-  role?: Role;
+  rol?: Role;
 }

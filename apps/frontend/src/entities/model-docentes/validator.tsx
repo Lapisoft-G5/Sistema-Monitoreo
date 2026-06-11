@@ -42,3 +42,22 @@ export const docenteValidator = {
     return docente.activo;
   },
 };
+
+// ── Director (EDU-0006): subconjunto de Docente con condición directiva ──
+export const directorSchema = z.object({
+  nombres: z.string().min(2, 'El nombre es requerido'),
+  apellidos: z.string().min(2, 'Los apellidos son requeridos'),
+  dni: z
+    .string()
+    .length(8, 'El DNI debe tener exactamente 8 dígitos')
+    .regex(/^\d+$/, 'El DNI solo debe contener números'),
+  correo: z.string().email('Formato de correo electrónico inválido'),
+  celular: z
+    .string()
+    .regex(/^9\d{8}$/, 'Debe ser un número de celular de 9 dígitos (ej. 987654321)'),
+  condicion: z.enum(['Asignado', 'Encargado', 'Por función']),
+  escala: z.enum(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']),
+  institucionId: z.string().min(1, 'La institución educativa es requerida'),
+});
+
+export type DirectorFormData = z.infer<typeof directorSchema>;

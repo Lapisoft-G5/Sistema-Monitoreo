@@ -1,8 +1,8 @@
 export class Role {
   id!: string;
-  code!: string;
-  name!: string;
-  description!: string | null;
+  codigo!: string;
+  nombre!: string;
+  descripcion!: string | null;
   isActive!: boolean;
   createdAt!: Date;
   updatedAt!: Date;

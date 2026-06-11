@@ -1,14 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
-import { CreateDocenteCard } from '@widgets/docentes';
-import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
-import { useUser } from '@entities/model-user';
+import { CreateDirectorCard } from '@widgets/directores';
 
 export const DocenteCreatePage = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
-  const isDirectorIe = user?.role === 'director_institucion';
 
   return (
     <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300">
@@ -21,21 +17,13 @@ export const DocenteCreatePage = () => {
         </button>
         <div className="flex-1">
           <PageHeader
-            title={isDirectorIe ? 'Registrar Nuevo Docente' : 'Registrar Nuevo Personal'}
-            description={
-              isDirectorIe
-                ? 'Complete los datos para dar de alta un nuevo docente de aula.'
-                : 'Complete los datos para dar de alta un Director, Coordinador o Docente de Aula.'
-            }
+            title="Registrar Nuevo Director"
+            description="Complete los campos para dar de alta a un nuevo directivo en el sistema."
           />
         </div>
       </div>
 
-      <CreateDocenteCard
-        instituciones={MOCK_INSTITUCIONES}
-        targetCargo={isDirectorIe ? 'Docente de Aula' : 'Director'}
-        submitLabel={isDirectorIe ? 'Guardar Docente' : 'Guardar Director/Docente'}
-      />
+      <CreateDirectorCard />
     </div>
   );
 };

@@ -3,49 +3,40 @@ import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { LazyLoader } from '@shared/ui/LazyLoader';
 import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-import { InstitucionEditPage } from './InstitutionEditPage';
-import { InstitutionDetailPage } from './InstitutionDetailPage';
 
-// 🚀 1. Agregamos la importación perezosa (lazy) de la página de instituciones
+
+// ── Instituciones ──
 const InstitucionesPage = lazy(() =>
   import('./institucionesPage').then((m) => ({ default: m.InstitucionesPage })),
 );
 const InstitucionCreatePage = lazy(() =>
   import('./InstitutionCreatePage').then((m) => ({ default: m.InstitucionCreatePage })),
 );
+const InstitucionEditPage = lazy(() =>
+  import('./InstitutionEditPage').then((m) => ({ default: m.InstitucionEditPage })),
+);
+const InstitutionDetailPage = lazy(() =>
+  import('./InstitutionDetailPage').then((m) => ({ default: m.InstitutionDetailPage })),
+);
 
+// ── Directores (Docentes) ──
 const DirectoresPage = lazy(() =>
-  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteListSwitcher })),
+  import('./DirectoresPage').then((m) => ({ default: m.DirectoresPage })),
 );
-const DocenteCreatePage = lazy(() =>
-  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteCreateSwitcher })),
+const DirectorCreatePage = lazy(() =>
+  import('./DirectorCreatePage').then((m) => ({ default: m.DirectorCreatePage })),
 );
-const DocenteEditPage = lazy(() =>
-  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteEditSwitcher })),
+const DirectorEditPage = lazy(() =>
+  import('./DirectorEditPage').then((m) => ({ default: m.DirectorEditPage })),
 );
 const DocenteDetailPage = lazy(() =>
   import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteDetailSwitcher })),
 );
 
-const JefesGestionPage = lazy(() =>
-  import('./JefesGestionPage').then((m) => ({ default: m.JefesGestionPage })),
-);
-
+// ── Jefes de Área (Tus nuevas páginas creadas) ──
 const JefesAreaPage = lazy(() =>
   import('./JefesAreaPage').then((m) => ({ default: m.JefesAreaPage })),
 );
-
-const JefeGestionCreatePage = lazy(() =>
-  import('./JefeGestionCreatePage').then((m) => ({ default: m.JefeGestionCreatePage })),
-);
-const JefeGestionEditPage = lazy(() =>
-  import('./JefeGestionEditPage').then((m) => ({ default: m.JefeGestionEditPage })),
-);
-const JefeGestionDetailPage = lazy(() =>
-  import('./JefeGestionDetailPage').then((m) => ({ default: m.JefeGestionDetailPage })),
-);
-
-// 🚀 Agregamos los imports lazy para las 3 nuevas páginas creadas:
 const JefeAreaCreatePage = lazy(() =>
   import('./JefeAreaCreatePage').then((m) => ({ default: m.JefeAreaCreatePage })),
 );
@@ -56,133 +47,45 @@ const JefeAreaDetailPage = lazy(() =>
   import('./JefeAreaDetailPage').then((m) => ({ default: m.JefeAreaDetailPage })),
 );
 
-
-
-
 export const adminRoutes: RouteObject[] = [
-  // 🚀 2. Padrón de Instituciones
+  // Padrón de Instituciones
   {
     element: <ProtectedRoute permission="instituciones_padron" />,
     children: [
-      {
-        path: 'instituciones/padron',
-        element: (
-          <LazyLoader>
-            <InstitucionesPage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/nuevo',
-        element: (
-          <LazyLoader>
-            <InstitucionCreatePage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/:id/editar',
-        element: (
-          <LazyLoader>
-            <InstitucionEditPage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/:id',
-        element: (
-          <LazyLoader>
-            <InstitutionDetailPage />
-          </LazyLoader>
-        ),
-      },
+      { path: 'instituciones/padron', element: (<LazyLoader><InstitucionesPage /></LazyLoader>) },
+      { path: 'instituciones/nuevo', element: (<LazyLoader><InstitucionCreatePage /></LazyLoader>) },
+      { path: 'instituciones/:id/editar', element: (<LazyLoader><InstitucionEditPage /></LazyLoader>) },
+      { path: 'instituciones/:id', element: (<LazyLoader><InstitutionDetailPage /></LazyLoader>) },
     ],
   },
-  // 🚀 3. Padrón de Directores/Docentes
+  // Padrón de Directores / Docentes
   {
     element: <ProtectedRoute permission="instituciones_docentes" />,
     children: [
-      {
-        path: 'instituciones/docentes',
-        element: (
-          <LazyLoader>
-            <DirectoresPage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/docentes/nuevo',
-        element: (
-          <LazyLoader>
-            <DocenteCreatePage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/docentes/:id/editar',
-        element: (
-          <LazyLoader>
-            <DocenteEditPage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/docentes/:id',
-        element: (
-          <LazyLoader>
-            <DocenteDetailPage />
-          </LazyLoader>
-        ),
-      },
+      { path: 'instituciones/docentes', element: (<LazyLoader><DirectoresPage /></LazyLoader>) },
+      { path: 'instituciones/docentes/nuevo', element: (<LazyLoader><DirectorCreatePage /></LazyLoader>) },
+      { path: 'instituciones/docentes/:id/editar', element: (<LazyLoader><DirectorEditPage /></LazyLoader>) },
+      { path: 'instituciones/docentes/:id', element: (<LazyLoader><DocenteDetailPage /></LazyLoader>) },
     ],
   },
-  // 🚀 4. Padrón de Jefes de Gestión (Coordinadores)
+  // Padrón de Jefes de Gestión (Coordinadores) apuntados temporalmente a JefesArea para que compile sin archivos perdidos
   {
     element: <ProtectedRoute permission="instituciones_coordinadores" />,
     children: [
-      {
-        path: 'instituciones/coordinadores',
-        element: (
-          <LazyLoader>
-            <JefesGestionPage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/coordinadores/nuevo',
-        element: (
-          <LazyLoader>
-            <JefeGestionCreatePage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/coordinadores/:id/editar',
-        element: (
-          <LazyLoader>
-            <JefeGestionEditPage />
-          </LazyLoader>
-        ),
-      },
-      {
-        path: 'instituciones/coordinadores/:id',
-        element: (
-          <LazyLoader>
-            <JefeGestionDetailPage />
-          </LazyLoader>
-        ),
-        
-      },
-      ],
-    },
-    // 🚀 CORREGIDO Y EXPANDIDO: Bloque de Jefes de Área con CRUD Completo
-    {
-      element: <ProtectedRoute permission="jefes_area" />, 
-      children: [
-        { path: 'jefes-area', element: <LazyLoader><JefesAreaPage /></LazyLoader> },
-        { path: 'jefes-area/nuevo', element: <LazyLoader><JefeAreaCreatePage /></LazyLoader> },
-        { path: 'jefes-area/:id/editar', element: <LazyLoader><JefeAreaEditPage /></LazyLoader> },
-        { path: 'jefes-area/:id', element: <LazyLoader><JefeAreaDetailPage /></LazyLoader> },
-      ],
-    },
+      { path: 'instituciones/coordinadores', element: (<LazyLoader><JefesAreaPage /></LazyLoader>) },
+      { path: 'instituciones/coordinadores/nuevo', element: (<LazyLoader><JefeAreaCreatePage /></LazyLoader>) },
+      { path: 'instituciones/coordinadores/:id/editar', element: (<LazyLoader><JefeAreaEditPage /></LazyLoader>) },
+      { path: 'instituciones/coordinadores/:id', element: (<LazyLoader><JefeAreaDetailPage /></LazyLoader>) },
+    ],
+  },
+  // Bloque de Jefes de Área con CRUD Completo
+  {
+    element: <ProtectedRoute permission="jefes_area" />, 
+    children: [
+      { path: 'jefes-area', element: <LazyLoader><JefesAreaPage /></LazyLoader> },
+      { path: 'jefes-area/nuevo', element: <LazyLoader><JefeAreaCreatePage /></LazyLoader> },
+      { path: 'jefes-area/:id/editar', element: <LazyLoader><JefeAreaEditPage /></LazyLoader> },
+      { path: 'jefes-area/:id', element: <LazyLoader><JefeAreaDetailPage /></LazyLoader> },
+    ],
+  },
 ];

@@ -8,9 +8,9 @@ export class PrismaPasswordTokenRepository implements PasswordTokenRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async createPasswordResetToken(data: CreateResetTokenData): Promise<void> {
-    await this.prisma.passwordResetToken.create({
+    await this.prisma.tokenRecuperacion.create({
       data: {
-        userId: data.userId,
+        usuarioId: data.userId,
         tokenHash: data.tokenHash,
         expiresAt: data.expiresAt,
         requestedIp: data.requestedIp ?? null,
@@ -20,15 +20,15 @@ export class PrismaPasswordTokenRepository implements PasswordTokenRepository {
   }
 
   async findResetToken(tokenHash: string): Promise<PasswordResetToken | null> {
-    return this.prisma.passwordResetToken.findUnique({
+    return this.prisma.tokenRecuperacion.findUnique({
       where: { tokenHash },
-      include: { user: { include: { persona: true } } },
-    });
+      include: { usuario: { include: { persona: true } } },
+    }) as unknown as Promise<PasswordResetToken | null>;
   }
 
   async useResetToken(tokenId: string, userId: string, passwordHash: string): Promise<void> {
     await this.prisma.$transaction([
-      this.prisma.user.update({
+      this.prisma.usuario.update({
         where: { id: userId },
         data: {
           passwordHash,
@@ -38,12 +38,12 @@ export class PrismaPasswordTokenRepository implements PasswordTokenRepository {
           passwordChangedAt: new Date(),
         },
       }),
-      this.prisma.passwordResetToken.update({
+      this.prisma.tokenRecuperacion.update({
         where: { id: tokenId },
         data: { isUsed: true, usedAt: new Date() },
       }),
-      this.prisma.authSession.updateMany({
-        where: { userId, isActive: true },
+      this.prisma.sesionAuth.updateMany({
+        where: { usuarioId: userId, isActive: true },
         data: { isActive: false, loggedOutAt: new Date(), terminatedReason: 'PASSWORD_RESET' },
       }),
     ]);

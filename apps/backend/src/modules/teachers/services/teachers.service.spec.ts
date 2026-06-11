@@ -82,6 +82,7 @@ describe('TeachersService', () => {
     const mockDirectorIeUser: CurrentUser = {
       sub: 'director-uuid',
       role: RoleCode.DIRECTOR_INSTITUCION,
+      permissions: ['docentes:read', 'docentes:write'],
       colegio_id: 'inst-uuid',
       institucion_id: 'inst-uuid',
     };
@@ -89,14 +90,18 @@ describe('TeachersService', () => {
     const directorIeRole = RoleCode.DIRECTOR_INSTITUCION;
 
     it('should throw ForbiddenException if user has an invalid role', async () => {
-      const invalidUser: CurrentUser = { sub: 'some-id', role: RoleCode.DOCENTE };
+      const invalidUser: CurrentUser = { sub: 'some-id', role: RoleCode.DOCENTE, permissions: [] };
       await expect(service.createDocente(defaultDto, invalidUser)).rejects.toThrow(
         new ForbiddenException('No tiene permisos para realizar esta acción.'),
       );
     });
 
     it('should throw ForbiddenException if director_institucion does not have an assigned institution in token', async () => {
-      const directorWithoutSchool: CurrentUser = { sub: 'director-uuid', role: directorIeRole };
+      const directorWithoutSchool: CurrentUser = {
+        sub: 'director-uuid',
+        role: directorIeRole,
+        permissions: ['docentes:write'],
+      };
       await expect(service.createDocente(defaultDto, directorWithoutSchool)).rejects.toThrow(
         new ForbiddenException(
           'El director de IE no tiene una institución educativa asignada en su token.',
@@ -108,6 +113,7 @@ describe('TeachersService', () => {
       const directorForOtherSchool: CurrentUser = {
         sub: 'director-uuid',
         role: directorIeRole,
+        permissions: ['docentes:write'],
         colegio_id: 'other-inst-uuid',
       };
       await expect(service.createDocente(defaultDto, directorForOtherSchool)).rejects.toThrow(
@@ -167,14 +173,16 @@ describe('TeachersService', () => {
 
     const directorIeRole = RoleCode.DIRECTOR_INSTITUCION;
 
-    it('should throw ForbiddenException if user role is not authorized', async () => {
-      await expect(service.getDocentes({ sub: 'x', role: RoleCode.DOCENTE })).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para realizar esta acción.'),
-      );
+    it('should throw ForbiddenException if user role is not allowed', async () => {
+      await expect(
+        service.getDocentes({ sub: 'x', role: RoleCode.DOCENTE, permissions: [] }),
+      ).rejects.toThrow(new ForbiddenException('No tiene permisos para realizar esta acción.'));
     });
 
-    it('should throw ForbiddenException if director_institucion does not have school_id in token', async () => {
-      await expect(service.getDocentes({ sub: 'x', role: directorIeRole })).rejects.toThrow(
+    it('should throw ForbiddenException if director_ie has no assigned school', async () => {
+      await expect(
+        service.getDocentes({ sub: 'x', role: directorIeRole, permissions: ['docentes:read'] }),
+      ).rejects.toThrow(
         new ForbiddenException(
           'El director de IE no tiene una institución educativa asignada en su token.',
         ),
@@ -184,20 +192,29 @@ describe('TeachersService', () => {
     it('should return teachers filtered by institution for director_institucion', async () => {
       findDocentesMock.mockResolvedValue(mockTeachersList);
 
-      const result = await service.getDocentes({
-        sub: 'x',
+      const mockDirectorIeUser: CurrentUser = {
+        sub: 'director-uuid',
         role: directorIeRole,
+        permissions: ['docentes:read'],
         colegio_id: 'inst-uuid',
-      });
+      };
+      const mockList = [{ id: 'docente-1' }];
+      findDocentesMock.mockResolvedValue(mockList);
 
-      expect(result).toEqual(mockTeachersList);
+      const result = await service.getDocentes(mockDirectorIeUser);
+
+      expect(result).toBe(mockList);
       expect(findDocentesMock).toHaveBeenCalledWith({ institucionId: 'inst-uuid' });
     });
 
-    it('should return all teachers for director_ugel', async () => {
+    it('should query all teachers if user is director_ugel', async () => {
       findDocentesMock.mockResolvedValue(mockTeachersList);
 
-      const result = await service.getDocentes({ sub: 'x', role: RoleCode.DIRECTOR_UGEL });
+      const result = await service.getDocentes({
+        sub: 'x',
+        role: RoleCode.DIRECTOR_UGEL,
+        permissions: ['docentes:read'],
+      });
 
       expect(result).toEqual(mockTeachersList);
       expect(findDocentesMock).toHaveBeenCalledWith({});
@@ -242,12 +259,17 @@ describe('TeachersService', () => {
     const mockDirectorIeUser: CurrentUser = {
       sub: 'director-uuid',
       role: directorIeRole,
+      permissions: ['docentes:write'],
       colegio_id: 'inst-uuid',
     };
 
     it('should throw ForbiddenException if user has invalid role', async () => {
       await expect(
-        service.updateDocente('docente-uuid', updateDto, { sub: 'user', role: RoleCode.DOCENTE }),
+        service.updateDocente('docente-uuid', updateDto, {
+          sub: 'user',
+          role: RoleCode.DOCENTE,
+          permissions: [],
+        }),
       ).rejects.toThrow(new ForbiddenException('No tiene permisos para realizar esta acción.'));
     });
 
@@ -334,12 +356,17 @@ describe('TeachersService', () => {
     const mockDirectorIeUser: CurrentUser = {
       sub: 'director-uuid',
       role: directorIeRole,
+      permissions: ['docentes:write'],
       colegio_id: 'inst-uuid',
     };
 
     it('should throw ForbiddenException if user has invalid role', async () => {
       await expect(
-        service.bajaDocente('docente-uuid', { sub: 'user', role: RoleCode.DOCENTE }),
+        service.bajaDocente('docente-uuid', {
+          sub: 'user',
+          role: RoleCode.DOCENTE,
+          permissions: [],
+        }),
       ).rejects.toThrow(new ForbiddenException('No tiene permisos para realizar esta acción.'));
     });
 

@@ -1,6 +1,14 @@
-import type { CondicionLaboral, EscalaMagisterial } from './model';
+import type { CondicionDirectiva, CondicionLaboral, EscalaMagisterial } from './model';
 
 export const CONDICION_LABORAL: CondicionLaboral[] = ['Nombrado', 'Contratado'];
+
+export const CONDICION_DIRECTIVA: CondicionDirectiva[] = ['Asignado', 'Encargado', 'Por función'];
+
+export const CONDICION_DIRECTIVA_COLOR: Record<CondicionDirectiva, string> = {
+  Asignado: '#22c55e', // Verde
+  Encargado: '#f59e0b', // Ámbar
+  'Por función': '#3b82f6', // Azul
+};
 
 export const ESCALAS_MAGISTERIALES: { value: EscalaMagisterial; label: string }[] = [
   { value: 'I', label: 'I — Primera Escala' },

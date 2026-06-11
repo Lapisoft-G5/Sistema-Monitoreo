@@ -16,9 +16,8 @@ import { CreateInstitucionDto } from '../dto/create-institucion.dto.js';
 import { UpdateInstitucionDto } from '../dto/update-institucion.dto.js';
 import { QueryInstitucionDto } from '../dto/query-institucion.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
-import { RolesGuard } from '../../auth/guards/roles.guard.js';
-import { Roles } from '../../auth/decorators/roles.decorator.js';
-import { RoleCode } from '../../../common/enums/role.enum.js';
+import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
+import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import {
   IInstitucionResponse,
   IInstitucionListResponse,
@@ -35,8 +34,8 @@ export class InstitutionsController {
    * Valida código modular (7 dígitos). Conflicto (409) si ya existe.
    */
   @Post()
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleCode.JEFE_AREA)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('instituciones:write')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateInstitucionDto): Promise<IInstitucionResponse> {
     return this.institutionsService.create(dto);
@@ -47,8 +46,8 @@ export class InstitutionsController {
    * Retorna listado de instituciones con filtros opcionales y paginación.
    */
   @Get()
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleCode.JEFE_AREA, RoleCode.DIRECTOR_UGEL, RoleCode.COORDINADOR_PEDAGOGICO)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('instituciones:read')
   @HttpCode(HttpStatus.OK)
   async findAll(@Query() query: QueryInstitucionDto): Promise<IInstitucionListResponse> {
     return this.institutionsService.findAll(query);
@@ -60,8 +59,8 @@ export class InstitutionsController {
    * Descarta cualquier intento de modificar codigo_modular.
    */
   @Put(':id')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleCode.JEFE_AREA)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('instituciones:write')
   @HttpCode(HttpStatus.OK)
   async update(
     @Param('id') id: string,
@@ -73,11 +72,10 @@ export class InstitutionsController {
   /**
    * PATCH /api/instituciones/:id/baja
    * Realiza la baja lógica (Soft Delete) cambiando el estado a "Inactiva".
-   * Requiere rol 'jefe_area'.
    */
   @Patch(':id/baja')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleCode.JEFE_AREA)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('instituciones:write')
   @HttpCode(HttpStatus.OK)
   async softDelete(@Param('id') id: string): Promise<IUpdateInstitucionResponse> {
     await this.institutionsService.softDelete(id);
@@ -90,11 +88,10 @@ export class InstitutionsController {
   /**
    * PATCH /api/instituciones/:id/alta
    * Revierte la baja lógica cambiando el estado a "Activa".
-   * Requiere rol 'jefe_area'.
    */
   @Patch(':id/alta')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleCode.JEFE_AREA)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('instituciones:write')
   @HttpCode(HttpStatus.OK)
   async restore(@Param('id') id: string): Promise<IUpdateInstitucionResponse> {
     await this.institutionsService.restore(id);

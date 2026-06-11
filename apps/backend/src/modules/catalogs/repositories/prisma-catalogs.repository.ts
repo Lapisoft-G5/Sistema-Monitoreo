@@ -21,7 +21,7 @@ export class PrismaCatalogsRepository implements CatalogsRepository {
 
   async findRoleByCode(code: string): Promise<Role | null> {
     return this.prisma.role.findUnique({
-      where: { code },
+      where: { codigo: code },
     });
   }
 

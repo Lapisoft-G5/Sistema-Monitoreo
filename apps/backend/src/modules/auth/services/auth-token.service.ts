@@ -2,12 +2,14 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'node:crypto';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 
 export interface JwtPayload {
   sub: string;
   dni: string;
   role: string;
+  permissions?: string[];
   nombres: string;
   apellidos: string;
   institucion_id?: string;
@@ -15,9 +17,17 @@ export interface JwtPayload {
   firstLogin: boolean;
 }
 
-export type AuthUserWithRelations = Prisma.UserGetPayload<{
+export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
   include: {
-    role: true;
+    rol: {
+      include: {
+        rolPermisos: {
+          include: {
+            permiso: true;
+          };
+        };
+      };
+    };
     persona: {
       include: {
         docente: {
@@ -36,7 +46,14 @@ export type AuthUserWithRelations = Prisma.UserGetPayload<{
 export class AuthTokenService {
   constructor(private readonly jwtService: JwtService) {}
 
-  generateTokens(payload: JwtPayload, sessionJti: string) {
+  generateTokens(
+    payload: JwtPayload,
+    sessionJti: string,
+  ): {
+    accessToken: string;
+    refreshTokenJWT: string;
+    refreshExpiresAt: Date;
+  } {
     const accessOpts: JwtSignOptions = {
       secret: process.env.JWT_SECRET,
       expiresIn: (process.env.JWT_EXPIRES_IN ?? '15m') as JwtSignOptions['expiresIn'],
@@ -79,19 +96,22 @@ export class AuthTokenService {
     let institucion_id: string | undefined;
     let colegio_id: string | undefined;
 
-    if ((user.role.code as RoleCode) === RoleCode.DIRECTOR_INSTITUCION && user.persona.docente) {
+    if ((user.rol.codigo as RoleCode) === RoleCode.DIRECTOR_INSTITUCION && user.persona.docente) {
       const cargoDirector = user.persona.docente.docenteCargos?.find(
-        (dc) => dc.cargo.nombre === 'Director' && !dc.fechaFin,
+        (dc) => (dc.cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR && !dc.fechaFin,
       );
       if (cargoDirector) {
         colegio_id = user.persona.docente.institucionId;
       }
     }
 
+    const permissions = user.rol.rolPermisos?.map((rp) => rp.permiso.codigo) || [];
+
     return {
       sub: user.id,
       dni: user.persona.dni,
-      role: user.role.code,
+      role: user.rol.codigo,
+      permissions,
       nombres: user.persona.nombres,
       apellidos: user.persona.apellidos,
       institucion_id,

@@ -8,9 +8,9 @@ export class PrismaSessionRepository implements SessionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async createSession(data: CreateSessionData): Promise<AuthSession> {
-    return this.prisma.authSession.create({
+    const session = await this.prisma.sesionAuth.create({
       data: {
-        userId: data.userId,
+        usuarioId: data.userId,
         sessionJti: data.sessionJti,
         ipAddress: data.ipAddress ?? null,
         userAgent: data.userAgent ?? null,
@@ -19,17 +19,30 @@ export class PrismaSessionRepository implements SessionRepository {
         isActive: true,
       },
     });
+    return {
+      id: session.id,
+      usuarioId: session.usuarioId,
+      sessionJti: session.sessionJti,
+      ipAddress: session.ipAddress,
+      userAgent: session.userAgent,
+      startedAt: session.startedAt,
+      lastActivityAt: session.lastActivityAt,
+      expiresAt: session.expiresAt,
+      loggedOutAt: session.loggedOutAt,
+      terminatedReason: session.terminatedReason,
+      isActive: session.isActive,
+    };
   }
 
   async invalidateSession(sessionJti: string, reason: string): Promise<void> {
-    await this.prisma.authSession.updateMany({
+    await this.prisma.sesionAuth.updateMany({
       where: { sessionJti },
       data: { isActive: false, loggedOutAt: new Date(), terminatedReason: reason },
     });
   }
 
   async isSessionActive(sessionJti: string): Promise<boolean> {
-    const session = await this.prisma.authSession.findUnique({
+    const session = await this.prisma.sesionAuth.findUnique({
       where: { sessionJti },
       select: { isActive: true },
     });
@@ -37,8 +50,8 @@ export class PrismaSessionRepository implements SessionRepository {
   }
 
   async hasActiveSession(userId: string): Promise<boolean> {
-    const session = await this.prisma.authSession.findFirst({
-      where: { userId, isActive: true, expiresAt: { gt: new Date() } },
+    const session = await this.prisma.sesionAuth.findFirst({
+      where: { usuarioId: userId, isActive: true, expiresAt: { gt: new Date() } },
       select: { id: true },
     });
     return !!session;

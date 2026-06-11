@@ -2,11 +2,10 @@ import type { Nivel, EstadoMonitoreo } from './model';
 
 export type { Nivel, EstadoMonitoreo };
 
-export const NIVELES: Nivel[] = ['INICIAL', 'PRONOEI', 'PRIMARIA', 'SECUNDARIA'];
+export const NIVELES: Nivel[] = ['INICIAL', 'PRIMARIA', 'SECUNDARIA'];
 
 export const NIVEL_LABEL: Record<Nivel, string> = {
   INICIAL: 'Inicial',
-  PRONOEI: 'PRONOEI',
   PRIMARIA: 'Primaria',
   SECUNDARIA: 'Secundaria',
 };
@@ -28,7 +27,6 @@ export const DISTRITOS_LAMPA = [
 
 export const NIVEL_STYLE: Record<Nivel, { bg: string; color: string }> = {
   INICIAL: { bg: '#fae8ff', color: '#a21caf' },
-  PRONOEI: { bg: '#fef9c3', color: '#a16207' },
   PRIMARIA: { bg: '#dbeafe', color: '#1d4ed8' },
   SECUNDARIA: { bg: '#dcfce7', color: '#15803d' },
 };

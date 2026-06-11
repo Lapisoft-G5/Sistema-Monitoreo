@@ -22,7 +22,7 @@ export const Sidebar = () => {
   const [openMenus, setOpenMenus] = useState<string[]>(['monitoreo']);
 
   // 2. Lógica de Permisos (Intacta de tu código original)
-  const permissions = user ? ROLE_PERMISSIONS[user.role] : [];
+  const permissions = (user && ROLE_PERMISSIONS[user.role]) ?? [];
   const has = (id: string) => permissions.includes(id as MenuItem);
 
   const toggleMenu = (id: string) =>

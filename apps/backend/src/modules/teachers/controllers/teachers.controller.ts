@@ -15,50 +15,64 @@ import { TeachersService } from '../services/teachers.service.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
-import { RolesGuard } from '../../auth/guards/roles.guard.js';
-import { Roles } from '../../auth/decorators/roles.decorator.js';
-import { RoleCode } from '../../../common/enums/role.enum.js';
+import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
+import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import { Request } from 'express';
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
+import { DocenteEntity } from '../repositories/teachers.repository.js';
 
 interface AuthenticatedRequest extends Request {
   user: JwtPayload;
 }
 
 @Controller('docentes')
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, PermissionsGuard)
 export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}
 
   @Post()
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
+  @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateDocenteDto, @Req() req: AuthenticatedRequest) {
+  async create(
+    @Body() dto: CreateDocenteDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<DocenteEntity> {
     return this.teachersService.createDocente(dto, req.user);
   }
 
   @Get()
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA, RoleCode.DIRECTOR_UGEL)
+  @RequirePermissions('docentes:read')
   @HttpCode(HttpStatus.OK)
-  async findAll(@Req() req: AuthenticatedRequest) {
+  async findAll(@Req() req: AuthenticatedRequest): Promise<DocenteEntity[]> {
     return this.teachersService.getDocentes(req.user);
   }
 
   @Put(':id')
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
+  @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.OK)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateDocenteDto,
     @Req() req: AuthenticatedRequest,
-  ) {
+  ): Promise<DocenteEntity> {
     return this.teachersService.updateDocente(id, dto, req.user);
   }
 
   @Patch(':id/baja')
-  @Roles(RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_AREA)
+  @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.OK)
-  async deactivate(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+  async deactivate(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    docente: {
+      id: string;
+      estado: string;
+      persona: { dni: string; nombres: string; apellidos: string };
+    };
+  }> {
     return this.teachersService.bajaDocente(id, req.user);
   }
 }

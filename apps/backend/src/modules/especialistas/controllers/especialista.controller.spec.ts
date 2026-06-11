@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { jest } from '@jest/globals';
-import { EspecialistaController } from './especialista.controller.js';
+import { EspecialistaController, AuthenticatedRequest } from './especialista.controller.js';
 import { EspecialistaService } from '../services/especialista.service.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';
@@ -127,7 +127,17 @@ describe('EspecialistaController', () => {
       const esp = buildEspecialistaResponse();
       createMock.mockResolvedValue(esp);
 
-      const mockReq = { user: { sub: 'user-id', role: 'coordinador_pedagogico', permissions: ['especialistas:write'] } } as any;
+      const mockReq = {
+        user: {
+          sub: 'user-id',
+          role: 'coordinador_pedagogico',
+          permissions: ['especialistas:write'],
+          dni: '12345678',
+          nombres: 'Test',
+          apellidos: 'User',
+          firstLogin: false,
+        },
+      } as unknown as AuthenticatedRequest;
       const result = await controller.create(dto, mockReq);
       expect(result).toEqual(esp);
       expect(createMock).toHaveBeenCalledWith(dto, mockReq.user);
@@ -147,7 +157,17 @@ describe('EspecialistaController', () => {
       const esp = buildEspecialistaResponse({ especialidad: 'Ciencias' });
       updateMock.mockResolvedValue(esp);
 
-      const mockReq = { user: { sub: 'user-id', role: 'coordinador_pedagogico', permissions: ['especialistas:write'] } } as any;
+      const mockReq = {
+        user: {
+          sub: 'user-id',
+          role: 'coordinador_pedagogico',
+          permissions: ['especialistas:write'],
+          dni: '12345678',
+          nombres: 'Test',
+          apellidos: 'User',
+          firstLogin: false,
+        },
+      } as unknown as AuthenticatedRequest;
       const result = await controller.update('esp-uuid', dto, mockReq);
       expect(result).toEqual(esp);
       expect(updateMock).toHaveBeenCalledWith('esp-uuid', dto, mockReq.user);

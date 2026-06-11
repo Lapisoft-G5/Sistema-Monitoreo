@@ -4,6 +4,7 @@ import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { DocenteCargo, Prisma } from '../../../generated/prisma/client.js';
 import { DocenteEntity, DocenteFilter, TeachersRepository } from './teachers.repository.js';
+import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 
 type DocenteWithRelations = Prisma.DocenteGetPayload<{
   include: {
@@ -178,7 +179,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
           institucionId: dto.institucionId,
           gradoAcademico: dto.gradoAcademico ?? null,
           nivelEducativo: dto.nivelEducativo,
-          estado: 'Activo',
+          estado: EstadoRegistro.ACTIVO,
         },
       });
 

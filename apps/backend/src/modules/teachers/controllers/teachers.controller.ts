@@ -19,6 +19,7 @@ import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import { Request } from 'express';
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
+import { DocenteEntity } from '../repositories/teachers.repository.js';
 
 interface AuthenticatedRequest extends Request {
   user: JwtPayload;
@@ -32,14 +33,17 @@ export class TeachersController {
   @Post()
   @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateDocenteDto, @Req() req: AuthenticatedRequest) {
+  async create(
+    @Body() dto: CreateDocenteDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<DocenteEntity> {
     return this.teachersService.createDocente(dto, req.user);
   }
 
   @Get()
   @RequirePermissions('docentes:read')
   @HttpCode(HttpStatus.OK)
-  async findAll(@Req() req: AuthenticatedRequest) {
+  async findAll(@Req() req: AuthenticatedRequest): Promise<DocenteEntity[]> {
     return this.teachersService.getDocentes(req.user);
   }
 
@@ -50,14 +54,25 @@ export class TeachersController {
     @Param('id') id: string,
     @Body() dto: UpdateDocenteDto,
     @Req() req: AuthenticatedRequest,
-  ) {
+  ): Promise<DocenteEntity> {
     return this.teachersService.updateDocente(id, dto, req.user);
   }
 
   @Patch(':id/baja')
   @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.OK)
-  async deactivate(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+  async deactivate(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    docente: {
+      id: string;
+      estado: string;
+      persona: { dni: string; nombres: string; apellidos: string };
+    };
+  }> {
     return this.teachersService.bajaDocente(id, req.user);
   }
 }

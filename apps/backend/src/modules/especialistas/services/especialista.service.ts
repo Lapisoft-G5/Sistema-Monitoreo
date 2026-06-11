@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { EspecialistaRepository } from '../repositories/especialista.repository.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
@@ -26,11 +32,14 @@ export class EspecialistaService {
     return this.repository.findById(id);
   }
 
-  async create(dto: CreateEspecialistaDto, currentUser: JwtPayload): Promise<IEspecialistaResponse> {
-    if (dto.cargo === CargoNombre.JEFE_GESTION) {
+  async create(
+    dto: CreateEspecialistaDto,
+    currentUser: JwtPayload,
+  ): Promise<IEspecialistaResponse> {
+    if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
       if (
-        currentUser.role !== RoleCode.DIRECTOR_UGEL &&
-        currentUser.role !== RoleCode.JEFE_AREA
+        (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_UGEL &&
+        (currentUser.role as RoleCode) !== RoleCode.JEFE_AREA
       ) {
         throw new ForbiddenException(
           'No tiene privilegios suficientes para crear un perfil de Jefe de Gestión.',
@@ -38,7 +47,10 @@ export class EspecialistaService {
       }
     }
 
-    if (dto.cargo === CargoNombre.JEFE_GESTION && dto.condicionLaboral !== CondicionLaboral.NOMBRADO) {
+    if (
+      (dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION &&
+      (dto.condicionLaboral as CondicionLaboral) !== CondicionLaboral.NOMBRADO
+    ) {
       throw new BadRequestException(
         'La condición laboral de un Jefe de Gestión debe ser exactamente Nombrado.',
       );
@@ -62,11 +74,15 @@ export class EspecialistaService {
     return this.repository.create(dto, passwordHash, role.id);
   }
 
-  async update(id: string, dto: UpdateEspecialistaDto, currentUser: JwtPayload): Promise<IEspecialistaResponse> {
-    if (dto.cargo === CargoNombre.JEFE_GESTION) {
+  async update(
+    id: string,
+    dto: UpdateEspecialistaDto,
+    currentUser: JwtPayload,
+  ): Promise<IEspecialistaResponse> {
+    if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
       if (
-        currentUser.role !== RoleCode.DIRECTOR_UGEL &&
-        currentUser.role !== RoleCode.JEFE_AREA
+        (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_UGEL &&
+        (currentUser.role as RoleCode) !== RoleCode.JEFE_AREA
       ) {
         throw new ForbiddenException(
           'No tiene privilegios suficientes para actualizar un perfil de Jefe de Gestión.',
@@ -74,7 +90,10 @@ export class EspecialistaService {
       }
     }
 
-    if (dto.cargo === CargoNombre.JEFE_GESTION && dto.condicionLaboral !== CondicionLaboral.NOMBRADO) {
+    if (
+      (dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION &&
+      (dto.condicionLaboral as CondicionLaboral) !== CondicionLaboral.NOMBRADO
+    ) {
       throw new BadRequestException(
         'La condición laboral de un Jefe de Gestión debe ser exactamente Nombrado.',
       );

@@ -46,7 +46,14 @@ export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
 export class AuthTokenService {
   constructor(private readonly jwtService: JwtService) {}
 
-  generateTokens(payload: JwtPayload, sessionJti: string) {
+  generateTokens(
+    payload: JwtPayload,
+    sessionJti: string,
+  ): {
+    accessToken: string;
+    refreshTokenJWT: string;
+    refreshExpiresAt: Date;
+  } {
     const accessOpts: JwtSignOptions = {
       secret: process.env.JWT_SECRET,
       expiresIn: (process.env.JWT_EXPIRES_IN ?? '15m') as JwtSignOptions['expiresIn'],
@@ -91,7 +98,7 @@ export class AuthTokenService {
 
     if ((user.rol.codigo as RoleCode) === RoleCode.DIRECTOR_INSTITUCION && user.persona.docente) {
       const cargoDirector = user.persona.docente.docenteCargos?.find(
-        (dc) => dc.cargo.nombre === CargoNombre.DIRECTOR && !dc.fechaFin,
+        (dc) => (dc.cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR && !dc.fechaFin,
       );
       if (cargoDirector) {
         colegio_id = user.persona.docente.institucionId;

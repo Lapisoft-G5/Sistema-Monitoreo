@@ -9,7 +9,11 @@ import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
-import { TeachersRepository, DocenteFilter, DocenteEntity } from '../repositories/teachers.repository.js';
+import {
+  TeachersRepository,
+  DocenteFilter,
+  DocenteEntity,
+} from '../repositories/teachers.repository.js';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
 
@@ -61,7 +65,10 @@ export class TeachersService {
 
     // 5. Si es Director de IE, validar que no intente asignar Director o Coordinador Pedagógico
     if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
-      if (cargo.nombre === CargoNombre.DIRECTOR || cargo.nombre === CargoNombre.COORDINADOR_PEDAGOGICO) {
+      if (
+        (cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR ||
+        (cargo.nombre as CargoNombre) === CargoNombre.COORDINADOR_PEDAGOGICO
+      ) {
         throw new ForbiddenException(
           'El Director de I.E. no puede asignar el cargo de Director o Coordinador Pedagógico.',
         );
@@ -70,7 +77,10 @@ export class TeachersService {
 
     // 6. Si es Jefe de Área, validar que solo pueda registrar cargos Director o Coordinador Pedagógico
     if ((currentUser.role as RoleCode) === RoleCode.JEFE_AREA) {
-      if (cargo.nombre !== CargoNombre.DIRECTOR && cargo.nombre !== CargoNombre.COORDINADOR_PEDAGOGICO) {
+      if (
+        (cargo.nombre as CargoNombre) !== CargoNombre.DIRECTOR &&
+        (cargo.nombre as CargoNombre) !== CargoNombre.COORDINADOR_PEDAGOGICO
+      ) {
         throw new ForbiddenException(
           'El Jefe de Área solo puede registrar directores y coordinadores pedagógicos.',
         );
@@ -103,7 +113,11 @@ export class TeachersService {
     return this.teachersRepository.findDocentes(filter);
   }
 
-  async updateDocente(id: string, dto: UpdateDocenteDto, currentUser: CurrentUser): Promise<DocenteEntity> {
+  async updateDocente(
+    id: string,
+    dto: UpdateDocenteDto,
+    currentUser: CurrentUser,
+  ): Promise<DocenteEntity> {
     // 1. Control de accesos por permisos
     if (!currentUser.permissions?.includes('docentes:write')) {
       throw new ForbiddenException('No tiene permisos para realizar esta acción.');
@@ -138,7 +152,10 @@ export class TeachersService {
 
     // 5. Si es Director de IE, validar que no intente asignar Director o Coordinador Pedagógico
     if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
-      if (cargo.nombre === CargoNombre.DIRECTOR || cargo.nombre === CargoNombre.COORDINADOR_PEDAGOGICO) {
+      if (
+        (cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR ||
+        (cargo.nombre as CargoNombre) === CargoNombre.COORDINADOR_PEDAGOGICO
+      ) {
         throw new ForbiddenException(
           'El Director de I.E. no puede asignar el cargo de Director o Coordinador Pedagógico.',
         );
@@ -147,7 +164,10 @@ export class TeachersService {
 
     // 6. Si es Jefe de Área, validar que el cargo a asignar y el cargo actual sean de Director o Coordinador Pedagógico
     if ((currentUser.role as RoleCode) === RoleCode.JEFE_AREA) {
-      if (cargo.nombre !== CargoNombre.DIRECTOR && cargo.nombre !== CargoNombre.COORDINADOR_PEDAGOGICO) {
+      if (
+        (cargo.nombre as CargoNombre) !== CargoNombre.DIRECTOR &&
+        (cargo.nombre as CargoNombre) !== CargoNombre.COORDINADOR_PEDAGOGICO
+      ) {
         throw new ForbiddenException(
           'El Jefe de Área solo puede asignar el cargo de Director o Coordinador Pedagógico.',
         );
@@ -157,8 +177,8 @@ export class TeachersService {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
           currentCargo &&
-          currentCargo.nombre !== CargoNombre.DIRECTOR &&
-          currentCargo.nombre !== CargoNombre.COORDINADOR_PEDAGOGICO
+          (currentCargo.nombre as CargoNombre) !== CargoNombre.DIRECTOR &&
+          (currentCargo.nombre as CargoNombre) !== CargoNombre.COORDINADOR_PEDAGOGICO
         ) {
           throw new ForbiddenException(
             'El Jefe de Área solo puede gestionar directores y coordinadores pedagógicos.',
@@ -194,7 +214,11 @@ export class TeachersService {
   ): Promise<{
     success: boolean;
     message: string;
-    docente: { id: string; estado: string; persona: { dni: string; nombres: string; apellidos: string } };
+    docente: {
+      id: string;
+      estado: string;
+      persona: { dni: string; nombres: string; apellidos: string };
+    };
   }> {
     // 1. Control de accesos por permisos
     if (!currentUser.permissions?.includes('docentes:write')) {
@@ -225,7 +249,8 @@ export class TeachersService {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
           currentCargo &&
-          (currentCargo.nombre === CargoNombre.DIRECTOR || currentCargo.nombre === CargoNombre.COORDINADOR_PEDAGOGICO)
+          ((currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR ||
+            (currentCargo.nombre as CargoNombre) === CargoNombre.COORDINADOR_PEDAGOGICO)
         ) {
           throw new ForbiddenException(
             'El Director de I.E. no puede dar de baja a un Director o Coordinador Pedagógico.',
@@ -241,8 +266,8 @@ export class TeachersService {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
           currentCargo &&
-          currentCargo.nombre !== CargoNombre.DIRECTOR &&
-          currentCargo.nombre !== CargoNombre.COORDINADOR_PEDAGOGICO
+          (currentCargo.nombre as CargoNombre) !== CargoNombre.DIRECTOR &&
+          (currentCargo.nombre as CargoNombre) !== CargoNombre.COORDINADOR_PEDAGOGICO
         ) {
           throw new ForbiddenException(
             'El Jefe de Área solo puede dar de baja a directores y coordinadores pedagógicos.',

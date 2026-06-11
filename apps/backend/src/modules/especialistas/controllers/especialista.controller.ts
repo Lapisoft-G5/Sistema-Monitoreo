@@ -23,7 +23,7 @@ import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user: JwtPayload;
 }
 

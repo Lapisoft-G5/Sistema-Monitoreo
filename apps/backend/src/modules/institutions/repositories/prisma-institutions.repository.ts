@@ -6,6 +6,7 @@ import { UpdateInstitucionDto } from '../dto/update-institucion.dto.js';
 import { QueryInstitucionDto } from '../dto/query-institucion.dto.js';
 import { Institucion } from '../entities/institucion.entity.js';
 import { Prisma } from '../../../generated/prisma/client.js';
+import { EstadoInstitucion } from '../../../common/enums/estado.enum.js';
 
 @Injectable()
 export class PrismaInstitutionsRepository implements InstitutionsRepository {
@@ -22,7 +23,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
         distrito: data.distrito,
         direccion: data.direccion,
         zona: data.zona,
-        estado: data.estado ?? 'Activa',
+        estado: data.estado ?? EstadoInstitucion.ACTIVA,
       },
     });
     return record;
@@ -57,7 +58,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     // Para BE-IE-04, cambiamos el estado a "Inactiva"
     const record = await this.prisma.institucionEducativa.update({
       where: { id },
-      data: { estado: 'Inactiva' },
+      data: { estado: EstadoInstitucion.INACTIVA },
     });
     return record;
   }
@@ -66,7 +67,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     // Cambiamos el estado de regreso a "Activa"
     const record = await this.prisma.institucionEducativa.update({
       where: { id },
-      data: { estado: 'Activa' },
+      data: { estado: EstadoInstitucion.ACTIVA },
     });
     return record;
   }

@@ -8,6 +8,9 @@ import type {
   IUpdateEspecialistaRequest,
   IQueryEspecialistaRequest,
 } from '@sistema-monitoreo/shared-contracts';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
+import { CondicionLaboral } from '../../../common/enums/condicion-laboral.enum.js';
+import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 
 type EspecialistaWithRelations = Prisma.EspecialistaGetPayload<{
   include: {
@@ -58,7 +61,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
   async findAll(filters?: IQueryEspecialistaRequest): Promise<IEspecialistaResponse[]> {
     const list = await this.prisma.especialista.findMany({
       where: {
-        estado: filters?.estado ?? 'Activo',
+        estado: filters?.estado ?? EstadoRegistro.ACTIVO,
         ...(filters?.especialidad && { especialidad: filters.especialidad }),
         ...(filters?.nivelEducativo && { nivelEducativo: filters.nivelEducativo }),
       },
@@ -131,9 +134,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           personaId: persona.id,
           especialidad: data.especialidad,
           nivelEducativo: data.nivelEducativo,
-          estado: 'Activo',
-          cargo: data.cargo || 'Especialista',
-          condicionLaboral: data.condicionLaboral || 'Nombrado',
+          estado: EstadoRegistro.ACTIVO,
+          cargo: data.cargo || CargoNombre.ESPECIALISTA,
+          condicionLaboral: data.condicionLaboral || CondicionLaboral.NOMBRADO,
         },
       });
 
@@ -247,7 +250,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
       // Inactivar especialista
       await tx.especialista.update({
         where: { id },
-        data: { estado: 'Inactivo' },
+        data: { estado: EstadoRegistro.INACTIVO },
       });
 
       const fullEsp = await tx.especialista.findUniqueOrThrow({

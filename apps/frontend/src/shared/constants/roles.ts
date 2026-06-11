@@ -70,7 +70,7 @@ const READ_ONLY_ROLES: UserRole[] = ['invitado'];
 // ── FUNCIONES DE VERIFICACIÓN Y UTILS ──
 
 export const hasPermission = (role: UserRole, item: MenuItem): boolean =>
-  ROLE_PERMISSIONS[role].includes(item);
+  (ROLE_PERMISSIONS[role] ?? []).includes(item);
 
 export const isReadOnlyRole = (role: UserRole): boolean => READ_ONLY_ROLES.includes(role);
 

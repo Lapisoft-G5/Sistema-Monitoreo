@@ -1,6 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useUser } from '@entities/model-user';
-import { hasPermission, getDefaultLandingPage, type MenuItem } from '@shared/constants/roles';
+import {
+  hasPermission,
+  getDefaultLandingPage,
+  ROLE_PERMISSIONS,
+  type MenuItem,
+} from '@shared/constants/roles';
 
 interface ProtectedRouteProps {
   permission: MenuItem;
@@ -9,11 +14,12 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ permission }: ProtectedRouteProps) => {
   const { user, isAuthenticated } = useUser();
 
-  if (!isAuthenticated) {
+  // Sin sesión o con un rol inválido → al login (evita crashes y bucles de redirección)
+  if (!isAuthenticated || !user || !ROLE_PERMISSIONS[user.role]) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user && !hasPermission(user.role, permission)) {
+  if (!hasPermission(user.role, permission)) {
     const landing = getDefaultLandingPage(user.role);
     return <Navigate to={landing} replace />;
   }

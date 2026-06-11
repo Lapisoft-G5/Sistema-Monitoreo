@@ -12,7 +12,7 @@ const prisma = new PrismaClient({ adapter });
 const MOCK_ROLES = [
   { code: 'director_ugel', name: 'Director UGEL', description: 'Director de la UGEL Lampa' },
   { code: 'jefe_area', name: 'Jefe de Área', description: 'Jefe de Área de la UGEL' },
-  { code: 'coordinador_pedagogico', name: 'Coordinador Pedagógico', description: 'Coordinador Pedagógico de la UGEL Lampa' },
+  { code: 'jefe_gestion', name: 'Jefe de Gestión', description: 'Jefe de Gestión de la UGEL Lampa' },
   { code: 'especialista', name: 'Especialista', description: 'Especialista de Monitoreo de la UGEL' },
   { code: 'director_ie', name: 'Director de Institución', description: 'Director de Institución Educativa' },
   { code: 'docente', name: 'Docente', description: 'Docente de Aula' },
@@ -39,7 +39,7 @@ const MOCK_USERS = [
     email: 'maria.gomez@ugel-lampa.gob.pe',
     firstName: 'María',
     lastName: 'Gómez Ticona',
-    role: 'coordinador_pedagogico',
+    role: 'jefe_gestion',
   },
   {
     dni: '12345678',
@@ -103,15 +103,21 @@ const MOCK_PERMISOS = [
   { codigo: 'instituciones:write', nombre: 'Gestionar Instituciones', descripcion: 'Permite crear, editar y dar de baja instituciones' },
   { codigo: 'docentes:read', nombre: 'Leer Docentes', descripcion: 'Permite listar y ver detalles de docentes' },
   { codigo: 'docentes:write', nombre: 'Gestionar Docentes', descripcion: 'Permite registrar, editar y dar de baja docentes' },
+  { codigo: 'dashboard:read', nombre: 'Ver Dashboard', descripcion: 'Permite visualizar el panel de control y estadísticas' },
+  { codigo: 'reports:read', nombre: 'Ver Reportes', descripcion: 'Permite visualizar reportes del sistema' },
+  { codigo: 'reports:own', nombre: 'Ver Reportes Propios', descripcion: 'Permite al docente visualizar sus propios reportes' },
+  { codigo: 'jefes_area:write', nombre: 'Gestionar Jefes de Área', descripcion: 'Permite crear, editar y dar de baja jefes de área' },
+  { codigo: 'directores:write', nombre: 'Gestionar Directores', descripcion: 'Permite registrar, editar y dar de baja directores de IE' },
+  { codigo: 'monitoreo:execute', nombre: 'Realizar Monitoreo', descripcion: 'Permite ejecutar y registrar fichas de monitoreo' },
 ];
 
 const MOCK_ROL_PERMISOS = {
-  director_ugel: ['instituciones:read', 'docentes:read', 'especialistas:read', 'especialistas:write'],
-  jefe_area: ['instituciones:read', 'instituciones:write', 'docentes:read', 'docentes:write', 'especialistas:read', 'especialistas:write'],
-  coordinador_pedagogico: ['especialistas:read', 'especialistas:write', 'instituciones:read'],
-  especialista: [],
-  director_ie: ['docentes:read', 'docentes:write'],
-  docente: [],
+  director_ugel: ['dashboard:read', 'reports:read'],
+  jefe_gestion: ['especialistas:read', 'especialistas:write', 'jefes_area:write', 'monitoreo:execute', 'reports:read'],
+  jefe_area: ['directores:write', 'instituciones:read', 'instituciones:write'],
+  especialista: ['monitoreo:execute', 'reports:read'],
+  director_ie: ['docentes:read', 'docentes:write', 'reports:read'],
+  docente: ['reports:own'],
   invitado: [],
 };
 

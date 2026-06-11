@@ -130,7 +130,7 @@ describe('EspecialistaController', () => {
       const mockReq = {
         user: {
           sub: 'user-id',
-          role: 'coordinador_pedagogico',
+          role: 'jefe_gestion',
           permissions: ['especialistas:write'],
           dni: '12345678',
           nombres: 'Test',
@@ -160,7 +160,7 @@ describe('EspecialistaController', () => {
       const mockReq = {
         user: {
           sub: 'user-id',
-          role: 'coordinador_pedagogico',
+          role: 'jefe_gestion',
           permissions: ['especialistas:write'],
           dni: '12345678',
           nombres: 'Test',

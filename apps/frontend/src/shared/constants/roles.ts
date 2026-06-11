@@ -1,7 +1,7 @@
 export type UserRole =
   | 'director_ugel'
   | 'jefe_area'
-  | 'coordinador_pedagogico'
+  | 'jefe_gestion'
   | 'especialista'
   | 'director_institucion'
   | 'docente'
@@ -10,7 +10,7 @@ export type UserRole =
 export const ROLE_LABELS: Record<UserRole, string> = {
   director_ugel: 'Director UGEL',
   jefe_area: 'Jefe de Área',
-  coordinador_pedagogico: 'Coordinador Pedagógico',
+  jefe_gestion: 'Jefe de Gestión',
   especialista: 'Especialista',
   director_institucion: 'Director de Institución',
   docente: 'Docente',
@@ -36,11 +36,11 @@ const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   director_ugel: ['dashboard', 'reportes'],
 
+  jefe_gestion: ['dashboard', 'monitoreo', 'monitoreo_reportes', 'especialistas', 'reportes'],
+
   jefe_area: ['instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores'],
 
-  coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', 'reportes'],
-
-  especialista: ['monitoreo', 'monitoreo_reportes'],
+  especialista: ['monitoreo', 'monitoreo_reportes', 'reportes'],
 
   director_institucion: [
     'instituciones_docentes',
@@ -78,8 +78,8 @@ export const getDefaultLandingPage = (role: UserRole): string => {
   switch (role) {
     case 'jefe_area':
       return '/instituciones/padron';
-    case 'coordinador_pedagogico':
-      return '/monitoreo/plan';
+    case 'jefe_gestion':
+      return '/dashboard';
     case 'especialista':
       return '/monitoreo/reportes';
     case 'director_institucion':

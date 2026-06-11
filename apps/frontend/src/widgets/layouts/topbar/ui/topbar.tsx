@@ -24,7 +24,7 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
   const location = useLocation();
   
   // 2. Cálculo automático del título basado en la URL
-  const title = getPageTitle(location.pathname);
+  const title = getPageTitle(location.pathname, user?.role);
 
   return (
     <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-surface/95 border-b border-border backdrop-blur-xl sticky top-0 z-20">

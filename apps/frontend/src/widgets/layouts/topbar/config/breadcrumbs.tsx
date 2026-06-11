@@ -1,3 +1,5 @@
+import type { UserRole } from '@shared/constants/roles';
+
 export const BREADCRUMBS_MAP: Record<string, string> = {
   '/dashboard': 'Panel de Control',
   '/monitoreo/plan': 'Plan de Monitoreo',
@@ -9,7 +11,13 @@ export const BREADCRUMBS_MAP: Record<string, string> = {
   '/configuracion': 'Configuración',
 };
 
-export const getPageTitle = (pathname: string): string => {
+export const getPageTitle = (pathname: string, role?: UserRole): string => {
+  // El padrón de /instituciones/docentes cambia de etiqueta según el rol:
+  // el Jefe de Área gestiona Directores; el Director de IE gestiona Docentes.
+  if (pathname.startsWith('/instituciones/docentes')) {
+    return role === 'jefe_area' ? 'Padrón de Directores' : 'Padrón de Docentes';
+  }
+
   // 1. Búsqueda exacta
   if (BREADCRUMBS_MAP[pathname]) return BREADCRUMBS_MAP[pathname];
   

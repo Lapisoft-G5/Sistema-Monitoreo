@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import { User, Briefcase, Check, BadgeCheck, ShieldCheck, History } from 'lucide-react';
+import { useState } from 'react';
+import { User, Briefcase, Check } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 import { CONDICION_DIRECTIVA } from '@entities/model-docentes';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
@@ -186,35 +186,6 @@ export const DirectorFormBase = ({
           {isLoading ? 'Guardando...' : submitLabel || 'Guardar Director'}
         </FormButton>
       </div>
-
-      {/* Cards informativas (Validación / Seguridad / Trazabilidad) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <InfoCard
-          icon={<BadgeCheck className="w-4 h-4" />}
-          title="Validación DNI"
-          text="Conexión directa con RENIEC activa."
-        />
-        <InfoCard
-          icon={<ShieldCheck className="w-4 h-4" />}
-          title="Seguridad"
-          text="Datos encriptados según ley 29733."
-        />
-        <InfoCard
-          icon={<History className="w-4 h-4" />}
-          title="Trazabilidad"
-          text="Se registrará fecha y usuario autor."
-        />
-      </div>
     </div>
   );
 };
-
-const InfoCard = ({ icon, title, text }: { icon: ReactNode; title: string; text: string }) => (
-  <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/40 border border-border">
-    <span className="text-primary mt-0.5 flex-shrink-0">{icon}</span>
-    <div>
-      <div className="text-xs font-bold uppercase tracking-wider text-text-muted">{title}</div>
-      <div className="text-xs text-text-muted mt-0.5">{text}</div>
-    </div>
-  </div>
-);

@@ -9,7 +9,7 @@ import { Badge } from '@shared/ui/badge';
 
 const nivelLabel = (n: string) => n.charAt(0) + n.slice(1).toLowerCase();
 
-export const DocenteDetailPage = () => {
+export const DirectorDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -40,7 +40,7 @@ export const DocenteDetailPage = () => {
         <h2 className="text-xl font-bold text-text mb-2">Director no encontrado</h2>
         <p className="text-text-muted mb-6">El identificador {id} no existe o no tiene permisos de acceso.</p>
         <button
-          onClick={() => navigate('/instituciones/docentes')}
+          onClick={() => navigate('/instituciones/directores')}
           className="px-5 py-2.5 bg-bg border border-border rounded-xl font-semibold text-text hover:bg-muted transition-colors cursor-pointer"
         >
           Volver al Padrón de Directores
@@ -58,7 +58,7 @@ export const DocenteDetailPage = () => {
       <div className="flex items-center justify-between gap-3 flex-wrap bg-surface p-4 border border-border rounded-2xl shadow-sm">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/instituciones/docentes')}
+            onClick={() => navigate('/instituciones/directores')}
             className="p-2 rounded-xl bg-bg border border-border text-text-muted hover:text-text hover:bg-muted transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
@@ -70,7 +70,7 @@ export const DocenteDetailPage = () => {
         </div>
 
         <Button
-          onClick={() => navigate(`/instituciones/docentes/${director.id}/editar`)}
+          onClick={() => navigate(`/instituciones/directores/${director.id}/editar`)}
           className="flex items-center gap-2 font-bold cursor-pointer bg-primary text-white hover:bg-primary-hover"
         >
           <Edit className="h-[16px] w-[16px]" />

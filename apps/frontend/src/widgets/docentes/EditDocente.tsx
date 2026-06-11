@@ -40,7 +40,7 @@ export const EditDocenteCard = ({
     correo: docente.correo,
     celular: docente.celular,
     nivelEducativo: docente.nivelEducativo,
-    condicion: docente.condicion,
+    condicion: docente.condicion as DocenteFormData['condicion'],
     especialidad: docente.especialidad,
     cargaHoraria: docente.cargaHoraria,
     secciones: docente.secciones || [],

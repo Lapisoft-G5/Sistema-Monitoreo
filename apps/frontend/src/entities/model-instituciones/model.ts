@@ -1,4 +1,4 @@
-export type Nivel = 'INICIAL' | 'PRONOEI' | 'PRIMARIA' | 'SECUNDARIA';
+export type Nivel = 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA';
 export type EstadoMonitoreo = 'Satisfactorio' | 'En Proceso' | 'Crítico';
 
 export interface Institucion {

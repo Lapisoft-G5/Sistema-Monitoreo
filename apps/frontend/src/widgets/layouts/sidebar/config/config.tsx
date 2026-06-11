@@ -57,13 +57,6 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     children: [],
   },
   {
-    id: 'instituciones_coordinadores',
-    label: 'Jefes de Gestión',
-    icon: <Users className="h-[18px] w-[18px]" />,
-    path: '/instituciones/coordinadores',
-    children: [],
-  },
-  {
     id: 'especialistas',
     label: 'Especialistas',
     icon: <Users className="h-[18px] w-[18px]" />,

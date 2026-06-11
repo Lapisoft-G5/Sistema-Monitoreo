@@ -1,0 +1,45 @@
+import { Users, BadgeCheck, UserCog, Briefcase } from 'lucide-react';
+import type { Docente } from '@entities/model-docentes';
+import { StatCard } from '@shared/ui/Stat-Card';
+
+interface Props {
+  directores: Docente[];
+}
+
+export const DirectoresStatsWidget = ({ directores }: Props) => {
+  const total = directores.length;
+  const asignados = directores.filter((d) => d.condicion === 'Asignado').length;
+  const encargados = directores.filter((d) => d.condicion === 'Encargado').length;
+  const porFuncion = directores.filter((d) => d.condicion === 'Por función').length;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <StatCard
+        title="Total Directores"
+        icon={<Users className="w-5 h-5 text-primary" strokeWidth={2} />}
+        value={total}
+        trendText={`${total} registrados en el padrón`}
+      />
+      <StatCard
+        title="Asignados"
+        icon={<BadgeCheck className="w-5 h-5 text-green-500" strokeWidth={2} />}
+        value={asignados}
+        trendText="Con plaza asignada"
+        trendType="success"
+      />
+      <StatCard
+        title="Encargados"
+        icon={<UserCog className="w-5 h-5 text-amber-500" strokeWidth={2} />}
+        value={encargados}
+        trendText="Encargatura vigente"
+        trendType="warning"
+      />
+      <StatCard
+        title="Por Función"
+        icon={<Briefcase className="w-5 h-5 text-blue-500" strokeWidth={2} />}
+        value={porFuncion}
+        trendText="Designado por función"
+      />
+    </div>
+  );
+};

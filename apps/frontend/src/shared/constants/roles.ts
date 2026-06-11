@@ -2,6 +2,7 @@ export type UserRole =
   | 'director_ugel'
   | 'jefe_area'
   | 'jefe_gestion'
+  | 'coordinador_pedagogico' // 🚀 Agregado para solucionar el error de TypeScript
   | 'especialista'
   | 'director_institucion'
   | 'docente'
@@ -10,6 +11,7 @@ export type UserRole =
 export const ROLE_LABELS: Record<UserRole, string> = {
   director_ugel: 'Director UGEL',
   jefe_area: 'Jefe de Área',
+  coordinador_pedagogico: 'Coordinador Pedagógico', // 🚀 Corregido la etiqueta
   jefe_gestion: 'Jefe de Gestión',
   especialista: 'Especialista',
   director_institucion: 'Director de Institución',
@@ -28,6 +30,7 @@ export type MenuItem =
   | 'instituciones_docentes'
   | 'instituciones_coordinadores'
   | 'especialistas'
+  | 'jefes_area'
   | 'reportes'
   | 'configuracion';
 
@@ -40,7 +43,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   jefe_area: ['instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores'],
 
-  especialista: ['monitoreo', 'monitoreo_reportes', 'reportes'],
+  coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', 'jefes_area', 'reportes'],
+
+  especialista: ['monitoreo', 'monitoreo_reportes', 'reportes'], // 🚀 Se eliminó la duplicación aquí
 
   director_institucion: [
     'instituciones_docentes',

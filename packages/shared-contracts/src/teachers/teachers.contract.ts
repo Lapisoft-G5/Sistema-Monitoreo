@@ -11,6 +11,7 @@ export interface ICreateDocenteRequest {
   cargoId: string;
   condicionLaboral?: string;
   escalaMagisterial?: number;
+  secciones?: { grado: string; seccion: string }[];
 }
 
 export interface IUpdateDocenteRequest {
@@ -25,6 +26,7 @@ export interface IUpdateDocenteRequest {
   condicionLaboral?: string;
   escalaMagisterial?: number;
   institucionId?: string;
+  secciones?: { grado: string; seccion: string }[];
 }
 
 export interface IDocenteResponse {
@@ -56,6 +58,11 @@ export interface IDocenteResponse {
       id: string;
       nombre: string;
     };
+  }>;
+  docenteSecciones?: Array<{
+    id: string;
+    grado: string;
+    seccion: string;
   }>;
 }
 

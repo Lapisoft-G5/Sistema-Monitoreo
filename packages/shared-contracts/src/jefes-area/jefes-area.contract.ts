@@ -1,13 +1,9 @@
-export interface IEspecialistaResponse {
+export interface IJefeAreaResponse {
   id: string;
   personaId: string;
-  especialidad: string;
+  cargaHoraria: number;
   nivelEducativo: string;
   estado: string;
-  cargaLaboral?: number;
-  cargo?: string;
-  condicionLaboral?: string;
-  escalaMagisterial?: number | null;
   createdAt: Date;
   updatedAt: Date;
   persona: {
@@ -27,38 +23,29 @@ export interface IEspecialistaResponse {
   };
 }
 
-export interface IQueryEspecialistaRequest {
+export interface IQueryJefeAreaRequest {
   estado?: string;
-  especialidad?: string;
   nivelEducativo?: string;
 }
 
-export interface ICreateEspecialistaRequest {
+export interface ICreateJefeAreaRequest {
   dni: string;
   nombres: string;
   apellidos: string;
   correo?: string;
   telefono?: string;
-  especialidad: string;
+  cargaHoraria: number;
   nivelEducativo: string;
   rolCode: string;
-  cargo?: string;
-  condicionLaboral?: string;
-  cargaLaboral?: number;
-  escalaMagisterial?: number | null;
 }
 
-export interface IUpdateEspecialistaRequest {
+export interface IUpdateJefeAreaRequest {
   nombres: string;
   apellidos: string;
   correo?: string;
   telefono?: string;
-  especialidad: string;
+  cargaHoraria: number;
   nivelEducativo: string;
   estado: string;
   rolCode: string;
-  cargo?: string;
-  condicionLaboral?: string;
-  cargaLaboral?: number;
-  escalaMagisterial?: number | null;
 }

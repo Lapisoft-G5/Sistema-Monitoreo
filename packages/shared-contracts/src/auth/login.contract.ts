@@ -13,6 +13,8 @@ export interface ILoginResponse {
     apellidos: string;
     role: string;
     institucion?: string;
+    institucionNombre?: string;
+    institucionNivel?: string;
     distrito?: string;
     firstLogin: boolean;
   };

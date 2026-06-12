@@ -8,8 +8,14 @@ import {
   IsInt,
   Length,
   Matches,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { IUpdateDocenteRequest } from '@sistema-monitoreo/shared-contracts';
+import { SeccionDto } from './create-docente.dto.js';
+
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateDocenteDto implements IUpdateDocenteRequest {
   @IsString()
@@ -63,4 +69,11 @@ export class UpdateDocenteDto implements IUpdateDocenteRequest {
   @IsOptional()
   @IsUUID('4', { message: 'El ID de la institución debe ser un UUID v4 válido' })
   institucionId?: string;
+
+  @ApiProperty({ type: () => [SeccionDto], required: false })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SeccionDto)
+  secciones?: SeccionDto[];
 }

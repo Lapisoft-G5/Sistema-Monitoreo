@@ -46,7 +46,11 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
     condicion: (apiDoc.condicionLaboral || 'Nombrado') as Docente['condicion'],
     especialidad: apiDoc.cursoAsignado || 'General',
     cargaHoraria: 30,
-    secciones: [],
+    secciones: apiDoc.docenteSecciones?.map((ds) => ({
+      id: ds.id,
+      grado: ds.grado,
+      seccion: ds.seccion,
+    })) || [],
     escala: (apiDoc.escalaMagisterial ? MAP_INT_TO_ROMAN[apiDoc.escalaMagisterial] : 'I') as Docente['escala'],
     institucionId: apiDoc.institucionId,
     activo: apiDoc.estado === 'Activo',
@@ -89,6 +93,10 @@ export const useDocenteService = () => {
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
         escalaMagisterial: MAP_ROMAN_TO_INT[formData.escala] || 1,
+        secciones: formData.secciones?.map((s) => ({
+          grado: s.grado,
+          seccion: s.seccion.toUpperCase().trim(),
+        })),
       };
 
       const res = await teachersApi.create(dto);
@@ -137,6 +145,10 @@ export const useDocenteService = () => {
         condicionLaboral: formData.condicion,
         escalaMagisterial: MAP_ROMAN_TO_INT[formData.escala] || 1,
         institucionId: formData.institucionId,
+        secciones: formData.secciones?.map((s) => ({
+          grado: s.grado,
+          seccion: s.seccion.toUpperCase().trim(),
+        })),
       };
 
       const res = await teachersApi.update(id, dto);

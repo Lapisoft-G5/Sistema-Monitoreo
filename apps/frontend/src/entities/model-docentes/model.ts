@@ -6,8 +6,9 @@ export type CondicionDirectiva = 'Asignado' | 'Encargado' | 'Por función';
 export type EscalaMagisterial = 'I' | 'II' | 'III' | 'IV' | 'V' | 'VI' | 'VII' | 'VIII';
 
 export interface SeccionDocente {
-  id: string;
-  grado: string; // Ej. "4to A", "3ro B"
+  id?: string;
+  grado: string;
+  seccion: string;
 }
 
 export type NivelEducativo = 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA';

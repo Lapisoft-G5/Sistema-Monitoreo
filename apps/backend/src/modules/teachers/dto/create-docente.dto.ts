@@ -8,8 +8,25 @@ import {
   MaxLength,
   IsUUID,
   IsInt,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ICreateDocenteRequest } from '@sistema-monitoreo/shared-contracts';
+
+import { ApiProperty } from '@nestjs/swagger';
+
+export class SeccionDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty({ message: 'El grado es requerido' })
+  grado!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty({ message: 'La sección es requerida' })
+  seccion!: string;
+}
 
 export class CreateDocenteDto implements ICreateDocenteRequest {
   @IsString()
@@ -69,4 +86,11 @@ export class CreateDocenteDto implements ICreateDocenteRequest {
   @IsOptional()
   @IsInt()
   escalaMagisterial?: number;
+
+  @ApiProperty({ type: () => [SeccionDto], required: false })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SeccionDto)
+  secciones?: SeccionDto[];
 }

@@ -25,7 +25,7 @@ export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 
         d.dni.includes(searchQuery);
 
       const matchCondicion = !condicionFilter || d.condicion === condicionFilter;
-      const matchSeccion = !seccionFilter || (d.secciones || []).some((s) => s.grado === seccionFilter);
+      const matchSeccion = !seccionFilter || (d.secciones || []).some((s) => `${s.grado} "${s.seccion}"` === seccionFilter);
       const matchNivel = !nivelFilter || d.nivelEducativo?.toUpperCase() === nivelFilter.toUpperCase();
 
       return matchSearch && matchCondicion && matchSeccion && matchNivel;

@@ -18,6 +18,7 @@ type DocenteWithRelations = Prisma.DocenteGetPayload<{
         curso: true;
       };
     };
+    docenteSecciones: true;
   };
 }>;
 
@@ -56,6 +57,11 @@ export class PrismaTeachersRepository implements TeachersRepository {
           nombre: dc.cargo.nombre,
         },
       })),
+      docenteSecciones: docente.docenteSecciones?.map((ds) => ({
+        id: ds.id,
+        grado: ds.grado,
+        seccion: ds.seccion,
+      })) || [],
     };
   }
 
@@ -73,6 +79,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
             curso: true,
           },
         },
+        docenteSecciones: true,
       },
     });
     if (!docente) return null;
@@ -101,6 +108,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
             curso: true,
           },
         },
+        docenteSecciones: true,
       },
     });
     return list.map((d) => this.mapDocente(d));
@@ -120,6 +128,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
             curso: true,
           },
         },
+        docenteSecciones: true,
       },
     });
     return this.mapDocente(docente);
@@ -257,6 +266,17 @@ export class PrismaTeachersRepository implements TeachersRepository {
         },
       });
 
+      // Registrar secciones asignadas si se proporcionan
+      if (dto.secciones && dto.secciones.length > 0) {
+        await tx.docenteSeccion.createMany({
+          data: dto.secciones.map((s) => ({
+            docenteId: docente.id,
+            grado: s.grado,
+            seccion: s.seccion,
+          })),
+        });
+      }
+
       const isDirectorCargo = cargo?.nombre === 'Director';
       const roleCode = isDirectorCargo ? 'director_institucion' : 'docente';
       const role = await tx.role.findUnique({
@@ -296,6 +316,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
           docenteCursos: {
             include: { curso: true },
           },
+          docenteSecciones: true,
         },
       });
 
@@ -398,6 +419,21 @@ export class PrismaTeachersRepository implements TeachersRepository {
         });
       }
 
+      // Actualizar secciones asignadas
+      await tx.docenteSeccion.deleteMany({
+        where: { docenteId: id },
+      });
+
+      if (dto.secciones && dto.secciones.length > 0) {
+        await tx.docenteSeccion.createMany({
+          data: dto.secciones.map((s) => ({
+            docenteId: id,
+            grado: s.grado,
+            seccion: s.seccion,
+          })),
+        });
+      }
+
       // D. Manejo de cargo activo e histórico
       if (!activeCargo || activeCargo.cargoId !== dto.cargoId) {
         // Finalizar el cargo anterior si existe
@@ -449,6 +485,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
           docenteCursos: {
             include: { curso: true },
           },
+          docenteSecciones: true,
         },
       });
 

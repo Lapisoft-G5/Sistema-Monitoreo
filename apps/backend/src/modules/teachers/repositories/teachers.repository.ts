@@ -31,6 +31,11 @@ export interface DocenteEntity {
       nombre: string;
     };
   }>;
+  docenteSecciones?: Array<{
+    id: string;
+    grado: string;
+    seccion: string;
+  }>;
 }
 
 export interface DocenteFilter {

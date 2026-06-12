@@ -143,7 +143,7 @@ export const DocentesTableWidget = ({
                           variant="outline"
                           className="text-[0.7rem] py-0.5 px-2.5 font-bold bg-muted/40 text-text border-border"
                         >
-                          {sec.grado}
+                          {sec.grado} "{sec.seccion}"
                         </Badge>
                       ))}
                       {(doc.secciones || []).length === 0 && (

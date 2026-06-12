@@ -115,7 +115,13 @@ const MOCK_PERMISOS = [
 const MOCK_ROL_PERMISOS = {
   director_ugel: ['dashboard:read', 'reports:read'],
   jefe_gestion: ['especialistas:read', 'especialistas:write', 'jefes_area:write', 'monitoreo:execute', 'reports:read'],
-  jefe_area: ['directores:write', 'instituciones:read', 'instituciones:write'],
+  jefe_area: [
+    'directores:write', 
+    'instituciones:read', 
+    'instituciones:write',
+    'docentes:read',
+    'docentes:write',
+  ],
   especialista: ['monitoreo:execute', 'reports:read'],
   director_institucion: ['docentes:read', 'docentes:write', 'reports:read'],
   docente: ['reports:own'],

@@ -55,6 +55,7 @@ describe('InstitutionsService', () => {
   describe('create', () => {
     const dto = new CreateInstitucionDto();
     dto.codigoModular = '1234567';
+    dto.codigoLocal = '12345678';
     dto.nombre = 'Test IE';
 
     it('should create institution if codigoModular is unique', async () => {

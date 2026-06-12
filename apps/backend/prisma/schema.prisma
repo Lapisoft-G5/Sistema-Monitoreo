@@ -197,6 +197,7 @@ model Especialista {
 model InstitucionEducativa {
   id             String   @id @default(uuid()) @db.Uuid
   codigoModular  String   @unique @map("codigo_modular") @db.VarChar(7)
+  codigoLocal    String   @map("codigo_local") @db.VarChar(8)
   nombre         String   @db.VarChar(100)
   nivelEducativo String   @map("nivel_educativo") @db.VarChar(50)
   departamento   String   @default("Puno") @db.VarChar(50)
@@ -205,6 +206,7 @@ model InstitucionEducativa {
   direccion      String   @db.VarChar(150)
   zona           String   @db.VarChar(20)
   estado         String   @default("Activa") @db.VarChar(20)
+  modalidad      String?  @map("modalidad") @db.VarChar(50)
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 

@@ -1,5 +1,6 @@
 export interface ICreateInstitucionRequest {
   codigoModular: string;
+  codigoLocal: string;
   nombre: string;
   nivelEducativo: string;
   departamento?: string;
@@ -8,11 +9,13 @@ export interface ICreateInstitucionRequest {
   direccion: string;
   zona: string;
   estado?: string;
+  modalidad?: string | null;
 }
 
 export interface IInstitucionResponse {
   id: string;
   codigoModular: string;
+  codigoLocal: string;
   nombre: string;
   nivelEducativo: string;
   departamento: string;
@@ -23,4 +26,5 @@ export interface IInstitucionResponse {
   estado: string;
   createdAt: string | Date;
   updatedAt: string | Date;
+  modalidad?: string | null;
 }

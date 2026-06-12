@@ -15,6 +15,7 @@ export interface IEspecialistaResponse {
     nombres: string;
     apellidos: string;
     correo: string | null;
+    telefono: string | null;
   };
   user?: {
     id: string;
@@ -36,6 +37,7 @@ export interface ICreateEspecialistaRequest {
   nombres: string;
   apellidos: string;
   correo?: string;
+  telefono?: string;
   especialidad: string;
   nivelEducativo: string;
   rolCode: string;
@@ -47,6 +49,7 @@ export interface IUpdateEspecialistaRequest {
   nombres: string;
   apellidos: string;
   correo?: string;
+  telefono?: string;
   especialidad: string;
   nivelEducativo: string;
   estado: string;

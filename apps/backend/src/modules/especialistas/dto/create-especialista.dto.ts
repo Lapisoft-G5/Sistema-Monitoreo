@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
 import type { ICreateEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
 
 export class CreateEspecialistaDto implements ICreateEspecialistaRequest {
@@ -18,6 +18,12 @@ export class CreateEspecialistaDto implements ICreateEspecialistaRequest {
   @IsEmail()
   @IsOptional()
   correo?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(9, 9, { message: 'El celular debe tener exactamente 9 dígitos' })
+  @Matches(/^\d{9}$/, { message: 'El celular debe contener solo números' })
+  telefono?: string;
 
   @IsString()
   @IsNotEmpty()

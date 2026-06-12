@@ -48,6 +48,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         nombres: esp.persona.nombres,
         apellidos: esp.persona.apellidos,
         correo: esp.persona.correo,
+        telefono: esp.persona.telefono,
       },
       user: esp.persona.usuario
         ? {
@@ -117,6 +118,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           nombres: data.nombres,
           apellidos: data.apellidos,
           correo: data.correo || null,
+          telefono: data.telefono || null,
         },
       });
 
@@ -181,7 +183,8 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         data: {
           nombres: data.nombres,
           apellidos: data.apellidos,
-          correo: data.correo || null,
+          correo: data.correo !== undefined ? (data.correo || null) : undefined,
+          telefono: data.telefono !== undefined ? (data.telefono || null) : undefined,
         },
       });
 

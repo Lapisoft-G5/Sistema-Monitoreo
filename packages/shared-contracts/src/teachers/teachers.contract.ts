@@ -3,6 +3,7 @@ export interface ICreateDocenteRequest {
   nombres: string;
   apellidos: string;
   correo?: string;
+  telefono?: string;
   institucionId: string;
   gradoAcademico?: string;
   nivelEducativo: string;
@@ -16,12 +17,14 @@ export interface IUpdateDocenteRequest {
   nombres: string;
   apellidos: string;
   correo?: string;
+  telefono?: string;
   gradoAcademico?: string;
   nivelEducativo: string;
   cursoAsignado?: string;
   cargoId: string;
   condicionLaboral?: string;
   escalaMagisterial?: number;
+  institucionId?: string;
 }
 
 export interface IDocenteResponse {
@@ -42,6 +45,7 @@ export interface IDocenteResponse {
     nombres: string;
     apellidos: string;
     correo: string | null;
+    telefono: string | null;
   };
   docenteCargos: Array<{
     id: string;

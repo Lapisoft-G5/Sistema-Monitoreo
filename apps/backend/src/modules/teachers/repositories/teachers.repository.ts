@@ -19,6 +19,7 @@ export interface DocenteEntity {
     nombres: string;
     apellidos: string;
     correo: string | null;
+    telefono: string | null;
   };
   docenteCargos: Array<{
     id: string;

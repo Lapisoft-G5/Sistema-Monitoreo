@@ -23,7 +23,7 @@ export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Esp
     apellidos: apiEsp.persona.apellidos,
     dni: apiEsp.persona.dni,
     correo: apiEsp.persona.correo || '',
-    celular: '999999999',
+    celular: apiEsp.persona.telefono || '',
     especialidad: apiEsp.especialidad || '',
     rol,
     niveles: apiEsp.nivelEducativo
@@ -63,7 +63,8 @@ export const useEspecialistaService = () => {
         dni: formData.dni,
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        correo: formData.correo.trim(),
+        correo: formData.correo.trim() || undefined,
+        telefono: formData.celular.trim() || undefined,
         especialidad: formData.especialidad?.trim() || 'General',
         nivelEducativo: formData.niveles.join(', '),
         rolCode,
@@ -109,7 +110,8 @@ export const useEspecialistaService = () => {
       const dto = {
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        correo: formData.correo.trim(),
+        correo: formData.correo.trim() || undefined,
+        telefono: formData.celular.trim() || undefined,
         especialidad: formData.especialidad?.trim() || 'General',
         nivelEducativo: formData.niveles.join(', '),
         estado: formData.activo ?? true ? 'Activo' : 'Inactivo',

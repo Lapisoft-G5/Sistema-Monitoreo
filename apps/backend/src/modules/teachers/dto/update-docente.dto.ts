@@ -6,6 +6,8 @@ import {
   MaxLength,
   IsUUID,
   IsInt,
+  Length,
+  Matches,
 } from 'class-validator';
 import { IUpdateDocenteRequest } from '@sistema-monitoreo/shared-contracts';
 
@@ -24,6 +26,12 @@ export class UpdateDocenteDto implements IUpdateDocenteRequest {
   @IsEmail({}, { message: 'Debe proporcionar un correo electrónico válido' })
   @MaxLength(255, { message: 'El correo electrónico no puede exceder los 255 caracteres' })
   correo?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(9, 9, { message: 'El celular debe tener exactamente 9 dígitos' })
+  @Matches(/^\d{9}$/, { message: 'El celular debe contener solo números' })
+  telefono?: string;
 
   @IsOptional()
   @IsString()

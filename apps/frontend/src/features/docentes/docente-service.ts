@@ -41,7 +41,7 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
     apellidos: apiDoc.persona.apellidos,
     dni: apiDoc.persona.dni,
     correo: apiDoc.persona.correo || '',
-    celular: '999999999',
+    celular: apiDoc.persona.telefono || '',
     nivelEducativo: (apiDoc.nivelEducativo?.toUpperCase() || 'PRIMARIA') as NivelEducativo,
     condicion: (apiDoc.condicionLaboral || 'Nombrado') as Docente['condicion'],
     especialidad: apiDoc.cursoAsignado || 'General',
@@ -80,7 +80,8 @@ export const useDocenteService = () => {
         dni: formData.dni,
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        correo: formData.correo.trim(),
+        correo: formData.correo.trim() || undefined,
+        telefono: formData.celular.trim() || undefined,
         institucionId: formData.institucionId,
         gradoAcademico: 'Licenciado',
         nivelEducativo: toTitleCase(formData.nivelEducativo),
@@ -127,13 +128,15 @@ export const useDocenteService = () => {
       const dto = {
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        correo: formData.correo.trim(),
+        correo: formData.correo.trim() || undefined,
+        telefono: formData.celular.trim() || undefined,
         gradoAcademico: 'Licenciado',
         nivelEducativo: toTitleCase(formData.nivelEducativo),
         cursoAsignado: formData.especialidad.trim(),
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
         escalaMagisterial: MAP_ROMAN_TO_INT[formData.escala] || 1,
+        institucionId: formData.institucionId,
       };
 
       const res = await teachersApi.update(id, dto);

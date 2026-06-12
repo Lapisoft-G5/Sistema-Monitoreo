@@ -17,7 +17,7 @@ export const institucionSchema = z.object({
   nivel: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA']),
   distrito: z.string().min(2, 'Debe seleccionar un distrito'),
   director: z.string().nullable(), // Permitimos que no tenga director
-  estado: z.enum(['Satisfactorio', 'En Proceso', 'Crítico']),
+  estado: z.enum(['Activa', 'Inactiva']),
   provincia: z.string().optional(),
   zona: z.enum(['Urbana', 'Rural']).optional(),
   directorTelefono: z
@@ -49,6 +49,6 @@ export const institucionValidator = {
    * Verifica si la institución está en estado de riesgo
    */
   isCritical: (inst: Institucion): boolean => {
-    return inst.estado === 'Crítico';
+    return inst.estado === 'Inactiva';
   }
 };

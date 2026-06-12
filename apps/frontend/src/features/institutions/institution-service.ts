@@ -27,7 +27,7 @@ export const mapApiInstitucionToFrontend = (apiInst: IInstitucionResponse): Inst
     directorCorreo: apiInst.directorCorreo || undefined,
     directorDni: apiInst.directorDni || undefined,
     activo: apiInst.estado === 'Activa',
-    estado: apiInst.estado === 'Activa' ? 'Satisfactorio' : 'Crítico',
+    estado: apiInst.estado === 'Activa' ? 'Activa' : 'Inactiva',
   };
 };
 

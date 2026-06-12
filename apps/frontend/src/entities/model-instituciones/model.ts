@@ -1,5 +1,5 @@
 export type Nivel = 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA';
-export type EstadoMonitoreo = 'Satisfactorio' | 'En Proceso' | 'Crítico';
+export type EstadoInstitucion = 'Activa' | 'Inactiva';
 
 export interface Institucion {
   id: string;
@@ -10,7 +10,7 @@ export interface Institucion {
   nivel: Nivel;
   distrito: string;
   director: string | null; // null = sin asignar
-  estado: EstadoMonitoreo;
+  estado: EstadoInstitucion;
   provincia?: string;
   zona?: string;
   directorTelefono?: string;

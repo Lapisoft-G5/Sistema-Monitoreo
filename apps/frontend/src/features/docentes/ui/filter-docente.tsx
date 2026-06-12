@@ -38,7 +38,7 @@ export const FilterDocentes = () => {
 
   // Obtener secciones únicas ordenadas de los docentes en mocks filtrados por nivel
   const seccionesOptions = Array.from(
-    new Set(filteredDocentes.flatMap((d) => (d.secciones || []).map((s) => `${s.grado} "${s.seccion}"`)))
+    new Set(filteredDocentes.flatMap((d) => (d.secciones || []).map((s) => `${s.grado} ${s.seccion}`)))
   ).sort();
 
   return (

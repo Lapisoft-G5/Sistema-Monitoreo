@@ -174,6 +174,7 @@ export const DirectorFormBase = ({
             ]}
             placeholder="Seleccione Nivel"
             error={showError('nivelEducativo')}
+            disabled
           />
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>

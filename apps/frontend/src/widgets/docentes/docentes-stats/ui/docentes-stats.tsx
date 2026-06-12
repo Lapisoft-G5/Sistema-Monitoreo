@@ -9,7 +9,7 @@ interface Props {
 
 export const DocentesStatsWidget = ({ docentes }: Props) => {
   const { user } = useUser();
-  const isDirectorIe = user?.role === 'director_institucion';
+  const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
 
   const total = docentes.length || 1;
   const nombrados = docentes.filter((d) => d.condicion === 'Nombrado').length;

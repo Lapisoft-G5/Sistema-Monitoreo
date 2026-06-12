@@ -60,6 +60,111 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     };
   }
 
+  private async assignDirector(institucionId: string, directorDni?: string | null): Promise<void> {
+    const now = new Date();
+
+    // 1. Obtener la I.E. con su director actual
+    const currentInst = await this.prisma.institucionEducativa.findUnique({
+      where: { id: institucionId },
+      include: this.includeDocenteDirector,
+    });
+
+    // Encontrar un docente con el cargo activo de "Director"
+    const currentDirectorDocente = currentInst?.docentes?.find((d: any) =>
+      d.docenteCargos?.some((dc: any) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
+    ) || null;
+
+    // 2. Obtener el catálogo del cargo 'Director'
+    const directorCargo = await this.prisma.cargo.findFirst({
+      where: { nombre: 'Director' },
+    });
+
+    if (!directorCargo) {
+      return; // Si no existe el catálogo, no procedemos
+    }
+
+    if (directorDni) {
+      // Buscar la persona y su relación como docente
+      const newDirectorPersona = await this.prisma.persona.findUnique({
+        where: { dni: directorDni },
+        include: { docente: true },
+      });
+
+      const newDirectorDocente = newDirectorPersona?.docente || null;
+
+      if (!newDirectorDocente) {
+        throw new Error(`No se encontró un docente registrado con el DNI ${directorDni}`);
+      }
+
+      // Si es el mismo director, no hacemos cambios
+      if (currentDirectorDocente && currentDirectorDocente.id === newDirectorDocente.id) {
+        return;
+      }
+
+      // Si había un director anterior, finalizamos su cargo activo
+      if (currentDirectorDocente) {
+        await this.prisma.docenteCargo.updateMany({
+          where: {
+            docenteId: currentDirectorDocente.id,
+            cargo: {
+              nombre: {
+                in: ['Director', 'Coordinador Pedagógico'],
+              },
+            },
+            fechaFin: null,
+          },
+          data: {
+            fechaFin: now,
+          },
+        });
+      }
+
+      // Vinculamos al nuevo docente con la institución
+      await this.prisma.docente.update({
+        where: { id: newDirectorDocente.id },
+        data: { institucionId },
+      });
+
+      // Finalizamos cualquier cargo activo que tenga el nuevo director actualmente
+      await this.prisma.docenteCargo.updateMany({
+        where: {
+          docenteId: newDirectorDocente.id,
+          fechaFin: null,
+        },
+        data: {
+          fechaFin: now,
+        },
+      });
+
+      // Asignamos el cargo de director activo al nuevo docente
+      await this.prisma.docenteCargo.create({
+        data: {
+          docenteId: newDirectorDocente.id,
+          cargoId: directorCargo.id,
+          fechaInicio: now,
+        },
+      });
+    } else {
+      // Si el DNI es explícitamente nulo (limpiar director)
+      if (currentDirectorDocente) {
+        await this.prisma.docenteCargo.updateMany({
+          where: {
+            docenteId: currentDirectorDocente.id,
+            cargo: {
+              nombre: {
+                in: ['Director', 'Coordinador Pedagógico'],
+              },
+            },
+            fechaFin: null,
+          },
+          data: {
+            fechaFin: now,
+          },
+        });
+      }
+    }
+  }
+
   async create(data: CreateInstitucionDto): Promise<Institucion> {
     const { directorDni, ...createData } = data;
     const record = await this.prisma.institucionEducativa.create({
@@ -80,15 +185,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     });
 
     if (directorDni) {
-      const directorPersona = await this.prisma.persona.findUnique({
-        where: { dni: directorDni },
-      });
-      if (directorPersona) {
-        await this.prisma.docente.update({
-          where: { personaId: directorPersona.id },
-          data: { institucionId: record.id },
-        });
-      }
+      await this.assignDirector(record.id, directorDni);
     }
 
     const reloaded = await this.prisma.institucionEducativa.findUnique({
@@ -120,16 +217,8 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
   async update(id: string, data: UpdateInstitucionDto): Promise<Institucion> {
     const { directorDni, ...updateData } = data;
 
-    if (directorDni) {
-      const directorPersona = await this.prisma.persona.findUnique({
-        where: { dni: directorDni },
-      });
-      if (directorPersona) {
-        await this.prisma.docente.update({
-          where: { personaId: directorPersona.id },
-          data: { institucionId: id },
-        });
-      }
+    if (directorDni !== undefined) {
+      await this.assignDirector(id, directorDni);
     }
 
     const record = await this.prisma.institucionEducativa.update({

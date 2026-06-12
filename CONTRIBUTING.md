@@ -136,6 +136,26 @@ git rebase origin/develop
 
 > **Preferir `rebase` sobre `merge`** para mantener el historial limpio y lineal.
 
+## Limpieza post-Merge (Obligatorio)
+
+Una vez que tu Pull Request haya sido aprobado y fusionado (merged) en `develop`, **está estrictamente prohibido seguir usando esa rama**. Debes eliminarla para mantener tu entorno limpio y evitar conflictos futuros.
+
+Ejecuta estos comandos en tu terminal inmediatamente después del merge:
+
+```bash
+# 1. Regresa a la rama principal
+git checkout develop
+
+# 2. Actualiza tu develop local con los cambios que acaban de entrar
+git pull origin develop
+
+# 3. Elimina tu rama local obsoleta
+git branch -d feature/<nombre-corto>
+
+# 4. Limpia las referencias a ramas remotas que ya no existen
+git fetch -p
+```
+
 ---
 
 ## 5. Estándar de commits
@@ -226,7 +246,6 @@ git commit -m "actualizacion del codigo"
 ### Template de MR
 
 El repositorio ya incluye un template en [`.github/pull_request_template.md`](.github/pull_request_template.md).
-Complétalo siempre que abras una MR.
 
 ### Reglas de revisión
 

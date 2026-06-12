@@ -16,7 +16,10 @@ export const useInstitutionsTable = (instituciones: Institucion[]) => {
     return instituciones.filter((i) => {
       return (!nivelFilter || i.nivel === nivelFilter) &&
              (!distritoFilter || i.distrito === distritoFilter) &&
-             (!estadoFilter || i.estado === estadoFilter);
+             (!estadoFilter || 
+               (estadoFilter.toLowerCase().startsWith('activ') && i.estado.toLowerCase().startsWith('activ')) ||
+               (estadoFilter.toLowerCase().startsWith('inactiv') && i.estado.toLowerCase().startsWith('inactiv')) ||
+               i.estado.toLowerCase() === estadoFilter.toLowerCase());
     });
   }, [instituciones, nivelFilter, distritoFilter, estadoFilter]);
 

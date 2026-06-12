@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { Especialista } from '@entities/model-especialistas';
+import type { Especialista, NivelInstitucion } from '@entities/model-especialistas';
 
 const PAGE_SIZE = 10;
 
@@ -8,7 +8,7 @@ export const useEspecialistasTable = (especialistas: Especialista[]) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const searchQuery = searchParams.get('search') || '';
-  const rolFilter = searchParams.get('rol') || '';
+  const nivelFilter = searchParams.get('nivel') || '';
   const estadoFilter = searchParams.get('estado') || '';
   const pageParam = parseInt(searchParams.get('page') || '1', 10);
 
@@ -19,17 +19,17 @@ export const useEspecialistasTable = (especialistas: Especialista[]) => {
         e.nombres.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.apellidos.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.dni.includes(searchQuery) ||
-        e.especialidad.toLowerCase().includes(searchQuery.toLowerCase());
+        (e.especialidad || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchRol = !rolFilter || e.rol === rolFilter;
+      const matchNivel = !nivelFilter || e.niveles.includes(nivelFilter as NivelInstitucion);
       
       const matchEstado =
         !estadoFilter ||
         (estadoFilter === 'Activo' ? e.activo : !e.activo);
 
-      return matchSearch && matchRol && matchEstado;
+      return matchSearch && matchNivel && matchEstado;
     });
-  }, [especialistas, searchQuery, rolFilter, estadoFilter]);
+  }, [especialistas, searchQuery, nivelFilter, estadoFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(pageParam, totalPages);

@@ -21,11 +21,12 @@ export const useEspecialistaService = () => {
         dni: formData.dni,
         correo: formData.correo.trim(),
         celular: formData.celular,
-        especialidad: formData.especialidad.trim(),
+        especialidad: formData.especialidad?.trim() || '',
         rol: formData.rol,
         niveles: formData.niveles,
         activo: formData.activo ?? true,
         fechaCreacion: new Date().toISOString().split('T')[0],
+        cargaLaboral: formData.cargaLaboral,
       };
 
       MOCK_ESPECIALISTAS.push(newEspecialista);
@@ -53,11 +54,12 @@ export const useEspecialistaService = () => {
         dni: formData.dni,
         correo: formData.correo.trim(),
         celular: formData.celular,
-        especialidad: formData.especialidad.trim(),
+        especialidad: formData.especialidad?.trim() || '',
         rol: formData.rol,
         niveles: formData.niveles,
         activo: formData.activo ?? true,
         fechaCreacion: new Date().toISOString().split('T')[0],
+        cargaLaboral: formData.cargaLaboral,
       };
 
       const index = MOCK_ESPECIALISTAS.findIndex((e) => e.id === id);

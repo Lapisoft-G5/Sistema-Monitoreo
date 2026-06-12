@@ -10,20 +10,24 @@ import { DocenteDetailPage as DirectorDocenteDetailPage } from './DocenteDetailP
 
 export const DocenteListSwitcher = () => {
   const { user } = useUser();
-  return user?.role === 'director_institucion' ? <DocentesPage /> : <DirectoresPage />;
+  const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  return isDirector ? <DocentesPage /> : <DirectoresPage />;
 };
 
 export const DocenteCreateSwitcher = () => {
   const { user } = useUser();
-  return user?.role === 'director_institucion' ? <DirectorDocenteCreatePage /> : <JefeDocenteCreatePage />;
+  const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  return isDirector ? <DirectorDocenteCreatePage /> : <JefeDocenteCreatePage />;
 };
 
 export const DocenteEditSwitcher = () => {
   const { user } = useUser();
-  return user?.role === 'director_institucion' ? <DirectorDocenteEditPage /> : <JefeDocenteEditPage />;
+  const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  return isDirector ? <DirectorDocenteEditPage /> : <JefeDocenteEditPage />;
 };
 
 export const DocenteDetailSwitcher = () => {
   const { user } = useUser();
-  return user?.role === 'director_institucion' ? <DirectorDocenteDetailPage /> : <JefeDocenteDetailPage />;
+  const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  return isDirector ? <DirectorDocenteDetailPage /> : <JefeDocenteDetailPage />;
 };

@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { FastActions } from '@shared/ui/FastActions';
 import type { Docente, CondicionDirectiva } from '@entities/model-docentes';
 import { CONDICION_DIRECTIVA_COLOR, MOCK_DOCENTES } from '@entities/model-docentes';
 // Reutilizamos la lógica de filtros/paginación de docentes (mismo patrón del equipo).
 import { useDocentesTable } from '@widgets/docentes/docentes-table/lib/useTable';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Badge } from '@shared/ui/badge';
@@ -112,35 +111,12 @@ export const DirectoresTableWidget = ({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right pr-5">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onView(dir)}
-                        className="h-8 w-8 cursor-pointer rounded-lg text-text-muted hover:text-primary hover:bg-muted"
-                        title="Ver ficha"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit?.(dir)}
-                        className="h-8 w-8 cursor-pointer rounded-lg text-text-muted hover:text-blue-600 hover:bg-muted"
-                        title="Editar"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleting(dir)}
-                        className="h-8 w-8 cursor-pointer rounded-lg text-text-muted hover:text-destructive hover:bg-destructive/10"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <FastActions
+                      onView={() => onView(dir)}
+                      onEdit={onEdit ? () => onEdit(dir) : undefined}
+                      onDelete={() => setDeleting(dir)}
+                      viewTitle="Ver ficha"
+                    />
                   </TableCell>
                 </TableRow>
               ))}

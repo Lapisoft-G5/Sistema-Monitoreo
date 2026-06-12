@@ -31,6 +31,7 @@ export const EditJefeArea = () => {
     rol: jefe.rol,
     niveles: jefe.niveles,
     activo: jefe.activo,
+    cargaLaboral: jefe.cargaLaboral,
   };
 
   const handleFormSubmit = async (formData: EspecialistaFormData) => {
@@ -55,6 +56,7 @@ export const EditJefeArea = () => {
         onSubmit={handleFormSubmit}
         onCancel={() => navigate('/jefes-area')}
         isLoading={loading}
+        isJefeArea={true}
       />
     </Card>
   );

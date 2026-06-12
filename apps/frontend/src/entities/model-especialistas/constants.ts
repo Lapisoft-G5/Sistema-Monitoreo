@@ -2,7 +2,7 @@ import type { EspecialistaRol, NivelInstitucion } from './model';
 
 export const ROL_ESPECIALISTA_LABELS: Record<EspecialistaRol, string> = {
   especialista_admin: 'Especialista General (UGEL)',
-  especialista_medio: 'Especialista de Nivel',
+  especialista_medio: 'Especialista',
   especialista_bajo:  'Jefe de Área',
 };
 
@@ -10,9 +10,6 @@ export const NIVELES_INSTITUCION: NivelInstitucion[] = [
   'Inicial',
   'Primaria',
   'Secundaria',
-  'EBA',
-  'EBE',
-  'CEPROs',
 ];
 
 export const ROL_COLORS: Record<EspecialistaRol, string> = {

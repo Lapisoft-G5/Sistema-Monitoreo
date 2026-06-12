@@ -1,22 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, Eye, Edit, Trash } from 'lucide-react';
+import { FastActions } from '@shared/ui/FastActions';
 import type { Especialista } from '@entities/model-especialistas';
 import { ROL_COLORS, ROL_ESPECIALISTA_LABELS, MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
-// ✅ CORREGIDO: Ruta ajustada subiendo un nivel más debido a la nueva estructura de carpetas
 import { useEspecialistasTable } from '../../../especialistas/especialistas-table/lib/useTable'; 
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@shared/ui/dropdown-menu';
 import { Badge } from '@shared/ui/badge';
 
 interface JefesTableWidgetProps {
@@ -91,34 +82,15 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right pr-5">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-text-muted hover:text-text hover:bg-muted">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-[140px] z-50">
-                        <DropdownMenuItem onClick={() => onView(doc)} className="cursor-pointer flex items-center gap-2">
-                          <Eye className="h-4 w-4 text-text-muted" />
-                          <span>Ver ficha</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            if (onEdit) onEdit(doc);
-                            else navigate(`/jefes-area/${doc.id}/editar`);
-                          }}
-                          className="cursor-pointer flex items-center gap-2"
-                        >
-                          <Edit className="h-4 w-4 text-text-muted" />
-                          <span>Editar</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setDeletingDoc(doc)} className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive flex items-center gap-2">
-                          <Trash className="h-4 w-4" />
-                          <span>Eliminar</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <FastActions
+                      onView={() => onView(doc)}
+                      onEdit={() => {
+                        if (onEdit) onEdit(doc);
+                        else navigate(`/jefes-area/${doc.id}/editar`);
+                      }}
+                      onDelete={() => setDeletingDoc(doc)}
+                      viewTitle="Ver ficha"
+                    />
                   </TableCell>
                 </TableRow>
               ))}

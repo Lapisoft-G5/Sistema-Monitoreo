@@ -8,6 +8,8 @@ import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Card } from '@shared/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
+import { institutionsApi } from '@shared/api/institutions.api';
+import { Badge } from '@shared/ui/badge';
 
 interface InstitutionsTableWidgetProps {
   instituciones: Institucion[];
@@ -24,19 +26,54 @@ export const InstitutionsTableWidget = ({
 }: InstitutionsTableWidgetProps) => {
   const navigate = useNavigate();
   const [deletingInst, setDeletingInst] = useState<Institucion | null>(null);
+  const [restoringInst, setRestoringInst] = useState<Institucion | null>(null);
 
   // 🚀 Invocamos el cerebro matemático
   const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } =
     useInstitutionsTable(instituciones);
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deletingInst) return;
-    const index = MOCK_INSTITUCIONES.findIndex((i) => i.id === deletingInst.id);
-    if (index !== -1) {
-      MOCK_INSTITUCIONES.splice(index, 1);
+    try {
+      const res = await institutionsApi.softDelete(deletingInst.id);
+      if (res.ok) {
+        const index = MOCK_INSTITUCIONES.findIndex((i) => i.id === deletingInst.id);
+        if (index !== -1) {
+          MOCK_INSTITUCIONES[index].activo = false;
+        }
+        setInstituciones((prev) =>
+          prev.map((i) => (i.id === deletingInst.id ? { ...i, activo: false } : i))
+        );
+      } else {
+        alert('Error al dar de baja la institución.');
+      }
+    } catch (err) {
+      console.error('Connection error when deleting institution:', err);
+    } finally {
+      setDeletingInst(null);
     }
-    setInstituciones((prev) => prev.filter((i) => i.id !== deletingInst.id));
-    setDeletingInst(null);
+  };
+
+  const confirmRestore = async () => {
+    if (!restoringInst) return;
+    try {
+      const res = await institutionsApi.restore(restoringInst.id);
+      if (res.ok) {
+        const index = MOCK_INSTITUCIONES.findIndex((i) => i.id === restoringInst.id);
+        if (index !== -1) {
+          MOCK_INSTITUCIONES[index].activo = true;
+        }
+        setInstituciones((prev) =>
+          prev.map((i) => (i.id === restoringInst.id ? { ...i, activo: true } : i))
+        );
+      } else {
+        alert('Error al reactivar la institución.');
+      }
+    } catch (err) {
+      console.error('Connection error when restoring institution:', err);
+    } finally {
+      setRestoringInst(null);
+    }
   };
 
   return (
@@ -63,6 +100,9 @@ export const InstitutionsTableWidget = ({
                 </TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
                   Director
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Estado
                 </TableHead>
                 
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">
@@ -92,6 +132,17 @@ export const InstitutionsTableWidget = ({
                   <TableCell>
                     <DirectorCell director={inst.director} />
                   </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        inst.activo
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }
+                    >
+                      {inst.activo ? 'Activa' : 'Inactiva'}
+                    </Badge>
+                  </TableCell>
 
                   <TableCell className="text-right pr-5">
                     <FastActions
@@ -99,12 +150,15 @@ export const InstitutionsTableWidget = ({
                         onView(inst);
                         navigate(`/instituciones/${inst.id}`);
                       }}
-                      onEdit={() => {
+                      onEdit={inst.activo ? () => {
                         onEdit(inst);
                         navigate(`/instituciones/${inst.id}/editar`);
-                      }}
-                      onDelete={() => setDeletingInst(inst)}
+                      } : undefined}
+                      onDelete={inst.activo ? () => setDeletingInst(inst) : undefined}
+                      onRestore={!inst.activo ? () => setRestoringInst(inst) : undefined}
                       viewTitle="Ver detalle"
+                      restoreTitle="Reactivar institución"
+                      deleteTitle="Desactivar institución"
                     />
                   </TableCell>
                 </TableRow>
@@ -112,7 +166,7 @@ export const InstitutionsTableWidget = ({
 
               {pageItems.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-text-muted py-12">
+                  <TableCell colSpan={8} className="text-center text-text-muted py-12">
                     No se encontraron instituciones con los filtros seleccionados.
                   </TableCell>
                 </TableRow>
@@ -141,6 +195,17 @@ export const InstitutionsTableWidget = ({
           cancelLabel="Cancelar"
           onConfirm={confirmDelete}
           onCancel={() => setDeletingInst(null)}
+        />
+      )}
+
+      {restoringInst && (
+        <ConfirmModal
+          title="¿Reactivar Institución?"
+          message={`Esta acción reactivará el registro de la institución ${restoringInst.nombre}.`}
+          confirmLabel="Reactivar"
+          cancelLabel="Cancelar"
+          onConfirm={confirmRestore}
+          onCancel={() => setRestoringInst(null)}
         />
       )}
     </div>

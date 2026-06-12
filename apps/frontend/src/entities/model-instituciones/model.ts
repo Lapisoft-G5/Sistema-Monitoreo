@@ -15,5 +15,7 @@ export interface Institucion {
   zona?: string;
   directorTelefono?: string;
   directorCorreo?: string;
+  directorDni?: string;
   modalidad?: string;
+  activo?: boolean;
 }

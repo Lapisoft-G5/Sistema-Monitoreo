@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user'; // 🚀 Tu entidad de usuario limpia
-import { MOCK_INSTITUCIONES, type Institucion } from '@entities/model-instituciones';
+import type { Institucion } from '@entities/model-instituciones';
+import { institutionsApi } from '@shared/api/institutions.api';
+import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
 
 import { InstitutionProfileWidget } from '@widgets/institutions/ViewInstitution';
 
@@ -17,13 +19,24 @@ export const InstitutionDetailPage = () => {
   const isReadOnly = user?.role === 'especialista';
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const found = MOCK_INSTITUCIONES.find((i) => i.id === id);
-      setInstitucion(found || null);
-      setLoading(false);
-    }, 400); // Simulamos red
-
-    return () => clearTimeout(timer);
+    const fetchDetail = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const res = await institutionsApi.findById(id);
+        if (res.ok && res.data) {
+          setInstitucion(mapApiInstitucionToFrontend(res.data));
+        } else {
+          setInstitucion(null);
+        }
+      } catch (err) {
+        console.error('Error fetching details:', err);
+        setInstitucion(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
   }, [id]);
 
   if (loading) {

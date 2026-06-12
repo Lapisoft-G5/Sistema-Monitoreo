@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen, BadgeCheck } from 'lucide-react';
-import { MOCK_ESPECIALISTAS, type Especialista, ROL_ESPECIALISTA_LABELS } from '@entities/model-especialistas';
+import { type Especialista, ROL_ESPECIALISTA_LABELS } from '@entities/model-especialistas';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
+import { especialistasApi } from '@shared/api/especialistas.api';
+import { mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
 
 export const EspecialistaDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,13 +16,20 @@ export const EspecialistaDetailPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const found = MOCK_ESPECIALISTAS.find((e) => e.id === id);
-      setEspecialista(found || null);
+    const fetchDetail = async () => {
+      if (!id) return;
+      setLoading(true);
+      const res = await especialistasApi.findById(id);
+      if (res.ok && res.data) {
+        setEspecialista(mapApiEspecialistaToFrontend(res.data));
+      } else {
+        console.error('Error fetching specialist details:', res.error);
+        setEspecialista(null);
+      }
       setLoading(false);
-    }, 450);
+    };
 
-    return () => clearTimeout(timer);
+    fetchDetail();
   }, [id]);
 
   if (loading) {

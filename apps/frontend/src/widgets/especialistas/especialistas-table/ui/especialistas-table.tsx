@@ -10,6 +10,8 @@ import { Card } from '@shared/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { Badge } from '@shared/ui/badge';
 
+import { especialistasApi } from '@shared/api/especialistas.api';
+
 interface EspecialistasTableWidgetProps {
   especialistas: Especialista[];
   setEspecialistas: React.Dispatch<React.SetStateAction<Especialista[]>>;
@@ -29,14 +31,25 @@ export const EspecialistasTableWidget = ({
   const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } =
     useEspecialistasTable(especialistas);
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deletingDoc) return;
-    const index = MOCK_ESPECIALISTAS.findIndex((d) => d.id === deletingDoc.id);
-    if (index !== -1) {
-      MOCK_ESPECIALISTAS.splice(index, 1);
+    try {
+      const res = await especialistasApi.delete(deletingDoc.id);
+      if (res.ok) {
+        const index = MOCK_ESPECIALISTAS.findIndex((d) => d.id === deletingDoc.id);
+        if (index !== -1) {
+          MOCK_ESPECIALISTAS.splice(index, 1);
+        }
+        setEspecialistas((prev) => prev.filter((d) => d.id !== deletingDoc.id));
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al eliminar el registro de especialista.';
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error('Connection error when deleting specialist:', err);
+    } finally {
+      setDeletingDoc(null);
     }
-    setEspecialistas((prev) => prev.filter((d) => d.id !== deletingDoc.id));
-    setDeletingDoc(null);
   };
 
   return (

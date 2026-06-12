@@ -234,9 +234,26 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
       throw new NotFoundException(`Especialista con ID ${id} no encontrado.`);
     }
 
-    const [{ count }] = await this.prisma.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(*) as count FROM visitas_monitoreo WHERE especialista_id = ${id}::uuid
-    `;
+    let count = 0n;
+    try {
+      const result = await this.prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*) as count FROM visitas_monitoreo WHERE especialista_id = ${id}::uuid
+      `;
+      count = result[0]?.count ?? 0n;
+    } catch (err: any) {
+      // Si la tabla "visitas_monitoreo" no existe en la base de datos (PostgreSQL 42P01 / Prisma P2010),
+      // asumimos que el especialista tiene 0 visitas registradas.
+      const isTableMissing =
+        err.message?.includes('42P01') ||
+        err.meta?.message?.includes('42P01') ||
+        String(err).includes('42P01');
+      if (isTableMissing) {
+        count = 0n;
+      } else {
+        throw err;
+      }
+    }
+
     if (count > 0n) {
       throw new UnprocessableEntityException(
         `No se puede inactivar: el especialista tiene ${count} visita(s) de monitoreo registrada(s).`,

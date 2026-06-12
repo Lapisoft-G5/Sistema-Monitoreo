@@ -1,5 +1,5 @@
-import { Book, CheckCircle2, AlertCircle } from 'lucide-react';
-import type { Institucion } from '@entities/model-instituciones'; // Ajusta la ruta a tu entidad limpia
+import { Book, UserCheck, UserX } from 'lucide-react';
+import type { Institucion } from '@entities/model-instituciones'; 
 import { StatCard } from '@shared/ui/Stat-Card';
 
 interface Props {
@@ -8,10 +8,10 @@ interface Props {
 
 export const InstitutionsStatsWidget = ({ instituciones }: Props) => {
   const total = instituciones.length || 1; // Evitar división por cero
-  const monitoreadas = instituciones.filter((i) => i.estado === 'Satisfactorio').length;
-  const criticas = instituciones.filter((i) => i.estado !== 'Satisfactorio').length;
+  const conDirector = instituciones.filter((i) => i.director !== null).length;
+  const sinDirector = instituciones.filter((i) => i.director === null).length;
   
-  const porcentaje = Math.round((monitoreadas / total) * 100);
+  const porcentaje = Math.round((conDirector / total) * 100);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -19,22 +19,22 @@ export const InstitutionsStatsWidget = ({ instituciones }: Props) => {
         title="Total II.EE." 
         icon={<Book className="w-5 h-5 text-primary" strokeWidth={2} />}
         value={instituciones.length}
-        trendText="↗ +2 este mes"
+        trendText="Jurisdicción UGEL Lampa"
         trendType="success"
       />
       <StatCard 
-        title="Monitoreadas" 
-        icon={<CheckCircle2 className="w-5 h-5 text-green-500" strokeWidth={2} />}
-        value={monitoreadas}
+        title="Directores Asignados" 
+        icon={<UserCheck className="w-5 h-5 text-green-500" strokeWidth={2} />}
+        value={conDirector}
         progressValue={porcentaje}
-        trendText={`${porcentaje}% del total general`}
+        trendText={`${porcentaje}% de cobertura directiva`}
       />
       <StatCard 
-        title="Críticas / En Proceso" 
-        icon={<AlertCircle className="w-5 h-5 text-amber-500" strokeWidth={2} />}
-        value={criticas}
-        trendText="! Requieren atención"
-        trendType="danger"
+        title="II.EE. sin Director" 
+        icon={<UserX className="w-5 h-5 text-rose-500" strokeWidth={2} />}
+        value={sinDirector}
+        trendText={sinDirector > 0 ? `${sinDirector} plazas por asignar` : "Plazas 100% cubiertas"}
+        trendType={sinDirector > 0 ? "danger" : "success"}
       />
     </div>
   );

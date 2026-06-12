@@ -25,6 +25,7 @@ export const InstitutionLocationInfo = ({ institucion }: { institucion: Instituc
       </div>
       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
         <CAMPO label="Código Modular" value={institucion.codigoModular} />
+        <CAMPO label="Código de Local" value={institucion.codigoLocal || 'No especificado'} />
         <CAMPO label="Nivel Educativo" value={NIVEL_LABEL[institucion.nivel] || institucion.nivel} />
         <div className="sm:col-span-2">
           <CAMPO label="Dirección" value={institucion.direccion} />

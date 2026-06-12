@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Book, MapPin, User as UserIcon, Check } from 'lucide-react';
-import { DISTRITOS_LAMPA, NIVELES, NIVEL_LABEL, PROVINCIAS, ZONAS, type Nivel } from '@entities/model-instituciones/constants';
+import { DISTRITOS_LAMPA, NIVELES, NIVEL_LABEL, ZONAS, type Nivel } from '@entities/model-instituciones/constants';
 import { FormButton, SectionCard, SelectField, TextAreaField, TextField, toOptions, twoCols } from '@shared/ui/form-controls';
 
 export interface InstitutionRawInput {
   codigoModular: string;
+  codigoLocal: string;
   nombre: string;
   nivel: '' | Nivel;
   provincia: string;
@@ -14,6 +15,7 @@ export interface InstitutionRawInput {
   director: string;
   directorTelefono: string;
   directorCorreo: string;
+  modalidad?: string;
 }
 
 interface Props {
@@ -24,8 +26,8 @@ interface Props {
 }
 
 const INITIAL_FORM: InstitutionRawInput = {
-  codigoModular: '', nombre: '', nivel: '', provincia: '', distrito: '',
-  zona: '', direccion: '', director: '', directorTelefono: '', directorCorreo: '',
+  codigoModular: '', codigoLocal: '', nombre: '', nivel: '', provincia: 'Lampa', distrito: '',
+  zona: '', direccion: '', director: '', directorTelefono: '', directorCorreo: '', modalidad: 'Regular',
 };
 
 const MOCK_DOCENTES = [{ dni: '87654321', nombres: 'Juan Pérez', cargo: 'Director', celular: '987654321', correo: 'juan@ugel.edu.pe' }];
@@ -52,8 +54,10 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
   };
 
   const codigoOk = /^\d{7}$/.test(form.codigoModular);
+  const codigoLocalOk = /^\d{8}$/.test(form.codigoLocal);
   const errors = {
     codigoModular: !form.codigoModular ? 'Obligatorio' : !codigoOk ? 'Deben ser 7 dígitos' : '',
+    codigoLocal: !form.codigoLocal ? 'Obligatorio' : !codigoLocalOk ? 'Deben ser 8 dígitos' : '',
     nombre: !form.nombre.trim() ? 'Obligatorio' : '',
     nivel: !form.nivel ? 'Seleccione nivel' : '',
     provincia: !form.provincia ? 'Seleccione provincia' : '',
@@ -81,16 +85,35 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
             adornment={codigoOk ? <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} /> : undefined}
           />
           <TextField
-            label="Nombre de la Institución" required value={form.nombre}
+            label="Código de Local (8 dígitos)" required value={form.codigoLocal}
+            onChange={(v) => set('codigoLocal', v.replace(/\D/g, '').slice(0, 8))}
+            placeholder="Ej. 12457896" error={showError('codigoLocal')}
+            adornment={codigoLocalOk ? <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} /> : undefined}
+          />
+        </div>
+        <div className="w-full mt-[18px]">
+          <TextField
+            label="Nombre de la Institución Educativa" required value={form.nombre}
             onChange={(v) => set('nombre', v)} placeholder="Ej. I.E. 70045" error={showError('nombre')}
           />
         </div>
-        <div style={{ marginTop: 18, maxWidth: 'calc(50% - 9px)', minWidth: 240 }}>
+        <div style={{ ...twoCols, marginTop: 18 }}>
           <SelectField
             label="Nivel Educativo" required value={form.nivel}
             onChange={(v) => set('nivel', v as '' | Nivel)}
             options={NIVELES.map((n) => ({ value: n, label: NIVEL_LABEL[n] }))}
             placeholder="Seleccione Nivel" error={showError('nivel')}
+          />
+          <SelectField
+            label="Modalidad" value={form.modalidad || 'Regular'}
+            onChange={(v) => set('modalidad', v)}
+            options={[
+              { value: 'Regular', label: 'Regular / General' },
+              { value: 'PRONOEI', label: 'PRONOEI' },
+              { value: 'EBA', label: 'Educación Básica Alternativa (EBA)' },
+              { value: 'EBE', label: 'Educación Básica Especial (EBE)' },
+            ]}
+            placeholder="Seleccione Modalidad"
           />
         </div>
       </SectionCard>
@@ -98,11 +121,7 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
       <SectionCard icon={<MapPin className="w-5 h-5" />} title="Ubicación Geográfica">
         <div style={twoCols}>
           <TextField label="Departamento" value="Puno" onChange={() => {}} disabled />
-          <SelectField
-            label="Provincia" required value={form.provincia}
-            onChange={(v) => set('provincia', v)} options={toOptions(PROVINCIAS)}
-            placeholder="Seleccione Provincia" error={showError('provincia')}
-          />
+          <TextField label="Provincia" value="Lampa" onChange={() => {}} disabled />
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
           <SelectField

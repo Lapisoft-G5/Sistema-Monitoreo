@@ -17,6 +17,7 @@ export const useInstitutionService = () => {
       const newInstitution: Institucion = {
         id: globalThis.crypto?.randomUUID?.() ?? String(Date.now()),
         codigoModular: formData.codigoModular,
+        codigoLocal: formData.codigoLocal,
         nombre: formData.nombre.trim(),
         direccion: formData.direccion.trim(),
         nivel: formData.nivel as Nivel,
@@ -27,6 +28,7 @@ export const useInstitutionService = () => {
         directorTelefono: formData.directorTelefono.trim() || undefined,
         directorCorreo: formData.directorCorreo.trim() || undefined,
         estado: 'Satisfactorio',
+        modalidad: formData.modalidad,
       };
 
       // Persistencia en memoria mutando la lista mock
@@ -51,6 +53,7 @@ export const useInstitutionService = () => {
       const updatedInstitution: Institucion = {
         id,
         codigoModular: formData.codigoModular,
+        codigoLocal: formData.codigoLocal,
         nombre: formData.nombre.trim(),
         direccion: formData.direccion.trim(),
         nivel: formData.nivel as Nivel,
@@ -61,6 +64,7 @@ export const useInstitutionService = () => {
         directorTelefono: formData.directorTelefono.trim() || undefined,
         directorCorreo: formData.directorCorreo.trim() || undefined,
         estado: 'Satisfactorio', // O el estado que ya tenía
+        modalidad: formData.modalidad,
       };
 
       // Persistencia en memoria mutando la lista mock

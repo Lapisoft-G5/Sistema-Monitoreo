@@ -32,6 +32,8 @@ export class PrismaTeachersRepository implements TeachersRepository {
       gradoAcademico: docente.gradoAcademico,
       nivelEducativo: docente.nivelEducativo,
       cursoAsignado: docente.docenteCursos?.[0]?.curso?.nombre || null,
+      condicionLaboral: docente.condicionLaboral,
+      escalaMagisterial: docente.escalaMagisterial,
       estado: docente.estado,
       createdAt: docente.createdAt,
       updatedAt: docente.updatedAt,
@@ -179,6 +181,8 @@ export class PrismaTeachersRepository implements TeachersRepository {
           institucionId: dto.institucionId,
           gradoAcademico: dto.gradoAcademico ?? null,
           nivelEducativo: dto.nivelEducativo,
+          condicionLaboral: dto.condicionLaboral ?? null,
+          escalaMagisterial: dto.escalaMagisterial ?? null,
           estado: EstadoRegistro.ACTIVO,
         },
       });
@@ -257,6 +261,9 @@ export class PrismaTeachersRepository implements TeachersRepository {
         data: {
           gradoAcademico: dto.gradoAcademico ?? null,
           nivelEducativo: dto.nivelEducativo,
+          condicionLaboral: dto.condicionLaboral ?? null,
+          escalaMagisterial: dto.escalaMagisterial ?? null,
+          ...(dto.institucionId && { institucionId: dto.institucionId }),
         },
       });
 

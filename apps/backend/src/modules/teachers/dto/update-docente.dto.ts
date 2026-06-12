@@ -1,4 +1,12 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, IsUUID } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  IsUUID,
+  IsInt,
+} from 'class-validator';
 import { IUpdateDocenteRequest } from '@sistema-monitoreo/shared-contracts';
 
 export class UpdateDocenteDto implements IUpdateDocenteRequest {
@@ -35,4 +43,16 @@ export class UpdateDocenteDto implements IUpdateDocenteRequest {
   @IsUUID('4', { message: 'El ID del cargo debe ser un UUID v4 válido' })
   @IsNotEmpty({ message: 'El ID del cargo es requerido' })
   cargoId!: string;
+
+  @IsOptional()
+  @IsString()
+  condicionLaboral?: string;
+
+  @IsOptional()
+  @IsInt()
+  escalaMagisterial?: number;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'El ID de la institución debe ser un UUID v4 válido' })
+  institucionId?: string;
 }

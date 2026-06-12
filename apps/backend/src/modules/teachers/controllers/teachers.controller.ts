@@ -47,6 +47,13 @@ export class TeachersController {
     return this.teachersService.getDocentes(req.user);
   }
 
+  @Get('cargos')
+  @RequirePermissions('docentes:read')
+  @HttpCode(HttpStatus.OK)
+  async findCargos(): Promise<any[]> {
+    return this.teachersService.getCargos();
+  }
+
   @Put(':id')
   @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.OK)
@@ -74,5 +81,23 @@ export class TeachersController {
     };
   }> {
     return this.teachersService.bajaDocente(id, req.user);
+  }
+
+  @Patch(':id/alta')
+  @RequirePermissions('docentes:write')
+  @HttpCode(HttpStatus.OK)
+  async activate(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    docente: {
+      id: string;
+      estado: string;
+      persona: { dni: string; nombres: string; apellidos: string };
+    };
+  }> {
+    return this.teachersService.altaDocente(id, req.user);
   }
 }

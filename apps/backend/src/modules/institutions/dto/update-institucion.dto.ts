@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNotEmpty } from 'class-validator';
+import { IsOptional, IsString, IsNotEmpty, Length, Matches } from 'class-validator';
 import { IUpdateInstitucionRequest } from '@sistema-monitoreo/shared-contracts';
 
 export class UpdateInstitucionDto implements IUpdateInstitucionRequest {
@@ -41,4 +41,19 @@ export class UpdateInstitucionDto implements IUpdateInstitucionRequest {
   @IsOptional()
   @IsNotEmpty({ message: 'El estado no puede estar vacío' })
   estado?: string;
+
+  @IsString()
+  @IsOptional()
+  directorDni?: string;
+
+  @IsString()
+  @IsOptional()
+  @Length(8, 8, { message: 'El código de local debe tener exactamente 8 dígitos' })
+  @Matches(/^\d{8}$/, { message: 'El código de local debe contener solo números' })
+  codigoLocal?: string;
+
+  @IsString()
+  @IsOptional()
+  modalidad?: string;
 }
+

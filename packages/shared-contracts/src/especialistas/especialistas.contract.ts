@@ -4,6 +4,9 @@ export interface IEspecialistaResponse {
   especialidad: string;
   nivelEducativo: string;
   estado: string;
+  cargaLaboral?: number;
+  cargo?: string;
+  condicionLaboral?: string;
   createdAt: Date;
   updatedAt: Date;
   persona: {

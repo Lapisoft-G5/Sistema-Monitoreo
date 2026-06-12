@@ -37,6 +37,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
       especialidad: esp.especialidad ?? '',
       nivelEducativo: esp.nivelEducativo,
       estado: esp.estado,
+      cargaLaboral: esp.cargaLaboral,
+      cargo: esp.cargo,
+      condicionLaboral: esp.condicionLaboral,
       createdAt: esp.createdAt,
       updatedAt: esp.updatedAt,
       persona: {

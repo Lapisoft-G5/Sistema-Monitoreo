@@ -8,6 +8,8 @@ export interface ICreateDocenteRequest {
   nivelEducativo: string;
   cursoAsignado?: string;
   cargoId: string;
+  condicionLaboral?: string;
+  escalaMagisterial?: number;
 }
 
 export interface IUpdateDocenteRequest {
@@ -18,6 +20,8 @@ export interface IUpdateDocenteRequest {
   nivelEducativo: string;
   cursoAsignado?: string;
   cargoId: string;
+  condicionLaboral?: string;
+  escalaMagisterial?: number;
 }
 
 export interface IDocenteResponse {
@@ -27,6 +31,8 @@ export interface IDocenteResponse {
   gradoAcademico: string | null;
   nivelEducativo: string;
   cursoAsignado: string | null;
+  condicionLaboral?: string | null;
+  escalaMagisterial?: number | null;
   estado: string;
   createdAt: Date | string;
   updatedAt: Date | string;

@@ -7,6 +7,7 @@ import {
   Matches,
   MaxLength,
   IsUUID,
+  IsInt,
 } from 'class-validator';
 import { ICreateDocenteRequest } from '@sistema-monitoreo/shared-contracts';
 
@@ -54,4 +55,12 @@ export class CreateDocenteDto implements ICreateDocenteRequest {
   @IsUUID('4', { message: 'El ID del cargo debe ser un UUID v4 válido' })
   @IsNotEmpty({ message: 'El ID del cargo es requerido' })
   cargoId!: string;
+
+  @IsOptional()
+  @IsString()
+  condicionLaboral?: string;
+
+  @IsOptional()
+  @IsInt()
+  escalaMagisterial?: number;
 }

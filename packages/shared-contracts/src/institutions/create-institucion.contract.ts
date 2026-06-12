@@ -10,6 +10,7 @@ export interface ICreateInstitucionRequest {
   zona: string;
   estado?: string;
   modalidad?: string | null;
+  directorDni?: string | null;
 }
 
 export interface IInstitucionResponse {
@@ -27,4 +28,8 @@ export interface IInstitucionResponse {
   createdAt: string | Date;
   updatedAt: string | Date;
   modalidad?: string | null;
+  director?: string | null;
+  directorTelefono?: string | null;
+  directorCorreo?: string | null;
+  directorDni?: string | null;
 }

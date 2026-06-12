@@ -38,3 +38,4 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   @IsOptional()
   condicionLaboral?: string;
 }
+

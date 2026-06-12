@@ -19,6 +19,10 @@ export class PrismaCatalogsRepository implements CatalogsRepository {
     });
   }
 
+  async findCargos(): Promise<Cargo[]> {
+    return this.prisma.cargo.findMany();
+  }
+
   async findRoleByCode(code: string): Promise<Role | null> {
     return this.prisma.role.findUnique({
       where: { codigo: code },

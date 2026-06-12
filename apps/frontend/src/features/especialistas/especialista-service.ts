@@ -1,7 +1,41 @@
 import { useState } from 'react';
-import type { Especialista } from '@entities/model-especialistas';
+import type { Especialista, EspecialistaRol, NivelInstitucion } from '@entities/model-especialistas';
 import { MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
+import { especialistasApi } from '@shared/api/especialistas.api';
+
+import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
+
+export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Especialista => {
+  let rol: EspecialistaRol;
+  const roleCode = apiEsp.user?.role?.code;
+  if (roleCode === 'jefe_gestion') {
+    rol = 'especialista_admin';
+  } else if (roleCode === 'jefe_area') {
+    rol = 'especialista_bajo';
+  } else {
+    rol = 'especialista_medio';
+  }
+
+  return {
+    id: apiEsp.id,
+    nombres: apiEsp.persona.nombres,
+    apellidos: apiEsp.persona.apellidos,
+    dni: apiEsp.persona.dni,
+    correo: apiEsp.persona.correo || '',
+    celular: '999999999',
+    especialidad: apiEsp.especialidad || '',
+    rol,
+    niveles: apiEsp.nivelEducativo
+      ? (apiEsp.nivelEducativo.split(',').map((s: string) => s.trim()) as NivelInstitucion[])
+      : [],
+    activo: apiEsp.estado === 'Activo',
+    fechaCreacion: apiEsp.createdAt
+      ? new Date(apiEsp.createdAt).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0],
+    cargaLaboral: apiEsp.cargaLaboral || 40,
+  };
+};
 
 export const useEspecialistaService = () => {
   const [loading, setLoading] = useState(false);
@@ -12,26 +46,41 @@ export const useEspecialistaService = () => {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      let rolCode = 'especialista';
+      let cargo = 'Especialista';
+      if (formData.rol === 'especialista_admin') {
+        rolCode = 'jefe_gestion';
+        cargo = 'Jefe de Gestión';
+      } else if (formData.rol === 'especialista_bajo') {
+        rolCode = 'jefe_area';
+        cargo = 'Jefe de Área';
+      }
 
-      const newEspecialista: Especialista = {
-        id: globalThis.crypto?.randomUUID?.() ?? String(Date.now()),
+      // 'Jefe de Gestión' must have conditionLaboral set as 'Nombrado' to comply with backend business rules
+      const condicionLaboral = 'Nombrado';
+
+      const dto = {
+        dni: formData.dni,
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        dni: formData.dni,
         correo: formData.correo.trim(),
-        celular: formData.celular,
-        especialidad: formData.especialidad?.trim() || '',
-        rol: formData.rol,
-        niveles: formData.niveles,
-        activo: formData.activo ?? true,
-        fechaCreacion: new Date().toISOString().split('T')[0],
-        cargaLaboral: formData.cargaLaboral,
+        especialidad: formData.especialidad?.trim() || 'General',
+        nivelEducativo: formData.niveles.join(', '),
+        rolCode,
+        cargo,
+        condicionLaboral,
       };
 
-      MOCK_ESPECIALISTAS.push(newEspecialista);
-
-      return { success: true, data: newEspecialista };
+      const res = await especialistasApi.create(dto);
+      if (res.ok && res.data) {
+        const mapped = mapApiEspecialistaToFrontend(res.data);
+        MOCK_ESPECIALISTAS.push(mapped);
+        return { success: true, data: mapped };
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al registrar el especialista.';
+        setError(errMsg);
+        return { success: false, error: res.error };
+      }
     } catch (err) {
       setError('Error al registrar el especialista.');
       return { success: false, error: err };
@@ -45,29 +94,43 @@ export const useEspecialistaService = () => {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const updatedEspecialista: Especialista = {
-        id,
-        nombres: formData.nombres.trim(),
-        apellidos: formData.apellidos.trim(),
-        dni: formData.dni,
-        correo: formData.correo.trim(),
-        celular: formData.celular,
-        especialidad: formData.especialidad?.trim() || '',
-        rol: formData.rol,
-        niveles: formData.niveles,
-        activo: formData.activo ?? true,
-        fechaCreacion: new Date().toISOString().split('T')[0],
-        cargaLaboral: formData.cargaLaboral,
-      };
-
-      const index = MOCK_ESPECIALISTAS.findIndex((e) => e.id === id);
-      if (index !== -1) {
-        MOCK_ESPECIALISTAS[index] = updatedEspecialista;
+      let rolCode = 'especialista';
+      let cargo = 'Especialista';
+      if (formData.rol === 'especialista_admin') {
+        rolCode = 'jefe_gestion';
+        cargo = 'Jefe de Gestión';
+      } else if (formData.rol === 'especialista_bajo') {
+        rolCode = 'jefe_area';
+        cargo = 'Jefe de Área';
       }
 
-      return { success: true, data: updatedEspecialista };
+      const condicionLaboral = 'Nombrado';
+
+      const dto = {
+        nombres: formData.nombres.trim(),
+        apellidos: formData.apellidos.trim(),
+        correo: formData.correo.trim(),
+        especialidad: formData.especialidad?.trim() || 'General',
+        nivelEducativo: formData.niveles.join(', '),
+        estado: formData.activo ?? true ? 'Activo' : 'Inactivo',
+        rolCode,
+        cargo,
+        condicionLaboral,
+      };
+
+      const res = await especialistasApi.update(id, dto);
+      if (res.ok && res.data) {
+        const mapped = mapApiEspecialistaToFrontend(res.data);
+        const index = MOCK_ESPECIALISTAS.findIndex((e) => e.id === id);
+        if (index !== -1) {
+          MOCK_ESPECIALISTAS[index] = mapped;
+        }
+        return { success: true, data: mapped };
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al actualizar el especialista.';
+        setError(errMsg);
+        return { success: false, error: res.error };
+      }
     } catch (err) {
       setError('Error al actualizar el especialista.');
       return { success: false, error: err };

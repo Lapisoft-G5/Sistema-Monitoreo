@@ -1,7 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Book, MapPin, User as UserIcon, Check } from 'lucide-react';
 import { DISTRITOS_LAMPA, NIVELES, NIVEL_LABEL, ZONAS, type Nivel } from '@entities/model-instituciones/constants';
 import { FormButton, SectionCard, SelectField, TextAreaField, TextField, toOptions, twoCols } from '@shared/ui/form-controls';
+import { teachersApi } from '@shared/api/teachers.api';
+import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import type { Docente } from '@entities/model-docentes';
 
 export interface InstitutionRawInput {
   codigoModular: string;
@@ -15,6 +18,7 @@ export interface InstitutionRawInput {
   director: string;
   directorTelefono: string;
   directorCorreo: string;
+  directorDni?: string;
   modalidad?: string;
 }
 
@@ -27,29 +31,55 @@ interface Props {
 
 const INITIAL_FORM: InstitutionRawInput = {
   codigoModular: '', codigoLocal: '', nombre: '', nivel: '', provincia: 'Lampa', distrito: '',
-  zona: '', direccion: '', director: '', directorTelefono: '', directorCorreo: '', modalidad: 'Regular',
+  zona: '', direccion: '', director: '', directorTelefono: '', directorCorreo: '', directorDni: '', modalidad: 'Regular',
 };
-
-const MOCK_DOCENTES = [{ dni: '87654321', nombres: 'Juan Pérez', cargo: 'Director', celular: '987654321', correo: 'juan@ugel.edu.pe' }];
 
 export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData }: Props) => {
   const [form, setForm] = useState<InstitutionRawInput>(initialData || INITIAL_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [dniSearch, setDniSearch] = useState('');
+  const [directors, setDirectors] = useState<Docente[]>([]);
 
-  const directors = useMemo(() => MOCK_DOCENTES.filter((d) => d.cargo === 'Director'), []);
+  useEffect(() => {
+    const fetchDirectors = async () => {
+      try {
+        const res = await teachersApi.findAll();
+        if (res.ok && res.data) {
+          const mapped = res.data.map(mapApiDocenteToFrontend);
+          const filtered = mapped.filter((d) => d.cargo === 'Director' || d.cargo === 'Coordinador Pedagógico');
+          setDirectors(filtered);
+        }
+      } catch (err) {
+        console.error('Error fetching directors:', err);
+      }
+    };
+    Promise.resolve().then(() => fetchDirectors());
+  }, []);
+
   const filteredDirectors = useMemo(() => directors.filter((d) => (dniSearch ? d.dni.includes(dniSearch) : true)), [directors, dniSearch]);
-  const directorOptions = useMemo(() => filteredDirectors.map((d) => ({ value: d.nombres, label: `${d.nombres} (DNI: ${d.dni})` })), [filteredDirectors]);
+  const directorOptions = useMemo(() => filteredDirectors.map((d) => ({ value: d.dni, label: `${d.nombres} ${d.apellidos} (DNI: ${d.dni})` })), [filteredDirectors]);
 
   const set = <K extends keyof InstitutionRawInput>(key: K, value: InstitutionRawInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const handleSelectDirector = (name: string) => {
-    const selectedDir = directors.find((d) => d.nombres === name);
+  const handleSelectDirector = (dni: string) => {
+    const selectedDir = directors.find((d) => d.dni === dni);
     if (selectedDir) {
-      setForm((prev) => ({ ...prev, director: selectedDir.nombres, directorTelefono: selectedDir.celular, directorCorreo: selectedDir.correo }));
+      setForm((prev) => ({ 
+        ...prev, 
+        director: `${selectedDir.nombres} ${selectedDir.apellidos}`.trim(), 
+        directorTelefono: selectedDir.celular, 
+        directorCorreo: selectedDir.correo,
+        directorDni: selectedDir.dni,
+      }));
     } else {
-      setForm((prev) => ({ ...prev, director: '', directorTelefono: '', directorCorreo: '' }));
+      setForm((prev) => ({ 
+        ...prev, 
+        director: '', 
+        directorTelefono: '', 
+        directorCorreo: '',
+        directorDni: '',
+      }));
     }
   };
 
@@ -151,7 +181,7 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
             onChange={(v) => setDniSearch(v.replace(/\D/g, '').slice(0, 8))} placeholder="Ej. 87654321"
           />
           <SelectField
-            label="Asignar Director" value={form.director} onChange={(v) => handleSelectDirector(v)}
+            label="Asignar Director" value={form.directorDni || ''} onChange={(v) => handleSelectDirector(v)}
             options={directorOptions} placeholder={dniSearch ? "Seleccione Director encontrado" : "Seleccione un Director"}
           />
         </div>

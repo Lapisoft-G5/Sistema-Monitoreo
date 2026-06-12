@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { User, Briefcase, Plus, Trash2, Check, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
-import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
+import { NIVELES, NIVEL_LABEL, MOCK_INSTITUCIONES } from '@entities/model-instituciones';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
@@ -45,21 +45,29 @@ export const DocenteFormBase = ({
   submitLabel,
 }: Props) => {
   const { user } = useUser();
-  const isDirectorIe = user?.role === 'director_institucion';
+  const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
 
   const [form, setForm] = useState<DocenteFormData>(() => {
     if (initialData) return initialData;
     
     let initialInstId = '';
+    let initialNivel: DocenteFormData['nivelEducativo'] = 'PRIMARIA';
+    
     if (isDirectorIe && user?.institucion) {
       const userInst = instituciones.find((i) => i.nombre === user.institucion);
       initialInstId = userInst?.id ?? '1';
+      
+      const fullInst = MOCK_INSTITUCIONES.find((i) => i.nombre === user.institucion);
+      if (fullInst) {
+        initialNivel = fullInst.nivel;
+      }
     }
 
     return {
       ...INITIAL_FORM,
       cargo: defaultCargo,
       institucionId: initialInstId,
+      nivelEducativo: initialNivel,
     };
   });
   const [submitted, setSubmitted] = useState(false);
@@ -115,21 +123,23 @@ export const DocenteFormBase = ({
     <div className="bg-bg p-0 flex flex-col gap-5 text-text animate-in fade-in-0 duration-300">
       {/* Sección 1: Datos Personales */}
       <SectionCard icon={<User className="w-5 h-5" />} title="Información Personal">
-        <div style={twoCols}>
-          <TextField
-            label="DNI (8 dígitos)"
-            required
-            value={form.dni}
-            onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
-            placeholder="Ej. 74859612"
-            error={showError('dni')}
-            adornment={
-              dniOk ? (
-                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-              ) : undefined
-            }
-          />
-          <div className="flex gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4.5">
+          <div className="md:col-span-1 min-w-[140px]">
+            <TextField
+              label="DNI (8 dígitos)"
+              required
+              value={form.dni}
+              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
+              placeholder="Ej. 74859612"
+              error={showError('dni')}
+              adornment={
+                dniOk ? (
+                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+                ) : undefined
+              }
+            />
+          </div>
+          <div className="md:col-span-2">
             <TextField
               label="Nombres"
               required
@@ -138,6 +148,8 @@ export const DocenteFormBase = ({
               placeholder="Ej. Rosa Elena"
               error={showError('nombres')}
             />
+          </div>
+          <div className="md:col-span-2">
             <TextField
               label="Apellidos"
               required
@@ -216,15 +228,24 @@ export const DocenteFormBase = ({
           />
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
-          <SelectField
-            label="Nivel Educativo"
-            required
-            value={form.nivelEducativo}
-            onChange={(v) => set('nivelEducativo', v as DocenteFormData['nivelEducativo'])}
-            options={NIVELES.map((n) => ({ value: n, label: NIVEL_LABEL[n] }))}
-            placeholder="Seleccione Nivel"
-            error={showError('nivelEducativo')}
-          />
+          {isDirectorIe ? (
+            <div className="flex flex-col gap-1 w-full">
+              <label className="text-xs font-bold text-text-muted">Nivel Educativo</label>
+              <div className="flex items-center h-9 px-3 rounded-lg border border-border bg-muted/30 text-text font-medium text-sm">
+                {NIVEL_LABEL[form.nivelEducativo]}
+              </div>
+            </div>
+          ) : (
+            <SelectField
+              label="Nivel Educativo"
+              required
+              value={form.nivelEducativo}
+              onChange={(v) => set('nivelEducativo', v as DocenteFormData['nivelEducativo'])}
+              options={NIVELES.map((n) => ({ value: n, label: NIVEL_LABEL[n] }))}
+              placeholder="Seleccione Nivel"
+              error={showError('nivelEducativo')}
+            />
+          )}
           <TextField
             label="Especialidad / Mención"
             required

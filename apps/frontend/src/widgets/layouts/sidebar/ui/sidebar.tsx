@@ -6,7 +6,6 @@ import type { MenuItem } from '@shared/constants/roles';
 import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
-import { LogoUgelIcon } from '@shared/assets/icons/LogoUgelIcon';
 
 // Importamos la configuración pura
 import { SIDEBAR_CONFIG } from '../config/config';
@@ -39,8 +38,8 @@ export const Sidebar = () => {
     >
       {/* ── Logo ── */}
       <div className="flex items-center gap-3 px-4 py-[18px] border-b border-border min-h-[64px]">
-        <div className="w-9 h-9 flex-shrink-0 rounded-[10px] bg-primary flex items-center justify-center shadow-[0_2px_10px_rgba(153,5,55,0.25)]">
-          <LogoUgelIcon />
+        <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+          <img src="/logo-ugel.png" alt="UGEL Logo" className="w-full h-full object-contain" />
         </div>
 
         {!collapsed && (

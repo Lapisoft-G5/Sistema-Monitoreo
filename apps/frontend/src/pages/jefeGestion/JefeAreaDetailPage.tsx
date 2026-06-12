@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen, BadgeCheck } from 'lucide-react';
-import { MOCK_ESPECIALISTAS, type Especialista, ROL_ESPECIALISTA_LABELS } from '@entities/model-especialistas';
+import { type Especialista, ROL_ESPECIALISTA_LABELS } from '@entities/model-especialistas';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
+import { especialistasApi } from '@shared/api/especialistas.api';
+import { mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
 
 export const JefeAreaDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,13 +16,26 @@ export const JefeAreaDetailPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const found = MOCK_ESPECIALISTAS.find((e) => e.id === id);
-      setJefe(found || null);
-      setLoading(false);
-    }, 450);
+    const fetchDetail = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const res = await especialistasApi.findById(id);
+        if (res.ok && res.data) {
+          setJefe(mapApiEspecialistaToFrontend(res.data));
+        } else {
+          console.error('Error fetching jefe de area details:', res.error);
+          setJefe(null);
+        }
+      } catch (err) {
+        console.error('Network error fetching jefe de area details:', err);
+        setJefe(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchDetail();
   }, [id]);
 
   if (loading) {

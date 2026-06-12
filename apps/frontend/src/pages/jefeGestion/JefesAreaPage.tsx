@@ -1,20 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 
-import { MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
 import { FilterEspecialistas } from '@features/especialistas';
-// 🚀 NUEVAS IMPORTACIONES DESDE TU WIDGET TOTALMENTE MODULARIZADO
 import { JefesStatsWidget, JefesTableWidget } from '@widgets/jefes-area';
+import { especialistasApi } from '@shared/api/especialistas.api';
+import { mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
+import type { Especialista } from '@entities/model-especialistas';
 
 export const JefesAreaPage = () => {
   const navigate = useNavigate();
-  
-  const [jefes, setJefes] = useState(() => 
-    MOCK_ESPECIALISTAS.filter((esp) => esp.rol === 'especialista_bajo')
-  );
+  const [jefes, setJefes] = useState<Especialista[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchJefes = async () => {
+    setLoading(true);
+    try {
+      const res = await especialistasApi.findAll();
+      if (res.ok && res.data) {
+        const mapped = res.data.map(mapApiEspecialistaToFrontend);
+        // Mantenemos solo los que tienen el rol de Jefe de Área ('especialista_bajo')
+        const filtered = mapped.filter((esp) => esp.rol === 'especialista_bajo');
+        setJefes(filtered);
+      } else {
+        console.error('Error al cargar los jefes de área desde la API:', res.error);
+      }
+    } catch (err) {
+      console.error('Error de red al cargar jefes de área:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    Promise.resolve().then(() => fetchJefes());
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="text-text-muted text-sm font-medium">Cargando jefes de área...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full gap-6 animate-in fade-in-0 duration-300">

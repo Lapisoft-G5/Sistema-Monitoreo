@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { EspecialistaFormBase } from '@features/especialistas';
-import { MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
-import { useEspecialistaService } from '@features/especialistas';
+import { type Especialista } from '@entities/model-especialistas';
+import { useEspecialistaService, mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
+import { especialistasApi } from '@shared/api/especialistas.api';
 import { Card } from '@shared/ui/card';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 
@@ -11,7 +13,38 @@ export const EditJefeArea = () => {
   const { id } = useParams<{ id: string }>();
   const { updateEspecialista, loading, error } = useEspecialistaService();
 
-  const jefe = MOCK_ESPECIALISTAS.find((item) => item.id === id);
+  const [jefe, setJefe] = useState<Especialista | null>(null);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    const fetchJefe = async () => {
+      if (!id) return;
+      setFetching(true);
+      try {
+        const res = await especialistasApi.findById(id);
+        if (res.ok && res.data) {
+          setJefe(mapApiEspecialistaToFrontend(res.data));
+        } else {
+          setJefe(null);
+        }
+      } catch (err) {
+        console.error('Error fetching jefe de area for edit:', err);
+        setJefe(null);
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchJefe();
+  }, [id]);
+
+  if (fetching) {
+    return (
+      <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="text-text-muted text-sm font-medium">Cargando datos del jefe de área...</span>
+      </div>
+    );
+  }
 
   if (!jefe) {
     return (

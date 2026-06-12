@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { User, Briefcase, Plus, Trash2, Check, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
-import { NIVELES, NIVEL_LABEL, MOCK_INSTITUCIONES } from '@entities/model-instituciones';
+import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
@@ -13,10 +13,40 @@ interface Props {
   onSubmit: (data: DocenteFormData) => void;
   isLoading: boolean;
   initialData?: DocenteFormData;
-  instituciones: { id: string; nombre: string }[];
+  instituciones: { id: string; nombre: string; nivel?: string }[];
   defaultCargo?: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula';
   submitLabel?: string;
 }
+
+const CURSOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> = {
+  INICIAL: [
+    'Personal Social',
+    'Psicomotricidad',
+    'Comunicación',
+    'Descubrimiento del Mundo',
+  ],
+  PRIMARIA: [
+    'Comunicación',
+    'Matemática',
+    'Ciencia y Tecnología',
+    'Personal Social',
+    'Arte y Cultura',
+    'Educación Física',
+    'Educación Religiosa',
+  ],
+  SECUNDARIA: [
+    'Comunicación',
+    'Matemática',
+    'Ciencia y Tecnología',
+    'Desarrollo Personal, Ciudadanía y Cívica',
+    'Ciencias Sociales',
+    'Educación Física',
+    'Arte y Cultura',
+    'Inglés',
+    'Educación Religiosa',
+    'Educación para el Trabajo',
+  ],
+};
 
 const INITIAL_FORM: DocenteFormData = {
   nombres: '',
@@ -54,12 +84,12 @@ export const DocenteFormBase = ({
     let initialNivel: DocenteFormData['nivelEducativo'] = 'PRIMARIA';
     
     if (isDirectorIe && user?.institucion) {
-      const userInst = instituciones.find((i) => i.nombre === user.institucion);
-      initialInstId = userInst?.id ?? '1';
-      
-      const fullInst = MOCK_INSTITUCIONES.find((i) => i.nombre === user.institucion);
-      if (fullInst) {
-        initialNivel = fullInst.nivel;
+      const userInst = instituciones.find((i) => i.id === user.institucion || i.nombre === user.institucion);
+      if (userInst) {
+        initialInstId = userInst.id;
+        if (userInst.nivel) {
+          initialNivel = userInst.nivel.toUpperCase() as DocenteFormData['nivelEducativo'];
+        }
       }
     }
 
@@ -70,6 +100,7 @@ export const DocenteFormBase = ({
       nivelEducativo: initialNivel,
     };
   });
+
   const [submitted, setSubmitted] = useState(false);
   const [newGrado, setNewGrado] = useState('');
 
@@ -246,12 +277,20 @@ export const DocenteFormBase = ({
               error={showError('nivelEducativo')}
             />
           )}
-          <TextField
+          <SelectField
             label="Especialidad / Mención"
             required
             value={form.especialidad}
             onChange={(v) => set('especialidad', v)}
-            placeholder="Ej. Matemática y Física"
+            options={(() => {
+              const rawCourses = CURSOS_POR_NIVEL[form.nivelEducativo] || [];
+              const coursesList = [...rawCourses];
+              if (form.especialidad && !coursesList.includes(form.especialidad)) {
+                coursesList.push(form.especialidad);
+              }
+              return coursesList.map((c) => ({ value: c, label: c }));
+            })()}
+            placeholder="Seleccione Especialidad"
             error={showError('especialidad')}
           />
         </div>

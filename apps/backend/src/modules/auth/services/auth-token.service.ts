@@ -97,12 +97,7 @@ export class AuthTokenService {
     let colegio_id: string | undefined;
 
     if ((user.rol.codigo as RoleCode) === RoleCode.DIRECTOR_INSTITUCION && user.persona.docente) {
-      const cargoDirector = user.persona.docente.docenteCargos?.find(
-        (dc) => (dc.cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR && !dc.fechaFin,
-      );
-      if (cargoDirector) {
-        colegio_id = user.persona.docente.institucionId;
-      }
+      colegio_id = user.persona.docente.institucionId;
     }
 
     const permissions = user.rol.rolPermisos?.map((rp) => rp.permiso.codigo) || [];

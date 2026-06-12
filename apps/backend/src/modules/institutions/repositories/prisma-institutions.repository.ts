@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { InstitutionsRepository } from './institutions.repository.js';
 import { CreateInstitucionDto } from '../dto/create-institucion.dto.js';
@@ -92,8 +92,31 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
 
       const newDirectorDocente = newDirectorPersona?.docente || null;
 
-      if (!newDirectorDocente) {
-        throw new Error(`No se encontró un docente registrado con el DNI ${directorDni}`);
+      if (!newDirectorPersona || !newDirectorDocente) {
+        throw new BadRequestException(`No se encontró un docente registrado con el DNI ${directorDni}`);
+      }
+
+      // Validar si ya es director activo de otra institución
+      const activeDirectorCargo = await this.prisma.docenteCargo.findFirst({
+        where: {
+          docenteId: newDirectorDocente.id,
+          cargo: { nombre: 'Director' },
+          fechaFin: null,
+        },
+        include: {
+          docente: {
+            include: {
+              institucion: true,
+            },
+          },
+        },
+      });
+
+      if (activeDirectorCargo && activeDirectorCargo.docente.institucionId !== institucionId) {
+        const schoolName = activeDirectorCargo.docente.institucion?.nombre || 'otra institución';
+        throw new ConflictException(
+          `El docente ya es director activo en la I.E. "${schoolName}".`
+        );
       }
 
       // Si es el mismo director, no hacemos cambios
@@ -117,6 +140,17 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
             fechaFin: now,
           },
         });
+
+        // Sincronizar rol del director anterior a 'docente'
+        const docenteRole = await this.prisma.role.findUnique({
+          where: { codigo: 'docente' },
+        });
+        if (docenteRole) {
+          await this.prisma.usuario.updateMany({
+            where: { personaId: currentDirectorDocente.personaId },
+            data: { rolId: docenteRole.id },
+          });
+        }
       }
 
       // Vinculamos al nuevo docente con la institución
@@ -144,6 +178,17 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
           fechaInicio: now,
         },
       });
+
+      // Sincronizar rol del nuevo director a 'director_institucion'
+      const directorRole = await this.prisma.role.findUnique({
+        where: { codigo: 'director_institucion' },
+      });
+      if (directorRole) {
+        await this.prisma.usuario.updateMany({
+          where: { personaId: newDirectorPersona.id },
+          data: { rolId: directorRole.id },
+        });
+      }
     } else {
       // Si el DNI es explícitamente nulo (limpiar director)
       if (currentDirectorDocente) {
@@ -161,6 +206,17 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
             fechaFin: now,
           },
         });
+
+        // Sincronizar rol del director anterior a 'docente'
+        const docenteRole = await this.prisma.role.findUnique({
+          where: { codigo: 'docente' },
+        });
+        if (docenteRole) {
+          await this.prisma.usuario.updateMany({
+            where: { personaId: currentDirectorDocente.personaId },
+            data: { rolId: docenteRole.id },
+          });
+        }
       }
     }
   }

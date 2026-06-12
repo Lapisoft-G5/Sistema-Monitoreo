@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user';
-import { ROLE_PERMISSIONS, ROLE_LABELS } from '@shared/constants/roles';
+import { ROLE_PERMISSIONS } from '@shared/constants/roles';
 import type { MenuItem } from '@shared/constants/roles';
 import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Button } from '@shared/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
 import { LogoUgelIcon } from '@shared/assets/icons/LogoUgelIcon';
@@ -65,23 +64,7 @@ export const Sidebar = () => {
         </Button>
       </div>
 
-      {/* ── Tarjeta de usuario ── */}
-      {!collapsed && user && (
-        <div className="mx-2.5 my-3 px-3 py-2.5 rounded-xl bg-bg border border-border flex items-center gap-2.5 animate-in fade-in-0 duration-200">
-          <Avatar className="w-8 h-8">
-            <AvatarFallback className="bg-primary text-white text-[0.72rem] font-bold">
-              {user.nombres[0]}
-              {user.apellidos[0]}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col overflow-hidden">
-            <span className="text-text text-[0.80rem] font-semibold truncate">
-              {user.nombres} {user.apellidos.split(' ')[0]}
-            </span>
-            <span className="text-text-muted text-[0.67rem]">{ROLE_LABELS[user.role]}</span>
-          </div>
-        </div>
-      )}
+
 
       {/* ── Navegación Dinámica ── */}
       <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">

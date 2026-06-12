@@ -19,15 +19,15 @@ const InstitutionDetailPage = lazy(() =>
   import('./InstitutionDetailPage').then((m) => ({ default: m.InstitutionDetailPage })),
 );
 
-// ── Directores (Docentes) ──
-const DirectoresPage = lazy(() =>
-  import('./DirectoresPage').then((m) => ({ default: m.DirectoresPage })),
+// ── Directores / Docentes (Usando Switchers para soportar tanto Jefe de Área como Director de IE) ──
+const DocenteListPage = lazy(() =>
+  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteListSwitcher })),
 );
-const DirectorCreatePage = lazy(() =>
-  import('./DirectorCreatePage').then((m) => ({ default: m.DirectorCreatePage })),
+const DocenteCreatePage = lazy(() =>
+  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteCreateSwitcher })),
 );
-const DirectorEditPage = lazy(() =>
-  import('./DirectorEditPage').then((m) => ({ default: m.DirectorEditPage })),
+const DocenteEditPage = lazy(() =>
+  import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteEditSwitcher })),
 );
 const DocenteDetailPage = lazy(() =>
   import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteDetailSwitcher })),
@@ -35,16 +35,16 @@ const DocenteDetailPage = lazy(() =>
 
 // ── Jefes de Área (Tus nuevas páginas creadas) ──
 const JefesAreaPage = lazy(() =>
-  import('./JefesAreaPage').then((m) => ({ default: m.JefesAreaPage })),
+  import('../jefeGestion/JefesAreaPage').then((m) => ({ default: m.JefesAreaPage })),
 );
 const JefeAreaCreatePage = lazy(() =>
-  import('./JefeAreaCreatePage').then((m) => ({ default: m.JefeAreaCreatePage })),
+  import('../jefeGestion/JefeAreaCreatePage').then((m) => ({ default: m.JefeAreaCreatePage })),
 );
 const JefeAreaEditPage = lazy(() =>
-  import('./JefeAreaEditPage').then((m) => ({ default: m.JefeAreaEditPage })),
+  import('../jefeGestion/JefeAreaEditPage').then((m) => ({ default: m.JefeAreaEditPage })),
 );
 const JefeAreaDetailPage = lazy(() =>
-  import('./JefeAreaDetailPage').then((m) => ({ default: m.JefeAreaDetailPage })),
+  import('../jefeGestion/JefeAreaDetailPage').then((m) => ({ default: m.JefeAreaDetailPage })),
 );
 
 export const adminRoutes: RouteObject[] = [
@@ -62,9 +62,9 @@ export const adminRoutes: RouteObject[] = [
   {
     element: <ProtectedRoute permission="instituciones_docentes" />,
     children: [
-      { path: 'instituciones/docentes', element: (<LazyLoader><DirectoresPage /></LazyLoader>) },
-      { path: 'instituciones/docentes/nuevo', element: (<LazyLoader><DirectorCreatePage /></LazyLoader>) },
-      { path: 'instituciones/docentes/:id/editar', element: (<LazyLoader><DirectorEditPage /></LazyLoader>) },
+      { path: 'instituciones/docentes', element: (<LazyLoader><DocenteListPage /></LazyLoader>) },
+      { path: 'instituciones/docentes/nuevo', element: (<LazyLoader><DocenteCreatePage /></LazyLoader>) },
+      { path: 'instituciones/docentes/:id/editar', element: (<LazyLoader><DocenteEditPage /></LazyLoader>) },
       { path: 'instituciones/docentes/:id', element: (<LazyLoader><DocenteDetailPage /></LazyLoader>) },
     ],
   },

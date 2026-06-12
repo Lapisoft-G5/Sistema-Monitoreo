@@ -66,7 +66,7 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
   },
   {
     id: 'jefes_area', 
-    label: 'Jefe de Área',
+    label: 'Jefes de Área',
     icon: <Briefcase className="h-[18px] w-[18px]" />,
     path: '/jefes-area',
     children: [],

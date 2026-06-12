@@ -28,8 +28,9 @@ export const InstitutionProfileHeader = ({ institucion }: { institucion: Institu
           </span>
         </div>
         <h2 className="text-lg font-bold text-text">{institucion.nombre}</h2>
-        <p className="text-text-muted text-xs mt-1">
-          Código Modular: <strong className="font-mono text-text">{institucion.codigoModular}</strong>
+        <p className="text-text-muted text-xs mt-1 flex flex-wrap gap-x-4">
+          <span>Código Modular: <strong className="font-mono text-text">{institucion.codigoModular}</strong></span>
+          <span>Código de Local: <strong className="font-mono text-text">{institucion.codigoLocal || 'No asignado'}</strong></span>
         </p>
       </div>
     </div>

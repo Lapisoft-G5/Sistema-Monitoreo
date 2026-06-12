@@ -9,6 +9,12 @@ export class CreateInstitucionDto implements ICreateInstitucionRequest {
   codigoModular!: string;
 
   @IsString()
+  @IsNotEmpty({ message: 'El código de local es requerido' })
+  @Length(8, 8, { message: 'El código de local debe tener exactamente 8 dígitos' })
+  @Matches(/^\d{8}$/, { message: 'El código de local debe contener solo números' })
+  codigoLocal!: string;
+
+  @IsString()
   @IsNotEmpty({ message: 'El nombre es requerido' })
   nombre!: string;
 
@@ -39,4 +45,8 @@ export class CreateInstitucionDto implements ICreateInstitucionRequest {
   @IsString()
   @IsOptional()
   estado?: string;
+
+  @IsString()
+  @IsOptional()
+  modalidad?: string;
 }

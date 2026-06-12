@@ -14,7 +14,7 @@ const MOCK_ROLES = [
   { code: 'jefe_area', name: 'Jefe de Área', description: 'Jefe de Área de la UGEL' },
   { code: 'jefe_gestion', name: 'Jefe de Gestión', description: 'Jefe de Gestión de la UGEL Lampa' },
   { code: 'especialista', name: 'Especialista', description: 'Especialista de Monitoreo de la UGEL' },
-  { code: 'director_ie', name: 'Director de Institución', description: 'Director de Institución Educativa' },
+  { code: 'director_institucion', name: 'Director de Institución', description: 'Director de Institución Educativa' },
   { code: 'docente', name: 'Docente', description: 'Docente de Aula' },
   { code: 'invitado', name: 'Invitado', description: 'Usuario de Consulta e Invitado' },
 ];
@@ -53,7 +53,7 @@ const MOCK_USERS = [
     email: 'carlos.ruiz@ie-huayta.edu.pe',
     firstName: 'Carlos',
     lastName: 'Ruiz Condori',
-    role: 'director_ie',
+    role: 'director_institucion',
   },
   {
     dni: '11223344',
@@ -86,6 +86,7 @@ const MOCK_CURSOS = [
 
 const MOCK_INSTITUCION = {
   codigoModular: '0543210',
+  codigoLocal: '08765432',
   nombre: 'I.E. Huayta',
   nivelEducativo: 'Secundaria',
   departamento: 'Puno',
@@ -116,7 +117,7 @@ const MOCK_ROL_PERMISOS = {
   jefe_gestion: ['especialistas:read', 'especialistas:write', 'jefes_area:write', 'monitoreo:execute', 'reports:read'],
   jefe_area: ['directores:write', 'instituciones:read', 'instituciones:write'],
   especialista: ['monitoreo:execute', 'reports:read'],
-  director_ie: ['docentes:read', 'docentes:write', 'reports:read'],
+  director_institucion: ['docentes:read', 'docentes:write', 'reports:read'],
   docente: ['reports:own'],
   invitado: [],
 };
@@ -126,6 +127,14 @@ async function main() {
 
   // 1. Seed Roles
   console.log('Seeding roles...');
+
+  try {
+    await prisma.$executeRawUnsafe(`UPDATE roles SET codigo = 'director_institucion' WHERE codigo = 'director_ie'`);
+    console.log('Migrated old director_ie role to director_institucion.');
+  } catch (err) {
+    console.log('Could not migrate director_ie role:', err.message);
+  }
+
   const roleMap = {};
   for (const roleData of MOCK_ROLES) {
     const role = await prisma.role.upsert({
@@ -239,9 +248,11 @@ async function main() {
       direccion: MOCK_INSTITUCION.direccion,
       zona: MOCK_INSTITUCION.zona,
       estado: MOCK_INSTITUCION.estado,
+      codigoLocal: MOCK_INSTITUCION.codigoLocal,
     },
     create: {
       codigoModular: MOCK_INSTITUCION.codigoModular,
+      codigoLocal: MOCK_INSTITUCION.codigoLocal,
       nombre: MOCK_INSTITUCION.nombre,
       nivelEducativo: MOCK_INSTITUCION.nivelEducativo,
       departamento: MOCK_INSTITUCION.departamento,
@@ -320,8 +331,8 @@ async function main() {
     }
 
     // D. Si es Director de Institución o Docente
-    if (userData.role === 'director_ie' || userData.role === 'docente') {
-      const isDirector = userData.role === 'director_ie';
+    if (userData.role === 'director_institucion' || userData.role === 'docente') {
+      const isDirector = userData.role === 'director_institucion';
       
       const docente = await prisma.docente.upsert({
         where: { personaId: persona.id },

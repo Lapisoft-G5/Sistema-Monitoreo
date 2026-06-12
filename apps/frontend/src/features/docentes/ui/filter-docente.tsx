@@ -1,6 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import { CONDICION_LABORAL } from '@entities/model-docentes';
-import { NIVELES } from '@entities/model-instituciones';
+import { CONDICION_LABORAL, MOCK_DOCENTES } from '@entities/model-docentes';
 import { FilterSelect } from '@shared/ui/Filter-Select';
 import { Card } from '@shared/ui/card';
 import { Input } from '@shared/ui/input';
@@ -11,7 +10,7 @@ export const FilterDocentes = () => {
 
   const search = searchParams.get('search') || '';
   const condicion = searchParams.get('condicion') || '';
-  const nivelEducativo = searchParams.get('nivelEducativo') || '';
+  const seccion = searchParams.get('seccion') || '';
 
   const updateFilter = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -26,6 +25,11 @@ export const FilterDocentes = () => {
     setSearchParams(newParams);
   };
 
+  // Obtener secciones únicas ordenadas de los docentes en mocks
+  const seccionesOptions = Array.from(
+    new Set(MOCK_DOCENTES.flatMap((d) => (d.secciones || []).map((s) => s.grado)))
+  ).sort();
+
   return (
     <Card className="p-5 border border-border shadow-xs animate-in fade-in-0 duration-300">
       <div className="flex flex-col gap-4">
@@ -34,7 +38,7 @@ export const FilterDocentes = () => {
           {/* Búsqueda por texto */}
           <div className="flex flex-col gap-1.5 w-full">
             <label className="text-[0.7rem] font-bold uppercase tracking-wider text-text-muted">
-              Buscar Director
+              Buscar Docente
             </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
@@ -57,11 +61,11 @@ export const FilterDocentes = () => {
           />
 
           <FilterSelect
-            label="Nivel Educativo"
-            value={nivelEducativo}
-            onChange={(v) => updateFilter('nivelEducativo', v)}
-            options={[...NIVELES]}
-            allLabel="Todos los niveles"
+            label="Grado y Sección"
+            value={seccion}
+            onChange={(v) => updateFilter('seccion', v)}
+            options={seccionesOptions}
+            allLabel="Todos los grados/secciones"
           />
         </div>
       </div>

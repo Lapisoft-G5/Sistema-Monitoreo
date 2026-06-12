@@ -126,6 +126,7 @@ export const SelectField = ({
   placeholder,
   required,
   error,
+  disabled,
 }: {
   label: string;
   value: string;
@@ -134,13 +135,15 @@ export const SelectField = ({
   placeholder: string;
   required?: boolean;
   error?: string;
+  disabled?: boolean;
 }) => (
   <div className="flex flex-col gap-1 w-full">
     <FieldLabel label={label} required={required} />
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger className={cn(
         "w-full text-left text-sm rounded-lg h-9 border border-input bg-transparent", 
-        error && "border-destructive focus-visible:ring-destructive/30"
+        error && "border-destructive focus-visible:ring-destructive/30",
+        disabled && "bg-muted cursor-not-allowed opacity-80"
       )}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

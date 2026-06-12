@@ -6,10 +6,7 @@ export type EspecialistaRol =
 export type NivelInstitucion =
   | 'Inicial'
   | 'Primaria'
-  | 'Secundaria'
-  | 'EBA'
-  | 'EBE'
-  | 'CEPROs';
+  | 'Secundaria';
 
 export interface Especialista {
   id: string;
@@ -18,9 +15,10 @@ export interface Especialista {
   dni: string;
   correo: string;
   celular: string;
-  especialidad: string;
+  especialidad?: string;
   rol: EspecialistaRol;
   niveles: NivelInstitucion[];
   activo: boolean;
   fechaCreacion: string;
+  cargaLaboral?: number;
 }

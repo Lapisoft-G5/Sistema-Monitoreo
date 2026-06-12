@@ -9,7 +9,7 @@ export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 
 
   const searchQuery = searchParams.get('search') || '';
   const condicionFilter = searchParams.get('condicion') || '';
-  const nivelFilter = searchParams.get('nivelEducativo') || '';
+  const seccionFilter = searchParams.get('seccion') || '';
   const pageParam = parseInt(searchParams.get('page') || '1', 10);
 
   const filtered = useMemo(() => {
@@ -24,11 +24,11 @@ export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 
         d.dni.includes(searchQuery);
 
       const matchCondicion = !condicionFilter || d.condicion === condicionFilter;
-      const matchNivel = !nivelFilter || d.nivelEducativo === nivelFilter;
+      const matchSeccion = !seccionFilter || (d.secciones || []).some((s) => s.grado === seccionFilter);
 
-      return matchSearch && matchCondicion && matchNivel;
+      return matchSearch && matchCondicion && matchSeccion;
     });
-  }, [docentes, searchQuery, condicionFilter, nivelFilter, targetCargo]);
+  }, [docentes, searchQuery, condicionFilter, seccionFilter, targetCargo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(pageParam, totalPages);

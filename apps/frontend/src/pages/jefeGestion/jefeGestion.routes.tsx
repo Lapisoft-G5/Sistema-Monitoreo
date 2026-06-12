@@ -28,7 +28,7 @@ const GestionMonitoreoPage = lazy(() =>
 
 
 
-export const coordinatorRoutes: RouteObject[] = [
+export const jefeGestionRoutes: RouteObject[] = [
   {
     element: <ProtectedRoute permission="monitoreo_plan" />,
     children: [

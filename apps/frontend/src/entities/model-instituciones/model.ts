@@ -4,6 +4,7 @@ export type EstadoMonitoreo = 'Satisfactorio' | 'En Proceso' | 'Crítico';
 export interface Institucion {
   id: string;
   codigoModular: string;
+  codigoLocal: string;
   nombre: string;
   direccion: string;
   nivel: Nivel;
@@ -14,4 +15,5 @@ export interface Institucion {
   zona?: string;
   directorTelefono?: string;
   directorCorreo?: string;
+  modalidad?: string;
 }

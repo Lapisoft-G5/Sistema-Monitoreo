@@ -40,6 +40,7 @@ export const AddJefeArea = () => {
         onSubmit={handleFormSubmit}
         onCancel={() => navigate('/jefes-area')}
         isLoading={loading}
+        isJefeArea={true}
       />
     </Card>
   );

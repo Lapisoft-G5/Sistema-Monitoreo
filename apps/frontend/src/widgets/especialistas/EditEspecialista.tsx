@@ -31,6 +31,7 @@ export const EditEspecialistaCard = () => {
     rol: especialista.rol,
     niveles: especialista.niveles,
     activo: especialista.activo,
+    cargaLaboral: especialista.cargaLaboral,
   };
 
   const handleFormSubmit = async (formData: EspecialistaFormData) => {

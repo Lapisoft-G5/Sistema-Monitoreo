@@ -25,6 +25,7 @@ export const EditInstitutionCard = () => {
 
   const initialData: InstitutionRawInput = {
     codigoModular: institucion.codigoModular,
+    codigoLocal: institucion.codigoLocal || '',
     nombre: institucion.nombre,
     nivel: institucion.nivel,
     provincia: institucion.provincia || '',
@@ -34,6 +35,7 @@ export const EditInstitutionCard = () => {
     director: institucion.director || '',
     directorTelefono: institucion.directorTelefono || '',
     directorCorreo: institucion.directorCorreo || '',
+    modalidad: institucion.modalidad || 'Regular',
   };
 
   const handleFormSubmit = async (formData: InstitutionRawInput) => {

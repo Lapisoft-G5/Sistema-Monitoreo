@@ -1,21 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, Eye, Edit, Trash } from 'lucide-react';
+import { FastActions } from '@shared/ui/FastActions';
 import { type Institucion, MOCK_INSTITUCIONES } from '@entities/model-instituciones';
-import { NivelBadge, EstadoBadge, DirectorCell } from '@entities/model-instituciones/ui';
+import { NivelBadge, ModalidadBadge, DirectorCell } from '@entities/model-instituciones/ui';
 import { useInstitutionsTable } from '../lib/useTable';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@shared/ui/dropdown-menu';
 
 interface InstitutionsTableWidgetProps {
   instituciones: Institucion[];
@@ -64,14 +56,15 @@ export const InstitutionsTableWidget = ({
                   Nivel
                 </TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Modalidad
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
                   Distrito
                 </TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
                   Director
                 </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Estado
-                </TableHead>
+                
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">
                   Acciones
                 </TableHead>
@@ -80,8 +73,9 @@ export const InstitutionsTableWidget = ({
             <TableBody>
               {pageItems.map((inst) => (
                 <TableRow key={inst.id} className="hover:bg-muted/30 transition-colors">
-                  <TableCell className="font-semibold pl-5 text-text">
-                    {inst.codigoModular}
+                  <TableCell className="pl-5 text-text">
+                    <div className="font-semibold">{inst.codigoModular}</div>
+                    <div className="text-xs text-text-muted mt-0.5">Local: {inst.codigoLocal || '-'}</div>
                   </TableCell>
                   <TableCell>
                     <div className="font-bold text-text">{inst.nombre}</div>
@@ -91,60 +85,27 @@ export const InstitutionsTableWidget = ({
                   <TableCell>
                     <NivelBadge nivel={inst.nivel} />
                   </TableCell>
+                  <TableCell>
+                    <ModalidadBadge modalidad={inst.modalidad} />
+                  </TableCell>
                   <TableCell className="text-text font-medium">{inst.distrito}</TableCell>
                   <TableCell>
                     <DirectorCell director={inst.director} />
                   </TableCell>
-                  <TableCell>
-                    <EstadoBadge estado={inst.estado} />
-                  </TableCell>
 
                   <TableCell className="text-right pr-5">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 cursor-pointer rounded-lg text-text-muted hover:text-text hover:bg-muted"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-
-                      <DropdownMenuContent align="end" className="w-[140px] z-50">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            onView(inst);
-                            navigate(`/instituciones/${inst.id}`);
-                          }}
-                          className="cursor-pointer flex items-center gap-2"
-                        >
-                          <Eye className="h-4 w-4 text-text-muted" />
-                          <span>Ver detalle</span>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem
-                          onClick={() => {
-                            onEdit(inst);
-                            navigate(`/instituciones/${inst.id}/editar`);
-                          }}
-                          className="cursor-pointer flex items-center gap-2"
-                        >
-                          <Edit className="h-4 w-4 text-text-muted" />
-                          <span>Editar</span>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator />
-
-                        <DropdownMenuItem
-                          onClick={() => setDeletingInst(inst)}
-                          className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive flex items-center gap-2"
-                        >
-                          <Trash className="h-4 w-4" />
-                          <span>Eliminar</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <FastActions
+                      onView={() => {
+                        onView(inst);
+                        navigate(`/instituciones/${inst.id}`);
+                      }}
+                      onEdit={() => {
+                        onEdit(inst);
+                        navigate(`/instituciones/${inst.id}/editar`);
+                      }}
+                      onDelete={() => setDeletingInst(inst)}
+                      viewTitle="Ver detalle"
+                    />
                   </TableCell>
                 </TableRow>
               ))}

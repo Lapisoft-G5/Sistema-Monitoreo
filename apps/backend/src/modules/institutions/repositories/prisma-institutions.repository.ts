@@ -16,6 +16,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     const record = await this.prisma.institucionEducativa.create({
       data: {
         codigoModular: data.codigoModular,
+        codigoLocal: data.codigoLocal,
         nombre: data.nombre,
         nivelEducativo: data.nivelEducativo,
         departamento: data.departamento ?? 'Puno',
@@ -24,6 +25,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
         direccion: data.direccion,
         zona: data.zona,
         estado: data.estado ?? EstadoInstitucion.ACTIVA,
+        modalidad: data.modalidad,
       },
     });
     return record;

@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import { ROL_ESPECIALISTA_LABELS } from '@entities/model-especialistas';
+import { NIVELES_INSTITUCION } from '@entities/model-especialistas';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { Card } from '@shared/ui/card';
 import { Input } from '@shared/ui/input';
@@ -9,7 +9,7 @@ export const FilterEspecialistas = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const search = searchParams.get('search') || '';
-  const rol = searchParams.get('rol') || '';
+  const nivel = searchParams.get('nivel') || '';
   const estado = searchParams.get('estado') || '';
 
   const updateFilter = (key: string, value: string) => {
@@ -46,20 +46,20 @@ export const FilterEspecialistas = () => {
             </div>
           </div>
 
-          {/* Selector de Rol */}
+          {/* Selector de Nivel */}
           <div className="flex flex-col gap-1.5 w-full">
             <label className="text-[0.7rem] font-bold uppercase tracking-wider text-text-muted">
-              Rol de Especialista
+              Nivel Educativo
             </label>
-            <Select value={rol || 'todos'} onValueChange={(v) => updateFilter('rol', v === 'todos' ? '' : v)}>
+            <Select value={nivel || 'todos'} onValueChange={(v) => updateFilter('nivel', v === 'todos' ? '' : v)}>
               <SelectTrigger className="w-full text-left text-sm bg-surface border-border text-text h-9">
-                <SelectValue placeholder="Todos los roles" />
+                <SelectValue placeholder="Todos los niveles" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos los roles</SelectItem>
-                {Object.entries(ROL_ESPECIALISTA_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
+                <SelectItem value="todos">Todos los niveles</SelectItem>
+                {NIVELES_INSTITUCION.map((n) => (
+                  <SelectItem key={n} value={n}>
+                    {n}
                   </SelectItem>
                 ))}
               </SelectContent>

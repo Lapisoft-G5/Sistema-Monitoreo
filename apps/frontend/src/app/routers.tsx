@@ -5,7 +5,7 @@ import { ForgotPasswordPage } from '@/pages/login/passwordForgotte';
 import { ResetPasswordPage } from '@/pages/login/resetPassword';
 
 import { adminRoutes } from '@/pages/jefeArea/jefeArea.routes';
-import { coordinatorRoutes } from '@/pages/coordinador/coordinador.routes';
+import { jefeGestionRoutes } from '@/pages/jefeGestion/jefeGestion.routes';
 import { especialistaRoutes } from '@/pages/especialista/especialista.routes';
 import { directorUgelRoutes } from '@/pages/directorUgel/directorUgel.routes';
 import { RootRedirect } from './RootRedirect';
@@ -19,7 +19,7 @@ export const router = createBrowserRouter([
       
       ...directorUgelRoutes,
       ...adminRoutes, 
-      ...coordinatorRoutes,
+      ...jefeGestionRoutes,
       ...especialistaRoutes,
     ],
   },

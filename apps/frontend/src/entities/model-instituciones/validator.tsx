@@ -8,6 +8,10 @@ export const institucionSchema = z.object({
     .string()
     .length(7, 'El código modular debe tener exactamente 7 dígitos')
     .regex(/^\d+$/, 'El código modular solo debe contener números'),
+  codigoLocal: z
+    .string()
+    .length(8, 'El código de local debe tener exactamente 8 dígitos')
+    .regex(/^\d+$/, 'El código de local solo debe contener números'),
   nombre: z.string().min(4, 'El nombre de la institución es muy corto'),
   direccion: z.string().min(4, 'La dirección es requerida'),
   nivel: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA']),
@@ -26,6 +30,7 @@ export const institucionSchema = z.object({
     .email('Formato de correo inválido')
     .optional()
     .or(z.literal('')),
+  modalidad: z.enum(['Regular', 'PRONOEI', 'EBA', 'EBE']).optional(),
 });
 
 // Tipos inferidos de Zod (útil para el Feature que maneje el formulario)

@@ -12,9 +12,11 @@ import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
 import type { Docente } from '@entities/model-docentes';
 import type { Institucion } from '@entities/model-instituciones';
+import { useUser } from '@entities/model-user';
 
 export const DocentesPage = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
   const [docentes, setDocentes] = useState<Docente[]>([]);
   const [instituciones, setInstituciones] = useState<Institucion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,12 @@ export const DocentesPage = () => {
       ]);
 
       if (teachersRes.ok && teachersRes.data) {
-        setDocentes(teachersRes.data.map(mapApiDocenteToFrontend));
+        let mapped = teachersRes.data.map(mapApiDocenteToFrontend);
+        const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
+        if (isDirectorIe) {
+          mapped = mapped.filter((d) => d.cargo !== 'Director');
+        }
+        setDocentes(mapped);
       } else {
         console.error('Error loading teachers:', teachersRes.error);
       }

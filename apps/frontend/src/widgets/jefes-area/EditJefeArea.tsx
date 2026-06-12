@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
-import { EspecialistaFormBase } from '@features/especialistas';
-import { type Especialista } from '@entities/model-especialistas';
-import { useEspecialistaService, mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
-import { especialistasApi } from '@shared/api/especialistas.api';
+import { JefeAreaFormBase, useJefeAreaService, mapApiJefeAreaToFrontend } from '@features/jefes-area';
+import { type JefeArea } from '@entities/model-jefes-area';
+import { jefesAreaApi } from '@shared/api/jefes-area.api';
 import { Card } from '@shared/ui/card';
-import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
+import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 
 export const EditJefeArea = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { updateEspecialista, loading, error } = useEspecialistaService();
+  const { updateJefeArea, loading, error } = useJefeAreaService();
 
-  const [jefe, setJefe] = useState<Especialista | null>(null);
+  const [jefe, setJefe] = useState<JefeArea | null>(null);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
@@ -21,9 +20,9 @@ export const EditJefeArea = () => {
       if (!id) return;
       setFetching(true);
       try {
-        const res = await especialistasApi.findById(id);
+        const res = await jefesAreaApi.findById(id);
         if (res.ok && res.data) {
-          setJefe(mapApiEspecialistaToFrontend(res.data));
+          setJefe(mapApiJefeAreaToFrontend(res.data));
         } else {
           setJefe(null);
         }
@@ -54,22 +53,24 @@ export const EditJefeArea = () => {
     );
   }
 
-  const initialData: EspecialistaFormData = {
+  const initialData: JefeAreaFormData = {
     nombres: jefe.nombres,
     apellidos: jefe.apellidos,
     dni: jefe.dni,
     correo: jefe.correo,
     celular: jefe.celular,
-    especialidad: jefe.especialidad,
-    rol: jefe.rol,
-    niveles: jefe.niveles,
+    cargaHoraria: jefe.cargaHoraria,
+    nivelEducativo: jefe.nivelEducativo as 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA',
     activo: jefe.activo,
-    cargaLaboral: jefe.cargaLaboral,
   };
 
-  const handleFormSubmit = async (formData: EspecialistaFormData) => {
+  const handleFormSubmit = async (formData: JefeAreaFormData) => {
     if (!id) return;
-    const result = await updateEspecialista(id, formData);
+    const result = await updateJefeArea(
+      id,
+      formData,
+      'jefe_area'
+    );
     if (result.success) {
       navigate('/jefes-area');
     }
@@ -84,12 +85,11 @@ export const EditJefeArea = () => {
         </div>
       )}
 
-      <EspecialistaFormBase
+      <JefeAreaFormBase
         initialData={initialData}
         onSubmit={handleFormSubmit}
         onCancel={() => navigate('/jefes-area')}
         isLoading={loading}
-        isJefeArea={true}
       />
     </Card>
   );

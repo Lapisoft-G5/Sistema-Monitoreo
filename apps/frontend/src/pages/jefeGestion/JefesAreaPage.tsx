@@ -4,26 +4,24 @@ import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 
-import { FilterEspecialistas } from '@features/especialistas';
+import { FilterJefesArea } from '@features/jefes-area';
 import { JefesStatsWidget, JefesTableWidget } from '@widgets/jefes-area';
-import { especialistasApi } from '@shared/api/especialistas.api';
-import { mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
-import type { Especialista } from '@entities/model-especialistas';
+import { jefesAreaApi } from '@shared/api/jefes-area.api';
+import { mapApiJefeAreaToFrontend } from '@features/jefes-area/jefe-area-service';
+import type { JefeArea } from '@entities/model-jefes-area';
 
 export const JefesAreaPage = () => {
   const navigate = useNavigate();
-  const [jefes, setJefes] = useState<Especialista[]>([]);
+  const [jefes, setJefes] = useState<JefeArea[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchJefes = async () => {
     setLoading(true);
     try {
-      const res = await especialistasApi.findAll();
+      const res = await jefesAreaApi.findAll();
       if (res.ok && res.data) {
-        const mapped = res.data.map(mapApiEspecialistaToFrontend);
-        // Mantenemos solo los que tienen el rol de Jefe de Área ('especialista_bajo')
-        const filtered = mapped.filter((esp) => esp.rol === 'especialista_bajo');
-        setJefes(filtered);
+        const mapped = res.data.map(mapApiJefeAreaToFrontend);
+        setJefes(mapped);
       } else {
         console.error('Error al cargar los jefes de área desde la API:', res.error);
       }
@@ -63,13 +61,13 @@ export const JefesAreaPage = () => {
         }
       />
 
-      {/* 🚀 Indicadores de Estado exclusivos para Jefes */}
+      {/* Indicadores de Estado exclusivos para Jefes */}
       <JefesStatsWidget jefes={jefes} />
 
-      {/* Barra de Filtros original */}
-      <FilterEspecialistas />
+      {/* Barra de Filtros dedicada */}
+      <FilterJefesArea />
 
-      {/* 🚀 Nueva Tabla dedicada con redirección nativa e impecable */}
+      {/* Tabla dedicada con redirección nativa */}
       <JefesTableWidget
         jefes={jefes}
         setJefes={setJefes}

@@ -52,7 +52,6 @@ export const useInstitutionService = () => {
         zona: formData.zona,
         estado: 'Activa',
         modalidad: formData.modalidad || 'Regular',
-        directorDni: formData.directorDni || undefined,
       };
 
       const res = await institutionsApi.create(dto);
@@ -87,7 +86,6 @@ export const useInstitutionService = () => {
         direccion: formData.direccion,
         zona: formData.zona,
         modalidad: formData.modalidad || 'Regular',
-        directorDni: formData.directorDni || undefined,
       };
 
       const res = await institutionsApi.update(id, dto);

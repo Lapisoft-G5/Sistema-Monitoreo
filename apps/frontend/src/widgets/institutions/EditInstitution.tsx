@@ -65,10 +65,6 @@ export const EditInstitutionCard = () => {
     distrito: institucion.distrito,
     zona: institucion.zona || '',
     direccion: institucion.direccion,
-    director: institucion.director || '',
-    directorTelefono: institucion.directorTelefono || '',
-    directorCorreo: institucion.directorCorreo || '',
-    directorDni: institucion.directorDni || '',
     modalidad: institucion.modalidad || 'Regular',
   };
 

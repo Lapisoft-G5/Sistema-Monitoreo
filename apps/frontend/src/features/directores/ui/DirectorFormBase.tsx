@@ -1,13 +1,9 @@
 import { useState } from 'react';
 import { User, Briefcase, Check } from 'lucide-react';
-import { cn } from '@shared/lib/utils';
-import { CONDICION_DIRECTIVA } from '@entities/model-docentes';
+import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import { directorSchema } from '@entities/model-docentes/validator';
 import { SectionCard, TextField, SelectField, FormButton, twoCols } from '@shared/ui/form-controls';
-
-// Escala magisterial: se muestra 1-8, se guarda en romano (I-VIII).
-const ESCALAS_ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'] as const;
 
 const INITIAL: DirectorFormData = {
   nombres: '',
@@ -18,6 +14,8 @@ const INITIAL: DirectorFormData = {
   condicion: 'Asignado',
   escala: 'I',
   institucionId: '',
+  nivelEducativo: 'PRIMARIA',
+  especialidad: '',
 };
 
 interface Props {
@@ -25,8 +23,8 @@ interface Props {
   onSubmit: (data: DirectorFormData) => void;
   isLoading: boolean;
   initialData?: DirectorFormData;
-  // IEs disponibles para asignar (al registrar: solo las que no tienen director).
-  instituciones: { id: string; nombre: string }[];
+  // IEs disponibles para asignar
+  instituciones: { id: string; nombre: string; nivel?: string }[];
   submitLabel?: string;
 }
 
@@ -38,11 +36,22 @@ export const DirectorFormBase = ({
   instituciones,
   submitLabel,
 }: Props) => {
-  const [form, setForm] = useState<DirectorFormData>(initialData ?? INITIAL);
+  const [form, setForm] = useState<DirectorFormData>(() => ({
+    ...INITIAL,
+    ...initialData,
+  }));
   const [submitted, setSubmitted] = useState(false);
 
   const set = <K extends keyof DirectorFormData>(key: K, value: DirectorFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleInstitucionChange = (id: string) => {
+    set('institucionId', id);
+    const selectedIe = instituciones.find((i) => i.id === id);
+    if (selectedIe && selectedIe.nivel) {
+      set('nivelEducativo', selectedIe.nivel.toUpperCase() as any);
+    }
+  };
 
   const result = directorSchema.safeParse(form);
   const errors: Record<string, string> = {};
@@ -129,8 +138,9 @@ export const DirectorFormBase = ({
             required
             value="Director"
             onChange={() => undefined}
-            options={[{ value: 'Director', label: 'Director de Institución Educativa' }]}
-            placeholder="Director de Institución Educativa"
+            options={[{ value: 'Director', label: 'Director de I.E.' }]}
+            placeholder="Director de I.E."
+            disabled
           />
           <SelectField
             label="Condición Laboral"
@@ -142,38 +152,48 @@ export const DirectorFormBase = ({
             error={showError('condicion')}
           />
         </div>
-        <div style={{ marginTop: 18, maxWidth: 'calc(50% - 9px)', minWidth: 240 }}>
+        <div style={{ ...twoCols, marginTop: 18 }}>
           <SelectField
             label="Institución Educativa"
             required
             value={form.institucionId}
-            onChange={(v) => set('institucionId', v)}
+            onChange={handleInstitucionChange}
             options={instituciones.map((i) => ({ value: i.id, label: i.nombre }))}
-            placeholder="Seleccione la I.E. (sin director)"
+            placeholder="Seleccione la I.E."
             error={showError('institucionId')}
           />
+          <SelectField
+            label="Nivel Educativo"
+            required
+            value={form.nivelEducativo}
+            onChange={(v) => set('nivelEducativo', v as any)}
+            options={[
+              { value: 'INICIAL', label: 'Inicial' },
+              { value: 'PRIMARIA', label: 'Primaria' },
+              { value: 'SECUNDARIA', label: 'Secundaria' },
+            ]}
+            placeholder="Seleccione Nivel"
+            error={showError('nivelEducativo')}
+          />
         </div>
-        <div className="mt-[18px] flex flex-col gap-1">
-          <label className="text-xs font-semibold text-text">
-            Escala Magisterial (1 a 8) <span className="text-destructive">*</span>
-          </label>
-          <div className="flex gap-2 flex-wrap mt-1">
-            {ESCALAS_ROMAN.map((rom, i) => (
-              <button
-                key={rom}
-                type="button"
-                onClick={() => set('escala', rom)}
-                className={cn(
-                  'h-9 w-10 rounded-lg border text-sm font-bold transition-colors cursor-pointer',
-                  form.escala === rom
-                    ? 'bg-primary text-white border-primary'
-                    : 'border-border text-text-muted hover:bg-muted',
-                )}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
+        <div style={{ ...twoCols, marginTop: 18 }}>
+          <TextField
+            label="Especialidad / Mención"
+            required
+            value={form.especialidad}
+            onChange={(v) => set('especialidad', v)}
+            placeholder="Ej. Matemática, Gestión Pedagógica"
+            error={showError('especialidad')}
+          />
+          <SelectField
+            label="Escala Magisterial"
+            required
+            value={form.escala}
+            onChange={(v) => set('escala', v as any)}
+            options={ESCALAS_MAGISTERIALES}
+            placeholder="Seleccione Escala"
+            error={showError('escala')}
+          />
         </div>
       </SectionCard>
 

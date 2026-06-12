@@ -5,7 +5,9 @@ import { Card } from '@shared/ui/card';
 import { DirectorFormBase } from '@features/directores';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
-import { useDocenteService } from '@features/docentes/docente-service';
+import type { Docente } from '@entities/model-docentes';
+import { useDocenteService, mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import { teachersApi } from '@shared/api/teachers.api';
 import { institutionsApi } from '@shared/api/institutions.api';
 import type { IInstitucionResponse } from '@sistema-monitoreo/shared-contracts';
 
@@ -13,19 +15,31 @@ export const CreateDirectorCard = () => {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [instituciones, setInstituciones] = useState<IInstitucionResponse[]>([]);
+  const [docentes, setDocentes] = useState<Docente[]>([]);
   const [fetching, setFetching] = useState(true);
   const { createDocente, loading: saving, error: serviceError } = useDocenteService();
 
   useEffect(() => {
-    const fetchIes = async () => {
+    const loadData = async () => {
       setFetching(true);
-      const res = await institutionsApi.findAll({ limit: 1000 });
-      if (res.ok && res.data) {
-        setInstituciones(res.data.data);
+      try {
+        const [instsRes, teachersRes] = await Promise.all([
+          institutionsApi.findAll({ limit: 1000 }),
+          teachersApi.findAll(),
+        ]);
+        if (instsRes.ok && instsRes.data) {
+          setInstituciones(instsRes.data.data);
+        }
+        if (teachersRes.ok && teachersRes.data) {
+          setDocentes(teachersRes.data.map(mapApiDocenteToFrontend));
+        }
+      } catch (err) {
+        console.error('Error fetching data for AddDirector:', err);
+      } finally {
+        setFetching(false);
       }
-      setFetching(false);
     };
-    fetchIes();
+    loadData();
   }, []);
 
   const handleSubmit = async (data: DirectorFormData) => {
@@ -41,9 +55,9 @@ export const CreateDirectorCard = () => {
       dni: data.dni,
       correo: data.correo,
       celular: data.celular,
-      nivelEducativo: (ie.nivelEducativo?.toUpperCase() || 'PRIMARIA') as DocenteFormData['nivelEducativo'],
+      nivelEducativo: data.nivelEducativo as DocenteFormData['nivelEducativo'],
       condicion: data.condicion as DocenteFormData['condicion'],
-      especialidad: 'Gestión Escolar',
+      especialidad: data.especialidad,
       cargaHoraria: 40,
       secciones: [],
       escala: data.escala,
@@ -67,6 +81,13 @@ export const CreateDirectorCard = () => {
     );
   }
 
+  // Filtrar las IEs que ya cuentan con un director activo para evitar duplicidades
+  const activeDirectorIds = docentes
+    .filter((d) => d.cargo === 'Director' && d.activo)
+    .map((d) => d.institucionId);
+
+  const availableInstituciones = instituciones.filter((i) => !activeDirectorIds.includes(i.id));
+
   const finalError = error || serviceError;
 
   return (
@@ -82,7 +103,11 @@ export const CreateDirectorCard = () => {
         onSubmit={handleSubmit}
         onCancel={() => navigate('/instituciones/docentes')}
         isLoading={saving}
-        instituciones={instituciones.map((i) => ({ id: i.id, nombre: i.nombre }))}
+        instituciones={availableInstituciones.map((i) => ({
+          id: i.id,
+          nombre: i.nombre,
+          nivel: i.nivelEducativo,
+        }))}
       />
     </Card>
   );

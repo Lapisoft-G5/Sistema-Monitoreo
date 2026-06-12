@@ -18,6 +18,7 @@ export const EditDirectorCard = () => {
 
   const [director, setDirector] = useState<Docente | null>(null);
   const [instituciones, setInstituciones] = useState<IInstitucionResponse[]>([]);
+  const [docentes, setDocentes] = useState<Docente[]>([]);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
 
@@ -32,9 +33,11 @@ export const EditDirectorCard = () => {
         ]);
 
         if (teachersRes.ok && teachersRes.data) {
-          const found = teachersRes.data.find((d) => d.id === id);
+          const mappedDocs = teachersRes.data.map(mapApiDocenteToFrontend);
+          setDocentes(mappedDocs);
+          const found = mappedDocs.find((d) => d.id === id);
           if (found) {
-            setDirector(mapApiDocenteToFrontend(found));
+            setDirector(found);
           }
         }
         if (instsRes.ok && instsRes.data) {
@@ -75,6 +78,8 @@ export const EditDirectorCard = () => {
     condicion: director.condicion as DirectorFormData['condicion'],
     escala: director.escala,
     institucionId: director.institucionId,
+    nivelEducativo: director.nivelEducativo as any,
+    especialidad: director.especialidad,
   };
 
   const handleSubmit = async (data: DirectorFormData) => {
@@ -90,9 +95,9 @@ export const EditDirectorCard = () => {
       dni: data.dni,
       correo: data.correo,
       celular: data.celular,
-      nivelEducativo: (ie.nivelEducativo?.toUpperCase() || 'PRIMARIA') as DocenteFormData['nivelEducativo'],
+      nivelEducativo: data.nivelEducativo as DocenteFormData['nivelEducativo'],
       condicion: data.condicion as DocenteFormData['condicion'],
-      especialidad: 'Gestión Escolar',
+      especialidad: data.especialidad,
       cargaHoraria: 40,
       secciones: [],
       escala: data.escala,
@@ -106,6 +111,14 @@ export const EditDirectorCard = () => {
       navigate('/instituciones/docentes');
     }
   };
+
+  // Filtrar las IEs que ya cuentan con un director activo para evitar duplicidades,
+  // excluyendo la I.E. que ya tiene el director editado actualmente.
+  const activeDirectorIds = docentes
+    .filter((d) => d.cargo === 'Director' && d.activo && d.id !== director.id)
+    .map((d) => d.institucionId);
+
+  const availableInstituciones = instituciones.filter((i) => !activeDirectorIds.includes(i.id));
 
   const finalError = error || serviceError;
 
@@ -123,7 +136,11 @@ export const EditDirectorCard = () => {
         onSubmit={handleSubmit}
         onCancel={() => navigate('/instituciones/docentes')}
         isLoading={saving}
-        instituciones={instituciones.map((i) => ({ id: i.id, nombre: i.nombre }))}
+        instituciones={availableInstituciones.map((i) => ({
+          id: i.id,
+          nombre: i.nombre,
+          nivel: i.nivelEducativo,
+        }))}
         submitLabel="Actualizar Datos"
       />
     </Card>

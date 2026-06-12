@@ -8,8 +8,8 @@ export const userSchema = z.object({
   nombres: z.string().min(2, 'Los nombres son muy cortos'),
   apellidos: z.string().min(2, 'Los apellidos son muy cortos'),
   role: z.enum([
-    'director_ugel', 'jefe_area', 'jefe_gestion', 
-    'especialista', 'director_institucion', 'docente', 'invitado'
+    'director_ugel', 'jefe_area', 'jefe_gestion', 'coordinador_pedagogico',
+    'especialista', 'director_institucion', 'director_ie', 'docente', 'invitado'
   ]),
   institucion: z.string().optional(),
   distrito: z.string().optional(),

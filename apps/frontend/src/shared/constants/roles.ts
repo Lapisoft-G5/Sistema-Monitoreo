@@ -5,6 +5,7 @@ export type UserRole =
   | 'coordinador_pedagogico' // 🚀 Agregado para solucionar el error de TypeScript
   | 'especialista'
   | 'director_institucion'
+  | 'director_ie' // 🚀 Fallback alias para base de datos local
   | 'docente'
   | 'invitado';
 
@@ -15,6 +16,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   jefe_gestion: 'Jefe de Gestión',
   especialista: 'Especialista',
   director_institucion: 'Director de Institución',
+  director_ie: 'Director de Institución',
   docente: 'Docente',
   invitado: 'Invitado',
 };
@@ -39,7 +41,7 @@ const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   director_ugel: ['dashboard', 'reportes'],
 
-  jefe_gestion: ['dashboard', 'monitoreo', 'monitoreo_reportes', 'especialistas', 'reportes'],
+  jefe_gestion: ['monitoreo', 'monitoreo_reportes', 'especialistas', 'jefes_area', 'reportes'],
 
   jefe_area: ['instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores'],
 
@@ -48,6 +50,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   especialista: ['monitoreo', 'monitoreo_reportes', 'reportes'], // 🚀 Se eliminó la duplicación aquí
 
   director_institucion: [
+    'instituciones_docentes',
+    'reportes',
+  ],
+
+  director_ie: [
     'instituciones_docentes',
     'reportes',
   ],
@@ -84,10 +91,11 @@ export const getDefaultLandingPage = (role: UserRole): string => {
     case 'jefe_area':
       return '/instituciones/padron';
     case 'jefe_gestion':
-      return '/dashboard';
+      return '/especialistas';
     case 'especialista':
       return '/monitoreo/reportes';
     case 'director_institucion':
+    case 'director_ie':
       return '/instituciones/docentes';
     case 'docente':
       return '/reportes';

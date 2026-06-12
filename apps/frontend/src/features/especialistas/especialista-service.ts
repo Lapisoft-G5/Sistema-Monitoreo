@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Especialista, EspecialistaRol, NivelInstitucion } from '@entities/model-especialistas';
+import type { Especialista, NivelInstitucion } from '@entities/model-especialistas';
 import { MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistasApi } from '@shared/api/especialistas.api';
@@ -7,16 +7,6 @@ import { especialistasApi } from '@shared/api/especialistas.api';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 
 export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Especialista => {
-  let rol: EspecialistaRol;
-  const roleCode = apiEsp.user?.role?.code;
-  if (roleCode === 'jefe_gestion') {
-    rol = 'especialista_admin';
-  } else if (roleCode === 'jefe_area') {
-    rol = 'especialista_bajo';
-  } else {
-    rol = 'especialista_medio';
-  }
-
   return {
     id: apiEsp.id,
     nombres: apiEsp.persona.nombres,
@@ -25,7 +15,6 @@ export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Esp
     correo: apiEsp.persona.correo || '',
     celular: apiEsp.persona.telefono || '',
     especialidad: apiEsp.especialidad || '',
-    rol,
     niveles: apiEsp.nivelEducativo
       ? (apiEsp.nivelEducativo.split(',').map((s: string) => s.trim()) as NivelInstitucion[])
       : [],
@@ -33,7 +22,11 @@ export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Esp
     fechaCreacion: apiEsp.createdAt
       ? new Date(apiEsp.createdAt).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
+    condicionLaboral: (apiEsp.condicionLaboral as any) || 'Contratado',
     cargaLaboral: apiEsp.cargaLaboral || 40,
+    escalaMagisterial: apiEsp.escalaMagisterial ?? undefined,
+    cargo: apiEsp.cargo,
+    rolCode: apiEsp.user?.role?.code,
   };
 };
 
@@ -41,24 +34,15 @@ export const useEspecialistaService = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createEspecialista = async (formData: EspecialistaFormData) => {
+  const createEspecialista = async (
+    formData: EspecialistaFormData,
+    rolCode: string = 'especialista',
+    cargo: string = 'Especialista',
+  ) => {
     setLoading(true);
     setError(null);
 
     try {
-      let rolCode = 'especialista';
-      let cargo = 'Especialista';
-      if (formData.rol === 'especialista_admin') {
-        rolCode = 'jefe_gestion';
-        cargo = 'Jefe de Gestión';
-      } else if (formData.rol === 'especialista_bajo') {
-        rolCode = 'jefe_area';
-        cargo = 'Jefe de Área';
-      }
-
-      // 'Jefe de Gestión' must have conditionLaboral set as 'Nombrado' to comply with backend business rules
-      const condicionLaboral = 'Nombrado';
-
       const dto = {
         dni: formData.dni,
         nombres: formData.nombres.trim(),
@@ -69,7 +53,9 @@ export const useEspecialistaService = () => {
         nivelEducativo: formData.niveles.join(', '),
         rolCode,
         cargo,
-        condicionLaboral,
+        condicionLaboral: formData.condicionLaboral,
+        cargaLaboral: formData.cargaLaboral,
+        escalaMagisterial: formData.escalaMagisterial,
       };
 
       const res = await especialistasApi.create(dto);
@@ -90,23 +76,16 @@ export const useEspecialistaService = () => {
     }
   };
 
-  const updateEspecialista = async (id: string, formData: EspecialistaFormData) => {
+  const updateEspecialista = async (
+    id: string,
+    formData: EspecialistaFormData,
+    rolCode: string = 'especialista',
+    cargo: string = 'Especialista',
+  ) => {
     setLoading(true);
     setError(null);
 
     try {
-      let rolCode = 'especialista';
-      let cargo = 'Especialista';
-      if (formData.rol === 'especialista_admin') {
-        rolCode = 'jefe_gestion';
-        cargo = 'Jefe de Gestión';
-      } else if (formData.rol === 'especialista_bajo') {
-        rolCode = 'jefe_area';
-        cargo = 'Jefe de Área';
-      }
-
-      const condicionLaboral = 'Nombrado';
-
       const dto = {
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
@@ -117,7 +96,9 @@ export const useEspecialistaService = () => {
         estado: formData.activo ?? true ? 'Activo' : 'Inactivo',
         rolCode,
         cargo,
-        condicionLaboral,
+        condicionLaboral: formData.condicionLaboral,
+        cargaLaboral: formData.cargaLaboral,
+        escalaMagisterial: formData.escalaMagisterial,
       };
 
       const res = await especialistasApi.update(id, dto);

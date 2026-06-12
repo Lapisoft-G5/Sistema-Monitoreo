@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen, BadgeCheck } from 'lucide-react';
-import { type Especialista, ROL_ESPECIALISTA_LABELS } from '@entities/model-especialistas';
+import { type Especialista } from '@entities/model-especialistas';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
@@ -129,28 +129,38 @@ export const EspecialistaDetailPage = () => {
           <Card className="p-6 border border-border shadow-xs flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <Briefcase className="w-5 h-5 text-primary" />
-              <h3 className="text-sm font-bold text-text">Rol y Especialidad</h3>
+              <h3 className="text-sm font-bold text-text">Detalles Laborales</h3>
             </div>
 
             <div className="flex flex-col gap-3.5">
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">Rol Desempeñado</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">Cargo</span>
                 <Badge variant="default" className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide">
-                  {ROL_ESPECIALISTA_LABELS[especialista.rol]}
+                  {especialista.cargo || 'Especialista'}
                 </Badge>
               </div>
 
-              {especialista.rol === 'especialista_bajo' ? (
+              <div>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Condición Laboral</span>
+                <span className="text-sm font-semibold text-text">{especialista.condicionLaboral || 'No especificada'}</span>
+              </div>
+
+              <div>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Carga Laboral</span>
+                <span className="text-sm font-semibold text-text">{especialista.cargaLaboral || 40} horas</span>
+              </div>
+
+              {especialista.escalaMagisterial !== undefined && especialista.escalaMagisterial !== null && (
                 <div>
-                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Carga Laboral</span>
-                  <span className="text-sm font-semibold text-text">{especialista.cargaLaboral || 0} horas</span>
-                </div>
-              ) : (
-                <div>
-                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Especialidad</span>
-                  <span className="text-sm font-semibold text-text">{especialista.especialidad || 'No especificada'}</span>
+                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Escala Magisterial</span>
+                  <span className="text-sm font-semibold text-text">Escala {especialista.escalaMagisterial}</span>
                 </div>
               )}
+
+              <div>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Especialidad</span>
+                <span className="text-sm font-semibold text-text">{especialista.especialidad || 'No especificada'}</span>
+              </div>
 
               <div>
                 <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Estado</span>

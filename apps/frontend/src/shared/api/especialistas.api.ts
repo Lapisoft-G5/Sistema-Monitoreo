@@ -104,4 +104,38 @@ export const especialistasApi = {
       return { ok: false, error: err };
     }
   },
+
+  deactivate: async (id: string): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}/baja`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        return { ok: false, error: errJson };
+      }
+      const data = await response.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
+
+  activate: async (id: string): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}/alta`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        return { ok: false, error: errJson };
+      }
+      const data = await response.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
 };

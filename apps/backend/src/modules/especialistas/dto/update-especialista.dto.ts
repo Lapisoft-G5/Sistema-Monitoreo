@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
 import type { IUpdateEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
 
 export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
@@ -43,5 +43,13 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   @IsString()
   @IsOptional()
   condicionLaboral?: string;
+
+  @IsInt()
+  @IsOptional()
+  cargaLaboral?: number;
+
+  @IsInt()
+  @IsOptional()
+  escalaMagisterial?: number | null;
 }
 

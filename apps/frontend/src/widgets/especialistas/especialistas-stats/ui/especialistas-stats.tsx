@@ -10,8 +10,8 @@ export const EspecialistasStatsWidget = ({ especialistas }: Props) => {
   const total = especialistas.length || 1;
   const activos = especialistas.filter((e) => e.activo).length;
   const inactivos = especialistas.filter((e) => !e.activo).length;
-  const adminCount = especialistas.filter((e) => e.rol === 'especialista_admin').length;
-  const nivelAreaCount = especialistas.filter((e) => e.rol !== 'especialista_admin').length;
+  const adminCount = especialistas.filter((e) => e.rolCode === 'jefe_gestion').length;
+  const nivelAreaCount = especialistas.filter((e) => e.rolCode !== 'jefe_gestion').length;
 
   const porcentajeActivos = Math.round((activos / total) * 100);
 

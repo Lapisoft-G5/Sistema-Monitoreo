@@ -20,8 +20,8 @@ export const EspecialistasPage = () => {
     const res = await especialistasApi.findAll();
     if (res.ok && res.data) {
       const mapped = res.data.map(mapApiEspecialistaToFrontend);
-      // Keep only those that are not 'especialista_bajo' (Jefes de Área), matching the original mock behavior
-      const filtered = mapped.filter((esp) => esp.rol !== 'especialista_bajo');
+      // Keep only those that are not Jefes de Área, matching the original behavior
+      const filtered = mapped.filter((esp) => esp.rolCode !== 'jefe_area');
       setEspecialistas(filtered);
     } else {
       console.error('Error loading specialists from API:', res.error);

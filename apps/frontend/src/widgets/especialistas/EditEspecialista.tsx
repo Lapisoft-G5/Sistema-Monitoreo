@@ -61,15 +61,21 @@ export const EditEspecialistaCard = () => {
     correo: especialista.correo,
     celular: especialista.celular,
     especialidad: especialista.especialidad,
-    rol: especialista.rol,
     niveles: especialista.niveles,
     activo: especialista.activo,
+    condicionLaboral: especialista.condicionLaboral,
     cargaLaboral: especialista.cargaLaboral,
+    escalaMagisterial: especialista.escalaMagisterial,
   };
 
   const handleFormSubmit = async (formData: EspecialistaFormData) => {
     if (!id) return;
-    const result = await updateEspecialista(id, formData);
+    const result = await updateEspecialista(
+      id,
+      formData,
+      especialista.rolCode || 'especialista',
+      especialista.cargo || 'Especialista'
+    );
     if (result.success) {
       navigate('/especialistas');
     }

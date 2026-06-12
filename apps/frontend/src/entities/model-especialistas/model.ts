@@ -1,12 +1,9 @@
-export type EspecialistaRol =
-  | 'especialista_admin'
-  | 'especialista_medio'
-  | 'especialista_bajo';
-
 export type NivelInstitucion =
   | 'Inicial'
   | 'Primaria'
   | 'Secundaria';
+
+export type CondicionLaboral = 'Contratado' | 'Nombrado';
 
 export interface Especialista {
   id: string;
@@ -16,9 +13,12 @@ export interface Especialista {
   correo: string;
   celular: string;
   especialidad?: string;
-  rol: EspecialistaRol;
   niveles: NivelInstitucion[];
   activo: boolean;
   fechaCreacion: string;
-  cargaLaboral?: number;
+  condicionLaboral: CondicionLaboral;
+  cargaLaboral: number;
+  escalaMagisterial?: number;
+  cargo?: string;
+  rolCode?: string;
 }

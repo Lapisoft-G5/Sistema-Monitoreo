@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FastActions } from '@shared/ui/FastActions';
 import type { Especialista } from '@entities/model-especialistas';
-import { ROL_COLORS, ROL_ESPECIALISTA_LABELS, MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
+import { CARGO_COLORS, MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
 import { useEspecialistasTable } from '../lib/useTable';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -27,6 +27,7 @@ export const EspecialistasTableWidget = ({
 }: EspecialistasTableWidgetProps) => {
   const navigate = useNavigate();
   const [deletingDoc, setDeletingDoc] = useState<Especialista | null>(null);
+  const [restoringDoc, setRestoringDoc] = useState<Especialista | null>(null);
 
   const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } =
     useEspecialistasTable(especialistas);
@@ -34,21 +35,46 @@ export const EspecialistasTableWidget = ({
   const confirmDelete = async () => {
     if (!deletingDoc) return;
     try {
-      const res = await especialistasApi.delete(deletingDoc.id);
+      const res = await especialistasApi.deactivate(deletingDoc.id);
       if (res.ok) {
         const index = MOCK_ESPECIALISTAS.findIndex((d) => d.id === deletingDoc.id);
         if (index !== -1) {
-          MOCK_ESPECIALISTAS.splice(index, 1);
+          MOCK_ESPECIALISTAS[index].activo = false;
         }
-        setEspecialistas((prev) => prev.filter((d) => d.id !== deletingDoc.id));
+        setEspecialistas((prev) =>
+          prev.map((e) => (e.id === deletingDoc.id ? { ...e, activo: false } : e))
+        );
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al eliminar el registro de especialista.';
+        const errMsg = (res.error as { message?: string })?.message || 'Error al desactivar el registro de especialista.';
         alert(errMsg);
       }
     } catch (err) {
-      console.error('Connection error when deleting specialist:', err);
+      console.error('Connection error when deactivating specialist:', err);
     } finally {
       setDeletingDoc(null);
+    }
+  };
+
+  const confirmRestore = async () => {
+    if (!restoringDoc) return;
+    try {
+      const res = await especialistasApi.activate(restoringDoc.id);
+      if (res.ok) {
+        const index = MOCK_ESPECIALISTAS.findIndex((d) => d.id === restoringDoc.id);
+        if (index !== -1) {
+          MOCK_ESPECIALISTAS[index].activo = true;
+        }
+        setEspecialistas((prev) =>
+          prev.map((e) => (e.id === restoringDoc.id ? { ...e, activo: true } : e))
+        );
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al reactivar el registro de especialista.';
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error('Connection error when activating specialist:', err);
+    } finally {
+      setRestoringDoc(null);
     }
   };
 
@@ -98,10 +124,10 @@ export const EspecialistasTableWidget = ({
                     <div className="flex items-center gap-1.5">
                       <span
                         className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: ROL_COLORS[doc.rol] }}
+                        style={{ backgroundColor: CARGO_COLORS[doc.cargo || 'Especialista'] || '#3b82f6' }}
                       />
                       <span className="text-xs font-semibold text-text">
-                        {ROL_ESPECIALISTA_LABELS[doc.rol]}
+                        {doc.cargo || 'Especialista'}
                       </span>
                     </div>
                   </TableCell>
@@ -136,12 +162,15 @@ export const EspecialistasTableWidget = ({
                   <TableCell className="text-right pr-5">
                     <FastActions
                       onView={() => onView(doc)}
-                      onEdit={() => {
+                      onEdit={doc.activo && onEdit ? () => {
                         onEdit?.(doc);
                         navigate(`/especialistas/${doc.id}/editar`);
-                      }}
-                      onDelete={() => setDeletingDoc(doc)}
+                      } : undefined}
+                      onDelete={doc.activo ? () => setDeletingDoc(doc) : undefined}
+                      onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
                       viewTitle="Ver ficha"
+                      restoreTitle="Reactivar especialista"
+                      deleteTitle="Desactivar especialista"
                     />
                   </TableCell>
                 </TableRow>
@@ -171,12 +200,23 @@ export const EspecialistasTableWidget = ({
       {deletingDoc && (
         <ConfirmModal
           danger
-          title="¿Eliminar Registro de Especialista?"
-          message={`Esta acción es irreversible y eliminará el registro de ${deletingDoc.apellidos}, ${deletingDoc.nombres} del sistema.`}
-          confirmLabel="Eliminar Registro"
+          title="¿Desactivar Especialista?"
+          message={`Esta acción cambiará el estado de ${deletingDoc.apellidos}, ${deletingDoc.nombres} a Inactivo.`}
+          confirmLabel="Desactivar"
           cancelLabel="Cancelar"
           onConfirm={confirmDelete}
           onCancel={() => setDeletingDoc(null)}
+        />
+      )}
+
+      {restoringDoc && (
+        <ConfirmModal
+          title="¿Reactivar Especialista?"
+          message={`Esta acción reactivará el registro de ${restoringDoc.apellidos}, ${restoringDoc.nombres} en el sistema.`}
+          confirmLabel="Reactivar"
+          cancelLabel="Cancelar"
+          onConfirm={confirmRestore}
+          onCancel={() => setRestoringDoc(null)}
         />
       )}
     </div>

@@ -40,6 +40,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
       cargaLaboral: esp.cargaLaboral,
       cargo: esp.cargo,
       condicionLaboral: esp.condicionLaboral,
+      escalaMagisterial: esp.escalaMagisterial,
       createdAt: esp.createdAt,
       updatedAt: esp.updatedAt,
       persona: {
@@ -65,7 +66,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
   async findAll(filters?: IQueryEspecialistaRequest): Promise<IEspecialistaResponse[]> {
     const list = await this.prisma.especialista.findMany({
       where: {
-        estado: filters?.estado ?? EstadoRegistro.ACTIVO,
+        ...(filters?.estado && { estado: filters.estado }),
         ...(filters?.especialidad && { especialidad: filters.especialidad }),
         ...(filters?.nivelEducativo && { nivelEducativo: filters.nivelEducativo }),
       },
@@ -142,6 +143,8 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           estado: EstadoRegistro.ACTIVO,
           cargo: data.cargo || CargoNombre.ESPECIALISTA,
           condicionLaboral: data.condicionLaboral || CondicionLaboral.NOMBRADO,
+          cargaLaboral: data.cargaLaboral ?? 40,
+          escalaMagisterial: data.escalaMagisterial ?? null,
         },
       });
 
@@ -207,6 +210,8 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           estado: data.estado,
           ...(data.cargo && { cargo: data.cargo }),
           ...(data.condicionLaboral && { condicionLaboral: data.condicionLaboral }),
+          cargaLaboral: data.cargaLaboral !== undefined ? data.cargaLaboral : undefined,
+          escalaMagisterial: data.escalaMagisterial !== undefined ? data.escalaMagisterial : undefined,
         },
       });
 
@@ -293,5 +298,49 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
 
       return this.mapEspecialista(fullEsp);
     });
+  }
+
+  async activate(id: string): Promise<IEspecialistaResponse> {
+    const esp = await this.prisma.especialista.findUnique({
+      where: { id },
+    });
+    if (!esp) {
+      throw new NotFoundException(`Especialista con ID ${id} no encontrado.`);
+    }
+
+    return await this.prisma.$transaction(async (tx) => {
+      // Activar usuario asociado
+      await tx.usuario.updateMany({
+        where: { personaId: esp.personaId },
+        data: { isActive: true },
+      });
+
+      // Activar especialista
+      await tx.especialista.update({
+        where: { id },
+        data: { estado: EstadoRegistro.ACTIVO },
+      });
+
+      const fullEsp = await tx.especialista.findUniqueOrThrow({
+        where: { id },
+        include: {
+          persona: {
+            include: {
+              usuario: {
+                include: {
+                  rol: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return this.mapEspecialista(fullEsp);
+    });
+  }
+
+  async deactivate(id: string): Promise<IEspecialistaResponse> {
+    return this.delete(id);
   }
 }

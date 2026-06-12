@@ -13,21 +13,27 @@ export const setupFetchInterceptor = () => {
       if (args[1].credentials === undefined) {
         args[1].credentials = 'include';
       }
-    } else if (args[0] instanceof Request && args[0].credentials === 'omit') {
-      // Si fue creado con Request, no lo podemos mutar tan fácilmente, pero se asume que las configuraciones globales ya pasaron 'include'
     }
 
     const response = await originalFetch(...args);
     
     if (response.status === 401) {
-      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url || '';
+      let urlStr = '';
+      if (typeof args[0] === 'string') {
+        urlStr = args[0];
+      } else if (args[0] instanceof URL) {
+        urlStr = args[0].toString();
+      } else if (args[0] instanceof Request) {
+        urlStr = args[0].url;
+      }
       
-      const isAuthUrl = url.includes('/api/auth/');
+      const isAuthUrl = urlStr.includes('/api/auth/');
       if (!isAuthUrl) {
         if (!isRefreshing) {
           isRefreshing = true;
-          // Llamamos a refresh() asumiendo que las cookies se enviarán automáticamente
-          refreshPromise = authApi.refreshToken('').then(res => {
+          // Llamamos a refresh() asumiendo que las cookies se enviarán automáticamente.
+          // Enviamos 'from-cookie' para pasar la validación @IsNotEmpty() del backend.
+          refreshPromise = authApi.refreshToken('from-cookie').then(res => {
             isRefreshing = false;
             return res.ok;
           }).catch(() => {
@@ -49,18 +55,9 @@ export const setupFetchInterceptor = () => {
           }
         }
 
-        console.warn('HTTP Interceptor: Token expirado y sin token de refreso válido. Forzando deslogueo...');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        console.warn('HTTP Interceptor: Token expirado y sin token de refresco válido. Forzando deslogueo...');
+        localStorage.removeItem('user');
         window.dispatchEvent(new Event('auth-invalidation'));
-      }
-    } else if (response.status === 403) {
-      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url || '';
-      if (!url.includes('/api/auth/login')) {
-         console.warn('HTTP Interceptor: Error 403. Forzando deslogueo local...');
-         localStorage.removeItem('accessToken');
-         localStorage.removeItem('refreshToken');
-         window.dispatchEvent(new Event('auth-invalidation'));
       }
     }
     

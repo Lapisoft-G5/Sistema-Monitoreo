@@ -14,6 +14,8 @@ export interface JwtPayload {
   apellidos: string;
   institucion_id?: string;
   colegio_id?: string;
+  colegio_nombre?: string;
+  colegio_nivel?: string;
   firstLogin: boolean;
 }
 
@@ -32,6 +34,7 @@ export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
       include: {
         docente: {
           include: {
+            institucion: true;
             docenteCargos: {
               include: { cargo: true };
             };
@@ -95,9 +98,13 @@ export class AuthTokenService {
   buildJwtPayload(user: AuthUserWithRelations): JwtPayload {
     let institucion_id: string | undefined;
     let colegio_id: string | undefined;
+    let colegio_nombre: string | undefined;
+    let colegio_nivel: string | undefined;
 
-    if ((user.rol.codigo as RoleCode) === RoleCode.DIRECTOR_INSTITUCION && user.persona.docente) {
+    if (user.persona?.docente) {
       colegio_id = user.persona.docente.institucionId;
+      colegio_nombre = user.persona.docente.institucion?.nombre;
+      colegio_nivel = user.persona.docente.institucion?.nivelEducativo;
     }
 
     const permissions = user.rol.rolPermisos?.map((rp) => rp.permiso.codigo) || [];
@@ -111,6 +118,8 @@ export class AuthTokenService {
       apellidos: user.persona.apellidos,
       institucion_id,
       colegio_id,
+      colegio_nombre,
+      colegio_nivel,
       firstLogin: user.isFirstLogin,
     };
   }

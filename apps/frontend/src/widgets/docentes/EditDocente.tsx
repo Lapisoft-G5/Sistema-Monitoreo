@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { DocenteFormBase } from '@features/docentes';
-import { MOCK_DOCENTES } from '@entities/model-docentes';
-import { useDocenteService } from '@features/docentes';
+import { type Docente } from '@entities/model-docentes';
+import { useDocenteService, mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import { teachersApi } from '@shared/api/teachers.api';
 import { Card } from '@shared/ui/card';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 
@@ -23,7 +25,41 @@ export const EditDocenteCard = ({
   const { id } = useParams<{ id: string }>();
   const { updateDocente, loading, error } = useDocenteService();
 
-  const docente = MOCK_DOCENTES.find((item) => item.id === id);
+  const [docente, setDocente] = useState<Docente | null>(null);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    const fetchDocente = async () => {
+      if (!id) return;
+      setFetching(true);
+      try {
+        const res = await teachersApi.findAll();
+        if (res.ok && res.data) {
+          const found = res.data.find((d) => d.id === id);
+          if (found) {
+            setDocente(mapApiDocenteToFrontend(found));
+          } else {
+            setDocente(null);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching teacher for edit:', err);
+        setDocente(null);
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchDocente();
+  }, [id]);
+
+  if (fetching) {
+    return (
+      <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="text-text-muted text-sm font-medium">Cargando datos del personal...</span>
+      </div>
+    );
+  }
 
   if (!docente) {
     return (

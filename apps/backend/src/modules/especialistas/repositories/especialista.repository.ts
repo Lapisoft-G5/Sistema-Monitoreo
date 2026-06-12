@@ -19,4 +19,6 @@ export abstract class EspecialistaRepository {
     roleId?: string,
   ): Promise<IEspecialistaResponse>;
   abstract delete(id: string): Promise<IEspecialistaResponse>;
+  abstract activate(id: string): Promise<IEspecialistaResponse>;
+  abstract deactivate(id: string): Promise<IEspecialistaResponse>;
 }

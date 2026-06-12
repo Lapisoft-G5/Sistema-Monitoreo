@@ -4,6 +4,10 @@ export interface IEspecialistaResponse {
   especialidad: string;
   nivelEducativo: string;
   estado: string;
+  cargaLaboral?: number;
+  cargo?: string;
+  condicionLaboral?: string;
+  escalaMagisterial?: number | null;
   createdAt: Date;
   updatedAt: Date;
   persona: {
@@ -12,6 +16,7 @@ export interface IEspecialistaResponse {
     nombres: string;
     apellidos: string;
     correo: string | null;
+    telefono: string | null;
   };
   user?: {
     id: string;
@@ -33,21 +38,27 @@ export interface ICreateEspecialistaRequest {
   nombres: string;
   apellidos: string;
   correo?: string;
+  telefono?: string;
   especialidad: string;
   nivelEducativo: string;
   rolCode: string;
   cargo?: string;
   condicionLaboral?: string;
+  cargaLaboral?: number;
+  escalaMagisterial?: number | null;
 }
 
 export interface IUpdateEspecialistaRequest {
   nombres: string;
   apellidos: string;
   correo?: string;
+  telefono?: string;
   especialidad: string;
   nivelEducativo: string;
   estado: string;
   rolCode: string;
   cargo?: string;
   condicionLaboral?: string;
+  cargaLaboral?: number;
+  escalaMagisterial?: number | null;
 }

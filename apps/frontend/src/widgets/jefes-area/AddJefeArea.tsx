@@ -1,30 +1,30 @@
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
-import { EspecialistaFormBase } from '@features/especialistas';
-import { useEspecialistaService } from '@features/especialistas';
+import { JefeAreaFormBase, useJefeAreaService } from '@features/jefes-area';
 import { Card } from '@shared/ui/card';
-
-import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
+import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 
 export const AddJefeArea = () => {
   const navigate = useNavigate();
-  const { createEspecialista, loading, error } = useEspecialistaService();
+  const { createJefeArea, loading, error } = useJefeAreaService();
 
-  const handleFormSubmit = async (formData: EspecialistaFormData) => {
-    // 🚀 Agregamos "as const" para decirle a TS que es el valor literal exacto
-    const finalData = { 
-      ...formData, 
-      rol: 'especialista_bajo' as const 
-    };
-    
-    const result = await createEspecialista(finalData);
+  const handleFormSubmit = async (formData: JefeAreaFormData) => {
+    const result = await createJefeArea(formData, 'jefe_area');
     if (result.success) {
       navigate('/jefes-area');
     }
   };
 
-  // Pre-configuramos el rol por defecto en el formulario base
-  const initialData = { rol: 'especialista_bajo' } as EspecialistaFormData;
+  const initialData = {
+    nombres: '',
+    apellidos: '',
+    dni: '',
+    correo: '',
+    celular: '',
+    cargaHoraria: 40,
+    nivelEducativo: 'SECUNDARIA',
+    activo: true,
+  } as JefeAreaFormData;
 
   return (
     <Card className="w-full bg-surface border border-border rounded-2xl shadow-sm p-6 sm:p-8">
@@ -35,12 +35,11 @@ export const AddJefeArea = () => {
         </div>
       )}
 
-      <EspecialistaFormBase
+      <JefeAreaFormBase
         initialData={initialData}
         onSubmit={handleFormSubmit}
         onCancel={() => navigate('/jefes-area')}
         isLoading={loading}
-        isJefeArea={true}
       />
     </Card>
   );

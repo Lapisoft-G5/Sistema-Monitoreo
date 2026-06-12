@@ -1,17 +1,49 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
-import { EspecialistaFormBase } from '@features/especialistas';
-import { MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
-import { useEspecialistaService } from '@features/especialistas';
+import { JefeAreaFormBase, useJefeAreaService, mapApiJefeAreaToFrontend } from '@features/jefes-area';
+import { type JefeArea } from '@entities/model-jefes-area';
+import { jefesAreaApi } from '@shared/api/jefes-area.api';
 import { Card } from '@shared/ui/card';
-import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
+import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 
 export const EditJefeArea = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { updateEspecialista, loading, error } = useEspecialistaService();
+  const { updateJefeArea, loading, error } = useJefeAreaService();
 
-  const jefe = MOCK_ESPECIALISTAS.find((item) => item.id === id);
+  const [jefe, setJefe] = useState<JefeArea | null>(null);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    const fetchJefe = async () => {
+      if (!id) return;
+      setFetching(true);
+      try {
+        const res = await jefesAreaApi.findById(id);
+        if (res.ok && res.data) {
+          setJefe(mapApiJefeAreaToFrontend(res.data));
+        } else {
+          setJefe(null);
+        }
+      } catch (err) {
+        console.error('Error fetching jefe de area for edit:', err);
+        setJefe(null);
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchJefe();
+  }, [id]);
+
+  if (fetching) {
+    return (
+      <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="text-text-muted text-sm font-medium">Cargando datos del jefe de área...</span>
+      </div>
+    );
+  }
 
   if (!jefe) {
     return (
@@ -21,22 +53,24 @@ export const EditJefeArea = () => {
     );
   }
 
-  const initialData: EspecialistaFormData = {
+  const initialData: JefeAreaFormData = {
     nombres: jefe.nombres,
     apellidos: jefe.apellidos,
     dni: jefe.dni,
     correo: jefe.correo,
     celular: jefe.celular,
-    especialidad: jefe.especialidad,
-    rol: jefe.rol,
-    niveles: jefe.niveles,
+    cargaHoraria: jefe.cargaHoraria,
+    nivelEducativo: jefe.nivelEducativo as 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA',
     activo: jefe.activo,
-    cargaLaboral: jefe.cargaLaboral,
   };
 
-  const handleFormSubmit = async (formData: EspecialistaFormData) => {
+  const handleFormSubmit = async (formData: JefeAreaFormData) => {
     if (!id) return;
-    const result = await updateEspecialista(id, formData);
+    const result = await updateJefeArea(
+      id,
+      formData,
+      'jefe_area'
+    );
     if (result.success) {
       navigate('/jefes-area');
     }
@@ -51,12 +85,11 @@ export const EditJefeArea = () => {
         </div>
       )}
 
-      <EspecialistaFormBase
+      <JefeAreaFormBase
         initialData={initialData}
         onSubmit={handleFormSubmit}
         onCancel={() => navigate('/jefes-area')}
         isLoading={loading}
-        isJefeArea={true}
       />
     </Card>
   );

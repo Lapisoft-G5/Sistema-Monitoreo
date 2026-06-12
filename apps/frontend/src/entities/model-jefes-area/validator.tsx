@@ -12,6 +12,10 @@ export const jefeAreaSchema = z.object({
     .string()
     .length(9, 'El número de celular debe tener exactamente 9 dígitos')
     .regex(/^9\d+$/, 'El celular debe iniciar con 9'),
+  cargaHoraria: z.number().int().min(1, 'La carga horaria debe ser mayor a 0'),
+  nivelEducativo: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA'], {
+    message: 'Debe seleccionar un nivel educativo',
+  }),
   activo: z.boolean().optional(),
 });
 

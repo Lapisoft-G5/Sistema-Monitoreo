@@ -7,6 +7,8 @@ export interface User {
   apellidos: string;
   role: UserRole;
   institucion?: string;
+  institucionNombre?: string;
+  institucionNivel?: string;
   distrito?: string;
   firstLogin: boolean;
 }

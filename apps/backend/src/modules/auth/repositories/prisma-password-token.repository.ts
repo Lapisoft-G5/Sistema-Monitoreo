@@ -13,7 +13,6 @@ export class PrismaPasswordTokenRepository implements PasswordTokenRepository {
         usuarioId: data.userId,
         tokenHash: data.tokenHash,
         expiresAt: data.expiresAt,
-        requestedIp: data.requestedIp ?? null,
         isUsed: false,
       },
     });

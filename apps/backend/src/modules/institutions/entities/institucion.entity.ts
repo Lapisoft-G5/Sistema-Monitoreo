@@ -13,4 +13,8 @@ export class Institucion {
   modalidad!: string | null;
   createdAt!: Date;
   updatedAt!: Date;
+  director?: string | null;
+  directorTelefono?: string | null;
+  directorCorreo?: string | null;
+  directorDni?: string | null;
 }

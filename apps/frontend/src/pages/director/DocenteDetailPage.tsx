@@ -1,27 +1,50 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen, Clock, BadgeCheck } from 'lucide-react';
-import { MOCK_DOCENTES, type Docente } from '@entities/model-docentes';
-import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
+import { type Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
+import { teachersApi } from '@shared/api/teachers.api';
+import { institutionsApi } from '@shared/api/institutions.api';
+import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 
 export const DocenteDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
   const [docente, setDocente] = useState<Docente | null>(null);
+  const [instName, setInstName] = useState('I.E. No Asignada');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const found = MOCK_DOCENTES.find((d) => d.id === id);
-      setDocente(found || null);
-      setLoading(false);
-    }, 450);
-    
-    return () => clearTimeout(timer);
+    const fetchDetail = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const res = await teachersApi.findAll();
+        if (res.ok && res.data) {
+          const found = res.data.find((d) => d.id === id);
+          if (found) {
+            const mapped = mapApiDocenteToFrontend(found);
+            setDocente(mapped);
+            // Fetch institution name
+            const instRes = await institutionsApi.findById(found.institucionId);
+            if (instRes.ok && instRes.data) {
+              setInstName(instRes.data.nombre);
+            }
+          } else {
+            setDocente(null);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching teacher detail:', err);
+        setDocente(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
   }, [id]);
 
   if (loading) {
@@ -47,8 +70,6 @@ export const DocenteDetailPage = () => {
       </div>
     );
   }
-
-  const instName = MOCK_INSTITUCIONES.find((i) => i.id === docente.institucionId)?.nombre ?? 'I.E. No Asignada';
 
   return (
     <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300">
@@ -187,7 +208,7 @@ export const DocenteDetailPage = () => {
               className="flex items-center gap-1.5 bg-muted/30 border border-border/80 px-3.5 py-2 rounded-xl text-xs font-bold text-text"
             >
               <BadgeCheck className="w-4 h-4 text-green-500 shrink-0" />
-              <span>{sec.grado}</span>
+              <span>{sec.grado} "{sec.seccion}"</span>
             </div>
           ))}
           {(docente.secciones || []).length === 0 && (

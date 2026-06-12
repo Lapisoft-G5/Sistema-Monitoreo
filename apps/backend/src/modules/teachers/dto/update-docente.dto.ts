@@ -1,5 +1,21 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, IsUUID } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  IsUUID,
+  IsInt,
+  Length,
+  Matches,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { IUpdateDocenteRequest } from '@sistema-monitoreo/shared-contracts';
+import { SeccionDto } from './create-docente.dto.js';
+
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateDocenteDto implements IUpdateDocenteRequest {
   @IsString()
@@ -19,6 +35,12 @@ export class UpdateDocenteDto implements IUpdateDocenteRequest {
 
   @IsOptional()
   @IsString()
+  @Length(9, 9, { message: 'El celular debe tener exactamente 9 dígitos' })
+  @Matches(/^\d{9}$/, { message: 'El celular debe contener solo números' })
+  telefono?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(50, { message: 'El grado académico no puede exceder los 50 caracteres' })
   gradoAcademico?: string;
 
@@ -35,4 +57,23 @@ export class UpdateDocenteDto implements IUpdateDocenteRequest {
   @IsUUID('4', { message: 'El ID del cargo debe ser un UUID v4 válido' })
   @IsNotEmpty({ message: 'El ID del cargo es requerido' })
   cargoId!: string;
+
+  @IsOptional()
+  @IsString()
+  condicionLaboral?: string;
+
+  @IsOptional()
+  @IsInt()
+  escalaMagisterial?: number;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'El ID de la institución debe ser un UUID v4 válido' })
+  institucionId?: string;
+
+  @ApiProperty({ type: () => [SeccionDto], required: false })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SeccionDto)
+  secciones?: SeccionDto[];
 }

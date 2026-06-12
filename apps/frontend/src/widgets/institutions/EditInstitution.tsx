@@ -1,11 +1,13 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import {
   InstitutionFormBase,
   type InstitutionRawInput,
 } from '@features/institutions/ui/CreateInstitutionFormBase';
-import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
-import { useInstitutionService } from '@features/institutions/institution-service';
+import { type Institucion } from '@entities/model-instituciones';
+import { useInstitutionService, mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import { institutionsApi } from '@shared/api/institutions.api';
 import { Card } from '@shared/ui/card';
 
 export const EditInstitutionCard = () => {
@@ -13,7 +15,38 @@ export const EditInstitutionCard = () => {
   const { id } = useParams<{ id: string }>();
   const { updateInstitution, loading, error } = useInstitutionService();
 
-  const institucion = MOCK_INSTITUCIONES.find((item) => item.id === id);
+  const [institucion, setInstitucion] = useState<Institucion | null>(null);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    const fetchInstitution = async () => {
+      if (!id) return;
+      setFetching(true);
+      try {
+        const res = await institutionsApi.findById(id);
+        if (res.ok && res.data) {
+          setInstitucion(mapApiInstitucionToFrontend(res.data));
+        } else {
+          setInstitucion(null);
+        }
+      } catch (err) {
+        console.error('Error fetching institution for edit:', err);
+        setInstitucion(null);
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchInstitution();
+  }, [id]);
+
+  if (fetching) {
+    return (
+      <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="text-text-muted text-sm font-medium">Cargando datos de la institución...</span>
+      </div>
+    );
+  }
 
   if (!institucion) {
     return (
@@ -32,9 +65,6 @@ export const EditInstitutionCard = () => {
     distrito: institucion.distrito,
     zona: institucion.zona || '',
     direccion: institucion.direccion,
-    director: institucion.director || '',
-    directorTelefono: institucion.directorTelefono || '',
-    directorCorreo: institucion.directorCorreo || '',
     modalidad: institucion.modalidad || 'Regular',
   };
 

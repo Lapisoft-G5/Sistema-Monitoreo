@@ -72,6 +72,17 @@ En entornos monorepo pnpm, los scripts de ciclo de vida nativos (como la compila
     ```
     Esto permite que pnpm compile correctamente los binarios optimizados del módulo de cifrado bcrypt en tu sistema operativo local.
 
+### Error de Migración en Desarrollo (Conflictos de Columnas Requeridas / NOT NULL)
+
+Si al ejecutar `pnpm --filter backend prisma:migrate` (o `prisma migrate dev`) obtienes un error indicando que no se pueden aplicar los cambios de base de datos porque se están agregando columnas obligatorias (`NOT NULL` sin `DEFAULT`) a tablas que ya contienen registros (como `roles` o `especialistas`), es debido a que tu base de datos local contiene registros antiguos incompatibles con el nuevo esquema.
+
+*   **Problema**: Mensaje de error similar a: *`Added the required column 'cargo' to the 'especialistas' table without a default value...`*
+*   **Solución**: Reinicia tu base de datos local de desarrollo para eliminar los datos antiguos, aplicar las migraciones limpias y repoblar la base de datos con las nuevas semillas:
+    ```bash
+    pnpm --filter backend exec prisma migrate reset
+    ```
+    *(Este comando vacía la base de datos local, aplica todas las migraciones en orden y ejecuta el seeder de desarrollo de manera automática).*
+
 ---
 
 ## Pruebas de Calidad (QA) y Auditoría con Docker

@@ -113,4 +113,12 @@ export class EspecialistaService {
   async delete(id: string): Promise<IEspecialistaResponse> {
     return this.repository.delete(id);
   }
+
+  async activate(id: string): Promise<IEspecialistaResponse> {
+    return this.repository.activate(id);
+  }
+
+  async deactivate(id: string): Promise<IEspecialistaResponse> {
+    return this.repository.deactivate(id);
+  }
 }

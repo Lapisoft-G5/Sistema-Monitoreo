@@ -113,6 +113,10 @@ export class TeachersService {
     return this.teachersRepository.findDocentes(filter);
   }
 
+  async getCargos(): Promise<any[]> {
+    return this.catalogsRepository.findCargos();
+  }
+
   async updateDocente(
     id: string,
     dto: UpdateDocenteDto,
@@ -285,6 +289,95 @@ export class TeachersService {
     return {
       success: true,
       message: 'Docente dado de baja correctamente.',
+      docente: {
+        id: updatedDocente.id,
+        estado: updatedDocente.estado,
+        persona: {
+          dni: updatedDocente.persona.dni,
+          nombres: updatedDocente.persona.nombres,
+          apellidos: updatedDocente.persona.apellidos,
+        },
+      },
+    };
+  }
+
+  async altaDocente(
+    id: string,
+    currentUser: CurrentUser,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    docente: {
+      id: string;
+      estado: string;
+      persona: { dni: string; nombres: string; apellidos: string };
+    };
+  }> {
+    // 1. Control de accesos por permisos
+    if (!currentUser.permissions?.includes('docentes:write')) {
+      throw new ForbiddenException('No tiene permisos para realizar esta acción.');
+    }
+
+    // 2. Buscar el docente
+    const docente = await this.teachersRepository.findDocenteById(id);
+    if (!docente) {
+      throw new NotFoundException('El docente especificado no existe.');
+    }
+
+    // 3. Si es Director de IE, validar pertenencia
+    if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
+      const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
+      if (!userInstitucionId) {
+        throw new ForbiddenException(
+          'El director de IE no tiene una institución educativa asignada en su token.',
+        );
+      }
+      if (docente.institucionId !== userInstitucionId) {
+        throw new ForbiddenException(
+          'No tiene permisos para dar de alta a un docente de otra institución educativa.',
+        );
+      }
+      const activeCargoObj = docente.docenteCargos?.[0];
+      if (activeCargoObj) {
+        const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
+        if (
+          currentCargo &&
+          ((currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR ||
+            (currentCargo.nombre as CargoNombre) === CargoNombre.COORDINADOR_PEDAGOGICO)
+        ) {
+          throw new ForbiddenException(
+            'El Director de I.E. no puede dar de alta a un Director o Coordinador Pedagógico.',
+          );
+        }
+      }
+    }
+
+    // 4. Si es Jefe de Área, validar que sea Director o Coordinador Pedagógico
+    if ((currentUser.role as RoleCode) === RoleCode.JEFE_AREA) {
+      const activeCargoObj = docente.docenteCargos?.[0];
+      if (activeCargoObj) {
+        const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
+        if (
+          currentCargo &&
+          (currentCargo.nombre as CargoNombre) !== CargoNombre.DIRECTOR &&
+          (currentCargo.nombre as CargoNombre) !== CargoNombre.COORDINADOR_PEDAGOGICO
+        ) {
+          throw new ForbiddenException(
+            'El Jefe de Área solo puede dar de alta a directores y coordinadores pedagógicos.',
+          );
+        }
+      }
+    }
+
+    // 5. Cambiar el estado a Activo a través del repositorio
+    const updatedDocente = await this.teachersRepository.updateDocenteEstado(
+      id,
+      EstadoRegistro.ACTIVO,
+    );
+
+    return {
+      success: true,
+      message: 'Docente reactivado correctamente.',
       docente: {
         id: updatedDocente.id,
         estado: updatedDocente.estado,

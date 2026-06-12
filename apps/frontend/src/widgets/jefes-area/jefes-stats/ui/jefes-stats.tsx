@@ -1,9 +1,9 @@
 import { Users, ShieldCheck, Briefcase } from 'lucide-react';
-import type { Especialista } from '@entities/model-especialistas';
+import type { JefeArea } from '@entities/model-jefes-area';
 import { Card } from '@shared/ui/card';
 
 interface JefesStatsWidgetProps {
-  jefes: Especialista[];
+  jefes: JefeArea[];
 }
 
 export const JefesStatsWidget = ({ jefes }: JefesStatsWidgetProps) => {

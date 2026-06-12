@@ -4,6 +4,7 @@ import type { Docente, CondicionDirectiva } from '@entities/model-docentes';
 import { CONDICION_DIRECTIVA_COLOR, MOCK_DOCENTES } from '@entities/model-docentes';
 // Reutilizamos la lógica de filtros/paginación de docentes (mismo patrón del equipo).
 import { useDocentesTable } from '@widgets/docentes/docentes-table/lib/useTable';
+import { teachersApi } from '@shared/api/teachers.api';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Card } from '@shared/ui/card';
@@ -35,6 +36,7 @@ export const DirectoresTableWidget = ({
   onEdit,
 }: DirectoresTableWidgetProps) => {
   const [deleting, setDeleting] = useState<Docente | null>(null);
+  const [restoring, setRestoring] = useState<Docente | null>(null);
 
   const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } =
     useDocentesTable(directores, 'Director');
@@ -42,12 +44,50 @@ export const DirectoresTableWidget = ({
   const getInstName = (id: string) =>
     instituciones.find((i) => i.id === id)?.nombre ?? 'I.E. No Asignada';
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleting) return;
-    const idx = MOCK_DOCENTES.findIndex((d) => d.id === deleting.id);
-    if (idx !== -1) MOCK_DOCENTES.splice(idx, 1);
-    setDirectores((prev) => prev.filter((d) => d.id !== deleting.id));
-    setDeleting(null);
+    try {
+      const res = await teachersApi.deactivate(deleting.id);
+      if (res.ok) {
+        const idx = MOCK_DOCENTES.findIndex((d) => d.id === deleting.id);
+        if (idx !== -1) {
+          MOCK_DOCENTES[idx].activo = false;
+        }
+        setDirectores((prev) =>
+          prev.map((d) => (d.id === deleting.id ? { ...d, activo: false } : d))
+        );
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al dar de baja el director.';
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error('Connection error when deactivating director:', err);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const confirmRestore = async () => {
+    if (!restoring) return;
+    try {
+      const res = await teachersApi.activate(restoring.id);
+      if (res.ok) {
+        const idx = MOCK_DOCENTES.findIndex((d) => d.id === restoring.id);
+        if (idx !== -1) {
+          MOCK_DOCENTES[idx].activo = true;
+        }
+        setDirectores((prev) =>
+          prev.map((d) => (d.id === restoring.id ? { ...d, activo: true } : d))
+        );
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al reactivar el director.';
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error('Connection error when activating director:', err);
+    } finally {
+      setRestoring(null);
+    }
   };
 
   return (
@@ -64,6 +104,7 @@ export const DirectoresTableWidget = ({
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Cargo</TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Condición</TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Escala</TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Estado</TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">
                   Acciones
                 </TableHead>
@@ -110,19 +151,33 @@ export const DirectoresTableWidget = ({
                       {ESCALA_NUM[dir.escala] ?? dir.escala}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        dir.activo
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }
+                    >
+                      {dir.activo ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right pr-5">
                     <FastActions
                       onView={() => onView(dir)}
-                      onEdit={onEdit ? () => onEdit(dir) : undefined}
-                      onDelete={() => setDeleting(dir)}
+                      onEdit={dir.activo && onEdit ? () => onEdit(dir) : undefined}
+                      onDelete={dir.activo ? () => setDeleting(dir) : undefined}
+                      onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
                       viewTitle="Ver ficha"
+                      restoreTitle="Reactivar director"
+                      deleteTitle="Desactivar director"
                     />
                   </TableCell>
                 </TableRow>
               ))}
               {pageItems.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-text-muted py-12">
+                  <TableCell colSpan={7} className="text-center text-text-muted py-12">
                     No se encontraron directores con los filtros seleccionados.
                   </TableCell>
                 </TableRow>
@@ -151,6 +206,17 @@ export const DirectoresTableWidget = ({
           cancelLabel="Cancelar"
           onConfirm={confirmDelete}
           onCancel={() => setDeleting(null)}
+        />
+      )}
+
+      {restoring && (
+        <ConfirmModal
+          title="¿Reactivar Director?"
+          message={`Esta acción reactivará el registro de ${restoring.apellidos}, ${restoring.nombres} en el padrón de directores.`}
+          confirmLabel="Reactivar"
+          cancelLabel="Cancelar"
+          onConfirm={confirmRestore}
+          onCancel={() => setRestoring(null)}
         />
       )}
     </div>

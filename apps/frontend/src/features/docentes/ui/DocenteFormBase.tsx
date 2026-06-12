@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Briefcase, Plus, Trash2, Check, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
-import { NIVELES, NIVEL_LABEL, MOCK_INSTITUCIONES } from '@entities/model-instituciones';
+import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
@@ -13,10 +13,46 @@ interface Props {
   onSubmit: (data: DocenteFormData) => void;
   isLoading: boolean;
   initialData?: DocenteFormData;
-  instituciones: { id: string; nombre: string }[];
+  instituciones: { id: string; nombre: string; nivel?: string }[];
   defaultCargo?: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula';
   submitLabel?: string;
 }
+
+const CURSOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> = {
+  INICIAL: [
+    'Personal Social',
+    'Psicomotricidad',
+    'Comunicación',
+    'Descubrimiento del Mundo',
+  ],
+  PRIMARIA: [
+    'Comunicación',
+    'Matemática',
+    'Ciencia y Tecnología',
+    'Personal Social',
+    'Arte y Cultura',
+    'Educación Física',
+    'Educación Religiosa',
+  ],
+  SECUNDARIA: [
+    'Comunicación',
+    'Matemática',
+    'Ciencia y Tecnología',
+    'Desarrollo Personal, Ciudadanía y Cívica',
+    'Ciencias Sociales',
+    'Educación Física',
+    'Arte y Cultura',
+    'Inglés',
+    'Educación Religiosa',
+    'Educación para el Trabajo',
+  ],
+};
+
+export const GRADOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> = {
+  INICIAL: ['3 años', '4 años', '5 años'],
+  PRIMARIA: ['1°', '2°', '3°', '4°', '5°', '6°'],
+  SECUNDARIA: ['1°', '2°', '3°', '4°', '5°'],
+};
 
 const INITIAL_FORM: DocenteFormData = {
   nombres: '',
@@ -45,6 +81,7 @@ export const DocenteFormBase = ({
   submitLabel,
 }: Props) => {
   const { user } = useUser();
+  console.log('User context in DocenteFormBase:', user);
   const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
 
   const [form, setForm] = useState<DocenteFormData>(() => {
@@ -54,12 +91,9 @@ export const DocenteFormBase = ({
     let initialNivel: DocenteFormData['nivelEducativo'] = 'PRIMARIA';
     
     if (isDirectorIe && user?.institucion) {
-      const userInst = instituciones.find((i) => i.nombre === user.institucion);
-      initialInstId = userInst?.id ?? '1';
-      
-      const fullInst = MOCK_INSTITUCIONES.find((i) => i.nombre === user.institucion);
-      if (fullInst) {
-        initialNivel = fullInst.nivel;
+      initialInstId = user.institucion;
+      if (user.institucionNivel) {
+        initialNivel = user.institucionNivel.toUpperCase() as DocenteFormData['nivelEducativo'];
       }
     }
 
@@ -70,8 +104,18 @@ export const DocenteFormBase = ({
       nivelEducativo: initialNivel,
     };
   });
+
   const [submitted, setSubmitted] = useState(false);
-  const [newGrado, setNewGrado] = useState('');
+  const [selectedGrado, setSelectedGrado] = useState(() => {
+    const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
+    return defaultGrados[0] || '';
+  });
+  const [selectedSeccion, setSelectedSeccion] = useState('');
+
+  useEffect(() => {
+    const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
+    setSelectedGrado(defaultGrados[0] || '');
+  }, [form.nivelEducativo]);
 
   const set = <K extends keyof DocenteFormData>(key: K, value: DocenteFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -92,13 +136,26 @@ export const DocenteFormBase = ({
   const showError = (key: keyof DocenteFormData) => (submitted ? errors[key] : '');
 
   const handleAddSeccion = () => {
-    if (!newGrado.trim()) return;
+    const cleanGrado = selectedGrado.trim();
+    const cleanSeccion = selectedSeccion.trim().toUpperCase();
+    if (!cleanGrado || !cleanSeccion) return;
+    if (cleanSeccion.length !== 1) return;
+
     const currentSecciones = form.secciones || [];
+    const exists = currentSecciones.some(
+      (s) => s.grado.toLowerCase() === cleanGrado.toLowerCase() && s.seccion.toLowerCase() === cleanSeccion.toLowerCase()
+    );
+    if (exists) return;
+
     set('secciones', [
       ...currentSecciones,
-      { id: globalThis.crypto?.randomUUID?.() ?? String(Math.random()), grado: newGrado.trim() },
+      {
+        id: globalThis.crypto?.randomUUID?.() ?? String(Math.random()),
+        grado: cleanGrado,
+        seccion: cleanSeccion,
+      },
     ]);
-    setNewGrado('');
+    setSelectedSeccion('');
   };
 
   const handleRemoveSeccion = (id?: string) => {
@@ -187,25 +244,45 @@ export const DocenteFormBase = ({
 
       {/* Sección 2: Datos Laborales */}
       <SectionCard icon={<Briefcase className="w-5 h-5" />} title="Detalles Laborales">
-        <div style={{ maxWidth: 'calc(50% - 9px)', minWidth: 240 }}>
-          {isDirectorIe ? (
-            <div className="flex flex-col gap-1 w-full">
-              <label className="text-xs font-bold text-text-muted">Institución de Destino (I.E.)</label>
-              <div className="flex items-center h-9 px-3 rounded-lg border border-border bg-muted/30 text-text font-medium text-sm">
-                {instituciones.find((i) => i.id === form.institucionId)?.nombre || 'I.E. No Asignada'}
+        <div style={twoCols}>
+          <div className="w-full">
+            {isDirectorIe ? (
+              <div className="flex flex-col gap-1 w-full">
+                <label className="text-xs font-bold text-text-muted">Institución de Destino (I.E.)</label>
+                <div className="flex items-center h-9 px-3 rounded-lg border border-border bg-muted/30 text-text font-medium text-sm">
+                  {user?.institucionNombre || 'I.E. No Asignada'}
+                </div>
               </div>
-            </div>
-          ) : (
-            <SelectField
-              label="Institución de Destino (I.E.)"
-              required
-              value={form.institucionId}
-              onChange={(v) => set('institucionId', v)}
-              options={instituciones.map((i) => ({ value: i.id, label: i.nombre }))}
-              placeholder="Seleccione I.E."
-              error={showError('institucionId')}
-            />
-          )}
+            ) : (
+              <SelectField
+                label="Institución de Destino (I.E.)"
+                required
+                value={form.institucionId}
+                onChange={(v) => set('institucionId', v)}
+                options={instituciones.map((i) => ({ value: i.id, label: i.nombre }))}
+                placeholder="Seleccione I.E."
+                error={showError('institucionId')}
+              />
+            )}
+          </div>
+          <SelectField
+            label="Cargo / Rol"
+            required
+            value={form.cargo}
+            onChange={(v) => set('cargo', v as DocenteFormData['cargo'])}
+            options={(() => {
+              const opts = [
+                { value: 'Coordinador Pedagógico', label: 'Coordinador Pedagógico' },
+                { value: 'Docente de Aula', label: 'Docente de Aula' },
+              ];
+              if (form.cargo === 'Director') {
+                opts.unshift({ value: 'Director', label: 'Director' });
+              }
+              return opts;
+            })()}
+            placeholder="Seleccione Cargo"
+            error={showError('cargo')}
+          />
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
           <SelectField
@@ -246,12 +323,20 @@ export const DocenteFormBase = ({
               error={showError('nivelEducativo')}
             />
           )}
-          <TextField
+          <SelectField
             label="Especialidad / Mención"
             required
             value={form.especialidad}
             onChange={(v) => set('especialidad', v)}
-            placeholder="Ej. Matemática y Física"
+            options={(() => {
+              const rawCourses = CURSOS_POR_NIVEL[form.nivelEducativo] || [];
+              const coursesList = [...rawCourses];
+              if (form.especialidad && !coursesList.includes(form.especialidad)) {
+                coursesList.push(form.especialidad);
+              }
+              return coursesList.map((c) => ({ value: c, label: c }));
+            })()}
+            placeholder="Seleccione Especialidad"
             error={showError('especialidad')}
           />
         </div>
@@ -273,17 +358,31 @@ export const DocenteFormBase = ({
           icon={<GraduationCap className="w-5 h-5" />}
           title="Grados y Secciones Asignadas"
         >
-          <div className="flex gap-3 items-end max-w-md mb-4">
-            <TextField
-              label="Agregar Grado / Sección"
-              value={newGrado}
-              onChange={setNewGrado}
-              placeholder="Ej. 5to A, 6to B"
-            />
+          <div className="flex flex-col md:flex-row gap-3 items-end max-w-md mb-4">
+            <div className="w-full md:w-1/2">
+              <SelectField
+                label="Grado"
+                value={selectedGrado}
+                onChange={setSelectedGrado}
+                options={(GRADOS_POR_NIVEL[form.nivelEducativo] || []).map((g) => ({
+                  value: g,
+                  label: g,
+                }))}
+                placeholder="Seleccione Grado"
+              />
+            </div>
+            <div className="w-full md:w-1/3">
+              <TextField
+                label="Sección"
+                value={selectedSeccion}
+                onChange={(v) => setSelectedSeccion(v.slice(0, 1))}
+                placeholder="Ej. A"
+              />
+            </div>
             <Button
               type="button"
               onClick={handleAddSeccion}
-              className="flex items-center gap-1.5 h-9 font-semibold bg-primary text-white hover:bg-primary-hover px-4 rounded-lg cursor-pointer"
+              className="flex items-center justify-center gap-1.5 h-9 font-semibold bg-primary text-white hover:bg-primary-hover px-4 rounded-lg cursor-pointer w-full md:w-auto"
             >
               <Plus className="w-4 h-4" />
               Añadir
@@ -296,7 +395,7 @@ export const DocenteFormBase = ({
                 key={sec.id}
                 className="flex items-center gap-2 bg-muted/50 border border-border px-3 py-1.5 rounded-xl text-sm font-medium text-text"
               >
-                <span>{sec.grado}</span>
+                <span>{sec.grado} "{sec.seccion}"</span>
                 <button
                   type="button"
                   onClick={() => handleRemoveSeccion(sec.id)}

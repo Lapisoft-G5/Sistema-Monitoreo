@@ -231,9 +231,22 @@ model Docente {
   institucion       InstitucionEducativa @relation(fields: [institucionId], references: [id])
   docenteCargos     DocenteCargo[]
   docenteCursos     DocenteCurso[]
+  docenteSecciones  DocenteSeccion[]
 
   @@index([institucionId])
   @@map("docentes")
+}
+
+model DocenteSeccion {
+  id        String   @id @default(uuid()) @db.Uuid
+  docenteId String   @map("docente_id") @db.Uuid
+  grado     String   @db.VarChar(50)
+  seccion   String   @db.VarChar(10)
+
+  docente   Docente  @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+
+  @@unique([docenteId, grado, seccion])
+  @@map("docente_secciones")
 }
 
 model Curso {

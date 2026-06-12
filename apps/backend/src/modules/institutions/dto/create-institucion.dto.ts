@@ -49,4 +49,8 @@ export class CreateInstitucionDto implements ICreateInstitucionRequest {
   @IsString()
   @IsOptional()
   modalidad?: string;
+
+  @IsString()
+  @IsOptional()
+  directorDni?: string;
 }

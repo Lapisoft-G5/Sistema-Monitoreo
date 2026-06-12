@@ -2,6 +2,34 @@ import { useState } from 'react';
 import type { Institucion, Nivel } from '@entities/model-instituciones';
 import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
 import type { InstitutionRawInput } from './ui/CreateInstitutionFormBase';
+import { institutionsApi } from '@shared/api/institutions.api';
+import type { IInstitucionResponse } from '@sistema-monitoreo/shared-contracts';
+
+const toTitleCase = (str: string): string => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
+export const mapApiInstitucionToFrontend = (apiInst: IInstitucionResponse): Institucion => {
+  return {
+    id: apiInst.id,
+    codigoModular: apiInst.codigoModular,
+    codigoLocal: apiInst.codigoLocal,
+    nombre: apiInst.nombre,
+    direccion: apiInst.direccion,
+    nivel: (apiInst.nivelEducativo || '').toUpperCase() as Nivel,
+    distrito: apiInst.distrito,
+    provincia: apiInst.provincia,
+    zona: apiInst.zona,
+    modalidad: apiInst.modalidad || 'Regular',
+    director: apiInst.director || null,
+    directorTelefono: apiInst.directorTelefono || undefined,
+    directorCorreo: apiInst.directorCorreo || undefined,
+    directorDni: apiInst.directorDni || undefined,
+    activo: apiInst.estado === 'Activa',
+    estado: apiInst.estado === 'Activa' ? 'Activa' : 'Inactiva',
+  };
+};
 
 export const useInstitutionService = () => {
   const [loading, setLoading] = useState(false);
@@ -12,31 +40,32 @@ export const useInstitutionService = () => {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const newInstitution: Institucion = {
-        id: globalThis.crypto?.randomUUID?.() ?? String(Date.now()),
+      const dto = {
         codigoModular: formData.codigoModular,
         codigoLocal: formData.codigoLocal,
         nombre: formData.nombre.trim(),
-        direccion: formData.direccion.trim(),
-        nivel: formData.nivel as Nivel,
+        nivelEducativo: toTitleCase(formData.nivel),
+        departamento: 'Puno',
         provincia: formData.provincia,
         distrito: formData.distrito,
+        direccion: formData.direccion,
         zona: formData.zona,
-        director: formData.director.trim() || null,
-        directorTelefono: formData.directorTelefono.trim() || undefined,
-        directorCorreo: formData.directorCorreo.trim() || undefined,
-        estado: 'Satisfactorio',
-        modalidad: formData.modalidad,
+        estado: 'Activa',
+        modalidad: formData.modalidad || 'Regular',
       };
 
-      // Persistencia en memoria mutando la lista mock
-      MOCK_INSTITUCIONES.push(newInstitution);
-
-      return { success: true, data: newInstitution };
+      const res = await institutionsApi.create(dto);
+      if (res.ok && res.data) {
+        const mapped = mapApiInstitucionToFrontend(res.data);
+        MOCK_INSTITUCIONES.push(mapped);
+        return { success: true, data: mapped };
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al crear la institución.';
+        setError(errMsg);
+        return { success: false, error: res.error };
+      }
     } catch (err) {
-      setError('Error institucional al guardar el registro.');
+      setError('Error de conexión al guardar el registro.');
       return { success: false, error: err };
     } finally {
       setLoading(false);
@@ -48,34 +77,32 @@ export const useInstitutionService = () => {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const updatedInstitution: Institucion = {
-        id,
-        codigoModular: formData.codigoModular,
+      const dto = {
         codigoLocal: formData.codigoLocal,
         nombre: formData.nombre.trim(),
-        direccion: formData.direccion.trim(),
-        nivel: formData.nivel as Nivel,
+        nivelEducativo: toTitleCase(formData.nivel),
         provincia: formData.provincia,
         distrito: formData.distrito,
+        direccion: formData.direccion,
         zona: formData.zona,
-        director: formData.director.trim() || null,
-        directorTelefono: formData.directorTelefono.trim() || undefined,
-        directorCorreo: formData.directorCorreo.trim() || undefined,
-        estado: 'Satisfactorio', // O el estado que ya tenía
-        modalidad: formData.modalidad,
+        modalidad: formData.modalidad || 'Regular',
       };
 
-      // Persistencia en memoria mutando la lista mock
-      const index = MOCK_INSTITUCIONES.findIndex((i) => i.id === id);
-      if (index !== -1) {
-        MOCK_INSTITUCIONES[index] = updatedInstitution;
+      const res = await institutionsApi.update(id, dto);
+      if (res.ok && res.data) {
+        const mapped = mapApiInstitucionToFrontend(res.data);
+        const index = MOCK_INSTITUCIONES.findIndex((i) => i.id === id);
+        if (index !== -1) {
+          MOCK_INSTITUCIONES[index] = mapped;
+        }
+        return { success: true, data: mapped };
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al actualizar la institución.';
+        setError(errMsg);
+        return { success: false, error: res.error };
       }
-
-      return { success: true, data: updatedInstitution };
     } catch (err) {
-      setError('Error al actualizar el registro de la institución.');
+      setError('Error de conexión al actualizar el registro.');
       return { success: false, error: err };
     } finally {
       setLoading(false);

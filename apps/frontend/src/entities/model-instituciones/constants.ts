@@ -1,6 +1,6 @@
-import type { Nivel, EstadoMonitoreo } from './model';
+import type { Nivel, EstadoInstitucion } from './model';
 
-export type { Nivel, EstadoMonitoreo };
+export type { Nivel, EstadoInstitucion };
 
 export const NIVELES: Nivel[] = ['INICIAL', 'PRIMARIA', 'SECUNDARIA'];
 
@@ -10,7 +10,7 @@ export const NIVEL_LABEL: Record<Nivel, string> = {
   SECUNDARIA: 'Secundaria',
 };
 
-export const ESTADOS: EstadoMonitoreo[] = ['Satisfactorio', 'En Proceso', 'Crítico'];
+export const ESTADOS: EstadoInstitucion[] = ['Activa', 'Inactiva'];
 
 export const ZONAS = ['Urbana', 'Rural'];
 
@@ -31,10 +31,9 @@ export const NIVEL_STYLE: Record<Nivel, { bg: string; color: string }> = {
   SECUNDARIA: { bg: '#dcfce7', color: '#15803d' },
 };
 
-export const ESTADO_COLOR: Record<EstadoMonitoreo, string> = {
-  Satisfactorio: '#22c55e',
-  'En Proceso': '#f97316',
-  Crítico: '#ef4444',
+export const ESTADO_COLOR: Record<EstadoInstitucion, string> = {
+  Activa: '#22c55e',
+  Inactiva: '#ef4444',
 };
 
 export const getInitials = (name: string): string => {

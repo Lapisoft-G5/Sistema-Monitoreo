@@ -112,6 +112,8 @@ export class AuthSessionService {
       apellidos: payload.apellidos,
       role: payload.role,
       institucion: payload.institucion_id || payload.colegio_id,
+      institucionNombre: payload.colegio_nombre,
+      institucionNivel: payload.colegio_nivel,
       firstLogin: payload.firstLogin,
     };
 

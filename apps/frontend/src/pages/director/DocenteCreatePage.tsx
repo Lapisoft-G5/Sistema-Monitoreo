@@ -1,11 +1,37 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { CreateDocenteCard } from '@widgets/docentes';
-import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
+import { institutionsApi } from '@shared/api/institutions.api';
+import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import type { Institucion } from '@entities/model-instituciones';
 
 export const DocenteCreatePage = () => {
   const navigate = useNavigate();
+  const [instituciones, setInstituciones] = useState<Institucion[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchIes = async () => {
+      setLoading(true);
+      const res = await institutionsApi.findAll({ limit: 1000 });
+      if (res.ok && res.data) {
+        setInstituciones(res.data.data.map(mapApiInstitucionToFrontend));
+      }
+      setLoading(false);
+    };
+    fetchIes();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="text-text-muted text-sm font-medium">Cargando formulario...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300">
@@ -25,7 +51,7 @@ export const DocenteCreatePage = () => {
       </div>
 
       <CreateDocenteCard
-        instituciones={MOCK_INSTITUCIONES}
+        instituciones={instituciones}
         targetCargo="Docente de Aula"
         routePrefix="/instituciones/docentes"
         submitLabel="Guardar Docente"

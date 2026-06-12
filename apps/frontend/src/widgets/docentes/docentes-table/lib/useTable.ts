@@ -10,6 +10,7 @@ export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 
   const searchQuery = searchParams.get('search') || '';
   const condicionFilter = searchParams.get('condicion') || '';
   const seccionFilter = searchParams.get('seccion') || '';
+  const nivelFilter = searchParams.get('nivelEducativo') || '';
   const pageParam = parseInt(searchParams.get('page') || '1', 10);
 
   const filtered = useMemo(() => {
@@ -24,11 +25,12 @@ export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 
         d.dni.includes(searchQuery);
 
       const matchCondicion = !condicionFilter || d.condicion === condicionFilter;
-      const matchSeccion = !seccionFilter || (d.secciones || []).some((s) => s.grado === seccionFilter);
+      const matchSeccion = !seccionFilter || (d.secciones || []).some((s) => `${s.grado} ${s.seccion}` === seccionFilter);
+      const matchNivel = !nivelFilter || d.nivelEducativo?.toUpperCase() === nivelFilter.toUpperCase();
 
-      return matchSearch && matchCondicion && matchSeccion;
+      return matchSearch && matchCondicion && matchSeccion && matchNivel;
     });
-  }, [docentes, searchQuery, condicionFilter, seccionFilter, targetCargo]);
+  }, [docentes, searchQuery, condicionFilter, seccionFilter, nivelFilter, targetCargo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(pageParam, totalPages);

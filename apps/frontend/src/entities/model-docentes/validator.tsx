@@ -3,7 +3,11 @@ import type { Docente } from './model';
 
 export const seccionDocenteSchema = z.object({
   id: z.string().optional(),
-  grado: z.string().min(1, 'El grado y sección es requerido (ej: 4to A)'),
+  grado: z.string().min(1, 'El grado es requerido'),
+  seccion: z
+    .string()
+    .length(1, 'La sección debe ser de un solo carácter')
+    .regex(/^[A-Za-z0-9]$/, 'La sección debe ser un carácter alfanumérico'),
 });
 
 export const docenteSchema = z.object({
@@ -19,7 +23,7 @@ export const docenteSchema = z.object({
     .string()
     .regex(/^9\d{8}$/, 'Debe ser un número de celular de 9 dígitos (ej. 987654321)'),
   nivelEducativo: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA']),
-  condicion: z.enum(['Nombrado', 'Contratado']),
+  condicion: z.enum(['Nombrado', 'Contratado', 'Asignado', 'Encargado', 'Por función']),
   especialidad: z.string().min(3, 'La especialidad es requerida'),
   cargaHoraria: z
     .number({ message: 'Debe ser un número' })
@@ -58,6 +62,10 @@ export const directorSchema = z.object({
   condicion: z.enum(['Asignado', 'Encargado', 'Por función']),
   escala: z.enum(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']),
   institucionId: z.string().min(1, 'La institución educativa es requerida'),
+  nivelEducativo: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA'], {
+    message: 'Debe seleccionar un nivel educativo',
+  }),
+  especialidad: z.string().min(3, 'La especialidad es requerida'),
 });
 
 export type DirectorFormData = z.infer<typeof directorSchema>;

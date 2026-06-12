@@ -1,26 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen, BadgeCheck } from 'lucide-react';
-import { MOCK_ESPECIALISTAS, type Especialista, ROL_ESPECIALISTA_LABELS } from '@entities/model-especialistas';
+import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen } from 'lucide-react';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
+import { jefesAreaApi } from '@shared/api/jefes-area.api';
+import { mapApiJefeAreaToFrontend } from '@features/jefes-area';
+import type { JefeArea } from '@entities/model-jefes-area';
 
 export const JefeAreaDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [jefe, setJefe] = useState<Especialista | null>(null);
+  const [jefe, setJefe] = useState<JefeArea | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const found = MOCK_ESPECIALISTAS.find((e) => e.id === id);
-      setJefe(found || null);
-      setLoading(false);
-    }, 450);
+    const fetchDetail = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const res = await jefesAreaApi.findById(id);
+        if (res.ok && res.data) {
+          setJefe(mapApiJefeAreaToFrontend(res.data));
+        } else {
+          console.error('Error fetching jefe de area details:', res.error);
+          setJefe(null);
+        }
+      } catch (err) {
+        console.error('Network error fetching jefe de area details:', err);
+        setJefe(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchDetail();
   }, [id]);
 
   if (loading) {
@@ -95,14 +110,14 @@ export const JefeAreaDetailPage = () => {
                 <Mail className="w-4.5 h-4.5 text-text-muted" />
                 <div className="flex flex-col">
                   <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">Correo Institucional</span>
-                  <span className="text-xs font-semibold text-text">{jefe.correo}</span>
+                  <span className="text-xs font-semibold text-text">{jefe.correo || 'No registrado'}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-xl border border-border/40">
                 <Phone className="w-4.5 h-4.5 text-text-muted" />
                 <div className="flex flex-col">
                   <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">Teléfono de Contacto</span>
-                  <span className="text-xs font-semibold text-text">{jefe.celular}</span>
+                  <span className="text-xs font-semibold text-text">{jefe.celular || 'No registrado'}</span>
                 </div>
               </div>
             </div>
@@ -114,19 +129,19 @@ export const JefeAreaDetailPage = () => {
           <Card className="p-6 border border-border shadow-xs flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <Briefcase className="w-5 h-5 text-primary" />
-              <h3 className="text-sm font-bold text-text">Rol y Área</h3>
+              <h3 className="text-sm font-bold text-text">Detalles Laborales</h3>
             </div>
 
             <div className="flex flex-col gap-3.5">
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">Rol Desempeñado</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">Cargo</span>
                 <Badge variant="default" className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide">
-                  {ROL_ESPECIALISTA_LABELS[jefe.rol] || 'Jefe de Área'}
+                  Jefe de Área
                 </Badge>
               </div>
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Carga Laboral</span>
-                <span className="text-sm font-semibold text-text">{jefe.cargaLaboral || 0} horas</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Carga Horaria</span>
+                <span className="text-sm font-semibold text-text">{jefe.cargaHoraria || 40} horas</span>
               </div>
               <div>
                 <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Estado</span>
@@ -146,26 +161,18 @@ export const JefeAreaDetailPage = () => {
         </div>
       </div>
 
-      {/* Niveles Asignados */}
+      {/* Nivel Asignado */}
       <Card className="p-6 border border-border shadow-xs flex flex-col gap-4">
         <div className="flex items-center gap-2 border-b border-border pb-3">
           <BookOpen className="w-5 h-5 text-primary" />
-          <h3 className="text-sm font-bold text-text">Niveles Educativos a su Cargo</h3>
+          <h3 className="text-sm font-bold text-text">Nivel Educativo a su Cargo</h3>
         </div>
 
         <div className="flex flex-wrap gap-2.5">
-          {jefe.niveles.map((n) => (
-            <div
-              key={n}
-              className="flex items-center gap-1.5 bg-muted/30 border border-border/80 px-3.5 py-2 rounded-xl text-xs font-bold text-text"
-            >
-              <BadgeCheck className="w-4 h-4 text-green-500 shrink-0" />
-              <span>{n}</span>
-            </div>
-          ))}
-          {jefe.niveles.length === 0 && (
-            <span className="text-xs text-text-muted italic">No se han registrado niveles educativos.</span>
-          )}
+          <div className="flex items-center gap-1.5 bg-muted/30 border border-border/80 px-3.5 py-2 rounded-xl text-xs font-bold text-text">
+            <BookOpen className="w-4 h-4 text-green-500 shrink-0" />
+            <span>{jefe.nivelEducativo}</span>
+          </div>
         </div>
       </Card>
     </div>

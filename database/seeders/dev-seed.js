@@ -79,9 +79,32 @@ const MOCK_CARGOS = [
 ];
 
 const MOCK_CURSOS = [
-  { nombre: 'Matemáticas', nivelEducativo: 'Secundaria' },
+  // 1. Educación Inicial
+  { nombre: 'Personal Social', nivelEducativo: 'Inicial' },
+  { nombre: 'Psicomotricidad', nivelEducativo: 'Inicial' },
+  { nombre: 'Comunicación', nivelEducativo: 'Inicial' },
+  { nombre: 'Descubrimiento del Mundo', nivelEducativo: 'Inicial' },
+
+  // 2. Educación Primaria
+  { nombre: 'Comunicación', nivelEducativo: 'Primaria' },
+  { nombre: 'Matemática', nivelEducativo: 'Primaria' },
+  { nombre: 'Ciencia y Tecnología', nivelEducativo: 'Primaria' },
+  { nombre: 'Personal Social', nivelEducativo: 'Primaria' },
+  { nombre: 'Arte y Cultura', nivelEducativo: 'Primaria' },
+  { nombre: 'Educación Física', nivelEducativo: 'Primaria' },
+  { nombre: 'Educación Religiosa', nivelEducativo: 'Primaria' },
+
+  // 3. Educación Secundaria
   { nombre: 'Comunicación', nivelEducativo: 'Secundaria' },
+  { nombre: 'Matemática', nivelEducativo: 'Secundaria' },
   { nombre: 'Ciencia y Tecnología', nivelEducativo: 'Secundaria' },
+  { nombre: 'Desarrollo Personal, Ciudadanía y Cívica', nivelEducativo: 'Secundaria' },
+  { nombre: 'Ciencias Sociales', nivelEducativo: 'Secundaria' },
+  { nombre: 'Educación Física', nivelEducativo: 'Secundaria' },
+  { nombre: 'Arte y Cultura', nivelEducativo: 'Secundaria' },
+  { nombre: 'Inglés', nivelEducativo: 'Secundaria' },
+  { nombre: 'Educación Religiosa', nivelEducativo: 'Secundaria' },
+  { nombre: 'Educación para el Trabajo', nivelEducativo: 'Secundaria' },
 ];
 
 const MOCK_INSTITUCION = {
@@ -115,7 +138,13 @@ const MOCK_PERMISOS = [
 const MOCK_ROL_PERMISOS = {
   director_ugel: ['dashboard:read', 'reports:read'],
   jefe_gestion: ['especialistas:read', 'especialistas:write', 'jefes_area:write', 'monitoreo:execute', 'reports:read'],
-  jefe_area: ['directores:write', 'instituciones:read', 'instituciones:write'],
+  jefe_area: [
+    'directores:write', 
+    'instituciones:read', 
+    'instituciones:write',
+    'docentes:read',
+    'docentes:write',
+  ],
   especialista: ['monitoreo:execute', 'reports:read'],
   director_institucion: ['docentes:read', 'docentes:write', 'reports:read'],
   docente: ['reports:own'],
@@ -355,7 +384,7 @@ async function main() {
 
       // E. Asociar curso si es Docente
       if (userData.role === 'docente') {
-        const cursoId = cursoMap['Matemáticas'];
+        const cursoId = cursoMap['Matemática'];
         if (cursoId) {
           await prisma.docenteCurso.upsert({
             where: {

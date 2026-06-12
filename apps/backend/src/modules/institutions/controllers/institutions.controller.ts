@@ -54,6 +54,18 @@ export class InstitutionsController {
   }
 
   /**
+   * GET /api/instituciones/:id
+   * Retorna una institución educativa específica por su ID.
+   */
+  @Get(':id')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('instituciones:read')
+  @HttpCode(HttpStatus.OK)
+  async findById(@Param('id') id: string): Promise<IInstitucionResponse> {
+    return this.institutionsService.findById(id);
+  }
+
+  /**
    * PUT /api/instituciones/:id
    * Actualiza los datos de una institución existente.
    * Descarta cualquier intento de modificar codigo_modular.

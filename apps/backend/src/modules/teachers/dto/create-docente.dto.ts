@@ -7,8 +7,26 @@ import {
   Matches,
   MaxLength,
   IsUUID,
+  IsInt,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ICreateDocenteRequest } from '@sistema-monitoreo/shared-contracts';
+
+import { ApiProperty } from '@nestjs/swagger';
+
+export class SeccionDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty({ message: 'El grado es requerido' })
+  grado!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty({ message: 'La sección es requerida' })
+  seccion!: string;
+}
 
 export class CreateDocenteDto implements ICreateDocenteRequest {
   @IsString()
@@ -32,6 +50,12 @@ export class CreateDocenteDto implements ICreateDocenteRequest {
   @MaxLength(255, { message: 'El correo electrónico no puede exceder los 255 caracteres' })
   correo?: string;
 
+  @IsOptional()
+  @IsString()
+  @Length(9, 9, { message: 'El celular debe tener exactamente 9 dígitos' })
+  @Matches(/^\d{9}$/, { message: 'El celular debe contener solo números' })
+  telefono?: string;
+
   @IsUUID('4', { message: 'El ID de la institución debe ser un UUID v4 válido' })
   @IsNotEmpty({ message: 'El ID de la institución es requerido' })
   institucionId!: string;
@@ -54,4 +78,19 @@ export class CreateDocenteDto implements ICreateDocenteRequest {
   @IsUUID('4', { message: 'El ID del cargo debe ser un UUID v4 válido' })
   @IsNotEmpty({ message: 'El ID del cargo es requerido' })
   cargoId!: string;
+
+  @IsOptional()
+  @IsString()
+  condicionLaboral?: string;
+
+  @IsOptional()
+  @IsInt()
+  escalaMagisterial?: number;
+
+  @ApiProperty({ type: () => [SeccionDto], required: false })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SeccionDto)
+  secciones?: SeccionDto[];
 }

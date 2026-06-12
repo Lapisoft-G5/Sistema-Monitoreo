@@ -1,7 +1,65 @@
 import { useState } from 'react';
-import type { Docente } from '@entities/model-docentes';
+import type { Docente, NivelEducativo } from '@entities/model-docentes';
 import { MOCK_DOCENTES } from '@entities/model-docentes';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
+import { teachersApi } from '@shared/api/teachers.api';
+import type { IDocenteResponse } from '@sistema-monitoreo/shared-contracts';
+
+const MAP_ROMAN_TO_INT: Record<string, number> = {
+  I: 1,
+  II: 2,
+  III: 3,
+  IV: 4,
+  V: 5,
+  VI: 6,
+  VII: 7,
+  VIII: 8,
+};
+
+const MAP_INT_TO_ROMAN: Record<number, string> = {
+  1: 'I',
+  2: 'II',
+  3: 'III',
+  4: 'IV',
+  5: 'V',
+  6: 'VI',
+  7: 'VII',
+  8: 'VIII',
+};
+
+const toTitleCase = (str: string): string => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
+export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
+  const cargoName = apiDoc.docenteCargos?.[0]?.cargo?.nombre || 'Docente de Aula';
+  
+  return {
+    id: apiDoc.id,
+    nombres: apiDoc.persona.nombres,
+    apellidos: apiDoc.persona.apellidos,
+    dni: apiDoc.persona.dni,
+    correo: apiDoc.persona.correo || '',
+    celular: apiDoc.persona.telefono || '',
+    nivelEducativo: (apiDoc.nivelEducativo?.toUpperCase() || 'PRIMARIA') as NivelEducativo,
+    condicion: (apiDoc.condicionLaboral || 'Nombrado') as Docente['condicion'],
+    especialidad: apiDoc.cursoAsignado || 'General',
+    cargaHoraria: 30,
+    secciones: apiDoc.docenteSecciones?.map((ds) => ({
+      id: ds.id,
+      grado: ds.grado,
+      seccion: ds.seccion,
+    })) || [],
+    escala: (apiDoc.escalaMagisterial ? MAP_INT_TO_ROMAN[apiDoc.escalaMagisterial] : 'I') as Docente['escala'],
+    institucionId: apiDoc.institucionId,
+    activo: apiDoc.estado === 'Activo',
+    fechaCreacion: apiDoc.createdAt
+      ? new Date(apiDoc.createdAt).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0],
+    cargo: cargoName as Docente['cargo'],
+  };
+};
 
 export const useDocenteService = () => {
   const [loading, setLoading] = useState(false);
@@ -12,37 +70,48 @@ export const useDocenteService = () => {
     setError(null);
 
     try {
-      // Simulamos latencia de red
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Obtener el ID de cargo dinámicamente desde el backend
+      const cargosRes = await teachersApi.getCargos();
+      if (!cargosRes.ok || !cargosRes.data) {
+        throw new Error('No se pudo obtener el catálogo de cargos de la base de datos.');
+      }
+      const dbCargo = cargosRes.data.find((c) => c.nombre === formData.cargo);
+      if (!dbCargo) {
+        throw new Error(`El cargo ${formData.cargo} no existe en el catálogo de cargos.`);
+      }
 
-      const newDocente: Docente = {
-        id: globalThis.crypto?.randomUUID?.() ?? String(Date.now()),
+      const dto = {
+        dni: formData.dni,
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        dni: formData.dni,
-        correo: formData.correo.trim(),
-        celular: formData.celular,
-        nivelEducativo: formData.nivelEducativo,
-        condicion: formData.condicion,
-        especialidad: formData.especialidad.trim(),
-        cargaHoraria: Number(formData.cargaHoraria),
-        secciones: formData.secciones.map((s) => ({
-          id: s.id || (globalThis.crypto?.randomUUID?.() ?? String(Math.random())),
-          grado: s.grado.trim(),
-        })),
-        escala: formData.escala,
+        correo: formData.correo.trim() || undefined,
+        telefono: formData.celular.trim() || undefined,
         institucionId: formData.institucionId,
-        activo: formData.activo ?? true,
-        fechaCreacion: new Date().toISOString().split('T')[0],
-        cargo: formData.cargo,
+        gradoAcademico: 'Licenciado',
+        nivelEducativo: toTitleCase(formData.nivelEducativo),
+        cursoAsignado: formData.especialidad.trim(),
+        cargoId: dbCargo.id,
+        condicionLaboral: formData.condicion,
+        escalaMagisterial: MAP_ROMAN_TO_INT[formData.escala] || 1,
+        secciones: formData.secciones?.map((s) => ({
+          grado: s.grado,
+          seccion: s.seccion.toUpperCase().trim(),
+        })),
       };
 
-      // Persistencia en memoria mutando la lista mock
-      MOCK_DOCENTES.push(newDocente);
-
-      return { success: true, data: newDocente };
-    } catch (err) {
-      setError('Error al registrar el docente.');
+      const res = await teachersApi.create(dto);
+      if (res.ok && res.data) {
+        const mapped = mapApiDocenteToFrontend(res.data);
+        MOCK_DOCENTES.push(mapped);
+        return { success: true, data: mapped };
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al registrar el docente.';
+        setError(errMsg);
+        return { success: false, error: res.error };
+      }
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Error al registrar el docente.';
+      setError(errMsg);
       return { success: false, error: err };
     } finally {
       setLoading(false);
@@ -54,40 +123,50 @@ export const useDocenteService = () => {
     setError(null);
 
     try {
-      // Simulamos latencia de red
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const updatedDocente: Docente = {
-        id,
-        nombres: formData.nombres.trim(),
-        apellidos: formData.apellidos.trim(),
-        dni: formData.dni,
-        correo: formData.correo.trim(),
-        celular: formData.celular,
-        nivelEducativo: formData.nivelEducativo,
-        condicion: formData.condicion,
-        especialidad: formData.especialidad.trim(),
-        cargaHoraria: Number(formData.cargaHoraria),
-        secciones: formData.secciones.map((s) => ({
-          id: s.id || (globalThis.crypto?.randomUUID?.() ?? String(Math.random())),
-          grado: s.grado.trim(),
-        })),
-        escala: formData.escala,
-        institucionId: formData.institucionId,
-        activo: formData.activo ?? true,
-        fechaCreacion: new Date().toISOString().split('T')[0], // Mantiene la actual en escenario real
-        cargo: formData.cargo,
-      };
-
-      // Persistencia en memoria mutando la lista mock
-      const index = MOCK_DOCENTES.findIndex((d) => d.id === id);
-      if (index !== -1) {
-        MOCK_DOCENTES[index] = updatedDocente;
+      // Obtener el ID de cargo dinámicamente desde el backend
+      const cargosRes = await teachersApi.getCargos();
+      if (!cargosRes.ok || !cargosRes.data) {
+        throw new Error('No se pudo obtener el catálogo de cargos de la base de datos.');
+      }
+      const dbCargo = cargosRes.data.find((c) => c.nombre === formData.cargo);
+      if (!dbCargo) {
+        throw new Error(`El cargo ${formData.cargo} no existe en el catálogo de cargos.`);
       }
 
-      return { success: true, data: updatedDocente };
-    } catch (err) {
-      setError('Error al actualizar el registro del docente.');
+      const dto = {
+        nombres: formData.nombres.trim(),
+        apellidos: formData.apellidos.trim(),
+        correo: formData.correo.trim() || undefined,
+        telefono: formData.celular.trim() || undefined,
+        gradoAcademico: 'Licenciado',
+        nivelEducativo: toTitleCase(formData.nivelEducativo),
+        cursoAsignado: formData.especialidad.trim(),
+        cargoId: dbCargo.id,
+        condicionLaboral: formData.condicion,
+        escalaMagisterial: MAP_ROMAN_TO_INT[formData.escala] || 1,
+        institucionId: formData.institucionId,
+        secciones: formData.secciones?.map((s) => ({
+          grado: s.grado,
+          seccion: s.seccion.toUpperCase().trim(),
+        })),
+      };
+
+      const res = await teachersApi.update(id, dto);
+      if (res.ok && res.data) {
+        const mapped = mapApiDocenteToFrontend(res.data);
+        const index = MOCK_DOCENTES.findIndex((d) => d.id === id);
+        if (index !== -1) {
+          MOCK_DOCENTES[index] = mapped;
+        }
+        return { success: true, data: mapped };
+      } else {
+        const errMsg = (res.error as { message?: string })?.message || 'Error al actualizar el registro del docente.';
+        setError(errMsg);
+        return { success: false, error: res.error };
+      }
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Error al actualizar el registro del docente.';
+      setError(errMsg);
       return { success: false, error: err };
     } finally {
       setLoading(false);

@@ -8,6 +8,8 @@ export interface DocenteEntity {
   gradoAcademico: string | null;
   nivelEducativo: string;
   cursoAsignado: string | null;
+  condicionLaboral?: string | null;
+  escalaMagisterial?: number | null;
   estado: string;
   createdAt: Date;
   updatedAt: Date;
@@ -17,6 +19,7 @@ export interface DocenteEntity {
     nombres: string;
     apellidos: string;
     correo: string | null;
+    telefono: string | null;
   };
   docenteCargos: Array<{
     id: string;
@@ -27,6 +30,11 @@ export interface DocenteEntity {
       id: string;
       nombre: string;
     };
+  }>;
+  docenteSecciones?: Array<{
+    id: string;
+    grado: string;
+    seccion: string;
   }>;
 }
 

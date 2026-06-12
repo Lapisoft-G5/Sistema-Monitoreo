@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { User, Briefcase, Check } from 'lucide-react';
-import { NIVELES_INSTITUCION, ROL_ESPECIALISTA_LABELS, type NivelInstitucion, type EspecialistaRol } from '@entities/model-especialistas';
+import { NIVELES_INSTITUCION, type NivelInstitucion } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistaSchema } from '@entities/model-especialistas/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
@@ -21,10 +21,11 @@ const INITIAL_FORM: EspecialistaFormData = {
   correo: '',
   celular: '',
   especialidad: '',
-  rol: 'especialista_medio',
   niveles: ['Primaria'],
   activo: true,
+  condicionLaboral: 'Contratado',
   cargaLaboral: 40,
+  escalaMagisterial: undefined,
 };
 
 export const EspecialistaFormBase = ({
@@ -164,45 +165,62 @@ export const EspecialistaFormBase = ({
       </SectionCard>
 
       {/* Sección 2: Perfil y Niveles */}
-      <SectionCard icon={<Briefcase className="w-5 h-5" />} title="Detalles Profesionales">
+      <SectionCard icon={<Briefcase className="w-5 h-5" />} title="Detalles Profesionales / Laborales">
         <div style={twoCols}>
           <SelectField
-            label="Rol de Especialista"
+            label="Condición Laboral"
             required
-            value={form.rol}
-            onChange={(v) => set('rol', v as EspecialistaRol)}
-            options={Object.entries(ROL_ESPECIALISTA_LABELS).map(([k, v]) => ({
-              value: k,
-              label: v,
-            }))}
-            placeholder="Seleccione Rol"
-            error={showError('rol')}
-            disabled={true}
+            value={form.condicionLaboral}
+            onChange={(v) => set('condicionLaboral', v as 'Contratado' | 'Nombrado')}
+            options={[
+              { value: 'Contratado', label: 'Contratado' },
+              { value: 'Nombrado', label: 'Nombrado' },
+            ]}
+            placeholder="Seleccione Condición"
+            error={showError('condicionLaboral')}
           />
-          {isJefeArea ? (
-            <TextField
-              label="Carga Laboral (Horas)"
-              required
-              value={form.cargaLaboral?.toString() || ''}
-              onChange={(v) => set('cargaLaboral', v ? Number(v.replace(/\D/g, '')) : undefined)}
-              placeholder="Ej. 40"
-              error={showError('cargaLaboral')}
-            />
-          ) : (
-            <TextField
-              label="Especialidad / Área Pedagógica"
-              required={form.niveles?.includes('Secundaria')}
-              value={form.especialidad || ''}
-              onChange={(v) => set('especialidad', v)}
-              placeholder={
-                form.niveles?.includes('Secundaria')
-                  ? 'Ej. Matemática o Gestión Pedagógica'
-                  : 'Solo disponible para el nivel Secundaria'
-              }
-              error={showError('especialidad')}
-              disabled={!form.niveles?.includes('Secundaria')}
-            />
-          )}
+          <TextField
+            label="Carga Laboral (Horas)"
+            required
+            value={form.cargaLaboral?.toString() || ''}
+            onChange={(v) => set('cargaLaboral', v ? Number(v.replace(/\D/g, '')) : 40)}
+            placeholder="Ej. 40"
+            error={showError('cargaLaboral')}
+          />
+        </div>
+
+        <div style={{ ...twoCols, marginTop: 18 }}>
+          <SelectField
+            label="Escala Magisterial"
+            value={form.escalaMagisterial?.toString() || 'none'}
+            onChange={(v) => set('escalaMagisterial', v === 'none' ? undefined : Number(v))}
+            options={[
+              { value: 'none', label: 'Ninguna / No aplica' },
+              { value: '1', label: 'Escala I' },
+              { value: '2', label: 'Escala II' },
+              { value: '3', label: 'Escala III' },
+              { value: '4', label: 'Escala IV' },
+              { value: '5', label: 'Escala V' },
+              { value: '6', label: 'Escala VI' },
+              { value: '7', label: 'Escala VII' },
+              { value: '8', label: 'Escala VIII' },
+            ]}
+            placeholder="Seleccione Escala Magisterial"
+            error={showError('escalaMagisterial')}
+          />
+          <TextField
+            label="Especialidad / Área Pedagógica"
+            required={form.niveles?.includes('Secundaria')}
+            value={form.especialidad || ''}
+            onChange={(v) => set('especialidad', v)}
+            placeholder={
+              form.niveles?.includes('Secundaria')
+                ? 'Ej. Matemática o Gestión Pedagógica'
+                : 'Solo disponible para el nivel Secundaria'
+            }
+            error={showError('especialidad')}
+            disabled={!form.niveles?.includes('Secundaria')}
+          />
         </div>
 
         <div className="flex flex-col gap-2 mt-5">

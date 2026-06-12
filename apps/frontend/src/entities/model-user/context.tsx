@@ -44,14 +44,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const changePassword = useCallback(async (newPassword: string) => {
-    // La sesión actual se maneja vía cookies HttpOnly en el backend
+    // La sesión actual se maneja vía cookies HttpOnly en el backend.
+    // Al cambiar la contraseña, el backend limpia las cookies de sesión por seguridad,
+    // invalidando el acceso actual. Forzamos la redirección al login limpiando el estado local.
     const res = await authApi.changePassword(newPassword);
     if (!res.ok) {
       throw new Error((res.error as { message?: string })?.message || 'Error al cambiar contraseña');
     }
 
-    // Marca al usuario como que ya no es su primer login
-    setUser((prev) => (prev ? { ...prev, firstLogin: false } : null));
+    setUser(null);
   }, []);
 
   return (

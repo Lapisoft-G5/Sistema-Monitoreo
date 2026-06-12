@@ -3,21 +3,30 @@ export interface ICreateDocenteRequest {
   nombres: string;
   apellidos: string;
   correo?: string;
+  telefono?: string;
   institucionId: string;
   gradoAcademico?: string;
   nivelEducativo: string;
   cursoAsignado?: string;
   cargoId: string;
+  condicionLaboral?: string;
+  escalaMagisterial?: number;
+  secciones?: { grado: string; seccion: string }[];
 }
 
 export interface IUpdateDocenteRequest {
   nombres: string;
   apellidos: string;
   correo?: string;
+  telefono?: string;
   gradoAcademico?: string;
   nivelEducativo: string;
   cursoAsignado?: string;
   cargoId: string;
+  condicionLaboral?: string;
+  escalaMagisterial?: number;
+  institucionId?: string;
+  secciones?: { grado: string; seccion: string }[];
 }
 
 export interface IDocenteResponse {
@@ -27,6 +36,8 @@ export interface IDocenteResponse {
   gradoAcademico: string | null;
   nivelEducativo: string;
   cursoAsignado: string | null;
+  condicionLaboral?: string | null;
+  escalaMagisterial?: number | null;
   estado: string;
   createdAt: Date | string;
   updatedAt: Date | string;
@@ -36,6 +47,7 @@ export interface IDocenteResponse {
     nombres: string;
     apellidos: string;
     correo: string | null;
+    telefono: string | null;
   };
   docenteCargos: Array<{
     id: string;
@@ -46,6 +58,11 @@ export interface IDocenteResponse {
       id: string;
       nombre: string;
     };
+  }>;
+  docenteSecciones?: Array<{
+    id: string;
+    grado: string;
+    seccion: string;
   }>;
 }
 

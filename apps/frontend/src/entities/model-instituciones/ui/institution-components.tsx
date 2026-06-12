@@ -1,4 +1,4 @@
-import { User, ShieldAlert, CheckCircle2, Clock } from 'lucide-react';
+import { User, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
 // ── 1. Nivel Badge ──
 export const NivelBadge = ({ nivel }: { nivel: string }) => {
@@ -17,28 +17,19 @@ export const NivelBadge = ({ nivel }: { nivel: string }) => {
   );
 };
 
-// ── 2. Estado Badge ──
 export const EstadoBadge = ({ estado }: { estado: string }) => {
-  if (estado === 'Satisfactorio') {
+  if (estado === 'Activa') {
     return (
       <span className="flex items-center gap-1.5 w-fit px-2.5 py-1 bg-green-500/10 text-green-700 border border-green-500/20 rounded-full text-[0.7rem] font-bold">
-        <CheckCircle2 className="w-3.5 h-3.5" /> Satisfactorio
-      </span>
-    );
-  }
-  
-  if (estado === 'Crítico') {
-    return (
-      <span className="flex items-center gap-1.5 w-fit px-2.5 py-1 bg-destructive/10 text-destructive border border-destructive/20 rounded-full text-[0.7rem] font-bold">
-        <ShieldAlert className="w-3.5 h-3.5" /> Crítico
+        <CheckCircle2 className="w-3.5 h-3.5" /> Activa
       </span>
     );
   }
 
-  // En Proceso o por defecto
+  // Inactiva o por defecto
   return (
-    <span className="flex items-center gap-1.5 w-fit px-2.5 py-1 bg-amber-500/10 text-amber-700 border border-amber-500/20 rounded-full text-[0.7rem] font-bold">
-      <Clock className="w-3.5 h-3.5" /> {estado}
+    <span className="flex items-center gap-1.5 w-fit px-2.5 py-1 bg-destructive/10 text-destructive border border-destructive/20 rounded-full text-[0.7rem] font-bold">
+      <ShieldAlert className="w-3.5 h-3.5" /> Inactiva
     </span>
   );
 };

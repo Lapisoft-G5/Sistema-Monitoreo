@@ -8,6 +8,7 @@ import {
   Get,
   Put,
   Delete,
+  Patch,
   Param,
   Query,
   Req,
@@ -70,5 +71,19 @@ export class EspecialistaController {
   @HttpCode(HttpStatus.OK)
   async delete(@Param('id') id: string): Promise<IEspecialistaResponse> {
     return this.service.delete(id);
+  }
+
+  @Patch(':id/alta')
+  @RequirePermissions('especialistas:write')
+  @HttpCode(HttpStatus.OK)
+  async activate(@Param('id') id: string): Promise<IEspecialistaResponse> {
+    return this.service.activate(id);
+  }
+
+  @Patch(':id/baja')
+  @RequirePermissions('especialistas:write')
+  @HttpCode(HttpStatus.OK)
+  async deactivate(@Param('id') id: string): Promise<IEspecialistaResponse> {
+    return this.service.deactivate(id);
   }
 }

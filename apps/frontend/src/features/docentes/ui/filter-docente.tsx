@@ -1,12 +1,19 @@
 import { useSearchParams } from 'react-router-dom';
-import { CONDICION_LABORAL, MOCK_DOCENTES } from '@entities/model-docentes';
+import { CONDICION_LABORAL } from '@entities/model-docentes';
 import { FilterSelect } from '@shared/ui/Filter-Select';
 import { Card } from '@shared/ui/card';
 import { Input } from '@shared/ui/input';
 import { Search } from 'lucide-react';
+import { useUser } from '@entities/model-user';
+import type { Docente } from '@entities/model-docentes';
 
-export const FilterDocentes = () => {
+interface FilterDocentesProps {
+  docentes: Docente[];
+}
+
+export const FilterDocentes = ({ docentes }: FilterDocentesProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useUser();
 
   const search = searchParams.get('search') || '';
   const condicion = searchParams.get('condicion') || '';
@@ -25,9 +32,18 @@ export const FilterDocentes = () => {
     setSearchParams(newParams);
   };
 
-  // Obtener secciones únicas ordenadas de los docentes en mocks
+  const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  const currentNivel = isDirectorIe && user?.institucionNivel
+    ? user.institucionNivel.toUpperCase()
+    : searchParams.get('nivelEducativo')?.toUpperCase() || null;
+
+  const filteredDocentes = currentNivel
+    ? docentes.filter((d) => d.nivelEducativo?.toUpperCase() === currentNivel)
+    : docentes;
+
+  // Obtener secciones únicas ordenadas de los docentes en mocks filtrados por nivel
   const seccionesOptions = Array.from(
-    new Set(MOCK_DOCENTES.flatMap((d) => (d.secciones || []).map((s) => s.grado)))
+    new Set(filteredDocentes.flatMap((d) => (d.secciones || []).map((s) => `${s.grado} ${s.seccion}`)))
   ).sort();
 
   return (

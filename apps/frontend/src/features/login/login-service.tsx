@@ -107,6 +107,8 @@ export const useLoginService = () => {
       role: data.user.role as User['role'],
       firstLogin: data.user.firstLogin,
       institucion: data.user.institucion,
+      institucionNombre: data.user.institucionNombre,
+      institucionNivel: data.user.institucionNivel,
       distrito: data.user.distrito,
     });
 

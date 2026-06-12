@@ -1,22 +1,26 @@
-import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Trash2, RotateCcw } from 'lucide-react';
 import { Button } from './button';
 
 interface FastActionsProps {
   onView?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onRestore?: () => void;
   viewTitle?: string;
   editTitle?: string;
   deleteTitle?: string;
+  restoreTitle?: string;
 }
 
 export const FastActions = ({
   onView,
   onEdit,
   onDelete,
+  onRestore,
   viewTitle = 'Ver detalle',
   editTitle = 'Editar',
   deleteTitle = 'Eliminar',
+  restoreTitle = 'Reactivar',
 }: FastActionsProps) => {
   return (
     <div className="flex items-center justify-end gap-1">
@@ -46,6 +50,20 @@ export const FastActions = ({
           title={editTitle}
         >
           <Pencil className="h-4 w-4" />
+        </Button>
+      )}
+      {onRestore && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRestore();
+          }}
+          className="h-8 w-8 cursor-pointer rounded-lg text-text-muted hover:text-green-600 hover:bg-green-50"
+          title={restoreTitle}
+        >
+          <RotateCcw className="h-4 w-4" />
         </Button>
       )}
       {onDelete && (

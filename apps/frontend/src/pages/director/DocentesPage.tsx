@@ -7,9 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { FilterDocentes } from '@features/docentes';
 import { DocentesStatsWidget, DocentesTableWidget } from '@widgets/docentes';
 import { teachersApi } from '@shared/api/teachers.api';
-import { institutionsApi } from '@shared/api/institutions.api';
 import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
-import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
 import type { Docente } from '@entities/model-docentes';
 import type { Institucion } from '@entities/model-instituciones';
 import { useUser } from '@entities/model-user';
@@ -24,10 +22,7 @@ export const DocentesPage = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [teachersRes, instsRes] = await Promise.all([
-        teachersApi.findAll(),
-        institutionsApi.findAll({ limit: 1000 }),
-      ]);
+      const teachersRes = await teachersApi.findAll();
 
       if (teachersRes.ok && teachersRes.data) {
         let mapped = teachersRes.data.map(mapApiDocenteToFrontend);
@@ -40,10 +35,24 @@ export const DocentesPage = () => {
         console.error('Error loading teachers:', teachersRes.error);
       }
 
-      if (instsRes.ok && instsRes.data) {
-        setInstituciones(instsRes.data.data.map(mapApiInstitucionToFrontend));
-      } else {
-        console.error('Error loading institutions:', instsRes.error);
+      if (user?.institucion && user?.institucionNombre) {
+        setInstituciones([
+          {
+            id: user.institucion,
+            nombre: user.institucionNombre,
+            codigoModular: '',
+            codigoLocal: '',
+            direccion: '',
+            nivel: (user.institucionNivel || 'PRIMARIA').toUpperCase() as 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA',
+            distrito: user.distrito || '',
+            provincia: '',
+            zona: '',
+            modalidad: 'Regular',
+            director: `${user.apellidos}, ${user.nombres}`,
+            activo: true,
+            estado: 'Activa',
+          },
+        ]);
       }
     } catch (err) {
       console.error('Connection error loading docentes data:', err);
@@ -85,7 +94,7 @@ export const DocentesPage = () => {
       <DocentesStatsWidget docentes={docentes} />
 
       {/* 2. Barra de Filtros */}
-      <FilterDocentes />
+      <FilterDocentes docentes={docentes} />
 
       {/* 3. Tabla de Datos */}
       <DocentesTableWidget

@@ -48,6 +48,26 @@ const MOCK_USERS = [
     firstName: 'Pedro',
     lastName: 'Huanca Flores',
     role: 'especialista',
+    especialidad: 'Matemática',
+    nivelEducativo: 'Secundaria',
+  },
+  {
+    dni: '12312312',
+    email: 'alberto.condori@ugel-lampa.gob.pe',
+    firstName: 'Alberto',
+    lastName: 'Condori Ccallo',
+    role: 'especialista',
+    especialidad: 'Comunicación',
+    nivelEducativo: 'Primaria',
+  },
+  {
+    dni: '45645645',
+    email: 'sofia.vargas@ugel-lampa.gob.pe',
+    firstName: 'Sofía Lorena',
+    lastName: 'Vargas Paredes',
+    role: 'especialista',
+    especialidad: 'Educación Inicial',
+    nivelEducativo: 'Inicial',
   },
   {
     dni: '87654321',
@@ -55,6 +75,7 @@ const MOCK_USERS = [
     firstName: 'Carlos',
     lastName: 'Ruiz Condori',
     role: 'director_institucion',
+    institucionCodigoModular: '0543210',
   },
   {
     dni: '11223344',
@@ -62,6 +83,55 @@ const MOCK_USERS = [
     firstName: 'Rosa',
     lastName: 'Mamani Ccopa',
     role: 'docente',
+    institucionCodigoModular: '0543210',
+    curso: 'Matemática',
+    secciones: [{ grado: '1°', seccion: 'A' }, { grado: '1°', seccion: 'B' }],
+  },
+  {
+    dni: '11223355',
+    email: 'elena.flores@ie-huayta.edu.pe',
+    firstName: 'Elena',
+    lastName: 'Flores Apaza',
+    role: 'docente',
+    institucionCodigoModular: '0543210',
+    curso: 'Comunicación',
+    secciones: [{ grado: '2°', seccion: 'A' }],
+  },
+  {
+    dni: '88887777',
+    email: 'raul.ticona@ie-lampa.edu.pe',
+    firstName: 'Raúl',
+    lastName: 'Ticona Quispe',
+    role: 'director_institucion',
+    institucionCodigoModular: '0123456',
+  },
+  {
+    dni: '22334455',
+    email: 'lucia.mendoza@ie-lampa.edu.pe',
+    firstName: 'Lucía',
+    lastName: 'Mendoza Torres',
+    role: 'docente',
+    institucionCodigoModular: '0123456',
+    curso: 'Personal Social',
+    secciones: [{ grado: '3°', seccion: 'A' }, { grado: '4°', seccion: 'A' }],
+  },
+  {
+    dni: '55556666',
+    email: 'miguel.paredes@ie-agro.edu.pe',
+    firstName: 'Miguel Ángel',
+    lastName: 'Paredes Larico',
+    role: 'director_institucion',
+    institucionCodigoModular: '0712345',
+  },
+  {
+    dni: '33445566',
+    email: 'gladys.apaza@ie-agro.edu.pe',
+    firstName: 'Gladys',
+    lastName: 'Apaza Choque',
+    role: 'docente',
+    institucionCodigoModular: '0712345',
+    curso: 'Ciencia y Tecnología',
+    secciones: [{ grado: '5°', seccion: 'A' }, { grado: '5°', seccion: 'B' }],
   },
   {
     dni: '99887766',
@@ -108,18 +178,56 @@ const MOCK_CURSOS = [
   { nombre: 'Educación para el Trabajo', nivelEducativo: 'Secundaria' },
 ];
 
-const MOCK_INSTITUCION = {
-  codigoModular: '0543210',
-  codigoLocal: '08765432',
-  nombre: 'I.E. Huayta',
-  nivelEducativo: 'Secundaria',
-  departamento: 'Puno',
-  provincia: 'Lampa',
-  distrito: 'Lampa',
-  direccion: 'Jr. Bolognesi 123',
-  zona: 'Rural',
-  estado: 'Activa',
-};
+const MOCK_INSTITUCIONES = [
+  {
+    codigoModular: '0543210',
+    codigoLocal: '08765432',
+    nombre: 'I.E. Huayta',
+    nivelEducativo: 'Secundaria',
+    departamento: 'Puno',
+    provincia: 'Lampa',
+    distrito: 'Lampa',
+    direccion: 'Jr. Bolognesi 123',
+    zona: 'Rural',
+    estado: 'Activa',
+  },
+  {
+    codigoModular: '0123456',
+    codigoLocal: '02345678',
+    nombre: 'I.E. 70025 Lampa',
+    nivelEducativo: 'Primaria',
+    departamento: 'Puno',
+    provincia: 'Lampa',
+    distrito: 'Lampa',
+    direccion: 'Av. Panamericana 456',
+    zona: 'Urbana',
+    estado: 'Activa',
+  },
+  {
+    codigoModular: '0654321',
+    codigoLocal: '09876543',
+    nombre: 'I.E. Inicial Lampa',
+    nivelEducativo: 'Inicial',
+    departamento: 'Puno',
+    provincia: 'Lampa',
+    distrito: 'Lampa',
+    direccion: 'Jr. Puno 789',
+    zona: 'Urbana',
+    estado: 'Activa',
+  },
+  {
+    codigoModular: '0712345',
+    codigoLocal: '05123456',
+    nombre: 'I.E. Agroindustrial Pucará',
+    nivelEducativo: 'Secundaria',
+    departamento: 'Puno',
+    provincia: 'Lampa',
+    distrito: 'Pucará',
+    direccion: 'Jr. Lima s/n',
+    zona: 'Rural',
+    estado: 'Activa',
+  }
+];
 
 const MOCK_PERMISOS = [
   { codigo: 'especialistas:read', nombre: 'Leer Especialistas', descripcion: 'Permite listar y ver detalles de especialistas' },
@@ -266,34 +374,38 @@ async function main() {
   }
   console.log('Cursos seeded successfully.');
 
-  // 4. Seed Institución Educativa
-  console.log('Seeding institucion educativa...');
-  const ie = await prisma.institucionEducativa.upsert({
-    where: { codigoModular: MOCK_INSTITUCION.codigoModular },
-    update: {
-      nombre: MOCK_INSTITUCION.nombre,
-      nivelEducativo: MOCK_INSTITUCION.nivelEducativo,
-      provincia: MOCK_INSTITUCION.provincia,
-      distrito: MOCK_INSTITUCION.distrito,
-      direccion: MOCK_INSTITUCION.direccion,
-      zona: MOCK_INSTITUCION.zona,
-      estado: MOCK_INSTITUCION.estado,
-      codigoLocal: MOCK_INSTITUCION.codigoLocal,
-    },
-    create: {
-      codigoModular: MOCK_INSTITUCION.codigoModular,
-      codigoLocal: MOCK_INSTITUCION.codigoLocal,
-      nombre: MOCK_INSTITUCION.nombre,
-      nivelEducativo: MOCK_INSTITUCION.nivelEducativo,
-      departamento: MOCK_INSTITUCION.departamento,
-      provincia: MOCK_INSTITUCION.provincia,
-      distrito: MOCK_INSTITUCION.distrito,
-      direccion: MOCK_INSTITUCION.direccion,
-      zona: MOCK_INSTITUCION.zona,
-      estado: MOCK_INSTITUCION.estado,
-    },
-  });
-  console.log('Institucion educativa seeded successfully.');
+  // 4. Seed Instituciones Educativas
+  console.log('Seeding instituciones educativas...');
+  const instMap = {};
+  for (const instData of MOCK_INSTITUCIONES) {
+    const ie = await prisma.institucionEducativa.upsert({
+      where: { codigoModular: instData.codigoModular },
+      update: {
+        nombre: instData.nombre,
+        nivelEducativo: instData.nivelEducativo,
+        provincia: instData.provincia,
+        distrito: instData.distrito,
+        direccion: instData.direccion,
+        zona: instData.zona,
+        estado: instData.estado,
+        codigoLocal: instData.codigoLocal,
+      },
+      create: {
+        codigoModular: instData.codigoModular,
+        codigoLocal: instData.codigoLocal,
+        nombre: instData.nombre,
+        nivelEducativo: instData.nivelEducativo,
+        departamento: instData.departamento,
+        provincia: instData.provincia,
+        distrito: instData.distrito,
+        direccion: instData.direccion,
+        zona: instData.zona,
+        estado: instData.estado,
+      },
+    });
+    instMap[instData.codigoModular] = ie.id;
+  }
+  console.log('Instituciones educativas seeded successfully.');
 
   // 5. Seed Personas, Users, Especialistas, Docentes y DocenteCargos
   console.log('Seeding personas and linked users/roles...');
@@ -344,18 +456,20 @@ async function main() {
         where: { personaId: persona.id },
         update: {
           cargo: 'Especialista',
-          nivelEducativo: 'Secundaria',
+          nivelEducativo: userData.nivelEducativo || 'Secundaria',
           condicionLaboral: 'Nombrado',
           cargaLaboral: 40,
           estado: 'Activo',
+          especialidad: userData.especialidad || 'General',
         },
         create: {
           personaId: persona.id,
           cargo: 'Especialista',
-          nivelEducativo: 'Secundaria',
+          nivelEducativo: userData.nivelEducativo || 'Secundaria',
           condicionLaboral: 'Nombrado',
           cargaLaboral: 40,
           estado: 'Activo',
+          especialidad: userData.especialidad || 'General',
         },
       });
     }
@@ -363,11 +477,17 @@ async function main() {
     // D. Si es Director de Institución o Docente
     if (userData.role === 'director_institucion' || userData.role === 'docente') {
       const isDirector = userData.role === 'director_institucion';
+      const instId = instMap[userData.institucionCodigoModular];
       
+      if (!instId) {
+        console.warn(`Institution code ${userData.institucionCodigoModular} not found for user ${userData.dni}, skipping docente creation.`);
+        continue;
+      }
+
       const docente = await prisma.docente.upsert({
         where: { personaId: persona.id },
         update: {
-          institucionId: ie.id,
+          institucionId: instId,
           nivelEducativo: 'Secundaria',
           gradoAcademico: 'Licenciado',
           estado: 'Activo',
@@ -375,7 +495,7 @@ async function main() {
         },
         create: {
           personaId: persona.id,
-          institucionId: ie.id,
+          institucionId: instId,
           nivelEducativo: 'Secundaria',
           gradoAcademico: 'Licenciado',
           estado: 'Activo',
@@ -383,9 +503,9 @@ async function main() {
         },
       });
 
-      // E. Asociar curso si es Docente
-      if (userData.role === 'docente') {
-        const cursoId = cursoMap['Matemática'];
+      // E. Asociar curso si es Docente y tiene curso especificado
+      if (userData.role === 'docente' && userData.curso) {
+        const cursoId = cursoMap[userData.curso];
         if (cursoId) {
           await prisma.docenteCurso.upsert({
             where: {
@@ -403,7 +523,28 @@ async function main() {
         }
       }
 
-      // F. Asociar cargo en DocenteCargo si no tiene ninguno registrado
+      // F. Asociar Secciones si tiene secciones especificadas
+      if (userData.role === 'docente' && userData.secciones) {
+        for (const sec of userData.secciones) {
+          await prisma.docenteSeccion.upsert({
+            where: {
+              docenteId_grado_seccion: {
+                docenteId: docente.id,
+                grado: sec.grado,
+                seccion: sec.seccion,
+              },
+            },
+            update: {},
+            create: {
+              docenteId: docente.id,
+              grado: sec.grado,
+              seccion: sec.seccion,
+            },
+          });
+        }
+      }
+
+      // G. Asociar cargo en DocenteCargo si no tiene ninguno registrado
       const cargoNombre = isDirector ? 'Director' : 'Docente de Aula';
       const cargoId = cargoMap[cargoNombre];
       

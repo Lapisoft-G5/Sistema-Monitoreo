@@ -88,8 +88,9 @@ export class AuthController {
       userAgent: req.headers['user-agent'],
     });
 
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    const cookieOpts = this.getCookieOptions();
+    res.clearCookie('accessToken', cookieOpts);
+    res.clearCookie('refreshToken', cookieOpts);
 
     return result;
   }
@@ -135,31 +136,30 @@ export class AuthController {
       userAgent: req.headers['user-agent'],
     });
 
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    const cookieOpts = this.getCookieOptions();
+    res.clearCookie('accessToken', cookieOpts);
+    res.clearCookie('refreshToken', cookieOpts);
 
     return result;
   }
 
-  private setAuthCookies(res: Response, accessToken?: string, refreshToken?: string) {
+  private getCookieOptions(maxAge?: number) {
     const isProd = process.env.NODE_ENV === 'production';
+    return {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: (isProd ? 'none' : 'strict') as 'none' | 'strict',
+      ...(maxAge !== undefined ? { maxAge } : {}),
+    };
+  }
 
+  private setAuthCookies(res: Response, accessToken?: string, refreshToken?: string) {
     if (accessToken) {
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: 'strict',
-        maxAge: 15 * 60 * 1000,
-      });
+      res.cookie('accessToken', accessToken, this.getCookieOptions(15 * 60 * 1000));
     }
 
     if (refreshToken) {
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie('refreshToken', refreshToken, this.getCookieOptions(7 * 24 * 60 * 60 * 1000));
     }
   }
 }

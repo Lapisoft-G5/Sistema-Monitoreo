@@ -9,7 +9,6 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { TeachersModule } from './modules/teachers/teachers.module.js';
 import { InstitutionsModule } from './modules/institutions/institutions.module.js';
 import { EspecialistasModule } from './modules/especialistas/especialistas.module.js';
-import { JefesAreaModule } from './modules/jefes-area/jefes-area.module.js';
 import { CatalogsModule } from './modules/catalogs/catalogs.module.js';
 
 @Module({
@@ -39,7 +38,6 @@ import { CatalogsModule } from './modules/catalogs/catalogs.module.js';
     TeachersModule,
     InstitutionsModule,
     EspecialistasModule,
-    JefesAreaModule,
     CatalogsModule,
   ],
   providers: [

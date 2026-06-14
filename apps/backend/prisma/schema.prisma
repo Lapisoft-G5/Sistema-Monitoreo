@@ -208,6 +208,8 @@ model Docente {
   condicionLaboral  String?  @map("condicion_laboral") @db.VarChar(50)
   estado            String   @default("Activo") @db.VarChar(20)
   modalidad         String?  @map("modalidad") @db.VarChar(50)
+  especialidad      String?  @map("especialidad") @db.VarChar(100)
+  cargaLaboral      Int?     @map("carga_laboral")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 

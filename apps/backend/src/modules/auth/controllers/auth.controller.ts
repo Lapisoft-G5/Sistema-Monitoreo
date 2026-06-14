@@ -148,7 +148,7 @@ export class AuthController {
     return {
       httpOnly: true,
       secure: isProd,
-      sameSite: (isProd ? 'none' : 'strict') as 'none' | 'strict',
+      sameSite: (isProd ? 'none' : 'strict') as 'none' | 'strict' | 'lax',
       ...(maxAge !== undefined ? { maxAge } : {}),
     };
   }

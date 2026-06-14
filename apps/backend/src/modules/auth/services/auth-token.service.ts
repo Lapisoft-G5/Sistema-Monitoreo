@@ -1,8 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'node:crypto';
-import { RoleCode } from '../../../common/enums/role.enum.js';
-import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 
 export interface JwtPayload {

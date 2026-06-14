@@ -147,35 +147,37 @@ const MOCK_CARGOS = [
   { nombre: 'Subdirector' },
   { nombre: 'Coordinador Pedagógico' },
   { nombre: 'Docente de Aula' },
+  { nombre: 'Jefe de Taller' },
+  { nombre: 'PIP' },
 ];
 
 const MOCK_CURSOS = [
   // 1. Educación Inicial
-  { nombre: 'Personal Social', nivelEducativo: 'Inicial' },
-  { nombre: 'Psicomotricidad', nivelEducativo: 'Inicial' },
-  { nombre: 'Comunicación', nivelEducativo: 'Inicial' },
-  { nombre: 'Descubrimiento del Mundo', nivelEducativo: 'Inicial' },
+  { nombre: 'Personal Social', nivelEducativo: 'Inicial', modalidad: 'EBR' },
+  { nombre: 'Psicomotricidad', nivelEducativo: 'Inicial', modalidad: 'EBR' },
+  { nombre: 'Comunicación', nivelEducativo: 'Inicial', modalidad: 'EBR' },
+  { nombre: 'Descubrimiento del Mundo', nivelEducativo: 'Inicial', modalidad: 'EBR' },
 
   // 2. Educación Primaria
-  { nombre: 'Comunicación', nivelEducativo: 'Primaria' },
-  { nombre: 'Matemática', nivelEducativo: 'Primaria' },
-  { nombre: 'Ciencia y Tecnología', nivelEducativo: 'Primaria' },
-  { nombre: 'Personal Social', nivelEducativo: 'Primaria' },
-  { nombre: 'Arte y Cultura', nivelEducativo: 'Primaria' },
-  { nombre: 'Educación Física', nivelEducativo: 'Primaria' },
-  { nombre: 'Educación Religiosa', nivelEducativo: 'Primaria' },
+  { nombre: 'Comunicación', nivelEducativo: 'Primaria', modalidad: 'EBR' },
+  { nombre: 'Matemática', nivelEducativo: 'Primaria', modalidad: 'EBR' },
+  { nombre: 'Ciencia y Tecnología', nivelEducativo: 'Primaria', modalidad: 'EBR' },
+  { nombre: 'Personal Social', nivelEducativo: 'Primaria', modalidad: 'EBR' },
+  { nombre: 'Arte y Cultura', nivelEducativo: 'Primaria', modalidad: 'EBR' },
+  { nombre: 'Educación Física', nivelEducativo: 'Primaria', modalidad: 'EBR' },
+  { nombre: 'Educación Religiosa', nivelEducativo: 'Primaria', modalidad: 'EBR' },
 
   // 3. Educación Secundaria
-  { nombre: 'Comunicación', nivelEducativo: 'Secundaria' },
-  { nombre: 'Matemática', nivelEducativo: 'Secundaria' },
-  { nombre: 'Ciencia y Tecnología', nivelEducativo: 'Secundaria' },
-  { nombre: 'Desarrollo Personal, Ciudadanía y Cívica', nivelEducativo: 'Secundaria' },
-  { nombre: 'Ciencias Sociales', nivelEducativo: 'Secundaria' },
-  { nombre: 'Educación Física', nivelEducativo: 'Secundaria' },
-  { nombre: 'Arte y Cultura', nivelEducativo: 'Secundaria' },
-  { nombre: 'Inglés', nivelEducativo: 'Secundaria' },
-  { nombre: 'Educación Religiosa', nivelEducativo: 'Secundaria' },
-  { nombre: 'Educación para el Trabajo', nivelEducativo: 'Secundaria' },
+  { nombre: 'Comunicación', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  { nombre: 'Matemática', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  { nombre: 'Ciencia y Tecnología', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  { nombre: 'Desarrollo Personal, Ciudadanía y Cívica', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  { nombre: 'Ciencias Sociales', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  { nombre: 'Educación Física', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  { nombre: 'Arte y Cultura', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  { nombre: 'Inglés', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  { nombre: 'Educación Religiosa', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  { nombre: 'Educación para el Trabajo', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
 ];
 
 const MOCK_INSTITUCIONES = [
@@ -184,6 +186,7 @@ const MOCK_INSTITUCIONES = [
     codigoLocal: '08765432',
     nombre: 'I.E. Huayta',
     nivelEducativo: 'Secundaria',
+    modalidad: 'EBR',
     departamento: 'Puno',
     provincia: 'Lampa',
     distrito: 'Lampa',
@@ -196,6 +199,7 @@ const MOCK_INSTITUCIONES = [
     codigoLocal: '02345678',
     nombre: 'I.E. 70025 Lampa',
     nivelEducativo: 'Primaria',
+    modalidad: 'EBR',
     departamento: 'Puno',
     provincia: 'Lampa',
     distrito: 'Lampa',
@@ -208,6 +212,7 @@ const MOCK_INSTITUCIONES = [
     codigoLocal: '09876543',
     nombre: 'I.E. Inicial Lampa',
     nivelEducativo: 'Inicial',
+    modalidad: 'EBR',
     departamento: 'Puno',
     provincia: 'Lampa',
     distrito: 'Lampa',
@@ -220,6 +225,7 @@ const MOCK_INSTITUCIONES = [
     codigoLocal: '05123456',
     nombre: 'I.E. Agroindustrial Pucará',
     nivelEducativo: 'Secundaria',
+    modalidad: 'EBR',
     departamento: 'Puno',
     provincia: 'Lampa',
     distrito: 'Pucará',
@@ -368,6 +374,7 @@ async function main() {
       create: {
         nombre: cursoData.nombre,
         nivelEducativo: cursoData.nivelEducativo,
+        modalidad: cursoData.modalidad,
       },
     });
     cursoMap[cursoData.nombre] = curso.id;
@@ -383,6 +390,7 @@ async function main() {
       update: {
         nombre: instData.nombre,
         nivelEducativo: instData.nivelEducativo,
+        modalidad: instData.modalidad,
         provincia: instData.provincia,
         distrito: instData.distrito,
         direccion: instData.direccion,
@@ -395,6 +403,7 @@ async function main() {
         codigoLocal: instData.codigoLocal,
         nombre: instData.nombre,
         nivelEducativo: instData.nivelEducativo,
+        modalidad: instData.modalidad,
         departamento: instData.departamento,
         provincia: instData.provincia,
         distrito: instData.distrito,
@@ -450,26 +459,34 @@ async function main() {
       },
     });
 
-    // C. Si es un rol de Especialista
-    if (userData.role === 'especialista') {
+    // C. Si es un rol de Especialista o Jefe
+    if (['especialista', 'jefe_area', 'jefe_gestion'].includes(userData.role)) {
+      const cargoMapEnum = {
+        'especialista': 'Especialista',
+        'jefe_area': 'Jefe de Área',
+        'jefe_gestion': 'Jefe de Gestión'
+      };
+
       await prisma.especialista.upsert({
         where: { personaId: persona.id },
         update: {
-          cargo: 'Especialista',
+          cargo: cargoMapEnum[userData.role],
           nivelEducativo: userData.nivelEducativo || 'Secundaria',
           condicionLaboral: 'Nombrado',
           cargaLaboral: 40,
           estado: 'Activo',
           especialidad: userData.especialidad || 'General',
+          modalidad: 'EBR',
         },
         create: {
           personaId: persona.id,
-          cargo: 'Especialista',
+          cargo: cargoMapEnum[userData.role],
           nivelEducativo: userData.nivelEducativo || 'Secundaria',
           condicionLaboral: 'Nombrado',
           cargaLaboral: 40,
           estado: 'Activo',
           especialidad: userData.especialidad || 'General',
+          modalidad: 'EBR',
         },
       });
     }
@@ -489,6 +506,7 @@ async function main() {
         update: {
           institucionId: instId,
           nivelEducativo: 'Secundaria',
+          modalidad: 'EBR',
           gradoAcademico: 'Licenciado',
           estado: 'Activo',
           condicionLaboral: 'Nombrado',
@@ -497,6 +515,7 @@ async function main() {
           personaId: persona.id,
           institucionId: instId,
           nivelEducativo: 'Secundaria',
+          modalidad: 'EBR',
           gradoAcademico: 'Licenciado',
           estado: 'Activo',
           condicionLaboral: 'Nombrado',

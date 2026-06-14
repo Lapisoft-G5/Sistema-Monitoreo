@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { InstitutionsService } from '../services/institutions.service.js';
 import { CreateInstitucionDto } from '../dto/create-institucion.dto.js';
@@ -49,8 +50,11 @@ export class InstitutionsController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @RequirePermissions('instituciones:read')
   @HttpCode(HttpStatus.OK)
-  async findAll(@Query() query: QueryInstitucionDto): Promise<IInstitucionListResponse> {
-    return this.institutionsService.findAll(query);
+  async findAll(
+    @Query() query: QueryInstitucionDto,
+    @Req() req: any,
+  ): Promise<IInstitucionListResponse> {
+    return this.institutionsService.findAll(query, req.user);
   }
 
   /**

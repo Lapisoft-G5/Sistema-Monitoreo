@@ -10,7 +10,7 @@ import type {
 } from '@sistema-monitoreo/shared-contracts';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 
-type JefeAreaWithRelations = Prisma.JefeAreaGetPayload<{
+type JefeAreaWithRelations = Prisma.EspecialistaGetPayload<{
   include: {
     persona: {
       include: {
@@ -32,7 +32,7 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
     return {
       id: jefe.id,
       personaId: jefe.personaId,
-      cargaHoraria: jefe.cargaHoraria,
+      cargaHoraria: jefe.cargaLaboral,
       nivelEducativo: jefe.nivelEducativo,
       estado: jefe.estado,
       createdAt: jefe.createdAt,
@@ -58,8 +58,9 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
   }
 
   async findAll(filters?: IQueryJefeAreaRequest): Promise<IJefeAreaResponse[]> {
-    const list = await this.prisma.jefeArea.findMany({
+    const list = await this.prisma.especialista.findMany({
       where: {
+        cargo: { in: ['Jefe de Área', 'Jefe de Gestión'] },
         ...(filters?.estado && { estado: filters.estado }),
         ...(filters?.nivelEducativo && { nivelEducativo: filters.nivelEducativo }),
       },
@@ -80,7 +81,7 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
   }
 
   async findById(id: string): Promise<IJefeAreaResponse | null> {
-    const jefe = await this.prisma.jefeArea.findUnique({
+    const jefe = await this.prisma.especialista.findUnique({
       where: { id },
       include: {
         persona: {
@@ -94,7 +95,7 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
         },
       },
     });
-    if (!jefe) return null;
+    if (!jefe || !['Jefe de Área', 'Jefe de Gestión'].includes(jefe.cargo)) return null;
 
     return this.mapJefeArea(jefe);
   }
@@ -127,17 +128,24 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
         },
       });
 
-      // C. Crear Jefe Area
-      const jefeArea = await tx.jefeArea.create({
+      // C. Crear Especialista (Jefe Area)
+      const rol = await tx.role.findUnique({ where: { id: roleId } });
+      const cargo = rol?.codigo === 'jefe_gestion' ? 'Jefe de Gestión' : 'Jefe de Área';
+
+      const jefeArea = await tx.especialista.create({
         data: {
           personaId: persona.id,
-          cargaHoraria: data.cargaHoraria ?? 40,
+          cargaLaboral: data.cargaHoraria ?? 40,
           nivelEducativo: data.nivelEducativo,
           estado: EstadoRegistro.ACTIVO,
+          cargo: cargo,
+          condicionLaboral: 'Nombrado', // Valor por defecto
+          especialidad: 'General',
+          modalidad: 'EBR',
         },
       });
 
-      const fullJefe = await tx.jefeArea.findUniqueOrThrow({
+      const fullJefe = await tx.especialista.findUniqueOrThrow({
         where: { id: jefeArea.id },
         include: {
           persona: {
@@ -161,10 +169,10 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
     data: IUpdateJefeAreaRequest,
     roleId?: string,
   ): Promise<IJefeAreaResponse> {
-    const jefe = await this.prisma.jefeArea.findUnique({
+    const jefe = await this.prisma.especialista.findUnique({
       where: { id },
     });
-    if (!jefe) {
+    if (!jefe || !['Jefe de Área', 'Jefe de Gestión'].includes(jefe.cargo)) {
       throw new NotFoundException(`Jefe de Área con ID ${id} no encontrado.`);
     }
 
@@ -190,17 +198,17 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
         });
       }
 
-      // C. Actualizar Jefe Area
-      await tx.jefeArea.update({
+      // C. Actualizar Especialista
+      await tx.especialista.update({
         where: { id },
         data: {
-          cargaHoraria: data.cargaHoraria !== undefined ? data.cargaHoraria : undefined,
+          cargaLaboral: data.cargaHoraria !== undefined ? data.cargaHoraria : undefined,
           nivelEducativo: data.nivelEducativo,
           estado: data.estado,
         },
       });
 
-      const fullJefe = await tx.jefeArea.findUniqueOrThrow({
+      const fullJefe = await tx.especialista.findUniqueOrThrow({
         where: { id },
         include: {
           persona: {
@@ -220,10 +228,10 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
   }
 
   async delete(id: string): Promise<IJefeAreaResponse> {
-    const jefe = await this.prisma.jefeArea.findUnique({
+    const jefe = await this.prisma.especialista.findUnique({
       where: { id },
     });
-    if (!jefe) {
+    if (!jefe || !['Jefe de Área', 'Jefe de Gestión'].includes(jefe.cargo)) {
       throw new NotFoundException(`Jefe de Área con ID ${id} no encontrado.`);
     }
 
@@ -234,13 +242,13 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
         data: { isActive: false },
       });
 
-      // Inactivar Jefe Area
-      await tx.jefeArea.update({
+      // Inactivar Especialista
+      await tx.especialista.update({
         where: { id },
         data: { estado: EstadoRegistro.INACTIVO },
       });
 
-      const fullJefe = await tx.jefeArea.findUniqueOrThrow({
+      const fullJefe = await tx.especialista.findUniqueOrThrow({
         where: { id },
         include: {
           persona: {
@@ -260,10 +268,10 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
   }
 
   async activate(id: string): Promise<IJefeAreaResponse> {
-    const jefe = await this.prisma.jefeArea.findUnique({
+    const jefe = await this.prisma.especialista.findUnique({
       where: { id },
     });
-    if (!jefe) {
+    if (!jefe || !['Jefe de Área', 'Jefe de Gestión'].includes(jefe.cargo)) {
       throw new NotFoundException(`Jefe de Área con ID ${id} no encontrado.`);
     }
 
@@ -274,13 +282,13 @@ export class PrismaJefeAreaRepository implements JefeAreaRepository {
         data: { isActive: true },
       });
 
-      // Activar Jefe Area
-      await tx.jefeArea.update({
+      // Activar Especialista
+      await tx.especialista.update({
         where: { id },
         data: { estado: EstadoRegistro.ACTIVO },
       });
 
-      const fullJefe = await tx.jefeArea.findUniqueOrThrow({
+      const fullJefe = await tx.especialista.findUniqueOrThrow({
         where: { id },
         include: {
           persona: {

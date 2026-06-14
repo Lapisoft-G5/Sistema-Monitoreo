@@ -44,12 +44,25 @@ export class InstitutionsService {
 
   async findAll(
     query: QueryInstitucionDto,
+    user?: any,
   ): Promise<{ data: Institucion[]; total: number; limit: number; offset: number }> {
     const limit = query.limit ?? 10;
     const offset = query.offset ?? 0;
 
+    const filters = { ...query };
+
+    // Apply Jefe de Área filtering
+    if (user?.role === 'jefe_area') {
+      if (user.especialista_nivel) {
+        filters.nivelEducativo = user.especialista_nivel;
+      }
+      if (user.especialista_modalidad) {
+        (filters as any).modalidad = user.especialista_modalidad;
+      }
+    }
+
     const { data, total } = await this.institutionsRepository.findAll({
-      ...query,
+      ...filters,
       limit,
       offset,
     });

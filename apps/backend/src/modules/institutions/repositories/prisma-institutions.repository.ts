@@ -316,6 +316,9 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     if (estado) {
       where.estado = { equals: estado };
     }
+    if (query.modalidad) {
+      where.modalidad = { equals: query.modalidad };
+    }
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.institucionEducativa.findMany({

@@ -4,6 +4,7 @@ import { CreateInstitucionDto } from '../dto/create-institucion.dto.js';
 import { UpdateInstitucionDto } from '../dto/update-institucion.dto.js';
 import { QueryInstitucionDto } from '../dto/query-institucion.dto.js';
 import { Institucion } from '../entities/institucion.entity.js';
+import { JwtPayload } from '../../auth/services/auth-token.service.js';
 
 @Injectable()
 export class InstitutionsService {
@@ -44,7 +45,7 @@ export class InstitutionsService {
 
   async findAll(
     query: QueryInstitucionDto,
-    user?: any,
+    user?: JwtPayload,
   ): Promise<{ data: Institucion[]; total: number; limit: number; offset: number }> {
     const limit = query.limit ?? 10;
     const offset = query.offset ?? 0;
@@ -57,7 +58,7 @@ export class InstitutionsService {
         filters.nivelEducativo = user.especialista_nivel;
       }
       if (user.especialista_modalidad) {
-        (filters as any).modalidad = user.especialista_modalidad;
+        filters.modalidad = user.especialista_modalidad;
       }
     }
 

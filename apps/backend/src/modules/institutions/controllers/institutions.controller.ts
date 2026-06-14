@@ -24,6 +24,7 @@ import {
   IInstitucionListResponse,
   IUpdateInstitucionResponse,
 } from '@sistema-monitoreo/shared-contracts';
+import { JwtPayload } from '../../auth/services/auth-token.service.js';
 
 @Controller('instituciones')
 export class InstitutionsController {
@@ -52,7 +53,7 @@ export class InstitutionsController {
   @HttpCode(HttpStatus.OK)
   async findAll(
     @Query() query: QueryInstitucionDto,
-    @Req() req: any,
+    @Req() req: { user?: JwtPayload },
   ): Promise<IInstitucionListResponse> {
     return this.institutionsService.findAll(query, req.user);
   }

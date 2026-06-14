@@ -16,6 +16,11 @@ import {
 } from '../repositories/teachers.repository.js';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
+import {
+  NivelEducativoEBR,
+  DocenteCargosRestrictivos,
+  CondicionLaboralCargosRestrictivos,
+} from '@sistema-monitoreo/shared-contracts';
 
 /** Subset of JwtPayload fields required by this service. Exported for use in tests. */
 export type CurrentUser = Pick<
@@ -61,6 +66,42 @@ export class TeachersService {
     const cargo = await this.catalogsRepository.findCargoById(dto.cargoId);
     if (!cargo) {
       throw new NotFoundException('El cargo especificado no existe.');
+    }
+
+    // 4b. Reglas estrictas de Cargo vs Nivel y Condición Laboral
+    if (
+      cargo.nombre === DocenteCargosRestrictivos.COORDINADOR_PEDAGOGICO ||
+      cargo.nombre === DocenteCargosRestrictivos.JEFE_DE_TALLER
+    ) {
+      if (dto.nivelEducativo !== NivelEducativoEBR.SECUNDARIA) {
+        throw new ConflictException(
+          `El cargo '${cargo.nombre}' solo puede asignarse a docentes del nivel Secundaria.`,
+        );
+      }
+    }
+
+    // Carga laboral 40h: exclusivo para Coordinador Pedagógico
+    if (cargo.nombre === DocenteCargosRestrictivos.COORDINADOR_PEDAGOGICO) {
+      if (dto.cargaLaboral !== 40) {
+        throw new ConflictException(
+          `Para ser Coordinador Pedagógico, la carga laboral debe ser estrictamente 40 horas.`,
+        );
+      }
+    }
+
+    // Condición laboral Nombrado/Destacado: aplica a Coordinador Pedagógico Y Jefe de Taller
+    if (
+      cargo.nombre === DocenteCargosRestrictivos.COORDINADOR_PEDAGOGICO ||
+      cargo.nombre === DocenteCargosRestrictivos.JEFE_DE_TALLER
+    ) {
+      if (
+        !dto.condicionLaboral ||
+        !(CondicionLaboralCargosRestrictivos as unknown as string[]).includes(dto.condicionLaboral)
+      ) {
+        throw new ConflictException(
+          `Para el cargo '${cargo.nombre}', la condición laboral debe ser Nombrado o Destacado.`,
+        );
+      }
     }
 
     // 5. Si es Director de IE, validar que no intente asignar Director o Coordinador Pedagógico
@@ -152,6 +193,42 @@ export class TeachersService {
     const cargo = await this.catalogsRepository.findCargoById(dto.cargoId);
     if (!cargo) {
       throw new NotFoundException('El cargo especificado no existe.');
+    }
+
+    // 4b. Reglas estrictas de Cargo vs Nivel y Condición Laboral
+    if (
+      cargo.nombre === DocenteCargosRestrictivos.COORDINADOR_PEDAGOGICO ||
+      cargo.nombre === DocenteCargosRestrictivos.JEFE_DE_TALLER
+    ) {
+      if (dto.nivelEducativo !== NivelEducativoEBR.SECUNDARIA) {
+        throw new ConflictException(
+          `El cargo '${cargo.nombre}' solo puede asignarse a docentes del nivel Secundaria.`,
+        );
+      }
+    }
+
+    // Carga laboral 40h: exclusivo para Coordinador Pedagógico
+    if (cargo.nombre === DocenteCargosRestrictivos.COORDINADOR_PEDAGOGICO) {
+      if (dto.cargaLaboral !== 40) {
+        throw new ConflictException(
+          `Para ser Coordinador Pedagógico, la carga laboral debe ser estrictamente 40 horas.`,
+        );
+      }
+    }
+
+    // Condición laboral Nombrado/Destacado: aplica a Coordinador Pedagógico Y Jefe de Taller
+    if (
+      cargo.nombre === DocenteCargosRestrictivos.COORDINADOR_PEDAGOGICO ||
+      cargo.nombre === DocenteCargosRestrictivos.JEFE_DE_TALLER
+    ) {
+      if (
+        !dto.condicionLaboral ||
+        !(CondicionLaboralCargosRestrictivos as unknown as string[]).includes(dto.condicionLaboral)
+      ) {
+        throw new ConflictException(
+          `Para el cargo '${cargo.nombre}', la condición laboral debe ser Nombrado o Destacado.`,
+        );
+      }
     }
 
     // 5. Si es Director de IE, validar que no intente asignar Director o Coordinador Pedagógico

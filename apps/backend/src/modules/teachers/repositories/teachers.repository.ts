@@ -7,6 +7,8 @@ export interface DocenteEntity {
   institucionId: string;
   gradoAcademico: string | null;
   nivelEducativo: string;
+  modalidad?: string | null;
+  especialidad?: string | null;
   cursoAsignado: string | null;
   condicionLaboral?: string | null;
   escalaMagisterial?: number | null;

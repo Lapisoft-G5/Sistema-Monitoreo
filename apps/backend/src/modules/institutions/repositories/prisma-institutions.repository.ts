@@ -25,11 +25,26 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     },
   };
 
-  private mapInstitucion(record: any): Institucion {
+  private mapInstitucion(
+    record: Prisma.InstitucionEducativaGetPayload<{
+      include: {
+        docentes: {
+          include: {
+            persona: true;
+            docenteCargos: {
+              include: {
+                cargo: true;
+              };
+            };
+          };
+        };
+      };
+    }>,
+  ): Institucion {
     if (!record) return record;
     // Buscar un docente con el cargo activo de "Director"
-    const directorDocente = record.docentes?.find((d: any) =>
-      d.docenteCargos?.some((dc: any) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
+    const directorDocente = record.docentes?.find((d) =>
+      d.docenteCargos?.some((dc) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
     );
 
     const directorName = directorDocente
@@ -70,9 +85,10 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     });
 
     // Encontrar un docente con el cargo activo de "Director"
-    const currentDirectorDocente = currentInst?.docentes?.find((d: any) =>
-      d.docenteCargos?.some((dc: any) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
-    ) || null;
+    const currentDirectorDocente =
+      currentInst?.docentes?.find((d) =>
+        d.docenteCargos?.some((dc) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
+      ) || null;
 
     // 2. Obtener el catálogo del cargo 'Director'
     const directorCargo = await this.prisma.cargo.findFirst({
@@ -93,7 +109,9 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
       const newDirectorDocente = newDirectorPersona?.docente || null;
 
       if (!newDirectorPersona || !newDirectorDocente) {
-        throw new BadRequestException(`No se encontró un docente registrado con el DNI ${directorDni}`);
+        throw new BadRequestException(
+          `No se encontró un docente registrado con el DNI ${directorDni}`,
+        );
       }
 
       // Validar si ya es director activo de otra institución
@@ -114,9 +132,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
 
       if (activeDirectorCargo && activeDirectorCargo.docente.institucionId !== institucionId) {
         const schoolName = activeDirectorCargo.docente.institucion?.nombre || 'otra institución';
-        throw new ConflictException(
-          `El docente ya es director activo en la I.E. "${schoolName}".`
-        );
+        throw new ConflictException(`El docente ya es director activo en la I.E. "${schoolName}".`);
       }
 
       // Si es el mismo director, no hacemos cambios

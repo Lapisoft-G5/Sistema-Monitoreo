@@ -10,3 +10,5 @@ export * from './institutions/query-institucion.contract.js';
 export * from './institutions/update-institucion.contract.js';
 export * from './especialistas/especialistas.contract.js';
 export * from './constants/domain.constants.js';
+export * from './jefes-area/jefes-area.contract.js';
+

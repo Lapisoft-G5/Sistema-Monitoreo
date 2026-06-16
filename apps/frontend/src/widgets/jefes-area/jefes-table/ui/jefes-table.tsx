@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FastActions } from '@shared/ui/FastActions';
 import type { JefeArea } from '@entities/model-jefes-area';
 import { MOCK_JEFES_AREA } from '@entities/model-jefes-area';
-import { useJefesTable } from '../lib/useTable'; 
+import { useJefesTable } from '../lib/useTable';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Card } from '@shared/ui/card';
@@ -36,10 +36,12 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
           MOCK_JEFES_AREA[index].activo = false;
         }
         setJefes((prev) =>
-          prev.map((e) => (e.id === deletingDoc.id ? { ...e, activo: false } : e))
+          prev.map((e) => (e.id === deletingDoc.id ? { ...e, activo: false } : e)),
         );
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al desactivar el registro de jefe de área.';
+        const errMsg =
+          (res.error as { message?: string })?.message ||
+          'Error al desactivar el registro de jefe de área.';
         alert(errMsg);
       }
     } catch (err) {
@@ -59,10 +61,12 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
           MOCK_JEFES_AREA[index].activo = true;
         }
         setJefes((prev) =>
-          prev.map((e) => (e.id === restoringDoc.id ? { ...e, activo: true } : e))
+          prev.map((e) => (e.id === restoringDoc.id ? { ...e, activo: true } : e)),
         );
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al reactivar el registro de jefe de área.';
+        const errMsg =
+          (res.error as { message?: string })?.message ||
+          'Error al reactivar el registro de jefe de área.';
         alert(errMsg);
       }
     } catch (err) {
@@ -79,12 +83,24 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider pl-5">DNI</TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Apellidos y Nombres</TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Nivel a Cargo</TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Carga Horaria</TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Estado</TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">Acciones</TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider pl-5">
+                  DNI
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Apellidos y Nombres
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Nivel a Cargo
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Carga Horaria
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Estado
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">
+                  Acciones
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -92,20 +108,31 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
                 <TableRow key={doc.id} className="hover:bg-muted/30 transition-colors">
                   <TableCell className="font-semibold pl-5 text-text">{doc.dni}</TableCell>
                   <TableCell>
-                    <div className="font-bold text-text">{doc.apellidos}, {doc.nombres}</div>
-                    <div className="text-xs text-text-muted mt-0.5">{doc.correo} | Cel: {doc.celular}</div>
+                    <div className="font-bold text-text">
+                      {doc.apellidos}, {doc.nombres}
+                    </div>
+                    <div className="text-xs text-text-muted mt-0.5">
+                      {doc.correo} | Cel: {doc.celular}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className="text-[0.6rem] py-0 px-1.5 uppercase font-bold bg-primary/10 text-primary border-primary/20">
+                    <Badge
+                      variant="secondary"
+                      className="text-[0.6rem] py-0 px-1.5 uppercase font-bold bg-primary/10 text-primary border-primary/20"
+                    >
                       {doc.nivelEducativo}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-medium text-text text-xs">{doc.cargaHoraria} hrs</TableCell>
+                  <TableCell className="font-medium text-text text-xs">
+                    {doc.cargaHoraria} hrs
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={doc.activo ? 'default' : 'secondary'}
                       className={`text-[0.65rem] py-0 px-2 uppercase font-bold ${
-                        doc.activo ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20'
+                        doc.activo
+                          ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                          : 'bg-slate-500/10 text-slate-500 border-slate-500/20'
                       }`}
                     >
                       {doc.activo ? 'Activo' : 'Inactivo'}
@@ -114,10 +141,14 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
                   <TableCell className="text-right pr-5">
                     <FastActions
                       onView={() => onView(doc)}
-                      onEdit={doc.activo ? () => {
-                        if (onEdit) onEdit(doc);
-                        else navigate(`/jefes-area/${doc.id}/editar`);
-                      } : undefined}
+                      onEdit={
+                        doc.activo
+                          ? () => {
+                              if (onEdit) onEdit(doc);
+                              else navigate(`/jefes-area/${doc.id}/editar`);
+                            }
+                          : undefined
+                      }
                       onDelete={doc.activo ? () => setDeletingDoc(doc) : undefined}
                       onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
                       viewTitle="Ver ficha"

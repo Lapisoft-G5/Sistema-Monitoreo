@@ -51,7 +51,10 @@ export const FilterEspecialistas = () => {
             <label className="text-[0.7rem] font-bold uppercase tracking-wider text-text-muted">
               Nivel Educativo
             </label>
-            <Select value={nivel || 'todos'} onValueChange={(v) => updateFilter('nivel', v === 'todos' ? '' : v)}>
+            <Select
+              value={nivel || 'todos'}
+              onValueChange={(v) => updateFilter('nivel', v === 'todos' ? '' : v)}
+            >
               <SelectTrigger className="w-full text-left text-sm bg-surface border-border text-text h-9">
                 <SelectValue placeholder="Todos los niveles" />
               </SelectTrigger>
@@ -71,7 +74,10 @@ export const FilterEspecialistas = () => {
             <label className="text-[0.7rem] font-bold uppercase tracking-wider text-text-muted">
               Estado
             </label>
-            <Select value={estado || 'todos'} onValueChange={(v) => updateFilter('estado', v === 'todos' ? '' : v)}>
+            <Select
+              value={estado || 'todos'}
+              onValueChange={(v) => updateFilter('estado', v === 'todos' ? '' : v)}
+            >
               <SelectTrigger className="w-full text-left text-sm bg-surface border-border text-text h-9">
                 <SelectValue placeholder="Todos los estados" />
               </SelectTrigger>

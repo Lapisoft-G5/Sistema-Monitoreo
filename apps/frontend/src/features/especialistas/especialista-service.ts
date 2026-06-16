@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Especialista, NivelInstitucion, CondicionLaboral } from '@entities/model-especialistas';
+import type { Especialista } from '@entities/model-especialistas';
 import { MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistasApi } from '@shared/api/especialistas.api';
@@ -9,20 +9,21 @@ import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts'
 export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Especialista => {
   return {
     id: apiEsp.id,
+    personaId: apiEsp.personaId,
     nombres: apiEsp.persona.nombres,
     apellidos: apiEsp.persona.apellidos,
     dni: apiEsp.persona.dni,
     correo: apiEsp.persona.correo || '',
     celular: apiEsp.persona.telefono || '',
     especialidad: apiEsp.especialidad || '',
-    niveles: apiEsp.nivelEducativo
-      ? (apiEsp.nivelEducativo.split(',').map((s: string) => s.trim()) as NivelInstitucion[])
-      : [],
+    nivelEducativo: apiEsp.nivelEducativo,
+    modalidad: apiEsp.modalidad || 'EBR',
+    estado: apiEsp.estado,
     activo: apiEsp.estado === 'Activo',
     fechaCreacion: apiEsp.createdAt
       ? new Date(apiEsp.createdAt).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
-    condicionLaboral: (apiEsp.condicionLaboral as unknown as CondicionLaboral) || 'Contratado',
+    condicionLaboral: apiEsp.condicionLaboral || 'Encargado',
     cargaLaboral: apiEsp.cargaLaboral || 40,
     escalaMagisterial: apiEsp.escalaMagisterial ?? undefined,
     cargo: apiEsp.cargo,
@@ -47,11 +48,11 @@ export const useEspecialistaService = () => {
         dni: formData.dni,
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        correo: formData.correo.trim() || undefined,
-        telefono: formData.celular.trim() || undefined,
+        correo: formData.correo?.trim() || undefined,
+        telefono: formData.celular?.trim() || undefined,
         especialidad: formData.especialidad?.trim() || undefined,
-        nivelEducativo: formData.niveles.join(', '),
-        modalidad: 'EBR',
+        nivelEducativo: formData.nivelEducativo,
+        modalidad: formData.modalidad,
         rolCode,
         cargo,
         condicionLaboral: formData.condicionLaboral,
@@ -65,7 +66,8 @@ export const useEspecialistaService = () => {
         MOCK_ESPECIALISTAS.push(mapped);
         return { success: true, data: mapped };
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al registrar el especialista.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al registrar el especialista.';
         setError(errMsg);
         return { success: false, error: res.error };
       }
@@ -90,12 +92,12 @@ export const useEspecialistaService = () => {
       const dto = {
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        correo: formData.correo.trim() || undefined,
-        telefono: formData.celular.trim() || undefined,
+        correo: formData.correo?.trim() || undefined,
+        telefono: formData.celular?.trim() || undefined,
         especialidad: formData.especialidad?.trim() || undefined,
-        nivelEducativo: formData.niveles.join(', '),
-        modalidad: 'EBR',
-        estado: formData.activo ?? true ? 'Activo' : 'Inactivo',
+        nivelEducativo: formData.nivelEducativo,
+        modalidad: formData.modalidad,
+        estado: (formData.activo ?? true) ? 'Activo' : 'Inactivo',
         rolCode,
         cargo,
         condicionLaboral: formData.condicionLaboral,
@@ -112,7 +114,8 @@ export const useEspecialistaService = () => {
         }
         return { success: true, data: mapped };
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al actualizar el especialista.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al actualizar el especialista.';
         setError(errMsg);
         return { success: false, error: res.error };
       }

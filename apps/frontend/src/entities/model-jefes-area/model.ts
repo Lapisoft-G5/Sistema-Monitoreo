@@ -7,7 +7,7 @@ export interface JefeArea {
   correo: string;
   celular: string;
   cargaHoraria: number;
-  nivelEducativo: string;
+  nivelEducativo: 'Inicial' | 'Primaria' | 'Secundaria';
   activo: boolean;
   fechaCreacion: string;
 }

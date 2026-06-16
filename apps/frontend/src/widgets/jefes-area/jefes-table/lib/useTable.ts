@@ -21,10 +21,8 @@ export const useJefesTable = (jefes: JefeArea[]) => {
         j.dni.includes(searchQuery);
 
       const matchNivel = !nivelFilter || j.nivelEducativo === nivelFilter;
-      
-      const matchEstado =
-        !estadoFilter ||
-        (estadoFilter === 'Activo' ? j.activo : !j.activo);
+
+      const matchEstado = !estadoFilter || (estadoFilter === 'Activo' ? j.activo : !j.activo);
 
       return matchSearch && matchNivel && matchEstado;
     });

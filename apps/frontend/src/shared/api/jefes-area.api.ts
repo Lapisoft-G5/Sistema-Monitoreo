@@ -10,15 +10,21 @@ export type ICreateJefeAreaRequest = Record<string, unknown>;
 export type IUpdateJefeAreaRequest = Record<string, unknown>;
 
 export const jefesAreaApi = {
-  findAll: async (query?: IQueryJefeAreaRequest): Promise<{ ok: boolean; data?: IJefeAreaResponse[]; error?: unknown }> => {
+  findAll: async (
+    query?: IQueryJefeAreaRequest,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse[]; error?: unknown }> => {
     return especialistasApi.findAll({ ...query, cargo: 'Jefe de Área' });
   },
 
-  findById: async (id: string): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+  findById: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
     return especialistasApi.findById(id);
   },
 
-  create: async (dto: Record<string, unknown>): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+  create: async (
+    dto: Record<string, unknown>,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
     const specialistDto = {
       dni: dto.dni as string,
       nombres: dto.nombres as string,
@@ -35,7 +41,10 @@ export const jefesAreaApi = {
     return especialistasApi.create(specialistDto);
   },
 
-  update: async (id: string, dto: Record<string, unknown>): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+  update: async (
+    id: string,
+    dto: Record<string, unknown>,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
     const specialistDto = {
       nombres: dto.nombres as string,
       apellidos: dto.apellidos as string,
@@ -52,15 +61,21 @@ export const jefesAreaApi = {
     return especialistasApi.update(id, specialistDto);
   },
 
-  delete: async (id: string): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+  delete: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
     return especialistasApi.delete(id);
   },
 
-  deactivate: async (id: string): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+  deactivate: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
     return especialistasApi.deactivate(id);
   },
 
-  activate: async (id: string): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+  activate: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
     return especialistasApi.activate(id);
   },
 };

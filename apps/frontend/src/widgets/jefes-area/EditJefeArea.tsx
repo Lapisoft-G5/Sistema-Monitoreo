@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
-import { JefeAreaFormBase, useJefeAreaService, mapApiJefeAreaToFrontend } from '@features/jefes-area';
+import {
+  JefeAreaFormBase,
+  useJefeAreaService,
+  mapApiJefeAreaToFrontend,
+} from '@features/jefes-area';
 import { type JefeArea } from '@entities/model-jefes-area';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
 import { Card } from '@shared/ui/card';
@@ -40,7 +44,9 @@ export const EditJefeArea = () => {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="text-text-muted text-sm font-medium">Cargando datos del jefe de área...</span>
+        <span className="text-text-muted text-sm font-medium">
+          Cargando datos del jefe de área...
+        </span>
       </div>
     );
   }
@@ -60,17 +66,13 @@ export const EditJefeArea = () => {
     correo: jefe.correo,
     celular: jefe.celular,
     cargaHoraria: jefe.cargaHoraria,
-    nivelEducativo: jefe.nivelEducativo as 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA',
+    nivelEducativo: jefe.nivelEducativo,
     activo: jefe.activo,
   };
 
   const handleFormSubmit = async (formData: JefeAreaFormData) => {
     if (!id) return;
-    const result = await updateJefeArea(
-      id,
-      formData,
-      'jefe_area'
-    );
+    const result = await updateJefeArea(id, formData, 'jefe_area');
     if (result.success) {
       navigate('/jefes-area');
     }
@@ -86,6 +88,7 @@ export const EditJefeArea = () => {
       )}
 
       <JefeAreaFormBase
+        isEdit={true}
         initialData={initialData}
         onSubmit={handleFormSubmit}
         onCancel={() => navigate('/jefes-area')}

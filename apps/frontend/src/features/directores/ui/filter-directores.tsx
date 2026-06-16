@@ -1,13 +1,36 @@
 import { useSearchParams } from 'react-router-dom';
 import { CONDICION_DIRECTIVA } from '@entities/model-docentes';
-import { NIVELES } from '@entities/model-instituciones';
+import { NIVELES, MODALIDAD_NIVEL_MAP } from '@entities/model-instituciones';
 import { FilterSelect } from '@shared/ui/Filter-Select';
 import { Card } from '@shared/ui/card';
 import { Input } from '@shared/ui/input';
 import { Search } from 'lucide-react';
+import { useUser } from '@entities/model-user';
 
 export const FilterDirectores = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useUser();
+
+  const isJefeArea = user?.role === 'jefe_area';
+  const jefeNivel = user?.especialistaNivel;
+
+  const allowedNiveles = (() => {
+    if (!isJefeArea || !jefeNivel) {
+      return NIVELES;
+    }
+    const list: string[] = [];
+    if (jefeNivel === 'Inicial') {
+      list.push('Inicial');
+      list.push(...(MODALIDAD_NIVEL_MAP['EBE'] || []));
+    } else if (jefeNivel === 'Primaria') {
+      list.push('Primaria');
+    } else if (jefeNivel === 'Secundaria') {
+      list.push('Secundaria');
+      list.push(...(MODALIDAD_NIVEL_MAP['EBA'] || []));
+      list.push(...(MODALIDAD_NIVEL_MAP['CEPTRO'] || []));
+    }
+    return list;
+  })();
 
   const search = searchParams.get('search') || '';
   const condicion = searchParams.get('condicion') || '';
@@ -55,7 +78,7 @@ export const FilterDirectores = () => {
           label="Nivel Educativo"
           value={nivelEducativo}
           onChange={(v) => updateFilter('nivelEducativo', v)}
-          options={[...NIVELES]}
+          options={allowedNiveles}
           allLabel="Todos los niveles"
         />
       </div>

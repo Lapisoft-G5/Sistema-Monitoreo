@@ -25,7 +25,7 @@ import {
 /** Subset of JwtPayload fields required by this service. Exported for use in tests. */
 export type CurrentUser = Pick<
   JwtPayload,
-  'sub' | 'role' | 'permissions' | 'colegio_id' | 'institucion_id'
+  'sub' | 'role' | 'permissions' | 'colegio_id' | 'institucion_id' | 'especialista_nivel'
 >;
 
 @Injectable()
@@ -104,14 +104,11 @@ export class TeachersService {
       }
     }
 
-    // 5. Si es Director de IE, validar que no intente asignar Director o Coordinador Pedagógico
+    // 5. Si es Director de IE, validar que no intente asignar Director
     if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
-      if (
-        (cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR ||
-        (cargo.nombre as CargoNombre) === CargoNombre.COORDINADOR_PEDAGOGICO
-      ) {
+      if ((cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
         throw new ForbiddenException(
-          'El Director de I.E. no puede asignar el cargo de Director o Coordinador Pedagógico.',
+          'El Director de I.E. no puede asignar el cargo de Director.',
         );
       }
     }
@@ -148,6 +145,12 @@ export class TeachersService {
         );
       }
       filter.institucionId = userInstitucionId;
+    }
+
+    if ((currentUser.role as RoleCode) === RoleCode.JEFE_AREA) {
+      if (currentUser.especialista_nivel) {
+        filter.especialistaNivel = currentUser.especialista_nivel;
+      }
     }
 
     // 3. Consultar docentes en el repositorio
@@ -231,14 +234,11 @@ export class TeachersService {
       }
     }
 
-    // 5. Si es Director de IE, validar que no intente asignar Director o Coordinador Pedagógico
+    // 5. Si es Director de IE, validar que no intente asignar Director
     if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
-      if (
-        (cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR ||
-        (cargo.nombre as CargoNombre) === CargoNombre.COORDINADOR_PEDAGOGICO
-      ) {
+      if ((cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
         throw new ForbiddenException(
-          'El Director de I.E. no puede asignar el cargo de Director o Coordinador Pedagógico.',
+          'El Director de I.E. no puede asignar el cargo de Director.',
         );
       }
     }
@@ -330,11 +330,10 @@ export class TeachersService {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
           currentCargo &&
-          ((currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR ||
-            (currentCargo.nombre as CargoNombre) === CargoNombre.COORDINADOR_PEDAGOGICO)
+          (currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR
         ) {
           throw new ForbiddenException(
-            'El Director de I.E. no puede dar de baja a un Director o Coordinador Pedagógico.',
+            'El Director de I.E. no puede dar de baja a un Director.',
           );
         }
       }
@@ -419,11 +418,10 @@ export class TeachersService {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
           currentCargo &&
-          ((currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR ||
-            (currentCargo.nombre as CargoNombre) === CargoNombre.COORDINADOR_PEDAGOGICO)
+          (currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR
         ) {
           throw new ForbiddenException(
-            'El Director de I.E. no puede dar de alta a un Director o Coordinador Pedagógico.',
+            'El Director de I.E. no puede dar de alta a un Director.',
           );
         }
       }

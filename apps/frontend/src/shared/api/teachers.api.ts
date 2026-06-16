@@ -25,7 +25,9 @@ export const teachersApi = {
     }
   },
 
-  create: async (dto: ICreateDocenteRequest): Promise<{ ok: boolean; data?: IDocenteResponse; error?: unknown }> => {
+  create: async (
+    dto: ICreateDocenteRequest,
+  ): Promise<{ ok: boolean; data?: IDocenteResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/docentes`, {
         method: 'POST',
@@ -44,7 +46,10 @@ export const teachersApi = {
     }
   },
 
-  update: async (id: string, dto: IUpdateDocenteRequest): Promise<{ ok: boolean; data?: IDocenteResponse; error?: unknown }> => {
+  update: async (
+    id: string,
+    dto: IUpdateDocenteRequest,
+  ): Promise<{ ok: boolean; data?: IDocenteResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/docentes/${id}`, {
         method: 'PUT',
@@ -63,7 +68,9 @@ export const teachersApi = {
     }
   },
 
-  deactivate: async (id: string): Promise<{ ok: boolean; data?: IBajaDocenteResponse; error?: unknown }> => {
+  deactivate: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IBajaDocenteResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/docentes/${id}/baja`, {
         method: 'PATCH',
@@ -80,7 +87,9 @@ export const teachersApi = {
     }
   },
 
-  activate: async (id: string): Promise<{ ok: boolean; data?: IBajaDocenteResponse; error?: unknown }> => {
+  activate: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IBajaDocenteResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/docentes/${id}/alta`, {
         method: 'PATCH',
@@ -97,7 +106,11 @@ export const teachersApi = {
     }
   },
 
-  getCargos: async (): Promise<{ ok: boolean; data?: Array<{ id: string; nombre: string }>; error?: unknown }> => {
+  getCargos: async (): Promise<{
+    ok: boolean;
+    data?: Array<{ id: string; nombre: string }>;
+    error?: unknown;
+  }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/docentes/cargos`, {
         method: 'GET',

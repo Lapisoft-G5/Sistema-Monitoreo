@@ -76,7 +76,9 @@ export const CreateDirectorCard = () => {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="text-text-muted text-sm font-medium">Cargando instituciones disponibles...</span>
+        <span className="text-text-muted text-sm font-medium">
+          Cargando instituciones disponibles...
+        </span>
       </div>
     );
   }

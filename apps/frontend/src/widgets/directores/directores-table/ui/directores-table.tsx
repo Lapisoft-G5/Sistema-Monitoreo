@@ -14,7 +14,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 // Escala magisterial romana → número con cero (V → "05"), como en el mockup.
 const ESCALA_NUM: Record<string, string> = {
-  I: '01', II: '02', III: '03', IV: '04', V: '05', VI: '06', VII: '07', VIII: '08',
+  I: '01',
+  II: '02',
+  III: '03',
+  IV: '04',
+  V: '05',
+  VI: '06',
+  VII: '07',
+  VIII: '08',
 };
 
 // PRIMARIA → Primaria
@@ -38,8 +45,10 @@ export const DirectoresTableWidget = ({
   const [deleting, setDeleting] = useState<Docente | null>(null);
   const [restoring, setRestoring] = useState<Docente | null>(null);
 
-  const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } =
-    useDocentesTable(directores, 'Director');
+  const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } = useDocentesTable(
+    directores,
+    'Director',
+  );
 
   const getInstName = (id: string) =>
     instituciones.find((i) => i.id === id)?.nombre ?? 'I.E. No Asignada';
@@ -54,10 +63,11 @@ export const DirectoresTableWidget = ({
           MOCK_DOCENTES[idx].activo = false;
         }
         setDirectores((prev) =>
-          prev.map((d) => (d.id === deleting.id ? { ...d, activo: false } : d))
+          prev.map((d) => (d.id === deleting.id ? { ...d, activo: false } : d)),
         );
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al dar de baja el director.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al dar de baja el director.';
         alert(errMsg);
       }
     } catch (err) {
@@ -77,10 +87,11 @@ export const DirectoresTableWidget = ({
           MOCK_DOCENTES[idx].activo = true;
         }
         setDirectores((prev) =>
-          prev.map((d) => (d.id === restoring.id ? { ...d, activo: true } : d))
+          prev.map((d) => (d.id === restoring.id ? { ...d, activo: true } : d)),
         );
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al reactivar el director.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al reactivar el director.';
         alert(errMsg);
       }
     } catch (err) {
@@ -100,11 +111,24 @@ export const DirectoresTableWidget = ({
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider pl-5">
                   Nombres y Apellidos
                 </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">DNI</TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Cargo</TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Condición</TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Escala</TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Estado</TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  DNI
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Cargo
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Institución Educativa
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Condición
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Escala
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Estado
+                </TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">
                   Acciones
                 </TableHead>
@@ -126,7 +150,7 @@ export const DirectoresTableWidget = ({
                           {dir.apellidos}, {dir.nombres}
                         </div>
                         <div className="text-xs text-text-muted truncate">
-                          {getInstName(dir.institucionId)}
+                          {dir.correo} | Cel: {dir.celular}
                         </div>
                       </div>
                     </div>
@@ -135,12 +159,16 @@ export const DirectoresTableWidget = ({
                   <TableCell className="text-xs font-medium text-text">
                     Director de {nivelLabel(dir.nivelEducativo)}
                   </TableCell>
+                  <TableCell className="text-xs font-medium text-text">
+                    {getInstName(dir.institucionId)}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       className="text-[0.65rem] py-0.5 px-2.5 uppercase font-bold border-0 text-white"
                       style={{
                         backgroundColor:
-                          CONDICION_DIRECTIVA_COLOR[dir.condicion as CondicionDirectiva] ?? '#6b7280',
+                          CONDICION_DIRECTIVA_COLOR[dir.condicion as CondicionDirectiva] ??
+                          '#6b7280',
                       }}
                     >
                       {dir.condicion}
@@ -177,7 +205,7 @@ export const DirectoresTableWidget = ({
               ))}
               {pageItems.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-text-muted py-12">
+                  <TableCell colSpan={8} className="text-center text-text-muted py-12">
                     No se encontraron directores con los filtros seleccionados.
                   </TableCell>
                 </TableRow>

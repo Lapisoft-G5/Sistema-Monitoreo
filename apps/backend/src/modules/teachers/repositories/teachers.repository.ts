@@ -42,6 +42,7 @@ export interface DocenteEntity {
 
 export interface DocenteFilter {
   institucionId?: string;
+  especialistaNivel?: string;
 }
 
 export abstract class TeachersRepository {

@@ -11,7 +11,7 @@ const INITIAL: DirectorFormData = {
   dni: '',
   correo: '',
   celular: '',
-  condicion: 'Asignado',
+  condicion: 'Designado',
   escala: 'I',
   institucionId: '',
   nivelEducativo: 'PRIMARIA',
@@ -103,7 +103,9 @@ export const DirectorFormBase = ({
             placeholder="8 dígitos"
             error={showError('dni')}
             adornment={
-              dniOk ? <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} /> : undefined
+              dniOk ? (
+                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+              ) : undefined
             }
           />
           <TextField
@@ -114,7 +116,9 @@ export const DirectorFormBase = ({
             placeholder="999 999 999"
             error={showError('celular')}
             adornment={
-              celularOk ? <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} /> : undefined
+              celularOk ? (
+                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+              ) : undefined
             }
           />
         </div>

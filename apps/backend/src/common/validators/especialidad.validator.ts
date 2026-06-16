@@ -22,14 +22,8 @@ export function IsValidEspecialidadForNivel(
             return typeof value === 'string' && value.trim().length > 0;
           }
 
-          if (nivel === NivelEducativoEBR.PRIMARIA) {
-            // Primaria -> Obligatoria y acotada a ['PIP', 'Educación Física']
-            const validEspecialidades = Object.values(EspecialidadPrimaria) as string[];
-            return typeof value === 'string' && validEspecialidades.includes(value);
-          }
-
-          // Otros niveles -> opcional/nula. Validamos que si llega, sea string o nulo.
-          if (value !== undefined && value !== null) {
+          // Otros niveles (Inicial, Primaria, etc.) -> opcional/nula.
+          if (value !== undefined && value !== null && value !== '') {
             return typeof value === 'string';
           }
           return true;
@@ -40,11 +34,6 @@ export function IsValidEspecialidadForNivel(
 
           if (nivel === NivelEducativoEBR.SECUNDARIA) {
             return 'Para el nivel Secundaria, la especialidad es obligatoria.';
-          }
-
-          if (nivel === NivelEducativoEBR.PRIMARIA) {
-            const valid = Object.values(EspecialidadPrimaria).join(', ');
-            return `Para el nivel Primaria, la especialidad es obligatoria y debe ser una de: ${valid}.`;
           }
 
           return 'Especialidad inválida para el nivel educativo.';

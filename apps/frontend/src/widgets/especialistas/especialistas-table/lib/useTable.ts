@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { Especialista, NivelInstitucion } from '@entities/model-especialistas';
+import type { Especialista } from '@entities/model-especialistas';
 
 const PAGE_SIZE = 10;
 
@@ -21,11 +21,9 @@ export const useEspecialistasTable = (especialistas: Especialista[]) => {
         e.dni.includes(searchQuery) ||
         (e.especialidad || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchNivel = !nivelFilter || e.niveles.includes(nivelFilter as NivelInstitucion);
-      
-      const matchEstado =
-        !estadoFilter ||
-        (estadoFilter === 'Activo' ? e.activo : !e.activo);
+      const matchNivel = !nivelFilter || e.nivelEducativo === nivelFilter;
+
+      const matchEstado = !estadoFilter || (estadoFilter === 'Activo' ? e.activo : !e.activo);
 
       return matchSearch && matchNivel && matchEstado;
     });

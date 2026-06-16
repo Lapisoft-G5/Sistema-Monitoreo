@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen, Clock, BadgeCheck } from 'lucide-react';
+import {
+  ArrowLeft,
+  Edit,
+  Mail,
+  Phone,
+  User,
+  Briefcase,
+  BookOpen,
+  Clock,
+  BadgeCheck,
+} from 'lucide-react';
 import { type Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
@@ -12,7 +22,7 @@ import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 export const DocenteDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   const [docente, setDocente] = useState<Docente | null>(null);
   const [instName, setInstName] = useState('I.E. No Asignada');
   const [loading, setLoading] = useState(true);
@@ -60,7 +70,9 @@ export const DocenteDetailPage = () => {
     return (
       <div className="w-full max-w-[820px] mx-auto text-center py-20 bg-surface border border-border rounded-2xl shadow-sm mt-6">
         <h2 className="text-xl font-bold text-text mb-2">Docente no encontrado</h2>
-        <p className="text-text-muted mb-6">El código identificador {id} no existe o no tiene permisos de acceso.</p>
+        <p className="text-text-muted mb-6">
+          El código identificador {id} no existe o no tiene permisos de acceso.
+        </p>
         <button
           onClick={() => navigate('/instituciones/docentes')}
           className="px-5 py-2.5 bg-bg border border-border rounded-xl font-semibold text-text hover:bg-muted transition-colors cursor-pointer"
@@ -73,7 +85,6 @@ export const DocenteDetailPage = () => {
 
   return (
     <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300">
-      
       {/* Cabecera */}
       <div className="flex items-center justify-between gap-3 flex-wrap bg-surface p-4 border border-border rounded-2xl shadow-sm">
         <div className="flex items-center gap-4">
@@ -100,7 +111,6 @@ export const DocenteDetailPage = () => {
 
       {/* Ficha Completa */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
         {/* Lado izquierdo: Perfil General */}
         <div className="flex flex-col gap-6">
           <Card className="p-6 border border-border shadow-xs flex flex-col gap-4">
@@ -108,22 +118,30 @@ export const DocenteDetailPage = () => {
               <User className="w-5 h-5 text-primary" />
               <h3 className="text-sm font-bold text-text">Información Personal</h3>
             </div>
-            
+
             <div className="flex flex-col gap-3.5">
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Apellidos y Nombres</span>
-                <span className="text-base font-bold text-text">{docente.apellidos}, {docente.nombres}</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Apellidos y Nombres
+                </span>
+                <span className="text-base font-bold text-text">
+                  {docente.apellidos}, {docente.nombres}
+                </span>
               </div>
-              
+
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">DNI</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  DNI
+                </span>
                 <span className="text-sm font-semibold text-text">{docente.dni}</span>
               </div>
 
               <div className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-xl border border-border/40">
                 <Mail className="w-4.5 h-4.5 text-text-muted" />
                 <div className="flex flex-col">
-                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">Correo UGEL / I.E.</span>
+                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
+                    Correo UGEL / I.E.
+                  </span>
                   <span className="text-xs font-semibold text-text">{docente.correo}</span>
                 </div>
               </div>
@@ -131,7 +149,9 @@ export const DocenteDetailPage = () => {
               <div className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-xl border border-border/40">
                 <Phone className="w-4.5 h-4.5 text-text-muted" />
                 <div className="flex flex-col">
-                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">Teléfono de Contacto</span>
+                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
+                    Teléfono de Contacto
+                  </span>
                   <span className="text-xs font-semibold text-text">{docente.celular}</span>
                 </div>
               </div>
@@ -149,44 +169,65 @@ export const DocenteDetailPage = () => {
 
             <div className="flex flex-col gap-3.5">
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">Cargo Desempeñado</span>
-                <Badge variant="default" className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide">
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
+                  Cargo Desempeñado
+                </span>
+                <Badge
+                  variant="default"
+                  className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide"
+                >
                   {docente.cargo}
                 </Badge>
               </div>
 
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Institución Vinculada (I.E.)</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Institución Vinculada (I.E.)
+                </span>
                 <span className="text-sm font-semibold text-text">{instName}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Condición</span>
+                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                    Condición
+                  </span>
                   <span className="text-xs font-bold text-text">{docente.condicion}</span>
                 </div>
                 <div>
-                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Escala Magisterial</span>
+                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                    Escala Magisterial
+                  </span>
                   <span className="text-xs font-bold text-text">Escala {docente.escala}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Nivel Educativo</span>
-                  <span className="text-xs font-semibold text-text uppercase">{docente.nivelEducativo}</span>
+                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                    Nivel Educativo
+                  </span>
+                  <span className="text-xs font-semibold text-text uppercase">
+                    {docente.nivelEducativo}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-4.5 h-4.5 text-text-muted" />
                   <div>
-                    <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider block">Carga Horaria</span>
-                    <span className="text-xs font-bold text-text">{docente.cargaHoraria} hrs/sem</span>
+                    <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider block">
+                      Carga Horaria
+                    </span>
+                    <span className="text-xs font-bold text-text">
+                      {docente.cargaHoraria} hrs/sem
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Especialidad</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Especialidad
+                </span>
                 <span className="text-xs font-semibold text-text">{docente.especialidad}</span>
               </div>
             </div>
@@ -200,7 +241,7 @@ export const DocenteDetailPage = () => {
           <BookOpen className="w-5 h-5 text-primary" />
           <h3 className="text-sm font-bold text-text">Grados y Secciones a su Cargo</h3>
         </div>
-        
+
         <div className="flex flex-wrap gap-2.5">
           {(docente.secciones || []).map((sec) => (
             <div
@@ -208,11 +249,15 @@ export const DocenteDetailPage = () => {
               className="flex items-center gap-1.5 bg-muted/30 border border-border/80 px-3.5 py-2 rounded-xl text-xs font-bold text-text"
             >
               <BadgeCheck className="w-4 h-4 text-green-500 shrink-0" />
-              <span>{sec.grado} "{sec.seccion}"</span>
+              <span>
+                {sec.grado} "{sec.seccion}"
+              </span>
             </div>
           ))}
           {(docente.secciones || []).length === 0 && (
-            <span className="text-xs text-text-muted italic">No se han registrado grados asignados.</span>
+            <span className="text-xs text-text-muted italic">
+              No se han registrado grados asignados.
+            </span>
           )}
         </div>
       </Card>

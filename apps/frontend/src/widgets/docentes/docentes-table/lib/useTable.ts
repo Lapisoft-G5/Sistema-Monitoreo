@@ -4,7 +4,10 @@ import type { Docente } from '@entities/model-docentes';
 
 const PAGE_SIZE = 10;
 
-export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula' = 'Director') => {
+export const useDocentesTable = (
+  docentes: Docente[],
+  targetCargo: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula' = 'Director',
+) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const searchQuery = searchParams.get('search') || '';
@@ -25,8 +28,11 @@ export const useDocentesTable = (docentes: Docente[], targetCargo: 'Director' | 
         d.dni.includes(searchQuery);
 
       const matchCondicion = !condicionFilter || d.condicion === condicionFilter;
-      const matchSeccion = !seccionFilter || (d.secciones || []).some((s) => `${s.grado} ${s.seccion}` === seccionFilter);
-      const matchNivel = !nivelFilter || d.nivelEducativo?.toUpperCase() === nivelFilter.toUpperCase();
+      const matchSeccion =
+        !seccionFilter ||
+        (d.secciones || []).some((s) => `${s.grado} ${s.seccion}` === seccionFilter);
+      const matchNivel =
+        !nivelFilter || d.nivelEducativo?.toUpperCase() === nivelFilter.toUpperCase();
 
       return matchSearch && matchCondicion && matchSeccion && matchNivel;
     });

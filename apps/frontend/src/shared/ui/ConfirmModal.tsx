@@ -35,22 +35,22 @@ export const ConfirmModal = ({
   danger = false,
 }: Props) => {
   return (
-    <AlertDialog open={true} onOpenChange={(open) => { if (!open) onCancel(); }}>
+    <AlertDialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onCancel();
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription asChild>
-            <div className="text-sm text-text-muted mt-2">
-              {message}
-            </div>
+            <div className="text-sm text-text-muted mt-2">{message}</div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="mt-4">
           <AlertDialogCancel onClick={onCancel}>{cancelLabel}</AlertDialogCancel>
-          <AlertDialogAction 
-            onClick={onConfirm}
-            variant={danger ? 'destructive' : 'default'}
-          >
+          <AlertDialogAction onClick={onConfirm} variant={danger ? 'destructive' : 'default'}>
             {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>

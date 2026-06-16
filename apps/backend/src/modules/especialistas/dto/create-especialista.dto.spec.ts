@@ -9,6 +9,8 @@ describe('CreateEspecialistaDto', () => {
     dto.apellidos = 'Pérez Quispe';
     dto.especialidad = 'Matemáticas';
     dto.nivelEducativo = 'Secundaria';
+    dto.cargo = 'Especialista';
+    dto.modalidad = 'EBR';
     dto.rolCode = 'especialista_admin';
 
     const errors = await validate(dto);
@@ -21,8 +23,10 @@ describe('CreateEspecialistaDto', () => {
     dto.nombres = 'Juan';
     dto.apellidos = 'Pérez';
     dto.correo = 'juan@test.com';
-    dto.especialidad = 'Ciencias';
+    dto.especialidad = 'PIP';
     dto.nivelEducativo = 'Primaria';
+    dto.cargo = 'Especialista';
+    dto.modalidad = 'EBR';
     dto.rolCode = 'director_ugel';
 
     const errors = await validate(dto);

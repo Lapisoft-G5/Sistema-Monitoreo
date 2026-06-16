@@ -14,17 +14,12 @@ interface Props {
   isLoading: boolean;
   initialData?: DocenteFormData;
   instituciones: { id: string; nombre: string; nivel?: string }[];
-  defaultCargo?: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula';
+  defaultCargo?: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
   submitLabel?: string;
 }
 
 const CURSOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> = {
-  INICIAL: [
-    'Personal Social',
-    'Psicomotricidad',
-    'Comunicación',
-    'Descubrimiento del Mundo',
-  ],
+  INICIAL: ['Personal Social', 'Psicomotricidad', 'Comunicación', 'Descubrimiento del Mundo'],
   PRIMARIA: [
     'Comunicación',
     'Matemática',
@@ -86,10 +81,10 @@ export const DocenteFormBase = ({
 
   const [form, setForm] = useState<DocenteFormData>(() => {
     if (initialData) return initialData;
-    
+
     let initialInstId = '';
     let initialNivel: DocenteFormData['nivelEducativo'] = 'PRIMARIA';
-    
+
     if (isDirectorIe && user?.institucion) {
       initialInstId = user.institucion;
       if (user.institucionNivel) {
@@ -100,6 +95,7 @@ export const DocenteFormBase = ({
     return {
       ...INITIAL_FORM,
       cargo: defaultCargo,
+      condicion: defaultCargo === 'Director' ? 'Designado' : 'Nombrado',
       institucionId: initialInstId,
       nivelEducativo: initialNivel,
     };
@@ -143,7 +139,9 @@ export const DocenteFormBase = ({
 
     const currentSecciones = form.secciones || [];
     const exists = currentSecciones.some(
-      (s) => s.grado.toLowerCase() === cleanGrado.toLowerCase() && s.seccion.toLowerCase() === cleanSeccion.toLowerCase()
+      (s) =>
+        s.grado.toLowerCase() === cleanGrado.toLowerCase() &&
+        s.seccion.toLowerCase() === cleanSeccion.toLowerCase(),
     );
     if (exists) return;
 
@@ -248,7 +246,9 @@ export const DocenteFormBase = ({
           <div className="w-full">
             {isDirectorIe ? (
               <div className="flex flex-col gap-1 w-full">
-                <label className="text-xs font-bold text-text-muted">Institución de Destino (I.E.)</label>
+                <label className="text-xs font-bold text-text-muted">
+                  Institución de Destino (I.E.)
+                </label>
                 <div className="flex items-center h-9 px-3 rounded-lg border border-border bg-muted/30 text-text font-medium text-sm">
                   {user?.institucionNombre || 'I.E. No Asignada'}
                 </div>
@@ -269,12 +269,25 @@ export const DocenteFormBase = ({
             label="Cargo / Rol"
             required
             value={form.cargo}
-            onChange={(v) => set('cargo', v as DocenteFormData['cargo'])}
+            onChange={(v) => {
+              const newCargo = v as DocenteFormData['cargo'];
+              setForm((prev) => ({
+                ...prev,
+                cargo: newCargo,
+                condicion: newCargo === 'Director' ? 'Designado' : 'Nombrado',
+              }));
+            }}
             options={(() => {
-              const opts = [
-                { value: 'Coordinador Pedagógico', label: 'Coordinador Pedagógico' },
-                { value: 'Docente de Aula', label: 'Docente de Aula' },
-              ];
+              const isSecundary = form.nivelEducativo === 'SECUNDARIA';
+              const opts = isSecundary
+                ? [
+                    { value: 'Coordinador Pedagógico', label: 'Coordinador Pedagógico' },
+                    { value: 'Jefe de Taller', label: 'Jefe de Taller' },
+                    { value: 'Docente de Aula', label: 'Docente de Aula' },
+                  ]
+                : [
+                    { value: 'Docente de Aula', label: 'Docente de Aula' },
+                  ];
               if (form.cargo === 'Director') {
                 opts.unshift({ value: 'Director', label: 'Director' });
               }
@@ -290,7 +303,15 @@ export const DocenteFormBase = ({
             required
             value={form.condicion}
             onChange={(v) => set('condicion', v as DocenteFormData['condicion'])}
-            options={CONDICION_LABORAL.map((c) => ({ value: c, label: c }))}
+            options={(() => {
+              if (form.cargo === 'Director') {
+                return ['Designado', 'Encargado', 'Por Función'].map((c) => ({
+                  value: c,
+                  label: c,
+                }));
+              }
+              return CONDICION_LABORAL.map((c) => ({ value: c, label: c }));
+            })()}
             placeholder="Seleccione Condición"
             error={showError('condicion')}
           />
@@ -317,7 +338,14 @@ export const DocenteFormBase = ({
               label="Nivel Educativo"
               required
               value={form.nivelEducativo}
-              onChange={(v) => set('nivelEducativo', v as DocenteFormData['nivelEducativo'])}
+              onChange={(v) => {
+                const nextNivel = v as DocenteFormData['nivelEducativo'];
+                setForm((prev) => ({
+                  ...prev,
+                  nivelEducativo: nextNivel,
+                  especialidad: nextNivel === 'SECUNDARIA' ? '' : 'General',
+                }));
+              }}
               options={NIVELES.map((n) => ({ value: n, label: NIVEL_LABEL[n] }))}
               placeholder="Seleccione Nivel"
               error={showError('nivelEducativo')}
@@ -325,11 +353,17 @@ export const DocenteFormBase = ({
           )}
           <SelectField
             label="Especialidad / Mención"
-            required
-            value={form.especialidad}
+            required={form.nivelEducativo === 'SECUNDARIA'}
+            value={form.especialidad || ''}
             onChange={(v) => set('especialidad', v)}
             options={(() => {
-              const rawCourses = CURSOS_POR_NIVEL[form.nivelEducativo] || [];
+              if (form.nivelEducativo === 'PRIMARIA') {
+                return ['General', 'PIP', 'Educación Física'].map((c) => ({ value: c, label: c }));
+              }
+              if (form.nivelEducativo === 'INICIAL') {
+                return [{ value: 'General', label: 'General' }];
+              }
+              const rawCourses = CURSOS_POR_NIVEL['SECUNDARIA'] || [];
               const coursesList = [...rawCourses];
               if (form.especialidad && !coursesList.includes(form.especialidad)) {
                 coursesList.push(form.especialidad);
@@ -395,7 +429,9 @@ export const DocenteFormBase = ({
                 key={sec.id}
                 className="flex items-center gap-2 bg-muted/50 border border-border px-3 py-1.5 rounded-xl text-sm font-medium text-text"
               >
-                <span>{sec.grado} "{sec.seccion}"</span>
+                <span>
+                  {sec.grado} "{sec.seccion}"
+                </span>
                 <button
                   type="button"
                   onClick={() => handleRemoveSeccion(sec.id)}
@@ -420,7 +456,7 @@ export const DocenteFormBase = ({
           Cancelar
         </FormButton>
         <FormButton onClick={handleSubmit} disabled={isLoading}>
-          {isLoading ? 'Guardando...' : (submitLabel || 'Guardar Director/Docente')}
+          {isLoading ? 'Guardando...' : submitLabel || 'Guardar Director/Docente'}
         </FormButton>
       </div>
     </div>

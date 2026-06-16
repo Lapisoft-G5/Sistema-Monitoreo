@@ -28,8 +28,14 @@ export const InstitutionDirectorInfo = ({ institucion }: { institucion: Instituc
             <div className="sm:col-span-2">
               <CAMPO label="Director Asignado" value={institucion.director} />
             </div>
-            <CAMPO label="Celular de Contacto" value={institucion.directorTelefono || 'Sin teléfono registrado'} />
-            <CAMPO label="Correo Electrónico" value={institucion.directorCorreo || 'Sin correo registrado'} />
+            <CAMPO
+              label="Celular de Contacto"
+              value={institucion.directorTelefono || 'Sin teléfono registrado'}
+            />
+            <CAMPO
+              label="Correo Electrónico"
+              value={institucion.directorCorreo || 'Sin correo registrado'}
+            />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-6 text-center">
@@ -38,7 +44,8 @@ export const InstitutionDirectorInfo = ({ institucion }: { institucion: Instituc
             </div>
             <p className="text-text font-bold text-sm">Sin director asignado</p>
             <p className="text-text-muted text-xs mt-1 max-w-sm">
-              Esta institución no cuenta actualmente con un director asignado en el padrón. Puede asignar uno editando este registro.
+              Esta institución no cuenta actualmente con un director asignado en el padrón. Puede
+              asignar uno editando este registro.
             </p>
           </div>
         )}

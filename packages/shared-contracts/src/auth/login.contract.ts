@@ -15,6 +15,8 @@ export interface ILoginResponse {
     institucion?: string;
     institucionNombre?: string;
     institucionNivel?: string;
+    especialistaNivel?: string;
+    especialistaModalidad?: string;
     distrito?: string;
     firstLogin: boolean;
   };
@@ -27,4 +29,3 @@ export interface ILoginError {
   failedAttempts?: number;
   remainingAttempts?: number;
 }
-

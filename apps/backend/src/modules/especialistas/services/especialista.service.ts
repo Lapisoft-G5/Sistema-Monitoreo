@@ -11,6 +11,7 @@ import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';
 import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
+import { CargoEspecialista } from '@sistema-monitoreo/shared-contracts';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { CondicionLaboral } from '../../../common/enums/condicion-laboral.enum.js';
@@ -36,6 +37,7 @@ export class EspecialistaService {
     dto: CreateEspecialistaDto,
     currentUser: JwtPayload,
   ): Promise<IEspecialistaResponse> {
+    // ── Regla 1: Solo Director UGEL o Jefe de Área pueden crear Jefes de Gestión
     if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
       if (
         (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_UGEL &&
@@ -47,12 +49,37 @@ export class EspecialistaService {
       }
     }
 
+    // ── Regla 2: Jefe de Gestión → condicion_laboral obligatoriamente Nombrado
     if (
       (dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION &&
       (dto.condicionLaboral as CondicionLaboral) !== CondicionLaboral.NOMBRADO
     ) {
       throw new BadRequestException(
         'La condición laboral de un Jefe de Gestión debe ser exactamente Nombrado.',
+      );
+    }
+
+    // ── Regla 3: Jefe de Área → carga_laboral obligatoriamente 40 horas
+    if (
+      (dto.cargo as CargoNombre) === CargoNombre.JEFE_AREA &&
+      dto.cargaLaboral !== undefined &&
+      dto.cargaLaboral !== 40
+    ) {
+      throw new BadRequestException(
+        'La carga laboral de un Jefe de Área debe ser exactamente 40 horas.',
+      );
+    }
+
+    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria
+    //   (esta lógica ya está cubierta por el validator IsValidEspecialidadForNivel
+    //    en el DTO, pero como doble-guarda la aplicamos aquí también)
+    if (
+      (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA &&
+      dto.nivelEducativo === 'Secundaria' &&
+      (!dto.especialidad || dto.especialidad.trim() === '')
+    ) {
+      throw new BadRequestException(
+        'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
       );
     }
 
@@ -63,10 +90,19 @@ export class EspecialistaService {
       );
     }
 
-    // El especialista necesita el ID del rol por código
     const role = await this.catalogsRepository.findRoleByCode(dto.rolCode);
     if (!role) {
       throw new NotFoundException(`El rol ${dto.rolCode} no existe.`);
+    }
+
+    // Para Jefe de Gestión, la condicion se normaliza siempre a Nombrado
+    if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
+      dto.condicionLaboral = CondicionLaboral.NOMBRADO;
+    }
+
+    // Para Jefe de Área, carga_laboral siempre se normaliza a 40
+    if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_AREA) {
+      dto.cargaLaboral = 40;
     }
 
     const saltRounds = 12;
@@ -79,6 +115,7 @@ export class EspecialistaService {
     dto: UpdateEspecialistaDto,
     currentUser: JwtPayload,
   ): Promise<IEspecialistaResponse> {
+    // ── Regla 1: Solo Director UGEL o Jefe de Área pueden modificar Jefes de Gestión
     if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
       if (
         (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_UGEL &&
@@ -90,6 +127,7 @@ export class EspecialistaService {
       }
     }
 
+    // ── Regla 2: Jefe de Gestión → condicion_laboral obligatoriamente Nombrado
     if (
       (dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION &&
       (dto.condicionLaboral as CondicionLaboral) !== CondicionLaboral.NOMBRADO
@@ -97,6 +135,38 @@ export class EspecialistaService {
       throw new BadRequestException(
         'La condición laboral de un Jefe de Gestión debe ser exactamente Nombrado.',
       );
+    }
+
+    // ── Regla 3: Jefe de Área → carga_laboral obligatoriamente 40 horas
+    if (
+      (dto.cargo as CargoNombre) === CargoNombre.JEFE_AREA &&
+      dto.cargaLaboral !== undefined &&
+      dto.cargaLaboral !== 40
+    ) {
+      throw new BadRequestException(
+        'La carga laboral de un Jefe de Área debe ser exactamente 40 horas.',
+      );
+    }
+
+    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria
+    if (
+      (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA &&
+      dto.nivelEducativo === 'Secundaria' &&
+      (!dto.especialidad || dto.especialidad.trim() === '')
+    ) {
+      throw new BadRequestException(
+        'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
+      );
+    }
+
+    // Para Jefe de Gestión normalizar condicion
+    if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
+      dto.condicionLaboral = CondicionLaboral.NOMBRADO;
+    }
+
+    // Para Jefe de Área normalizar carga horaria
+    if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_AREA) {
+      dto.cargaLaboral = 40;
     }
 
     let roleId: string | undefined;
@@ -122,3 +192,6 @@ export class EspecialistaService {
     return this.repository.deactivate(id);
   }
 }
+
+// Re-export constant for backward compatibility (replaces old CargoNombre.JEFE_AREA usages)
+export { CargoEspecialista };

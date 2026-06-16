@@ -34,12 +34,13 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     return {
       id: esp.id,
       personaId: esp.personaId,
-      especialidad: esp.especialidad ?? '',
+      especialidad: esp.especialidad ?? null,
       nivelEducativo: esp.nivelEducativo,
+      modalidad: esp.modalidad ?? null,
       estado: esp.estado,
       cargaLaboral: esp.cargaLaboral,
       cargo: esp.cargo,
-      condicionLaboral: esp.condicionLaboral,
+      condicionLaboral: esp.condicionLaboral ?? null,
       escalaMagisterial: esp.escalaMagisterial,
       createdAt: esp.createdAt,
       updatedAt: esp.updatedAt,
@@ -69,6 +70,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         ...(filters?.estado && { estado: filters.estado }),
         ...(filters?.especialidad && { especialidad: filters.especialidad }),
         ...(filters?.nivelEducativo && { nivelEducativo: filters.nivelEducativo }),
+        ...(filters?.cargo && { cargo: filters.cargo }),
       },
       include: {
         persona: {
@@ -186,8 +188,8 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         data: {
           nombres: data.nombres,
           apellidos: data.apellidos,
-          correo: data.correo !== undefined ? (data.correo || null) : undefined,
-          telefono: data.telefono !== undefined ? (data.telefono || null) : undefined,
+          correo: data.correo !== undefined ? data.correo || null : undefined,
+          telefono: data.telefono !== undefined ? data.telefono || null : undefined,
         },
       });
 
@@ -211,7 +213,8 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           ...(data.cargo && { cargo: data.cargo }),
           ...(data.condicionLaboral && { condicionLaboral: data.condicionLaboral }),
           cargaLaboral: data.cargaLaboral !== undefined ? data.cargaLaboral : undefined,
-          escalaMagisterial: data.escalaMagisterial !== undefined ? data.escalaMagisterial : undefined,
+          escalaMagisterial:
+            data.escalaMagisterial !== undefined ? data.escalaMagisterial : undefined,
         },
       });
 
@@ -248,12 +251,13 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         SELECT COUNT(*) as count FROM visitas_monitoreo WHERE especialista_id = ${id}::uuid
       `;
       count = result[0]?.count ?? 0n;
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Si la tabla "visitas_monitoreo" no existe en la base de datos (PostgreSQL 42P01 / Prisma P2010),
       // asumimos que el especialista tiene 0 visitas registradas.
+      const error = err as { message?: string; meta?: { message?: string } };
       const isTableMissing =
-        err.message?.includes('42P01') ||
-        err.meta?.message?.includes('42P01') ||
+        error.message?.includes('42P01') ||
+        error.meta?.message?.includes('42P01') ||
         String(err).includes('42P01');
       if (isTableMissing) {
         count = 0n;

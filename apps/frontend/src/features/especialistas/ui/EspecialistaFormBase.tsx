@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { User, Briefcase, Check } from 'lucide-react';
-import { NIVELES_INSTITUCION, type NivelInstitucion } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistaSchema } from '@entities/model-especialistas/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
-import { Label } from '@shared/ui/label';
+import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 
 interface Props {
   onCancel: () => void;
@@ -21,9 +20,11 @@ const INITIAL_FORM: EspecialistaFormData = {
   correo: '',
   celular: '',
   especialidad: '',
-  niveles: ['Primaria'],
+  nivelEducativo: 'Primaria',
+  modalidad: 'EBR',
+  cargo: 'Especialista',
   activo: true,
-  condicionLaboral: 'Contratado',
+  condicionLaboral: 'Encargado',
   cargaLaboral: 40,
   escalaMagisterial: undefined,
 };
@@ -35,8 +36,15 @@ export const EspecialistaFormBase = ({
   initialData,
   isJefeArea = false,
 }: Props) => {
-  const [form, setForm] = useState<EspecialistaFormData>({
+  // Ajuste de inicialización en base a si esJefeArea es verdadero
+  const defaultForm = {
     ...INITIAL_FORM,
+    cargo: isJefeArea ? ('Jefe de Área' as const) : ('Especialista' as const),
+    condicionLaboral: isJefeArea ? ('Designado' as const) : ('Encargado' as const),
+  };
+
+  const [form, setForm] = useState<EspecialistaFormData>({
+    ...defaultForm,
     ...initialData,
   });
   const [submitted, setSubmitted] = useState(false);
@@ -57,45 +65,25 @@ export const EspecialistaFormBase = ({
   }
 
   // Validación personalizada: especialidad es requerida si se selecciona nivel Secundaria
-  if (!isJefeArea && form.niveles?.includes('Secundaria') && !form.especialidad?.trim()) {
-    errors.especialidad = 'La especialidad es requerida para el nivel Secundaria';
+  if (form.cargo === 'Especialista') {
+    if (form.nivelEducativo === 'Secundaria' && !form.especialidad?.trim()) {
+      errors.especialidad = 'La especialidad es requerida para el nivel Secundaria';
+    }
   }
 
   const showError = (key: keyof EspecialistaFormData) => (submitted ? errors[key] : '');
 
-  const toggleNivel = (nivel: NivelInstitucion) => {
-    const current = form.niveles || [];
-    let nextNiveles: NivelInstitucion[] = [];
-    if (current.includes(nivel)) {
-      nextNiveles = [];
-    } else {
-      nextNiveles = [nivel];
-    }
-    
-    // Limpiar especialidad si el nuevo nivel seleccionado no es Secundaria
-    if (!nextNiveles.includes('Secundaria')) {
-      setForm((prev) => ({
-        ...prev,
-        niveles: nextNiveles,
-        especialidad: '',
-      }));
-    } else {
-      set('niveles', nextNiveles);
-    }
-  };
+  const dniOk = /^\d{8}$/.test(form.dni);
+  const celularOk = form.celular ? /^9\d{8}$/.test(form.celular) : false;
+
+  const currentModalidad = form.modalidad || 'EBR';
+  const availableNiveles = MODALIDAD_NIVEL_MAP[currentModalidad] || [];
 
   const handleSubmit = () => {
     setSubmitted(true);
     if (Object.keys(errors).length > 0 || isLoading) return;
     onSubmit(form);
   };
-
-  const dniOk = /^\d{8}$/.test(form.dni);
-  const celularOk = /^9\d{8}$/.test(form.celular);
-
-  const availableNiveles = isJefeArea
-    ? (['Inicial', 'Primaria', 'Secundaria'] as NivelInstitucion[])
-    : NIVELES_INSTITUCION;
 
   return (
     <div className="bg-bg p-0 flex flex-col gap-5 text-text animate-in fade-in-0 duration-300">
@@ -142,16 +130,14 @@ export const EspecialistaFormBase = ({
         <div style={{ ...twoCols, marginTop: 18 }}>
           <TextField
             label="Correo Electrónico"
-            required
-            value={form.correo}
+            value={form.correo || ''}
             onChange={(v) => set('correo', v)}
             placeholder="Ej. jperez@ugel-lampa.gob.pe"
             error={showError('correo')}
           />
           <TextField
             label="Número de Celular"
-            required
-            value={form.celular}
+            value={form.celular || ''}
             onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, 9))}
             placeholder="Ej. 987654321"
             error={showError('celular')}
@@ -164,28 +150,79 @@ export const EspecialistaFormBase = ({
         </div>
       </SectionCard>
 
-      {/* Sección 2: Perfil y Niveles */}
-      <SectionCard icon={<Briefcase className="w-5 h-5" />} title="Detalles Profesionales / Laborales">
+      {/*/ Sección 2: Perfil y Niveles */}
+      <SectionCard
+        icon={<Briefcase className="w-5 h-5" />}
+        title="Detalles Profesionales / Laborales"
+      >
         <div style={twoCols}>
           <SelectField
-            label="Condición Laboral"
+            label="Cargo *"
+            required
+            value={form.cargo}
+            onChange={(v) => set('cargo', v as any)}
+            options={[
+              { value: 'Especialista', label: 'Especialista' },
+              { value: 'Jefe de Área', label: 'Jefe de Área' },
+              { value: 'Jefe de Gestión', label: 'Jefe de Gestión' },
+            ]}
+            disabled={isJefeArea}
+            placeholder="Seleccione Cargo"
+            error={showError('cargo')}
+          />
+          <SelectField
+            label="Condición Laboral *"
             required
             value={form.condicionLaboral}
-            onChange={(v) => set('condicionLaboral', v as 'Contratado' | 'Nombrado')}
+            onChange={(v) => set('condicionLaboral', v as any)}
             options={[
-              { value: 'Contratado', label: 'Contratado' },
+              { value: 'Encargado', label: 'Encargado' },
+              { value: 'Destacado', label: 'Destacado' },
+              { value: 'Designado', label: 'Designado' },
               { value: 'Nombrado', label: 'Nombrado' },
             ]}
             placeholder="Seleccione Condición"
             error={showError('condicionLaboral')}
           />
-          <TextField
-            label="Carga Laboral (Horas)"
+        </div>
+
+        <div style={{ ...twoCols, marginTop: 18 }}>
+          <SelectField
+            label="Modalidad *"
             required
-            value={form.cargaLaboral?.toString() || ''}
-            onChange={(v) => set('cargaLaboral', v ? Number(v.replace(/\D/g, '')) : 40)}
-            placeholder="Ej. 40"
-            error={showError('cargaLaboral')}
+            value={form.modalidad}
+            onChange={(v) => {
+              const levels = MODALIDAD_NIVEL_MAP[v] || [];
+              setForm((prev) => ({
+                ...prev,
+                modalidad: v as any,
+                nivelEducativo: levels[0] || '',
+                especialidad: '',
+              }));
+            }}
+            options={[
+              { value: 'EBR', label: 'EBR (Básica Regular)' },
+              { value: 'EBA', label: 'EBA (Básica Alternativa)' },
+              { value: 'EBE', label: 'EBE (Básica Especial)' },
+              { value: 'CEPTRO', label: 'CEPTRO (Técnico Productiva)' },
+            ]}
+            placeholder="Seleccione Modalidad"
+            error={showError('modalidad')}
+          />
+          <SelectField
+            label="Nivel Educativo *"
+            required
+            value={form.nivelEducativo}
+            onChange={(v) => {
+              setForm((prev) => ({
+                ...prev,
+                nivelEducativo: v,
+                especialidad: v !== 'Secundaria' ? '' : prev.especialidad,
+              }));
+            }}
+            options={availableNiveles.map((n) => ({ value: n, label: n }))}
+            placeholder="Seleccione Nivel"
+            error={showError('nivelEducativo')}
           />
         </div>
 
@@ -210,46 +247,28 @@ export const EspecialistaFormBase = ({
           />
           <TextField
             label="Especialidad / Área Pedagógica"
-            required={form.niveles?.includes('Secundaria')}
+            required={form.cargo === 'Especialista' && form.nivelEducativo === 'Secundaria'}
             value={form.especialidad || ''}
             onChange={(v) => set('especialidad', v)}
             placeholder={
-              form.niveles?.includes('Secundaria')
+              form.nivelEducativo === 'Secundaria'
                 ? 'Ej. Matemática o Gestión Pedagógica'
                 : 'Solo disponible para el nivel Secundaria'
             }
             error={showError('especialidad')}
-            disabled={!form.niveles?.includes('Secundaria')}
+            disabled={form.cargo !== 'Especialista' || form.nivelEducativo !== 'Secundaria'}
           />
         </div>
 
-        <div className="flex flex-col gap-2 mt-5">
-          <Label className="text-xs font-bold text-text">Niveles Educativos Asignados *</Label>
-          <div className="flex flex-wrap gap-2.5 mt-1">
-            {availableNiveles.map((nivel) => {
-              const isSelected = (form.niveles || []).includes(nivel);
-              return (
-                <button
-                  key={nivel}
-                  type="button"
-                  onClick={() => toggleNivel(nivel)}
-                  className={`
-                    px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer
-                    ${
-                      isSelected
-                        ? 'bg-primary/10 border-primary text-primary shadow-xs'
-                        : 'bg-surface border-border text-text-muted hover:border-text-dim hover:text-text'
-                    }
-                  `}
-                >
-                  {nivel}
-                </button>
-              );
-            })}
-          </div>
-          {showError('niveles') && (
-            <p className="text-red-500 text-xs mt-1 font-medium">{showError('niveles')}</p>
-          )}
+        <div style={{ marginTop: 18 }}>
+          <TextField
+            label="Carga Laboral (Horas) *"
+            required
+            value={form.cargaLaboral?.toString() || ''}
+            onChange={(v) => set('cargaLaboral', v ? Number(v.replace(/\D/g, '')) : 40)}
+            placeholder="Ej. 40"
+            error={showError('cargaLaboral')}
+          />
         </div>
       </SectionCard>
 

@@ -4,12 +4,23 @@ import type { User } from './model';
 
 // 1. Esquema de validación base de la entidad Usuario
 export const userSchema = z.object({
-  dni: z.string().length(8, 'El DNI debe tener exactamente 8 dígitos').regex(/^\d+$/, 'El DNI solo debe contener números'),
+  dni: z
+    .string()
+    .length(8, 'El DNI debe tener exactamente 8 dígitos')
+    .regex(/^\d+$/, 'El DNI solo debe contener números'),
   nombres: z.string().min(2, 'Los nombres son muy cortos'),
   apellidos: z.string().min(2, 'Los apellidos son muy cortos'),
   role: z.enum([
-    'director_ugel', 'jefe_area', 'jefe_gestion', 'coordinador_pedagogico',
-    'especialista', 'director_institucion', 'director_ie', 'docente', 'invitado'
+    'director_ugel',
+    'jefe_area',
+    'jefe_gestion',
+    'coordinador_pedagogico',
+    'jefe_taller',
+    'especialista',
+    'director_institucion',
+    'director_ie',
+    'docente',
+    'invitado',
   ]),
   institucion: z.string().optional(),
   distrito: z.string().optional(),
@@ -40,5 +51,5 @@ export const userValidator = {
   isInstitutionStaff: (user: User | null): boolean => {
     if (!user) return false;
     return !!user.institucion;
-  }
+  },
 };

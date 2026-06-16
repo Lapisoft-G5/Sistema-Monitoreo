@@ -219,6 +219,20 @@ describe('TeachersService', () => {
       expect(result).toEqual(mockTeachersList);
       expect(findDocentesMock).toHaveBeenCalledWith({});
     });
+
+    it('should query teachers with especialistaNivel if user is jefe_area', async () => {
+      findDocentesMock.mockResolvedValue(mockTeachersList);
+
+      const result = await service.getDocentes({
+        sub: 'x',
+        role: RoleCode.JEFE_AREA,
+        permissions: ['docentes:read'],
+        especialista_nivel: 'Secundaria',
+      });
+
+      expect(result).toEqual(mockTeachersList);
+      expect(findDocentesMock).toHaveBeenCalledWith({ especialistaNivel: 'Secundaria' });
+    });
   });
 
   describe('updateDocente', () => {

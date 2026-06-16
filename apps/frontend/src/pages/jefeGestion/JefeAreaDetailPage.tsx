@@ -42,7 +42,9 @@ export const JefeAreaDetailPage = () => {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="text-text-muted text-sm font-medium">Cargando ficha de jefe de área...</span>
+        <span className="text-text-muted text-sm font-medium">
+          Cargando ficha de jefe de área...
+        </span>
       </div>
     );
   }
@@ -51,7 +53,9 @@ export const JefeAreaDetailPage = () => {
     return (
       <div className="w-full max-w-[820px] mx-auto text-center py-20 bg-surface border border-border rounded-2xl shadow-sm mt-6">
         <h2 className="text-xl font-bold text-text mb-2">Jefe de Área no encontrado</h2>
-        <p className="text-text-muted mb-6">El código identificador {id} no existe o no tiene permisos de acceso.</p>
+        <p className="text-text-muted mb-6">
+          El código identificador {id} no existe o no tiene permisos de acceso.
+        </p>
         <button
           onClick={() => navigate('/jefes-area')}
           className="px-5 py-2.5 bg-bg border border-border rounded-xl font-semibold text-text hover:bg-muted transition-colors cursor-pointer"
@@ -99,25 +103,39 @@ export const JefeAreaDetailPage = () => {
 
             <div className="flex flex-col gap-3.5">
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Apellidos y Nombres</span>
-                <span className="text-base font-bold text-text">{jefe.apellidos}, {jefe.nombres}</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Apellidos y Nombres
+                </span>
+                <span className="text-base font-bold text-text">
+                  {jefe.apellidos}, {jefe.nombres}
+                </span>
               </div>
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">DNI</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  DNI
+                </span>
                 <span className="text-sm font-semibold text-text">{jefe.dni}</span>
               </div>
               <div className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-xl border border-border/40">
                 <Mail className="w-4.5 h-4.5 text-text-muted" />
                 <div className="flex flex-col">
-                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">Correo Institucional</span>
-                  <span className="text-xs font-semibold text-text">{jefe.correo || 'No registrado'}</span>
+                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
+                    Correo Institucional
+                  </span>
+                  <span className="text-xs font-semibold text-text">
+                    {jefe.correo || 'No registrado'}
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-xl border border-border/40">
                 <Phone className="w-4.5 h-4.5 text-text-muted" />
                 <div className="flex flex-col">
-                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">Teléfono de Contacto</span>
-                  <span className="text-xs font-semibold text-text">{jefe.celular || 'No registrado'}</span>
+                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
+                    Teléfono de Contacto
+                  </span>
+                  <span className="text-xs font-semibold text-text">
+                    {jefe.celular || 'No registrado'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -134,17 +152,28 @@ export const JefeAreaDetailPage = () => {
 
             <div className="flex flex-col gap-3.5">
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">Cargo</span>
-                <Badge variant="default" className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide">
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
+                  Cargo
+                </span>
+                <Badge
+                  variant="default"
+                  className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide"
+                >
                   Jefe de Área
                 </Badge>
               </div>
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Carga Horaria</span>
-                <span className="text-sm font-semibold text-text">{jefe.cargaHoraria || 40} horas</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Carga Horaria
+                </span>
+                <span className="text-sm font-semibold text-text">
+                  {jefe.cargaHoraria || 40} horas
+                </span>
               </div>
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Estado</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Estado
+                </span>
                 <Badge
                   variant={jefe.activo ? 'default' : 'secondary'}
                   className={`text-[0.65rem] py-0 px-2 uppercase font-bold mt-1 ${

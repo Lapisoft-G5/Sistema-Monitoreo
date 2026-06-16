@@ -24,7 +24,15 @@ const getPageNumbers = (total: number, current: number) => {
   return pages;
 };
 
-export const TablePagination = ({ from, to, totalItems, currentPage, totalPages, onPageChange, itemName = 'registros' }: TablePaginationProps) => {
+export const TablePagination = ({
+  from,
+  to,
+  totalItems,
+  currentPage,
+  totalPages,
+  onPageChange,
+  itemName = 'registros',
+}: TablePaginationProps) => {
   return (
     <div className="flex justify-between items-center flex-wrap gap-4 p-5 border-t border-border bg-muted/20">
       <span className="text-xs font-medium text-text-muted">
@@ -32,7 +40,9 @@ export const TablePagination = ({ from, to, totalItems, currentPage, totalPages,
       </span>
       <div className="flex items-center gap-1">
         <Button
-          variant="outline" size="icon" disabled={currentPage <= 1}
+          variant="outline"
+          size="icon"
+          disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
           className="h-8 w-8 rounded-lg cursor-pointer hover:bg-muted"
         >
@@ -40,10 +50,14 @@ export const TablePagination = ({ from, to, totalItems, currentPage, totalPages,
         </Button>
         {getPageNumbers(totalPages, currentPage).map((p, idx) =>
           p === 'ellipsis' ? (
-            <span key={`e${idx}`} className="px-2 text-xs text-text-muted font-medium select-none">…</span>
+            <span key={`e${idx}`} className="px-2 text-xs text-text-muted font-medium select-none">
+              …
+            </span>
           ) : (
             <Button
-              key={p} variant={p === currentPage ? 'default' : 'outline'} size="icon"
+              key={p}
+              variant={p === currentPage ? 'default' : 'outline'}
+              size="icon"
               onClick={() => onPageChange(p as number)}
               className="h-8 w-8 rounded-lg cursor-pointer font-bold text-xs"
             >
@@ -52,7 +66,9 @@ export const TablePagination = ({ from, to, totalItems, currentPage, totalPages,
           ),
         )}
         <Button
-          variant="outline" size="icon" disabled={currentPage >= totalPages}
+          variant="outline"
+          size="icon"
+          disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
           className="h-8 w-8 rounded-lg cursor-pointer hover:bg-muted"
         >

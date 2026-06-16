@@ -1,8 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'node:crypto';
-import { RoleCode } from '../../../common/enums/role.enum.js';
-import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 
 export interface JwtPayload {
@@ -16,6 +14,8 @@ export interface JwtPayload {
   colegio_id?: string;
   colegio_nombre?: string;
   colegio_nivel?: string;
+  especialista_nivel?: string;
+  especialista_modalidad?: string;
   firstLogin: boolean;
 }
 
@@ -40,6 +40,7 @@ export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
             };
           };
         };
+        especialista: true;
       };
     };
   };
@@ -107,6 +108,14 @@ export class AuthTokenService {
       colegio_nivel = user.persona.docente.institucion?.nivelEducativo;
     }
 
+    let especialista_nivel: string | undefined;
+    let especialista_modalidad: string | undefined;
+
+    if (user.persona?.especialista && user.rol.codigo === 'jefe_area') {
+      especialista_nivel = user.persona.especialista.nivelEducativo;
+      especialista_modalidad = user.persona.especialista.modalidad ?? undefined;
+    }
+
     const permissions = user.rol.rolPermisos?.map((rp) => rp.permiso.codigo) || [];
 
     return {
@@ -120,6 +129,8 @@ export class AuthTokenService {
       colegio_id,
       colegio_nombre,
       colegio_nivel,
+      especialista_nivel,
+      especialista_modalidad,
       firstLogin: user.isFirstLogin,
     };
   }

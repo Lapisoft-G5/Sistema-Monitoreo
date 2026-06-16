@@ -42,10 +42,12 @@ export const EspecialistasTableWidget = ({
           MOCK_ESPECIALISTAS[index].activo = false;
         }
         setEspecialistas((prev) =>
-          prev.map((e) => (e.id === deletingDoc.id ? { ...e, activo: false } : e))
+          prev.map((e) => (e.id === deletingDoc.id ? { ...e, activo: false } : e)),
         );
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al desactivar el registro de especialista.';
+        const errMsg =
+          (res.error as { message?: string })?.message ||
+          'Error al desactivar el registro de especialista.';
         alert(errMsg);
       }
     } catch (err) {
@@ -65,10 +67,12 @@ export const EspecialistasTableWidget = ({
           MOCK_ESPECIALISTAS[index].activo = true;
         }
         setEspecialistas((prev) =>
-          prev.map((e) => (e.id === restoringDoc.id ? { ...e, activo: true } : e))
+          prev.map((e) => (e.id === restoringDoc.id ? { ...e, activo: true } : e)),
         );
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al reactivar el registro de especialista.';
+        const errMsg =
+          (res.error as { message?: string })?.message ||
+          'Error al reactivar el registro de especialista.';
         alert(errMsg);
       }
     } catch (err) {
@@ -124,7 +128,9 @@ export const EspecialistasTableWidget = ({
                     <div className="flex items-center gap-1.5">
                       <span
                         className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: CARGO_COLORS[doc.cargo || 'Especialista'] || '#3b82f6' }}
+                        style={{
+                          backgroundColor: CARGO_COLORS[doc.cargo || 'Especialista'] || '#3b82f6',
+                        }}
                       />
                       <span className="text-xs font-semibold text-text">
                         {doc.cargo || 'Especialista'}
@@ -136,15 +142,15 @@ export const EspecialistasTableWidget = ({
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1 max-w-[200px]">
-                      {doc.niveles.map((n) => (
+                      {doc.nivelEducativo && (
                         <Badge
-                          key={n}
                           variant="secondary"
                           className="text-[0.6rem] py-0 px-1.5 uppercase font-bold"
                         >
-                          {n}
+                          {doc.nivelEducativo}
+                          {doc.modalidad ? ` (${doc.modalidad})` : ''}
                         </Badge>
-                      ))}
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -162,10 +168,14 @@ export const EspecialistasTableWidget = ({
                   <TableCell className="text-right pr-5">
                     <FastActions
                       onView={() => onView(doc)}
-                      onEdit={doc.activo && onEdit ? () => {
-                        onEdit?.(doc);
-                        navigate(`/especialistas/${doc.id}/editar`);
-                      } : undefined}
+                      onEdit={
+                        doc.activo
+                          ? () => {
+                              if (onEdit) onEdit(doc);
+                              else navigate(`/especialistas/${doc.id}/editar`);
+                            }
+                          : undefined
+                      }
                       onDelete={doc.activo ? () => setDeletingDoc(doc) : undefined}
                       onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
                       viewTitle="Ver ficha"

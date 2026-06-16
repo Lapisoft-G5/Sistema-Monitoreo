@@ -6,8 +6,10 @@ describe('UpdateEspecialistaDto', () => {
     const dto = new UpdateEspecialistaDto();
     dto.nombres = 'Carlos';
     dto.apellidos = 'Quispe';
-    dto.especialidad = 'Ciencias';
-    dto.nivelEducativo = 'Primaria';
+    dto.especialidad = 'Matemáticas';
+    dto.nivelEducativo = 'Secundaria';
+    dto.cargo = 'Especialista';
+    dto.modalidad = 'EBR';
     dto.estado = 'Activo';
     dto.rolCode = 'director_ugel';
 
@@ -20,8 +22,10 @@ describe('UpdateEspecialistaDto', () => {
     dto.nombres = 'Carlos';
     dto.apellidos = 'Quispe';
     dto.correo = 'carlos@ugel.gob.pe';
-    dto.especialidad = 'Ciencias';
-    dto.nivelEducativo = 'Primaria';
+    dto.especialidad = 'Matemáticas';
+    dto.nivelEducativo = 'Secundaria';
+    dto.cargo = 'Especialista';
+    dto.modalidad = 'EBR';
     dto.estado = 'Activo';
     dto.rolCode = 'director_ugel';
 

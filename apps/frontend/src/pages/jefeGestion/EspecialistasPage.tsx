@@ -17,11 +17,11 @@ export const EspecialistasPage = () => {
 
   const fetchEspecialistas = async () => {
     setLoading(true);
-    const res = await especialistasApi.findAll();
+    const res = await especialistasApi.findAll({ cargo: 'Especialista' });
     if (res.ok && res.data) {
       const mapped = res.data.map(mapApiEspecialistaToFrontend);
-      // Keep only those that are not Jefes de Área, matching the original behavior
-      const filtered = mapped.filter((esp) => esp.rolCode !== 'jefe_area');
+      // Mantener únicamente especialistas cuyo cargo es 'Especialista'
+      const filtered = mapped.filter((esp) => esp.cargo === 'Especialista');
       setEspecialistas(filtered);
     } else {
       console.error('Error loading specialists from API:', res.error);

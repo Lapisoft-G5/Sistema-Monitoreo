@@ -1,4 +1,4 @@
-export type Nivel = 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA';
+export type Nivel = string;
 export type EstadoInstitucion = 'Activa' | 'Inactiva';
 
 export interface Institucion {

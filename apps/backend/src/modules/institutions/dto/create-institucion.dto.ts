@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsString, Length, Matches, IsOptional } from 'class-validator';
 import { ICreateInstitucionRequest } from '@sistema-monitoreo/shared-contracts';
+import { IsValidNivelForModalidad } from '../../../common/validators/modalidad-nivel.validator.js';
 
 export class CreateInstitucionDto implements ICreateInstitucionRequest {
   @IsString()
@@ -20,6 +21,7 @@ export class CreateInstitucionDto implements ICreateInstitucionRequest {
 
   @IsString()
   @IsNotEmpty({ message: 'El nivel educativo es requerido' })
+  @IsValidNivelForModalidad('modalidad')
   nivelEducativo!: string;
 
   @IsString()

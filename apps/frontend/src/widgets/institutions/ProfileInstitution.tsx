@@ -1,9 +1,9 @@
 import { ArrowLeft, SquarePen, Eye } from 'lucide-react';
 import type { Institucion } from '@entities/model-instituciones';
-import { 
-  InstitutionProfileHeader, 
-  InstitutionLocationInfo, 
-  InstitutionDirectorInfo 
+import {
+  InstitutionProfileHeader,
+  InstitutionLocationInfo,
+  InstitutionDirectorInfo,
 } from '@entities/model-instituciones/ui';
 import { Button } from '@shared/ui/button';
 
@@ -34,10 +34,7 @@ export const InstitutionProfileWidget = ({ institucion, isReadOnly, onBack, onEd
         </div>
 
         {!isReadOnly && (
-          <Button
-            onClick={onEdit}
-            className="flex items-center gap-2 font-bold cursor-pointer"
-          >
+          <Button onClick={onEdit} className="flex items-center gap-2 font-bold cursor-pointer">
             <SquarePen className="h-[15px] w-[15px]" />
             Editar
           </Button>

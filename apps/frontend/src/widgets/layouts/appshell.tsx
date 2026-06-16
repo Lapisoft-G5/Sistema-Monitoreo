@@ -8,7 +8,7 @@ import { ChangePasswordPage } from '@/pages/login/changePassword';
 export const AppShell = () => {
   const { user, isAuthenticated } = useUser();
   const navigate = useNavigate();
-  
+
   // El AppShell solo gestiona el estado visual del menú adaptativo (móvil)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -36,7 +36,6 @@ export const AppShell = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bg">
-      
       {/* 🟥 WIDGET LATERAL (Sidebar)
           Se posiciona de forma flotante en móviles mediante transformaciones 
           y se integra al flujo Flexbox de forma natural en pantallas de escritorio */}
@@ -59,7 +58,6 @@ export const AppShell = () => {
 
       {/* CONTENEDOR MAESTRO DERECHO */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        
         {/* 🟪🟦 WIDGET SUPERIOR (Topbar)
             Le pasamos únicamente la acción para abrir el menú lateral en móviles */}
         <Topbar onOpenMobileSidebar={() => setMobileMenuOpen(true)} />
@@ -72,7 +70,6 @@ export const AppShell = () => {
               según la URL del navegador */}
           <Outlet />
         </main>
-
       </div>
     </div>
   );

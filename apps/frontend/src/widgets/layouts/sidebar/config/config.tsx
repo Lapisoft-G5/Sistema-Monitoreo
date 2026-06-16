@@ -6,7 +6,7 @@ import {
   Users,
   Briefcase,
   BarChart3,
-  Settings, 
+  Settings,
 } from 'lucide-react';
 import type { MenuItem } from '@shared/constants/roles';
 
@@ -58,6 +58,20 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     children: [],
   },
   {
+    id: 'instituciones_coordinadores',
+    label: 'Coordinador Pedagógico',
+    icon: <Users className="h-[18px] w-[18px]" />,
+    path: '/instituciones/coordinadores',
+    children: [],
+  },
+  {
+    id: 'instituciones_jefes_taller',
+    label: 'Jefe de Taller',
+    icon: <Briefcase className="h-[18px] w-[18px]" />,
+    path: '/instituciones/jefes-taller',
+    children: [],
+  },
+  {
     id: 'especialistas',
     label: 'Especialistas',
     icon: <Users className="h-[18px] w-[18px]" />,
@@ -65,7 +79,7 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     children: [],
   },
   {
-    id: 'jefes_area', 
+    id: 'jefes_area',
     label: 'Jefes de Área',
     icon: <Briefcase className="h-[18px] w-[18px]" />,
     path: '/jefes-area',

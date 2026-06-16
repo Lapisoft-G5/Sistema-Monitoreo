@@ -16,7 +16,7 @@ export const InstitucionCreatePage = () => {
           <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
         </button>
         <div className="flex-1">
-          <PageHeader 
+          <PageHeader
             title="Registrar Nueva Institución"
             description="Complete los datos oficiales para el padrón de II.EE. de la jurisdicción."
           />

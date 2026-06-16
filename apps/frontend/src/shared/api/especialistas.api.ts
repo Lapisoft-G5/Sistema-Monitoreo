@@ -8,7 +8,9 @@ import type {
 const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const especialistasApi = {
-  findAll: async (query?: IQueryEspecialistaRequest): Promise<{ ok: boolean; data?: IEspecialistaResponse[]; error?: unknown }> => {
+  findAll: async (
+    query?: IQueryEspecialistaRequest,
+  ): Promise<{ ok: boolean; data?: IEspecialistaResponse[]; error?: unknown }> => {
     try {
       const url = new URL(`${getApiBaseUrl()}/api/especialistas`);
       if (query) {
@@ -33,7 +35,9 @@ export const especialistasApi = {
     }
   },
 
-  findById: async (id: string): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
+  findById: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}`, {
         method: 'GET',
@@ -50,7 +54,9 @@ export const especialistasApi = {
     }
   },
 
-  create: async (dto: ICreateEspecialistaRequest): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
+  create: async (
+    dto: ICreateEspecialistaRequest,
+  ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/especialistas`, {
         method: 'POST',
@@ -69,7 +75,10 @@ export const especialistasApi = {
     }
   },
 
-  update: async (id: string, dto: IUpdateEspecialistaRequest): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
+  update: async (
+    id: string,
+    dto: IUpdateEspecialistaRequest,
+  ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}`, {
         method: 'PUT',
@@ -88,7 +97,9 @@ export const especialistasApi = {
     }
   },
 
-  delete: async (id: string): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
+  delete: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}`, {
         method: 'DELETE',
@@ -105,7 +116,9 @@ export const especialistasApi = {
     }
   },
 
-  deactivate: async (id: string): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
+  deactivate: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}/baja`, {
         method: 'PATCH',
@@ -122,7 +135,9 @@ export const especialistasApi = {
     }
   },
 
-  activate: async (id: string): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
+  activate: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}/alta`, {
         method: 'PATCH',

@@ -3,7 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { EspecialistaFormBase } from '@features/especialistas';
 import { type Especialista } from '@entities/model-especialistas';
-import { useEspecialistaService, mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
+import {
+  useEspecialistaService,
+  mapApiEspecialistaToFrontend,
+} from '@features/especialistas/especialista-service';
 import { especialistasApi } from '@shared/api/especialistas.api';
 import { Card } from '@shared/ui/card';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
@@ -41,7 +44,9 @@ export const EditEspecialistaCard = () => {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="text-text-muted text-sm font-medium">Cargando datos del especialista...</span>
+        <span className="text-text-muted text-sm font-medium">
+          Cargando datos del especialista...
+        </span>
       </div>
     );
   }
@@ -60,12 +65,14 @@ export const EditEspecialistaCard = () => {
     dni: especialista.dni,
     correo: especialista.correo,
     celular: especialista.celular,
-    especialidad: especialista.especialidad,
-    niveles: especialista.niveles,
+    especialidad: especialista.especialidad || undefined,
+    nivelEducativo: especialista.nivelEducativo,
+    modalidad: (especialista.modalidad as any) || 'EBR',
+    cargo: (especialista.cargo as any) || 'Especialista',
     activo: especialista.activo,
-    condicionLaboral: especialista.condicionLaboral,
+    condicionLaboral: especialista.condicionLaboral as any,
     cargaLaboral: especialista.cargaLaboral,
-    escalaMagisterial: especialista.escalaMagisterial,
+    escalaMagisterial: especialista.escalaMagisterial || undefined,
   };
 
   const handleFormSubmit = async (formData: EspecialistaFormData) => {
@@ -74,7 +81,7 @@ export const EditEspecialistaCard = () => {
       id,
       formData,
       especialista.rolCode || 'especialista',
-      especialista.cargo || 'Especialista'
+      especialista.cargo || 'Especialista',
     );
     if (result.success) {
       navigate('/especialistas');

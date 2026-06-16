@@ -60,7 +60,6 @@ model Persona {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   usuario      Usuario?
-  jefeArea     JefeArea?
   especialista Especialista?
   docente      Docente?
 
@@ -154,23 +153,6 @@ model LogAuditoria {
   @@map("logs_auditoria")
 }
 
-// ==========================================
-// 3. ESTRUCTURA UGEL (ENTIDADES TRANSACCIONALES)
-// ==========================================
-
-model JefeArea {
-  id             String   @id @default(uuid()) @db.Uuid
-  personaId      String   @unique @map("persona_id") @db.Uuid
-  cargaHoraria   Int      @default(40) @map("carga_horaria")
-  nivelEducativo String   @map("nivel_educativo") @db.VarChar(50)
-  estado         String   @default("Activo") @db.VarChar(20)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
-
-  persona        Persona  @relation(fields: [personaId], references: [id])
-
-  @@map("jefes_area")
-}
 
 model Especialista {
   id                String   @id @default(uuid()) @db.Uuid
@@ -181,6 +163,7 @@ model Especialista {
   cargaLaboral      Int      @default(40) @map("carga_laboral")
   estado            String   @default("Activo") @db.VarChar(20)
   especialidad      String?  @db.VarChar(100)
+  modalidad         String?  @map("modalidad") @db.VarChar(50)
   escalaMagisterial Int?     @map("escala_magisterial")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
@@ -224,6 +207,9 @@ model Docente {
   escalaMagisterial Int?     @map("escala_magisterial")
   condicionLaboral  String?  @map("condicion_laboral") @db.VarChar(50)
   estado            String   @default("Activo") @db.VarChar(20)
+  modalidad         String?  @map("modalidad") @db.VarChar(50)
+  especialidad      String?  @map("especialidad") @db.VarChar(100)
+  cargaLaboral      Int?     @map("carga_laboral")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -253,6 +239,7 @@ model Curso {
   id             String   @id @default(uuid()) @db.Uuid
   nombre         String   @db.VarChar(100)
   nivelEducativo String   @map("nivel_educativo") @db.VarChar(50)
+  modalidad      String?  @map("modalidad") @db.VarChar(50)
   createdAt      DateTime @default(now()) @map("created_at")
 
   docenteCursos  DocenteCurso[]

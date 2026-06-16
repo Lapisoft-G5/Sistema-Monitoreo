@@ -44,7 +44,7 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
 
     setLoading(true);
     setError('');
-    
+
     try {
       await changePassword(pwd);
       onSuccess();
@@ -99,7 +99,8 @@ export const ChangePasswordPage = ({ onSuccess }: Props) => {
             </div>
 
             <p className="text-center text-xs text-text-muted mb-6">
-              Bienvenido/a, <span className="text-primary font-semibold">{user?.nombres}</span>. Por seguridad institucional, configure una nueva contraseña.
+              Bienvenido/a, <span className="text-primary font-semibold">{user?.nombres}</span>. Por
+              seguridad institucional, configure una nueva contraseña.
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">

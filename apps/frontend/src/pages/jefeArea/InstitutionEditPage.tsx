@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
-import { EditInstitutionCard } from '@widgets/institutions/EditInstitution'; 
+import { EditInstitutionCard } from '@widgets/institutions/EditInstitution';
 
 export const InstitucionEditPage = () => {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export const InstitucionEditPage = () => {
           <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
         </button>
         <div className="flex-1">
-          <PageHeader 
+          <PageHeader
             title="Modificar Datos de la I.E."
             description="Actualice la información legal o de contacto en el padrón oficial."
           />

@@ -74,4 +74,70 @@ describe('CreateInstitucionDto', () => {
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
   });
+
+  it('should validate successfully when level is correct for EBR modality', async () => {
+    const dto = new CreateInstitucionDto();
+    dto.codigoModular = '1234567';
+    dto.codigoLocal = '12345678';
+    dto.nombre = 'I.E. Los Libertadores';
+    dto.modalidad = 'EBR';
+    dto.nivelEducativo = 'Secundaria';
+    dto.provincia = 'Lampa';
+    dto.distrito = 'Lampa';
+    dto.direccion = 'Jr. Bolognesi 123';
+    dto.zona = 'Urbana';
+
+    const errors = await validate(dto);
+    expect(errors.length).toBe(0);
+  });
+
+  it('should fail validation when level is incorrect for EBR modality', async () => {
+    const dto = new CreateInstitucionDto();
+    dto.codigoModular = '1234567';
+    dto.codigoLocal = '12345678';
+    dto.nombre = 'I.E. Los Libertadores';
+    dto.modalidad = 'EBR';
+    dto.nivelEducativo = 'CEBE'; // Invalid for EBR
+    dto.provincia = 'Lampa';
+    dto.distrito = 'Lampa';
+    dto.direccion = 'Jr. Bolognesi 123';
+    dto.zona = 'Urbana';
+
+    const errors = await validate(dto);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0].property).toBe('nivelEducativo');
+  });
+
+  it('should validate successfully when level is correct for CEPTRO modality', async () => {
+    const dto = new CreateInstitucionDto();
+    dto.codigoModular = '1234567';
+    dto.codigoLocal = '12345678';
+    dto.nombre = 'I.E. Los Libertadores';
+    dto.modalidad = 'CEPTRO';
+    dto.nivelEducativo = 'Corte y Ensamblaje'; // Valid for CEPTRO
+    dto.provincia = 'Lampa';
+    dto.distrito = 'Lampa';
+    dto.direccion = 'Jr. Bolognesi 123';
+    dto.zona = 'Urbana';
+
+    const errors = await validate(dto);
+    expect(errors.length).toBe(0);
+  });
+
+  it('should fail validation when level is incorrect for CEPTRO modality', async () => {
+    const dto = new CreateInstitucionDto();
+    dto.codigoModular = '1234567';
+    dto.codigoLocal = '12345678';
+    dto.nombre = 'I.E. Los Libertadores';
+    dto.modalidad = 'CEPTRO';
+    dto.nivelEducativo = 'Secundaria'; // Invalid for CEPTRO
+    dto.provincia = 'Lampa';
+    dto.distrito = 'Lampa';
+    dto.direccion = 'Jr. Bolognesi 123';
+    dto.zona = 'Urbana';
+
+    const errors = await validate(dto);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0].property).toBe('nivelEducativo');
+  });
 });

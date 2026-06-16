@@ -12,7 +12,7 @@ export const usePasswordRecoveryService = () => {
     setSuccessMessage(null);
 
     const { ok, error: apiError } = await authApi.forgotPassword(dni, email);
-    
+
     setLoading(false);
 
     if (!ok) {
@@ -29,6 +29,6 @@ export const usePasswordRecoveryService = () => {
     recoverPassword,
     loading,
     error,
-    successMessage
+    successMessage,
   };
 };

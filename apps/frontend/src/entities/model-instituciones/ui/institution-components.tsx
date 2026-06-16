@@ -3,15 +3,17 @@ import { User, ShieldAlert, CheckCircle2 } from 'lucide-react';
 // ── 1. Nivel Badge ──
 export const NivelBadge = ({ nivel }: { nivel: string }) => {
   const colors: Record<string, string> = {
-    'Inicial': 'bg-pink-100 text-pink-700 border-pink-200',
-    'Primaria': 'bg-blue-100 text-blue-700 border-blue-200',
-    'Secundaria': 'bg-purple-100 text-purple-700 border-purple-200',
+    Inicial: 'bg-pink-100 text-pink-700 border-pink-200',
+    Primaria: 'bg-blue-100 text-blue-700 border-blue-200',
+    Secundaria: 'bg-purple-100 text-purple-700 border-purple-200',
   };
-  
+
   const defaultColor = 'bg-gray-100 text-gray-700 border-gray-200';
-  
+
   return (
-    <span className={`px-2.5 py-1 rounded-full text-[0.7rem] font-bold border ${colors[nivel] || defaultColor}`}>
+    <span
+      className={`px-2.5 py-1 rounded-full text-[0.7rem] font-bold border ${colors[nivel] || defaultColor}`}
+    >
       {nivel}
     </span>
   );
@@ -52,18 +54,20 @@ export const DirectorCell = ({ director }: { director?: string | null }) => {
 
 // ── 4. Modalidad Badge ──
 export const ModalidadBadge = ({ modalidad }: { modalidad?: string | null }) => {
-  const val = modalidad || 'Regular';
+  const val = modalidad || 'EBR';
   const colors: Record<string, string> = {
-    'Regular': 'bg-slate-100 text-slate-600 border-slate-200',
-    'PRONOEI': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    'EBA': 'bg-amber-100 text-amber-700 border-amber-200',
-    'EBE': 'bg-sky-100 text-sky-700 border-sky-200',
+    EBR: 'bg-slate-100 text-slate-600 border-slate-200',
+    EBA: 'bg-amber-100 text-amber-700 border-amber-200',
+    EBE: 'bg-sky-100 text-sky-700 border-sky-200',
+    CEPTRO: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   };
-  
+
   const defaultColor = 'bg-gray-100 text-gray-700 border-gray-200';
-  
+
   return (
-    <span className={`px-2.5 py-1 rounded-full text-[0.7rem] font-bold border ${colors[val] || defaultColor}`}>
+    <span
+      className={`px-2.5 py-1 rounded-full text-[0.7rem] font-bold border ${colors[val] || defaultColor}`}
+    >
       {val}
     </span>
   );

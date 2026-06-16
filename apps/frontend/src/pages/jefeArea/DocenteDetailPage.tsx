@@ -62,7 +62,9 @@ export const DocenteDetailPage = () => {
     return (
       <div className="w-full max-w-[820px] mx-auto text-center py-20 bg-surface border border-border rounded-2xl shadow-sm mt-6">
         <h2 className="text-xl font-bold text-text mb-2">Director no encontrado</h2>
-        <p className="text-text-muted mb-6">El identificador {id} no existe o no tiene permisos de acceso.</p>
+        <p className="text-text-muted mb-6">
+          El identificador {id} no existe o no tiene permisos de acceso.
+        </p>
         <button
           onClick={() => navigate('/instituciones/docentes')}
           className="px-5 py-2.5 bg-bg border border-border rounded-xl font-semibold text-text hover:bg-muted transition-colors cursor-pointer"
@@ -116,7 +118,9 @@ export const DocenteDetailPage = () => {
               </span>
             </div>
             <div>
-              <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">DNI</span>
+              <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                DNI
+              </span>
               <span className="text-sm font-semibold text-text">{director.dni}</span>
             </div>
             <div className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-xl border border-border/40">
@@ -151,7 +155,10 @@ export const DocenteDetailPage = () => {
               <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
                 Cargo Desempeñado
               </span>
-              <Badge variant="default" className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide">
+              <Badge
+                variant="default"
+                className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide"
+              >
                 Director de {nivelLabel(director.nivelEducativo)}
               </Badge>
             </div>
@@ -179,7 +186,9 @@ export const DocenteDetailPage = () => {
               <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
                 Nivel Educativo
               </span>
-              <span className="text-xs font-semibold text-text uppercase">{director.nivelEducativo}</span>
+              <span className="text-xs font-semibold text-text uppercase">
+                {director.nivelEducativo}
+              </span>
             </div>
           </div>
         </Card>

@@ -63,7 +63,8 @@ export const ResetPasswordWidget = () => {
                 Restablecer Contraseña
               </h2>
               <p className="text-center text-xs text-text-muted mb-6 leading-relaxed">
-                Establece tu nueva contraseña de acceso. Asegúrate de cumplir con todos los requisitos de seguridad descritos a continuación.
+                Establece tu nueva contraseña de acceso. Asegúrate de cumplir con todos los
+                requisitos de seguridad descritos a continuación.
               </p>
 
               <ResetPasswordForm
@@ -81,7 +82,8 @@ export const ResetPasswordWidget = () => {
 
               <h2 className="text-text text-xl font-bold mb-2">¡Contraseña restablecida!</h2>
               <p className="text-text-muted text-xs leading-relaxed mb-6">
-                Tu contraseña ha sido actualizada exitosamente en el sistema. Ya puedes iniciar sesión con tus nuevas credenciales.
+                Tu contraseña ha sido actualizada exitosamente en el sistema. Ya puedes iniciar
+                sesión con tus nuevas credenciales.
               </p>
 
               <Button

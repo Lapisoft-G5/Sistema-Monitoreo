@@ -1,5 +1,20 @@
-import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  IsIn,
+} from 'class-validator';
 import type { IUpdateEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
+import {
+  CargoEspecialista,
+  CondicionLaboralEspecialista,
+} from '@sistema-monitoreo/shared-contracts';
+import { IsValidNivelForModalidad } from '../../../common/validators/modalidad-nivel.validator.js';
+import { IsValidEspecialidadForNivel } from '../../../common/validators/especialidad.validator.js';
 
 export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   @IsString()
@@ -22,11 +37,22 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
 
   @IsString()
   @IsNotEmpty()
-  especialidad!: string;
+  @IsIn(Object.values(CargoEspecialista), {
+    message: 'El cargo debe ser Especialista, Jefe de Área o Jefe de Gestión',
+  })
+  cargo!: string;
 
   @IsString()
   @IsNotEmpty()
+  modalidad!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsValidNivelForModalidad('modalidad')
   nivelEducativo!: string;
+
+  @IsValidEspecialidadForNivel('nivelEducativo')
+  especialidad?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -38,10 +64,9 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
 
   @IsString()
   @IsOptional()
-  cargo?: string;
-
-  @IsString()
-  @IsOptional()
+  @IsIn(CondicionLaboralEspecialista, {
+    message: 'La condición laboral debe ser Encargado, Destacado o Designado',
+  })
   condicionLaboral?: string;
 
   @IsInt()
@@ -52,4 +77,3 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   @IsOptional()
   escalaMagisterial?: number | null;
 }
-

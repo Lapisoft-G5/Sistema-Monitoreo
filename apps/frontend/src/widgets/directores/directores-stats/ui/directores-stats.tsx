@@ -8,9 +8,9 @@ interface Props {
 
 export const DirectoresStatsWidget = ({ directores }: Props) => {
   const total = directores.length;
-  const asignados = directores.filter((d) => d.condicion === 'Asignado').length;
+  const designados = directores.filter((d) => d.condicion === 'Designado').length;
   const encargados = directores.filter((d) => d.condicion === 'Encargado').length;
-  const porFuncion = directores.filter((d) => d.condicion === 'Por función').length;
+  const porFuncion = directores.filter((d) => d.condicion === 'Por Función').length;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -21,9 +21,9 @@ export const DirectoresStatsWidget = ({ directores }: Props) => {
         trendText={`${total} registrados en el padrón`}
       />
       <StatCard
-        title="Asignados"
+        title="Designados"
         icon={<BadgeCheck className="w-5 h-5 text-green-500" strokeWidth={2} />}
-        value={asignados}
+        value={designados}
         trendText="Con plaza asignada"
         trendType="success"
       />

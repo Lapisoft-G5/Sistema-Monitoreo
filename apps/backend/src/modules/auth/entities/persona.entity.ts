@@ -13,4 +13,14 @@ export class Persona {
     nivelEducativo: string;
     estado: string;
   } | null;
+  especialista?: {
+    id: string;
+    cargo: string;
+    nivelEducativo: string;
+    condicionLaboral: string;
+    cargaLaboral: number;
+    estado: string;
+    especialidad: string | null;
+    modalidad: string | null;
+  } | null;
 }

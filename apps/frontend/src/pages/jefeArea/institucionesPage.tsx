@@ -34,7 +34,7 @@ export const InstitucionesPage = () => {
 
   const distritosOptions = useMemo(
     () => [...new Set(instituciones.map((i) => i.distrito))].sort((a, b) => a.localeCompare(b)),
-    [instituciones]
+    [instituciones],
   );
 
   if (loading) {
@@ -48,11 +48,14 @@ export const InstitucionesPage = () => {
 
   return (
     <div className="flex flex-col w-full gap-6">
-      <PageHeader 
+      <PageHeader
         title="Gestión de Instituciones"
         description="Administración del padrón oficial de II.EE."
         action={
-          <Button onClick={ () => navigate('/instituciones/nuevo') } className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white">
+          <Button
+            onClick={() => navigate('/instituciones/nuevo')}
+            className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white"
+          >
             <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
             Nueva Institución
           </Button>
@@ -66,7 +69,7 @@ export const InstitucionesPage = () => {
       <FilterInstitutions distritosOptions={distritosOptions} />
 
       {/* 3. Cuadrícula de Datos (Consumidor de la URL) */}
-      <InstitutionsTableWidget 
+      <InstitutionsTableWidget
         instituciones={instituciones}
         setInstituciones={setInstituciones}
         onEdit={() => {}}

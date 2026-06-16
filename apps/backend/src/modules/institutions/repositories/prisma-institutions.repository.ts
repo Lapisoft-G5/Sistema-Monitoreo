@@ -7,6 +7,7 @@ import { QueryInstitucionDto } from '../dto/query-institucion.dto.js';
 import { Institucion } from '../entities/institucion.entity.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { EstadoInstitucion } from '../../../common/enums/estado.enum.js';
+import { JwtPayload } from '../../auth/services/auth-token.service.js';
 
 @Injectable()
 export class PrismaInstitutionsRepository implements InstitutionsRepository {
@@ -25,11 +26,26 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     },
   };
 
-  private mapInstitucion(record: any): Institucion {
+  private mapInstitucion(
+    record: Prisma.InstitucionEducativaGetPayload<{
+      include: {
+        docentes: {
+          include: {
+            persona: true;
+            docenteCargos: {
+              include: {
+                cargo: true;
+              };
+            };
+          };
+        };
+      };
+    }>,
+  ): Institucion {
     if (!record) return record;
     // Buscar un docente con el cargo activo de "Director"
-    const directorDocente = record.docentes?.find((d: any) =>
-      d.docenteCargos?.some((dc: any) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
+    const directorDocente = record.docentes?.find((d) =>
+      d.docenteCargos?.some((dc) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
     );
 
     const directorName = directorDocente
@@ -70,9 +86,10 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     });
 
     // Encontrar un docente con el cargo activo de "Director"
-    const currentDirectorDocente = currentInst?.docentes?.find((d: any) =>
-      d.docenteCargos?.some((dc: any) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
-    ) || null;
+    const currentDirectorDocente =
+      currentInst?.docentes?.find((d) =>
+        d.docenteCargos?.some((dc) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
+      ) || null;
 
     // 2. Obtener el catálogo del cargo 'Director'
     const directorCargo = await this.prisma.cargo.findFirst({
@@ -93,7 +110,9 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
       const newDirectorDocente = newDirectorPersona?.docente || null;
 
       if (!newDirectorPersona || !newDirectorDocente) {
-        throw new BadRequestException(`No se encontró un docente registrado con el DNI ${directorDni}`);
+        throw new BadRequestException(
+          `No se encontró un docente registrado con el DNI ${directorDni}`,
+        );
       }
 
       // Validar si ya es director activo de otra institución
@@ -114,9 +133,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
 
       if (activeDirectorCargo && activeDirectorCargo.docente.institucionId !== institucionId) {
         const schoolName = activeDirectorCargo.docente.institucion?.nombre || 'otra institución';
-        throw new ConflictException(
-          `El docente ya es director activo en la I.E. "${schoolName}".`
-        );
+        throw new ConflictException(`El docente ya es director activo en la I.E. "${schoolName}".`);
       }
 
       // Si es el mismo director, no hacemos cambios
@@ -303,18 +320,71 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     return this.mapInstitucion(record);
   }
 
-  async findAll(query: QueryInstitucionDto): Promise<{ data: Institucion[]; total: number }> {
-    const { nombre, nivelEducativo, estado, limit = 10, offset = 0 } = query;
+  async findAll(
+    query: QueryInstitucionDto,
+    user?: JwtPayload,
+  ): Promise<{ data: Institucion[]; total: number }> {
+    const { nombre, nivelEducativo, estado, limit = 10, offset = 0, modalidad } = query;
     const where: Prisma.InstitucionEducativaWhereInput = {};
+    const andConditions: Prisma.InstitucionEducativaWhereInput[] = [];
 
     if (nombre) {
-      where.nombre = { contains: nombre, mode: 'insensitive' };
-    }
-    if (nivelEducativo) {
-      where.nivelEducativo = { contains: nivelEducativo, mode: 'insensitive' };
+      andConditions.push({ nombre: { contains: nombre, mode: 'insensitive' } });
     }
     if (estado) {
-      where.estado = { equals: estado };
+      andConditions.push({ estado: { equals: estado as any } });
+    }
+
+    if (user?.role === 'jefe_area') {
+      const jefeNivel = user.especialista_nivel;
+
+      if (jefeNivel === 'Inicial') {
+        andConditions.push({
+          OR: [
+            { modalidad: 'EBE' },
+            {
+              modalidad: 'EBR',
+              nivelEducativo: { equals: 'Inicial', mode: 'insensitive' },
+            },
+          ],
+        });
+      } else if (jefeNivel === 'Primaria') {
+        andConditions.push({
+          modalidad: 'EBR',
+          nivelEducativo: { equals: 'Primaria', mode: 'insensitive' },
+        });
+      } else if (jefeNivel === 'Secundaria') {
+        andConditions.push({
+          OR: [
+            { modalidad: 'EBA' },
+            { modalidad: 'CEPTRO' },
+            {
+              modalidad: 'EBR',
+              nivelEducativo: { equals: 'Secundaria', mode: 'insensitive' },
+            },
+          ],
+        });
+      }
+
+      // Filtros opcionales especificados en la consulta (UI)
+      if (nivelEducativo) {
+        andConditions.push({ nivelEducativo: { equals: nivelEducativo, mode: 'insensitive' } });
+      }
+      if (modalidad) {
+        andConditions.push({ modalidad: { equals: modalidad } });
+      }
+    } else {
+      // Otros roles (admin, jefe_gestion, etc.) sin restricciones
+      if (nivelEducativo) {
+        andConditions.push({ nivelEducativo: { contains: nivelEducativo, mode: 'insensitive' } });
+      }
+      if (modalidad) {
+        andConditions.push({ modalidad: { equals: modalidad } });
+      }
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const [data, total] = await this.prisma.$transaction([

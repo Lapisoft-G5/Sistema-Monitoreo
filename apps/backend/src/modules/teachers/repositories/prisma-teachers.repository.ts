@@ -33,6 +33,8 @@ export class PrismaTeachersRepository implements TeachersRepository {
       institucionId: docente.institucionId,
       gradoAcademico: docente.gradoAcademico,
       nivelEducativo: docente.nivelEducativo,
+      modalidad: docente.modalidad ?? null,
+      especialidad: docente.especialidad ?? null,
       cursoAsignado: docente.docenteCursos?.[0]?.curso?.nombre || null,
       condicionLaboral: docente.condicionLaboral,
       escalaMagisterial: docente.escalaMagisterial,
@@ -57,11 +59,12 @@ export class PrismaTeachersRepository implements TeachersRepository {
           nombre: dc.cargo.nombre,
         },
       })),
-      docenteSecciones: docente.docenteSecciones?.map((ds) => ({
-        id: ds.id,
-        grado: ds.grado,
-        seccion: ds.seccion,
-      })) || [],
+      docenteSecciones:
+        docente.docenteSecciones?.map((ds) => ({
+          id: ds.id,
+          grado: ds.grado,
+          seccion: ds.seccion,
+        })) || [],
     };
   }
 
@@ -88,9 +91,47 @@ export class PrismaTeachersRepository implements TeachersRepository {
 
   async findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]> {
     const where: Prisma.DocenteWhereInput = {};
+    const andConditions: Prisma.DocenteWhereInput[] = [];
+
     if (filter?.institucionId) {
-      where.institucionId = filter.institucionId;
+      andConditions.push({ institucionId: filter.institucionId });
     }
+
+    if (filter?.especialistaNivel) {
+      const jefeNivel = filter.especialistaNivel;
+      if (jefeNivel === 'Inicial') {
+        andConditions.push({
+          OR: [
+            { modalidad: 'EBE' },
+            {
+              modalidad: 'EBR',
+              nivelEducativo: { equals: 'Inicial', mode: 'insensitive' },
+            },
+          ],
+        });
+      } else if (jefeNivel === 'Primaria') {
+        andConditions.push({
+          modalidad: 'EBR',
+          nivelEducativo: { equals: 'Primaria', mode: 'insensitive' },
+        });
+      } else if (jefeNivel === 'Secundaria') {
+        andConditions.push({
+          OR: [
+            { modalidad: 'EBA' },
+            { modalidad: 'CEPTRO' },
+            {
+              modalidad: 'EBR',
+              nivelEducativo: { equals: 'Secundaria', mode: 'insensitive' },
+            },
+          ],
+        });
+      }
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
     const list = await this.prisma.docente.findMany({
       where,
       include: {
@@ -164,7 +205,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
         if (activeDirector) {
           const directorName = `${activeDirector.docente.persona.nombres} ${activeDirector.docente.persona.apellidos}`;
           throw new ConflictException(
-            `La institución educativa ya cuenta con un director activo (${directorName}).`
+            `La institución educativa ya cuenta con un director activo (${directorName}).`,
           );
         }
       }
@@ -189,8 +230,8 @@ export class PrismaTeachersRepository implements TeachersRepository {
           data: {
             nombres: dto.nombres,
             apellidos: dto.apellidos,
-            correo: dto.correo !== undefined ? (dto.correo || null) : existingPersona.correo,
-            telefono: dto.telefono !== undefined ? (dto.telefono || null) : existingPersona.telefono,
+            correo: dto.correo !== undefined ? dto.correo || null : existingPersona.correo,
+            telefono: dto.telefono !== undefined ? dto.telefono || null : existingPersona.telefono,
           },
         });
         personaId = existingPersona.id;
@@ -277,8 +318,14 @@ export class PrismaTeachersRepository implements TeachersRepository {
         });
       }
 
-      const isDirectorCargo = cargo?.nombre === 'Director';
-      const roleCode = isDirectorCargo ? 'director_institucion' : 'docente';
+      let roleCode = 'docente';
+      if (cargo?.nombre === 'Director') {
+        roleCode = 'director_institucion';
+      } else if (cargo?.nombre === 'Coordinador Pedagógico') {
+        roleCode = 'coordinador_pedagogico';
+      } else if (cargo?.nombre === 'Jefe de Taller') {
+        roleCode = 'jefe_taller';
+      }
       const role = await tx.role.findUnique({
         where: { codigo: roleCode },
       });
@@ -337,7 +384,8 @@ export class PrismaTeachersRepository implements TeachersRepository {
       });
 
       if (cargo && cargo.nombre === 'Director') {
-        const targetInstitucionId = dto.institucionId || (await tx.docente.findUnique({ where: { id } }))?.institucionId;
+        const targetInstitucionId =
+          dto.institucionId || (await tx.docente.findUnique({ where: { id } }))?.institucionId;
         if (targetInstitucionId) {
           const activeDirector = await tx.docenteCargo.findFirst({
             where: {
@@ -362,7 +410,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
           if (activeDirector) {
             const directorName = `${activeDirector.docente.persona.nombres} ${activeDirector.docente.persona.apellidos}`;
             throw new ConflictException(
-              `La institución educativa ya cuenta con un director activo (${directorName}).`
+              `La institución educativa ya cuenta con un director activo (${directorName}).`,
             );
           }
         }
@@ -374,8 +422,8 @@ export class PrismaTeachersRepository implements TeachersRepository {
         data: {
           nombres: dto.nombres,
           apellidos: dto.apellidos,
-          correo: dto.correo !== undefined ? (dto.correo || null) : undefined,
-          telefono: dto.telefono !== undefined ? (dto.telefono || null) : undefined,
+          correo: dto.correo !== undefined ? dto.correo || null : undefined,
+          telefono: dto.telefono !== undefined ? dto.telefono || null : undefined,
         },
       });
 
@@ -460,8 +508,14 @@ export class PrismaTeachersRepository implements TeachersRepository {
           where: { id: dto.cargoId },
         });
         if (cargo) {
-          const isDirectorCargo = cargo.nombre === 'Director';
-          const roleCode = isDirectorCargo ? 'director_institucion' : 'docente';
+          let roleCode = 'docente';
+          if (cargo.nombre === 'Director') {
+            roleCode = 'director_institucion';
+          } else if (cargo.nombre === 'Coordinador Pedagógico') {
+            roleCode = 'coordinador_pedagogico';
+          } else if (cargo.nombre === 'Jefe de Taller') {
+            roleCode = 'jefe_taller';
+          }
           const role = await tx.role.findUnique({
             where: { codigo: roleCode },
           });

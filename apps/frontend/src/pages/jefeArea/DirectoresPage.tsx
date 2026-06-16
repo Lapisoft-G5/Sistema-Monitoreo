@@ -59,7 +59,9 @@ export const DirectoresPage = () => {
   }
 
   // Solo los directores (cargo Director o Coordinador Pedagógico) para los indicadores.
-  const soloDirectores = directores.filter((d) => d.cargo === 'Director' || d.cargo === 'Coordinador Pedagógico');
+  const soloDirectores = directores.filter(
+    (d) => d.cargo === 'Director' || d.cargo === 'Coordinador Pedagógico',
+  );
 
   return (
     <div className="flex flex-col w-full gap-6">

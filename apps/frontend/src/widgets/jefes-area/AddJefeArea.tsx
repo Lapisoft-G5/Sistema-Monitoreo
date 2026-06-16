@@ -2,13 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { JefeAreaFormBase, useJefeAreaService } from '@features/jefes-area';
 import { Card } from '@shared/ui/card';
-import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 
 export const AddJefeArea = () => {
   const navigate = useNavigate();
   const { createJefeArea, loading, error } = useJefeAreaService();
 
-  const handleFormSubmit = async (formData: JefeAreaFormData) => {
+  const handleFormSubmit = async (formData: any) => {
     const result = await createJefeArea(formData, 'jefe_area');
     if (result.success) {
       navigate('/jefes-area');
@@ -16,15 +15,9 @@ export const AddJefeArea = () => {
   };
 
   const initialData = {
-    nombres: '',
-    apellidos: '',
-    dni: '',
-    correo: '',
-    celular: '',
-    cargaHoraria: 40,
-    nivelEducativo: 'SECUNDARIA',
-    activo: true,
-  } as JefeAreaFormData;
+    nivelEducativo: 'Secundaria' as const,
+    specialistId: '',
+  };
 
   return (
     <Card className="w-full bg-surface border border-border rounded-2xl shadow-sm p-6 sm:p-8">
@@ -36,6 +29,7 @@ export const AddJefeArea = () => {
       )}
 
       <JefeAreaFormBase
+        isEdit={false}
         initialData={initialData}
         onSubmit={handleFormSubmit}
         onCancel={() => navigate('/jefes-area')}

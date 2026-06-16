@@ -22,7 +22,7 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
   // 1. Hooks de estado y enrutamiento
   const { user, logout } = useUser();
   const location = useLocation();
-  
+
   // 2. Cálculo automático del título basado en la URL
   const title = getPageTitle(location.pathname, user?.role);
 
@@ -94,7 +94,7 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
               <ChevronDown className="h-3.5 w-3.5 text-text-muted hidden sm:block" />
             </button>
           </DropdownMenuTrigger>
-          
+
           <DropdownMenuContent align="end" className="w-48 z-50">
             <DropdownMenuLabel className="sm:hidden block">
               <p className="font-semibold text-text text-xs m-0">

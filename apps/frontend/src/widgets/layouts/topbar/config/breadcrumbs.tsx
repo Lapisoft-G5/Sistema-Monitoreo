@@ -15,17 +15,19 @@ export const getPageTitle = (pathname: string, role?: UserRole): string => {
   // El padrón de /instituciones/docentes cambia de etiqueta según el rol:
   // el Jefe de Área gestiona Directores; el Director de IE gestiona Docentes.
   if (pathname.startsWith('/instituciones/docentes')) {
-    return role === 'jefe_area' ? 'Padrón de Directores' : 'Padrón de Docentes';
+    return role === 'jefe_area' || role === 'jefe_gestion'
+      ? 'Padrón de Directores'
+      : 'Padrón de Docentes';
   }
 
   // 1. Búsqueda exacta
   if (BREADCRUMBS_MAP[pathname]) return BREADCRUMBS_MAP[pathname];
-  
+
   // 2. Búsqueda parcial (útil para rutas como /docentes/123/editar)
   // Ordenamos por longitud para que coincida primero con la ruta más larga
   const matchedKey = Object.keys(BREADCRUMBS_MAP)
     .sort((a, b) => b.length - a.length)
     .find((key) => pathname.startsWith(key));
-    
+
   return matchedKey ? BREADCRUMBS_MAP[matchedKey] : 'UGEL Lampa';
 };

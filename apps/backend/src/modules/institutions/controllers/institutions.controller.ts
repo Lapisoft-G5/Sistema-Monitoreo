@@ -39,8 +39,11 @@ export class InstitutionsController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @RequirePermissions('instituciones:write')
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateInstitucionDto): Promise<IInstitucionResponse> {
-    return this.institutionsService.create(dto);
+  async create(
+    @Body() dto: CreateInstitucionDto,
+    @Req() req: { user?: JwtPayload },
+  ): Promise<IInstitucionResponse> {
+    return this.institutionsService.create(dto, req.user);
   }
 
   /**

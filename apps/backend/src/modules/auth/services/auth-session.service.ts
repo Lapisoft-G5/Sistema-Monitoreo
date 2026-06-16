@@ -114,6 +114,8 @@ export class AuthSessionService {
       institucion: payload.institucion_id || payload.colegio_id,
       institucionNombre: payload.colegio_nombre,
       institucionNivel: payload.colegio_nivel,
+      especialistaNivel: payload.especialista_nivel,
+      especialistaModalidad: payload.especialista_modalidad,
       firstLogin: payload.firstLogin,
     };
 

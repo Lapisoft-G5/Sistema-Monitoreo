@@ -14,19 +14,23 @@ export const useInstitutionsTable = (instituciones: Institucion[]) => {
 
   const filtered = useMemo(() => {
     return instituciones.filter((i) => {
-      return (!nivelFilter || i.nivel === nivelFilter) &&
-             (!distritoFilter || i.distrito === distritoFilter) &&
-             (!estadoFilter || 
-               (estadoFilter.toLowerCase().startsWith('activ') && i.estado.toLowerCase().startsWith('activ')) ||
-               (estadoFilter.toLowerCase().startsWith('inactiv') && i.estado.toLowerCase().startsWith('inactiv')) ||
-               i.estado.toLowerCase() === estadoFilter.toLowerCase());
+      return (
+        (!nivelFilter || i.nivel === nivelFilter) &&
+        (!distritoFilter || i.distrito === distritoFilter) &&
+        (!estadoFilter ||
+          (estadoFilter.toLowerCase().startsWith('activ') &&
+            i.estado.toLowerCase().startsWith('activ')) ||
+          (estadoFilter.toLowerCase().startsWith('inactiv') &&
+            i.estado.toLowerCase().startsWith('inactiv')) ||
+          i.estado.toLowerCase() === estadoFilter.toLowerCase())
+      );
     });
   }, [instituciones, nivelFilter, distritoFilter, estadoFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(pageParam, totalPages);
   const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  
+
   const from = filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const to = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
@@ -37,7 +41,12 @@ export const useInstitutionsTable = (instituciones: Institucion[]) => {
   };
 
   return {
-    pageItems, filteredTotal: filtered.length,
-    currentPage, totalPages, from, to, setPage
+    pageItems,
+    filteredTotal: filtered.length,
+    currentPage,
+    totalPages,
+    from,
+    to,
+    setPage,
   };
 };

@@ -55,7 +55,8 @@ export const useInstitutionService = () => {
         MOCK_INSTITUCIONES.push(mapped);
         return { success: true, data: mapped };
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al crear la institución.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al crear la institución.';
         setError(errMsg);
         return { success: false, error: res.error };
       }
@@ -92,7 +93,8 @@ export const useInstitutionService = () => {
         }
         return { success: true, data: mapped };
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al actualizar la institución.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al actualizar la institución.';
         setError(errMsg);
         return { success: false, error: res.error };
       }

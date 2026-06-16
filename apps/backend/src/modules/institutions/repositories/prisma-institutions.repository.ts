@@ -7,6 +7,7 @@ import { QueryInstitucionDto } from '../dto/query-institucion.dto.js';
 import { Institucion } from '../entities/institucion.entity.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { EstadoInstitucion } from '../../../common/enums/estado.enum.js';
+import { JwtPayload } from '../../auth/services/auth-token.service.js';
 
 @Injectable()
 export class PrismaInstitutionsRepository implements InstitutionsRepository {
@@ -319,21 +320,71 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
     return this.mapInstitucion(record);
   }
 
-  async findAll(query: QueryInstitucionDto): Promise<{ data: Institucion[]; total: number }> {
-    const { nombre, nivelEducativo, estado, limit = 10, offset = 0 } = query;
+  async findAll(
+    query: QueryInstitucionDto,
+    user?: JwtPayload,
+  ): Promise<{ data: Institucion[]; total: number }> {
+    const { nombre, nivelEducativo, estado, limit = 10, offset = 0, modalidad } = query;
     const where: Prisma.InstitucionEducativaWhereInput = {};
+    const andConditions: Prisma.InstitucionEducativaWhereInput[] = [];
 
     if (nombre) {
-      where.nombre = { contains: nombre, mode: 'insensitive' };
-    }
-    if (nivelEducativo) {
-      where.nivelEducativo = { contains: nivelEducativo, mode: 'insensitive' };
+      andConditions.push({ nombre: { contains: nombre, mode: 'insensitive' } });
     }
     if (estado) {
-      where.estado = { equals: estado };
+      andConditions.push({ estado: { equals: estado as any } });
     }
-    if (query.modalidad) {
-      where.modalidad = { equals: query.modalidad };
+
+    if (user?.role === 'jefe_area') {
+      const jefeNivel = user.especialista_nivel;
+
+      if (jefeNivel === 'Inicial') {
+        andConditions.push({
+          OR: [
+            { modalidad: 'EBE' },
+            {
+              modalidad: 'EBR',
+              nivelEducativo: { equals: 'Inicial', mode: 'insensitive' },
+            },
+          ],
+        });
+      } else if (jefeNivel === 'Primaria') {
+        andConditions.push({
+          modalidad: 'EBR',
+          nivelEducativo: { equals: 'Primaria', mode: 'insensitive' },
+        });
+      } else if (jefeNivel === 'Secundaria') {
+        andConditions.push({
+          OR: [
+            { modalidad: 'EBA' },
+            { modalidad: 'CEPTRO' },
+            {
+              modalidad: 'EBR',
+              nivelEducativo: { equals: 'Secundaria', mode: 'insensitive' },
+            },
+          ],
+        });
+      }
+
+      // Filtros opcionales especificados en la consulta (UI)
+      if (nivelEducativo) {
+        andConditions.push({ nivelEducativo: { equals: nivelEducativo, mode: 'insensitive' } });
+      }
+      if (modalidad) {
+        andConditions.push({ modalidad: { equals: modalidad } });
+      }
+    } else {
+      // Otros roles (admin, jefe_gestion, etc.) sin restricciones
+      if (nivelEducativo) {
+        andConditions.push({ nivelEducativo: { contains: nivelEducativo, mode: 'insensitive' } });
+      }
+      if (modalidad) {
+        andConditions.push({ modalidad: { equals: modalidad } });
+      }
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const [data, total] = await this.prisma.$transaction([

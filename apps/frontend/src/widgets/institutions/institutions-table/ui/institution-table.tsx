@@ -42,7 +42,7 @@ export const InstitutionsTableWidget = ({
           MOCK_INSTITUCIONES[index].activo = false;
         }
         setInstituciones((prev) =>
-          prev.map((i) => (i.id === deletingInst.id ? { ...i, activo: false } : i))
+          prev.map((i) => (i.id === deletingInst.id ? { ...i, activo: false } : i)),
         );
       } else {
         alert('Error al dar de baja la institución.');
@@ -64,7 +64,7 @@ export const InstitutionsTableWidget = ({
           MOCK_INSTITUCIONES[index].activo = true;
         }
         setInstituciones((prev) =>
-          prev.map((i) => (i.id === restoringInst.id ? { ...i, activo: true } : i))
+          prev.map((i) => (i.id === restoringInst.id ? { ...i, activo: true } : i)),
         );
       } else {
         alert('Error al reactivar la institución.');
@@ -104,7 +104,7 @@ export const InstitutionsTableWidget = ({
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
                   Estado
                 </TableHead>
-                
+
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">
                   Acciones
                 </TableHead>
@@ -115,7 +115,9 @@ export const InstitutionsTableWidget = ({
                 <TableRow key={inst.id} className="hover:bg-muted/30 transition-colors">
                   <TableCell className="pl-5 text-text">
                     <div className="font-semibold">{inst.codigoModular}</div>
-                    <div className="text-xs text-text-muted mt-0.5">Local: {inst.codigoLocal || '-'}</div>
+                    <div className="text-xs text-text-muted mt-0.5">
+                      Local: {inst.codigoLocal || '-'}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="font-bold text-text">{inst.nombre}</div>
@@ -150,10 +152,14 @@ export const InstitutionsTableWidget = ({
                         onView(inst);
                         navigate(`/instituciones/${inst.id}`);
                       }}
-                      onEdit={inst.activo ? () => {
-                        onEdit(inst);
-                        navigate(`/instituciones/${inst.id}/editar`);
-                      } : undefined}
+                      onEdit={
+                        inst.activo
+                          ? () => {
+                              onEdit(inst);
+                              navigate(`/instituciones/${inst.id}/editar`);
+                            }
+                          : undefined
+                      }
                       onDelete={inst.activo ? () => setDeletingInst(inst) : undefined}
                       onRestore={!inst.activo ? () => setRestoringInst(inst) : undefined}
                       viewTitle="Ver detalle"

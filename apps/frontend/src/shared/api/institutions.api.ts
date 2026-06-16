@@ -10,7 +10,9 @@ import type {
 const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const institutionsApi = {
-  findAll: async (query?: IQueryInstitucionRequest): Promise<{ ok: boolean; data?: IInstitucionListResponse; error?: unknown }> => {
+  findAll: async (
+    query?: IQueryInstitucionRequest,
+  ): Promise<{ ok: boolean; data?: IInstitucionListResponse; error?: unknown }> => {
     try {
       const url = new URL(`${getApiBaseUrl()}/api/instituciones`);
       if (query) {
@@ -35,7 +37,9 @@ export const institutionsApi = {
     }
   },
 
-  findById: async (id: string): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
+  findById: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/instituciones/${id}`, {
         method: 'GET',
@@ -52,7 +56,9 @@ export const institutionsApi = {
     }
   },
 
-  create: async (dto: ICreateInstitucionRequest): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
+  create: async (
+    dto: ICreateInstitucionRequest,
+  ): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/instituciones`, {
         method: 'POST',
@@ -71,7 +77,10 @@ export const institutionsApi = {
     }
   },
 
-  update: async (id: string, dto: IUpdateInstitucionRequest): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
+  update: async (
+    id: string,
+    dto: IUpdateInstitucionRequest,
+  ): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/instituciones/${id}`, {
         method: 'PUT',
@@ -90,7 +99,9 @@ export const institutionsApi = {
     }
   },
 
-  softDelete: async (id: string): Promise<{ ok: boolean; data?: IUpdateInstitucionResponse; error?: unknown }> => {
+  softDelete: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IUpdateInstitucionResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/instituciones/${id}/baja`, {
         method: 'PATCH',
@@ -107,7 +118,9 @@ export const institutionsApi = {
     }
   },
 
-  restore: async (id: string): Promise<{ ok: boolean; data?: IUpdateInstitucionResponse; error?: unknown }> => {
+  restore: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IUpdateInstitucionResponse; error?: unknown }> => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/instituciones/${id}/alta`, {
         method: 'PATCH',

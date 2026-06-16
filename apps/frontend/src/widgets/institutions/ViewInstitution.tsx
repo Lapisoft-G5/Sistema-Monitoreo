@@ -1,10 +1,10 @@
 import { ArrowLeft, SquarePen, Eye } from 'lucide-react';
 import type { Institucion } from '@entities/model-instituciones';
 
-import { 
-  InstitutionProfileHeader, 
-  InstitutionLocationInfo, 
-  InstitutionDirectorInfo 
+import {
+  InstitutionProfileHeader,
+  InstitutionLocationInfo,
+  InstitutionDirectorInfo,
 } from '@entities/model-instituciones/ui';
 
 import { Button } from '@shared/ui/button';
@@ -19,7 +19,6 @@ interface Props {
 export const InstitutionProfileWidget = ({ institucion, isReadOnly, onBack, onEdit }: Props) => {
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in-0 duration-300">
-      
       {/* Cabecera con Botones de Acción */}
       <div className="flex items-center justify-between gap-3 flex-wrap bg-surface p-4 border border-border rounded-2xl shadow-sm">
         <div className="flex items-center gap-4">
@@ -30,7 +29,9 @@ export const InstitutionProfileWidget = ({ institucion, isReadOnly, onBack, onEd
             <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-text m-0 leading-tight">Detalle de Institución</h1>
+            <h1 className="text-xl font-bold text-text m-0 leading-tight">
+              Detalle de Institución
+            </h1>
             <p className="text-text-muted text-[0.8rem] m-0">Ficha técnica del padrón oficial</p>
           </div>
         </div>
@@ -42,10 +43,7 @@ export const InstitutionProfileWidget = ({ institucion, isReadOnly, onBack, onEd
               Solo lectura
             </span>
           ) : (
-            <Button
-              onClick={onEdit}
-              className="flex items-center gap-2 font-bold cursor-pointer"
-            >
+            <Button onClick={onEdit} className="flex items-center gap-2 font-bold cursor-pointer">
               <SquarePen className="h-[16px] w-[16px]" />
               Editar Registro
             </Button>

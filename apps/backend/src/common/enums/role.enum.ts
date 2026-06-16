@@ -4,6 +4,8 @@ export enum RoleCode {
   JEFE_GESTION = 'jefe_gestion',
   ESPECIALISTA = 'especialista',
   DIRECTOR_INSTITUCION = 'director_institucion',
+  COORDINADOR_PEDAGOGICO = 'coordinador_pedagogico',
+  JEFE_TALLER = 'jefe_taller',
   DOCENTE = 'docente',
   INVITADO = 'invitado',
 }

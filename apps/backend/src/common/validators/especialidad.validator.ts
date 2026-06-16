@@ -29,7 +29,9 @@ export function IsValidEspecialidadForNivel(
           }
 
           // Otros niveles -> opcional/nula. Validamos que si llega, sea string o nulo.
-          // Pero la regla principal es que no es obligatoria, así que si es vacío o null está bien.
+          if (value !== undefined && value !== null) {
+            return typeof value === 'string';
+          }
           return true;
         },
         defaultMessage(args: ValidationArguments) {

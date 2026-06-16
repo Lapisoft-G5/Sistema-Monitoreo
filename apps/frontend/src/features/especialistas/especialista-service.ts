@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Especialista, NivelInstitucion } from '@entities/model-especialistas';
+import type { Especialista, NivelInstitucion, CondicionLaboral } from '@entities/model-especialistas';
 import { MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistasApi } from '@shared/api/especialistas.api';
@@ -22,7 +22,7 @@ export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Esp
     fechaCreacion: apiEsp.createdAt
       ? new Date(apiEsp.createdAt).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
-    condicionLaboral: (apiEsp.condicionLaboral as any) || 'Contratado',
+    condicionLaboral: (apiEsp.condicionLaboral as unknown as CondicionLaboral) || 'Contratado',
     cargaLaboral: apiEsp.cargaLaboral || 40,
     escalaMagisterial: apiEsp.escalaMagisterial ?? undefined,
     cargo: apiEsp.cargo,
@@ -49,9 +49,9 @@ export const useEspecialistaService = () => {
         apellidos: formData.apellidos.trim(),
         correo: formData.correo.trim() || undefined,
         telefono: formData.celular.trim() || undefined,
-        modalidad: 'EBR',
-        especialidad: formData.especialidad?.trim() || 'General',
+        especialidad: formData.especialidad?.trim() || undefined,
         nivelEducativo: formData.niveles.join(', '),
+        modalidad: 'EBR',
         rolCode,
         cargo,
         condicionLaboral: formData.condicionLaboral,
@@ -92,9 +92,9 @@ export const useEspecialistaService = () => {
         apellidos: formData.apellidos.trim(),
         correo: formData.correo.trim() || undefined,
         telefono: formData.celular.trim() || undefined,
-        modalidad: 'EBR',
-        especialidad: formData.especialidad?.trim() || 'General',
+        especialidad: formData.especialidad?.trim() || undefined,
         nivelEducativo: formData.niveles.join(', '),
+        modalidad: 'EBR',
         estado: formData.activo ?? true ? 'Activo' : 'Inactivo',
         rolCode,
         cargo,

@@ -91,9 +91,47 @@ export class PrismaTeachersRepository implements TeachersRepository {
 
   async findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]> {
     const where: Prisma.DocenteWhereInput = {};
+    const andConditions: Prisma.DocenteWhereInput[] = [];
+
     if (filter?.institucionId) {
-      where.institucionId = filter.institucionId;
+      andConditions.push({ institucionId: filter.institucionId });
     }
+
+    if (filter?.especialistaNivel) {
+      const jefeNivel = filter.especialistaNivel;
+      if (jefeNivel === 'Inicial') {
+        andConditions.push({
+          OR: [
+            { modalidad: 'EBE' },
+            {
+              modalidad: 'EBR',
+              nivelEducativo: { equals: 'Inicial', mode: 'insensitive' },
+            },
+          ],
+        });
+      } else if (jefeNivel === 'Primaria') {
+        andConditions.push({
+          modalidad: 'EBR',
+          nivelEducativo: { equals: 'Primaria', mode: 'insensitive' },
+        });
+      } else if (jefeNivel === 'Secundaria') {
+        andConditions.push({
+          OR: [
+            { modalidad: 'EBA' },
+            { modalidad: 'CEPTRO' },
+            {
+              modalidad: 'EBR',
+              nivelEducativo: { equals: 'Secundaria', mode: 'insensitive' },
+            },
+          ],
+        });
+      }
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
     const list = await this.prisma.docente.findMany({
       where,
       include: {
@@ -280,8 +318,14 @@ export class PrismaTeachersRepository implements TeachersRepository {
         });
       }
 
-      const isDirectorCargo = cargo?.nombre === 'Director';
-      const roleCode = isDirectorCargo ? 'director_institucion' : 'docente';
+      let roleCode = 'docente';
+      if (cargo?.nombre === 'Director') {
+        roleCode = 'director_institucion';
+      } else if (cargo?.nombre === 'Coordinador Pedagógico') {
+        roleCode = 'coordinador_pedagogico';
+      } else if (cargo?.nombre === 'Jefe de Taller') {
+        roleCode = 'jefe_taller';
+      }
       const role = await tx.role.findUnique({
         where: { codigo: roleCode },
       });
@@ -464,8 +508,14 @@ export class PrismaTeachersRepository implements TeachersRepository {
           where: { id: dto.cargoId },
         });
         if (cargo) {
-          const isDirectorCargo = cargo.nombre === 'Director';
-          const roleCode = isDirectorCargo ? 'director_institucion' : 'docente';
+          let roleCode = 'docente';
+          if (cargo.nombre === 'Director') {
+            roleCode = 'director_institucion';
+          } else if (cargo.nombre === 'Coordinador Pedagógico') {
+            roleCode = 'coordinador_pedagogico';
+          } else if (cargo.nombre === 'Jefe de Taller') {
+            roleCode = 'jefe_taller';
+          }
           const role = await tx.role.findUnique({
             where: { codigo: roleCode },
           });

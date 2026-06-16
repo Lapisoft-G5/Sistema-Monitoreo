@@ -3,7 +3,7 @@ import type { JefeArea } from '@entities/model-jefes-area';
 import { MOCK_JEFES_AREA } from '@entities/model-jefes-area';
 import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
-import type { IJefeAreaResponse } from '@sistema-monitoreo/shared-contracts';
+import type { IEspecialistaResponse as IJefeAreaResponse } from '@sistema-monitoreo/shared-contracts';
 
 export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea => {
   return {
@@ -14,7 +14,7 @@ export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea =
     dni: apiJefe.persona.dni,
     correo: apiJefe.persona.correo || '',
     celular: apiJefe.persona.telefono || '',
-    cargaHoraria: apiJefe.cargaHoraria || 40,
+    cargaHoraria: apiJefe.cargaLaboral || 40,
     nivelEducativo: apiJefe.nivelEducativo || 'SECUNDARIA',
     activo: apiJefe.estado === 'Activo',
     fechaCreacion: apiJefe.createdAt

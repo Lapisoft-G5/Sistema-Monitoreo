@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Book, MapPin, Check } from 'lucide-react';
-import { DISTRITOS_LAMPA, NIVELES, NIVEL_LABEL, ZONAS, type Nivel } from '@entities/model-instituciones/constants';
+import { DISTRITOS_LAMPA, ZONAS, type Nivel, MODALIDAD_NIVEL_MAP } from '@entities/model-instituciones/constants';
 import { FormButton, SectionCard, SelectField, TextAreaField, TextField, toOptions, twoCols } from '@shared/ui/form-controls';
 
 export interface InstitutionRawInput {
@@ -24,7 +24,7 @@ interface Props {
 
 const INITIAL_FORM: InstitutionRawInput = {
   codigoModular: '', codigoLocal: '', nombre: '', nivel: '', provincia: 'Lampa', distrito: '',
-  zona: '', direccion: '', modalidad: 'Regular',
+  zona: '', direccion: '', modalidad: '',
 };
 
 export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData }: Props) => {
@@ -45,6 +45,7 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
     distrito: !form.distrito ? 'Seleccione distrito' : '',
     zona: !form.zona ? 'Seleccione zona' : '',
     direccion: !form.direccion.trim() ? 'Obligatorio' : '',
+    modalidad: !form.modalidad ? 'Seleccione modalidad' : '',
   };
   const hasErrors = Object.values(errors).some(Boolean);
   const showError = (key: keyof typeof errors) => (submitted ? errors[key] : '');
@@ -80,21 +81,26 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
           <SelectField
-            label="Nivel Educativo" required value={form.nivel}
-            onChange={(v) => set('nivel', v as '' | Nivel)}
-            options={NIVELES.map((n) => ({ value: n, label: NIVEL_LABEL[n] }))}
-            placeholder="Seleccione Nivel" error={showError('nivel')}
-          />
-          <SelectField
-            label="Modalidad" value={form.modalidad || 'Regular'}
-            onChange={(v) => set('modalidad', v)}
+            label="Modalidad" required value={form.modalidad || ''}
+            onChange={(v) => {
+              setForm((prev) => ({ ...prev, modalidad: v, nivel: '' }));
+            }}
             options={[
-              { value: 'Regular', label: 'Regular / General' },
-              { value: 'PRONOEI', label: 'PRONOEI' },
+              { value: 'EBR', label: 'Educación Básica Regular (EBR)' },
               { value: 'EBA', label: 'Educación Básica Alternativa (EBA)' },
               { value: 'EBE', label: 'Educación Básica Especial (EBE)' },
+              { value: 'CEPTRO', label: 'CEPTRO' },
             ]}
             placeholder="Seleccione Modalidad"
+            error={showError('modalidad')}
+          />
+          <SelectField
+            label="Nivel Educativo" required value={form.nivel}
+            onChange={(v) => set('nivel', v as '' | Nivel)}
+            options={(form.modalidad ? (MODALIDAD_NIVEL_MAP[form.modalidad] || []) : []).map((n) => ({ value: n, label: n }))}
+            placeholder={form.modalidad ? "Seleccione Nivel" : "Seleccione primero una modalidad"}
+            disabled={!form.modalidad}
+            error={showError('nivel')}
           />
         </div>
       </SectionCard>

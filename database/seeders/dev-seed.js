@@ -16,9 +16,31 @@ const prisma = new PrismaClient({ adapter });
 const MOCK_ROLES = [
   { code: 'director_ugel', name: 'Director UGEL', description: 'Director de la UGEL Lampa' },
   { code: 'jefe_area', name: 'Jefe de Área', description: 'Jefe de Área de la UGEL' },
-  { code: 'jefe_gestion', name: 'Jefe de Gestión', description: 'Jefe de Gestión de la UGEL Lampa' },
-  { code: 'especialista', name: 'Especialista', description: 'Especialista de Monitoreo de la UGEL' },
-  { code: 'director_institucion', name: 'Director de Institución', description: 'Director de Institución Educativa' },
+  {
+    code: 'jefe_gestion',
+    name: 'Jefe de Gestión',
+    description: 'Jefe de Gestión de la UGEL Lampa',
+  },
+  {
+    code: 'especialista',
+    name: 'Especialista',
+    description: 'Especialista de Monitoreo de la UGEL',
+  },
+  {
+    code: 'director_institucion',
+    name: 'Director de Institución',
+    description: 'Director de Institución Educativa',
+  },
+  {
+    code: 'coordinador_pedagogico',
+    name: 'Coordinador Pedagógico',
+    description: 'Coordinador Pedagógico de Secundaria',
+  },
+  {
+    code: 'jefe_taller',
+    name: 'Jefe de Taller',
+    description: 'Jefe de Taller de Secundaria',
+  },
   { code: 'docente', name: 'Docente', description: 'Docente de Aula' },
   { code: 'invitado', name: 'Invitado', description: 'Usuario de Consulta e Invitado' },
 ];
@@ -27,26 +49,93 @@ const MOCK_ROLES = [
 // PERMISOS Y ASIGNACIONES
 // ─────────────────────────────────────────────────────────────────────────────
 const MOCK_PERMISOS = [
-  { codigo: 'especialistas:read', nombre: 'Leer Especialistas', descripcion: 'Permite listar y ver detalles de especialistas' },
-  { codigo: 'especialistas:write', nombre: 'Gestionar Especialistas', descripcion: 'Permite crear, editar e inactivar especialistas' },
-  { codigo: 'instituciones:read', nombre: 'Leer Instituciones', descripcion: 'Permite listar y ver detalles de instituciones' },
-  { codigo: 'instituciones:write', nombre: 'Gestionar Instituciones', descripcion: 'Permite crear, editar y dar de baja instituciones' },
-  { codigo: 'docentes:read', nombre: 'Leer Docentes', descripcion: 'Permite listar y ver detalles de docentes' },
-  { codigo: 'docentes:write', nombre: 'Gestionar Docentes', descripcion: 'Permite registrar, editar y dar de baja docentes' },
-  { codigo: 'dashboard:read', nombre: 'Ver Dashboard', descripcion: 'Permite visualizar el panel de control y estadísticas' },
-  { codigo: 'reports:read', nombre: 'Ver Reportes', descripcion: 'Permite visualizar reportes del sistema' },
-  { codigo: 'reports:own', nombre: 'Ver Reportes Propios', descripcion: 'Permite al docente visualizar sus propios reportes' },
-  { codigo: 'jefes_area:write', nombre: 'Gestionar Jefes de Área', descripcion: 'Permite crear, editar y dar de baja jefes de área' },
-  { codigo: 'directores:write', nombre: 'Gestionar Directores', descripcion: 'Permite registrar, editar y dar de baja directores de IE' },
-  { codigo: 'monitoreo:execute', nombre: 'Realizar Monitoreo', descripcion: 'Permite ejecutar y registrar fichas de monitoreo' },
+  {
+    codigo: 'especialistas:read',
+    nombre: 'Leer Especialistas',
+    descripcion: 'Permite listar y ver detalles de especialistas',
+  },
+  {
+    codigo: 'especialistas:write',
+    nombre: 'Gestionar Especialistas',
+    descripcion: 'Permite crear, editar e inactivar especialistas',
+  },
+  {
+    codigo: 'instituciones:read',
+    nombre: 'Leer Instituciones',
+    descripcion: 'Permite listar y ver detalles de instituciones',
+  },
+  {
+    codigo: 'instituciones:write',
+    nombre: 'Gestionar Instituciones',
+    descripcion: 'Permite crear, editar y dar de baja instituciones',
+  },
+  {
+    codigo: 'docentes:read',
+    nombre: 'Leer Docentes',
+    descripcion: 'Permite listar y ver detalles de docentes',
+  },
+  {
+    codigo: 'docentes:write',
+    nombre: 'Gestionar Docentes',
+    descripcion: 'Permite registrar, editar y dar de baja docentes',
+  },
+  {
+    codigo: 'dashboard:read',
+    nombre: 'Ver Dashboard',
+    descripcion: 'Permite visualizar el panel de control y estadísticas',
+  },
+  {
+    codigo: 'reports:read',
+    nombre: 'Ver Reportes',
+    descripcion: 'Permite visualizar reportes del sistema',
+  },
+  {
+    codigo: 'reports:own',
+    nombre: 'Ver Reportes Propios',
+    descripcion: 'Permite al docente visualizar sus propios reportes',
+  },
+  {
+    codigo: 'jefes_area:write',
+    nombre: 'Gestionar Jefes de Área',
+    descripcion: 'Permite crear, editar y dar de baja jefes de área',
+  },
+  {
+    codigo: 'directores:write',
+    nombre: 'Gestionar Directores',
+    descripcion: 'Permite registrar, editar y dar de baja directores de IE',
+  },
+  {
+    codigo: 'monitoreo:execute',
+    nombre: 'Realizar Monitoreo',
+    descripcion: 'Permite ejecutar y registrar fichas de monitoreo',
+  },
 ];
 
 const MOCK_ROL_PERMISOS = {
   director_ugel: ['dashboard:read', 'reports:read'],
-  jefe_gestion: ['especialistas:read', 'especialistas:write', 'jefes_area:write', 'monitoreo:execute', 'reports:read'],
-  jefe_area: ['directores:write', 'instituciones:read', 'instituciones:write', 'docentes:read', 'docentes:write'],
+  jefe_gestion: [
+    'especialistas:read',
+    'especialistas:write',
+    'jefes_area:write',
+    'monitoreo:execute',
+    'reports:read',
+    'directores:write',
+    'instituciones:read',
+    'instituciones:write',
+    'docentes:read',
+    'docentes:write',
+  ],
+  jefe_area: [
+    'directores:write',
+    'instituciones:read',
+    'instituciones:write',
+    'docentes:read',
+    'docentes:write',
+  ],
   especialista: ['monitoreo:execute', 'reports:read'],
   director_institucion: ['docentes:read', 'docentes:write', 'reports:read'],
+  coordinador_pedagogico: ['docentes:read', 'reports:read', 'monitoreo:execute'],
+  jefe_taller: ['docentes:read', 'reports:read', 'monitoreo:execute'],
   docente: ['reports:own'],
   invitado: [],
 };
@@ -84,7 +173,11 @@ const MOCK_CURSOS = [
   { nombre: 'Comunicación', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
   { nombre: 'Matemática', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
   { nombre: 'Ciencia y Tecnología', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
-  { nombre: 'Desarrollo Personal, Ciudadanía y Cívica', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
+  {
+    nombre: 'Desarrollo Personal, Ciudadanía y Cívica',
+    nivelEducativo: 'Secundaria',
+    modalidad: 'EBR',
+  },
   { nombre: 'Ciencias Sociales', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
   { nombre: 'Educación Física', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
   { nombre: 'Arte y Cultura', nivelEducativo: 'Secundaria', modalidad: 'EBR' },
@@ -98,28 +191,56 @@ const MOCK_CURSOS = [
 // ─────────────────────────────────────────────────────────────────────────────
 const MOCK_INSTITUCIONES = [
   {
-    codigoModular: '0543210', codigoLocal: '08765432',
-    nombre: 'I.E. Huayta', nivelEducativo: 'Secundaria', modalidad: 'EBR',
-    departamento: 'Puno', provincia: 'Lampa', distrito: 'Lampa',
-    direccion: 'Jr. Bolognesi 123', zona: 'Rural', estado: 'Activa',
+    codigoModular: '0543210',
+    codigoLocal: '08765432',
+    nombre: 'I.E. Huayta',
+    nivelEducativo: 'Secundaria',
+    modalidad: 'EBR',
+    departamento: 'Puno',
+    provincia: 'Lampa',
+    distrito: 'Lampa',
+    direccion: 'Jr. Bolognesi 123',
+    zona: 'Rural',
+    estado: 'Activa',
   },
   {
-    codigoModular: '0123456', codigoLocal: '02345678',
-    nombre: 'I.E. 70025 Lampa', nivelEducativo: 'Primaria', modalidad: 'EBR',
-    departamento: 'Puno', provincia: 'Lampa', distrito: 'Lampa',
-    direccion: 'Av. Panamericana 456', zona: 'Urbana', estado: 'Activa',
+    codigoModular: '0123456',
+    codigoLocal: '02345678',
+    nombre: 'I.E. 70025 Lampa',
+    nivelEducativo: 'Primaria',
+    modalidad: 'EBR',
+    departamento: 'Puno',
+    provincia: 'Lampa',
+    distrito: 'Lampa',
+    direccion: 'Av. Panamericana 456',
+    zona: 'Urbana',
+    estado: 'Activa',
   },
   {
-    codigoModular: '0654321', codigoLocal: '09876543',
-    nombre: 'I.E. Inicial Lampa', nivelEducativo: 'Inicial', modalidad: 'EBR',
-    departamento: 'Puno', provincia: 'Lampa', distrito: 'Lampa',
-    direccion: 'Jr. Puno 789', zona: 'Urbana', estado: 'Activa',
+    codigoModular: '0654321',
+    codigoLocal: '09876543',
+    nombre: 'I.E. Inicial Lampa',
+    nivelEducativo: 'Inicial',
+    modalidad: 'EBR',
+    departamento: 'Puno',
+    provincia: 'Lampa',
+    distrito: 'Lampa',
+    direccion: 'Jr. Puno 789',
+    zona: 'Urbana',
+    estado: 'Activa',
   },
   {
-    codigoModular: '0712345', codigoLocal: '05123456',
-    nombre: 'I.E. Agroindustrial Pucará', nivelEducativo: 'Secundaria', modalidad: 'EBR',
-    departamento: 'Puno', provincia: 'Lampa', distrito: 'Pucará',
-    direccion: 'Jr. Lima s/n', zona: 'Rural', estado: 'Activa',
+    codigoModular: '0712345',
+    codigoLocal: '05123456',
+    nombre: 'I.E. Agroindustrial Pucará',
+    nivelEducativo: 'Secundaria',
+    modalidad: 'EBR',
+    departamento: 'Puno',
+    provincia: 'Lampa',
+    distrito: 'Pucará',
+    direccion: 'Jr. Lima s/n',
+    zona: 'Rural',
+    estado: 'Activa',
   },
 ];
 
@@ -133,26 +254,34 @@ const MOCK_INSTITUCIONES = [
 const MOCK_USERS = [
   // ── UGEL ──────────────────────────────────────────────────────────────────
   {
-    dni: '76358911', email: 'carlos.quispe@ugel-lampa.gob.pe',
-    firstName: 'Carlos Alberto', lastName: 'Quispe Mamani',
+    dni: '76358911',
+    email: 'carlos.quispe@ugel-lampa.gob.pe',
+    firstName: 'Carlos Alberto',
+    lastName: 'Quispe Mamani',
     role: 'director_ugel',
   },
   {
-    dni: '45678901', email: 'juan.perez@ugel-lampa.gob.pe',
-    firstName: 'Juan', lastName: 'Pérez López',
+    dni: '45678901',
+    email: 'juan.perez@ugel-lampa.gob.pe',
+    firstName: 'Juan',
+    lastName: 'Pérez López',
     role: 'jefe_area',
     nivelEducativo: 'Secundaria',
   },
   {
-    dni: '32145678', email: 'maria.gomez@ugel-lampa.gob.pe',
-    firstName: 'María', lastName: 'Gómez Ticona',
+    dni: '32145678',
+    email: 'maria.gomez@ugel-lampa.gob.pe',
+    firstName: 'María',
+    lastName: 'Gómez Ticona',
     role: 'jefe_gestion',
     nivelEducativo: 'Secundaria',
   },
   // Especialista Secundaria → especialidad libre
   {
-    dni: '12345678', email: 'pedro.huanca@ugel-lampa.gob.pe',
-    firstName: 'Pedro', lastName: 'Huanca Flores',
+    dni: '12345678',
+    email: 'pedro.huanca@ugel-lampa.gob.pe',
+    firstName: 'Pedro',
+    lastName: 'Huanca Flores',
     role: 'especialista',
     especialidad: 'Matemática',
     nivelEducativo: 'Secundaria',
@@ -160,17 +289,21 @@ const MOCK_USERS = [
   },
   // Especialista Primaria → especialidad SOLO 'PIP' o 'Educación Física'
   {
-    dni: '12312312', email: 'alberto.condori@ugel-lampa.gob.pe',
-    firstName: 'Alberto', lastName: 'Condori Ccallo',
+    dni: '12312312',
+    email: 'alberto.condori@ugel-lampa.gob.pe',
+    firstName: 'Alberto',
+    lastName: 'Condori Ccallo',
     role: 'especialista',
-    especialidad: 'PIP',              // ← corregido (antes era 'Comunicación', inválido para Primaria)
+    especialidad: 'PIP', // ← corregido (antes era 'Comunicación', inválido para Primaria)
     nivelEducativo: 'Primaria',
     condicionLaboral: 'Designado',
   },
   // Especialista Inicial → especialidad no aplica
   {
-    dni: '45645645', email: 'sofia.vargas@ugel-lampa.gob.pe',
-    firstName: 'Sofía Lorena', lastName: 'Vargas Paredes',
+    dni: '45645645',
+    email: 'sofia.vargas@ugel-lampa.gob.pe',
+    firstName: 'Sofía Lorena',
+    lastName: 'Vargas Paredes',
     role: 'especialista',
     especialidad: null,
     nivelEducativo: 'Inicial',
@@ -179,18 +312,22 @@ const MOCK_USERS = [
 
   // ── I.E. HUAYTA (Secundaria) ──────────────────────────────────────────────
   {
-    dni: '87654321', email: 'carlos.ruiz@ie-huayta.edu.pe',
-    firstName: 'Carlos', lastName: 'Ruiz Condori',
+    dni: '87654321',
+    email: 'carlos.ruiz@ie-huayta.edu.pe',
+    firstName: 'Carlos',
+    lastName: 'Ruiz Condori',
     role: 'director_institucion',
     institucionCodigoModular: '0543210',
     nivelEducativo: 'Secundaria',
-    condicionLaboral: 'Nombrado',
+    condicionLaboral: 'Designado',
     cargoNombre: 'Director',
   },
   // Docente de Aula - Matemática
   {
-    dni: '11223344', email: 'rosa.mamani@ie-huayta.edu.pe',
-    firstName: 'Rosa', lastName: 'Mamani Ccopa',
+    dni: '11223344',
+    email: 'rosa.mamani@ie-huayta.edu.pe',
+    firstName: 'Rosa',
+    lastName: 'Mamani Ccopa',
     role: 'docente',
     institucionCodigoModular: '0543210',
     nivelEducativo: 'Secundaria',
@@ -198,12 +335,17 @@ const MOCK_USERS = [
     condicionLaboral: 'Nombrado',
     curso: 'Matemática',
     cargoNombre: 'Docente de Aula',
-    secciones: [{ grado: '1°', seccion: 'A' }, { grado: '1°', seccion: 'B' }],
+    secciones: [
+      { grado: '1°', seccion: 'A' },
+      { grado: '1°', seccion: 'B' },
+    ],
   },
   // Docente de Aula - Comunicación
   {
-    dni: '11223355', email: 'elena.flores@ie-huayta.edu.pe',
-    firstName: 'Elena', lastName: 'Flores Apaza',
+    dni: '11223355',
+    email: 'elena.flores@ie-huayta.edu.pe',
+    firstName: 'Elena',
+    lastName: 'Flores Apaza',
     role: 'docente',
     institucionCodigoModular: '0543210',
     nivelEducativo: 'Secundaria',
@@ -215,27 +357,31 @@ const MOCK_USERS = [
   },
   // Coordinador Pedagógico → condicionLaboral: Nombrado | Destacado, nivel Secundaria
   {
-    dni: '55001122', email: 'victor.chuquimia@ie-huayta.edu.pe',
-    firstName: 'Víctor Hugo', lastName: 'Chuquimia Loza',
+    dni: '55001122',
+    email: 'victor.chuquimia@ie-huayta.edu.pe',
+    firstName: 'Víctor Hugo',
+    lastName: 'Chuquimia Loza',
     role: 'docente',
     institucionCodigoModular: '0543210',
     nivelEducativo: 'Secundaria',
     modalidad: 'EBR',
-    condicionLaboral: 'Nombrado',    // ← regla: solo Nombrado o Destacado
-    cargaLaboral: 40,                // ← regla: carga 40h obligatoria
+    condicionLaboral: 'Nombrado', // ← regla: solo Nombrado o Destacado
+    cargaLaboral: 40, // ← regla: carga 40h obligatoria
     curso: 'Desarrollo Personal, Ciudadanía y Cívica',
     cargoNombre: 'Coordinador Pedagógico',
     secciones: [],
   },
   // Jefe de Taller → condicionLaboral: Nombrado | Destacado, nivel Secundaria
   {
-    dni: '55009988', email: 'felix.lupaca@ie-huayta.edu.pe',
-    firstName: 'Félix', lastName: 'Lupaca Coaquira',
+    dni: '55009988',
+    email: 'felix.lupaca@ie-huayta.edu.pe',
+    firstName: 'Félix',
+    lastName: 'Lupaca Coaquira',
     role: 'docente',
     institucionCodigoModular: '0543210',
     nivelEducativo: 'Secundaria',
     modalidad: 'EBR',
-    condicionLaboral: 'Destacado',   // ← regla: solo Nombrado o Destacado
+    condicionLaboral: 'Destacado', // ← regla: solo Nombrado o Destacado
     curso: 'Educación para el Trabajo',
     cargoNombre: 'Jefe de Taller',
     secciones: [{ grado: '4°', seccion: 'A' }],
@@ -243,17 +389,21 @@ const MOCK_USERS = [
 
   // ── I.E. 70025 LAMPA (Primaria) ───────────────────────────────────────────
   {
-    dni: '88887777', email: 'raul.ticona@ie-lampa.edu.pe',
-    firstName: 'Raúl', lastName: 'Ticona Quispe',
+    dni: '88887777',
+    email: 'raul.ticona@ie-lampa.edu.pe',
+    firstName: 'Raúl',
+    lastName: 'Ticona Quispe',
     role: 'director_institucion',
     institucionCodigoModular: '0123456',
     nivelEducativo: 'Primaria',
-    condicionLaboral: 'Nombrado',
+    condicionLaboral: 'Designado',
     cargoNombre: 'Director',
   },
   {
-    dni: '22334455', email: 'lucia.mendoza@ie-lampa.edu.pe',
-    firstName: 'Lucía', lastName: 'Mendoza Torres',
+    dni: '22334455',
+    email: 'lucia.mendoza@ie-lampa.edu.pe',
+    firstName: 'Lucía',
+    lastName: 'Mendoza Torres',
     role: 'docente',
     institucionCodigoModular: '0123456',
     nivelEducativo: 'Primaria',
@@ -261,12 +411,17 @@ const MOCK_USERS = [
     condicionLaboral: 'Nombrado',
     curso: 'Personal Social',
     cargoNombre: 'Docente de Aula',
-    secciones: [{ grado: '3°', seccion: 'A' }, { grado: '4°', seccion: 'A' }],
+    secciones: [
+      { grado: '3°', seccion: 'A' },
+      { grado: '4°', seccion: 'A' },
+    ],
   },
   // PIP (Programa de Intervención Pedagógica) → cargo 'PIP', nivel Primaria
   {
-    dni: '22335566', email: 'beatriz.callata@ie-lampa.edu.pe',
-    firstName: 'Beatriz', lastName: 'Callata Flores',
+    dni: '22335566',
+    email: 'beatriz.callata@ie-lampa.edu.pe',
+    firstName: 'Beatriz',
+    lastName: 'Callata Flores',
     role: 'docente',
     institucionCodigoModular: '0123456',
     nivelEducativo: 'Primaria',
@@ -274,22 +429,29 @@ const MOCK_USERS = [
     condicionLaboral: 'Nombrado',
     curso: 'Matemática',
     cargoNombre: 'PIP',
-    secciones: [{ grado: '1°', seccion: 'A' }, { grado: '2°', seccion: 'A' }],
+    secciones: [
+      { grado: '1°', seccion: 'A' },
+      { grado: '2°', seccion: 'A' },
+    ],
   },
 
   // ── I.E. INICIAL LAMPA ────────────────────────────────────────────────────
   {
-    dni: '77001234', email: 'patricia.quispe@ie-inicial.edu.pe',
-    firstName: 'Patricia', lastName: 'Quispe Tito',
+    dni: '77001234',
+    email: 'patricia.quispe@ie-inicial.edu.pe',
+    firstName: 'Patricia',
+    lastName: 'Quispe Tito',
     role: 'director_institucion',
     institucionCodigoModular: '0654321',
     nivelEducativo: 'Inicial',
-    condicionLaboral: 'Nombrado',
+    condicionLaboral: 'Designado',
     cargoNombre: 'Director',
   },
   {
-    dni: '77005678', email: 'ana.ramos@ie-inicial.edu.pe',
-    firstName: 'Ana María', lastName: 'Ramos Huanca',
+    dni: '77005678',
+    email: 'ana.ramos@ie-inicial.edu.pe',
+    firstName: 'Ana María',
+    lastName: 'Ramos Huanca',
     role: 'docente',
     institucionCodigoModular: '0654321',
     nivelEducativo: 'Inicial',
@@ -302,17 +464,21 @@ const MOCK_USERS = [
 
   // ── I.E. AGROINDUSTRIAL PUCARÁ (Secundaria) ───────────────────────────────
   {
-    dni: '55556666', email: 'miguel.paredes@ie-agro.edu.pe',
-    firstName: 'Miguel Ángel', lastName: 'Paredes Larico',
+    dni: '55556666',
+    email: 'miguel.paredes@ie-agro.edu.pe',
+    firstName: 'Miguel Ángel',
+    lastName: 'Paredes Larico',
     role: 'director_institucion',
     institucionCodigoModular: '0712345',
     nivelEducativo: 'Secundaria',
-    condicionLaboral: 'Nombrado',
+    condicionLaboral: 'Designado',
     cargoNombre: 'Director',
   },
   {
-    dni: '33445566', email: 'gladys.apaza@ie-agro.edu.pe',
-    firstName: 'Gladys', lastName: 'Apaza Choque',
+    dni: '33445566',
+    email: 'gladys.apaza@ie-agro.edu.pe',
+    firstName: 'Gladys',
+    lastName: 'Apaza Choque',
     role: 'docente',
     institucionCodigoModular: '0712345',
     nivelEducativo: 'Secundaria',
@@ -320,18 +486,23 @@ const MOCK_USERS = [
     condicionLaboral: 'Nombrado',
     curso: 'Ciencia y Tecnología',
     cargoNombre: 'Docente de Aula',
-    secciones: [{ grado: '5°', seccion: 'A' }, { grado: '5°', seccion: 'B' }],
+    secciones: [
+      { grado: '5°', seccion: 'A' },
+      { grado: '5°', seccion: 'B' },
+    ],
   },
   // Coordinador Pedagógico de I.E. Agroindustrial
   {
-    dni: '33449977', email: 'jorge.ccama@ie-agro.edu.pe',
-    firstName: 'Jorge', lastName: 'Ccama Villanueva',
+    dni: '33449977',
+    email: 'jorge.ccama@ie-agro.edu.pe',
+    firstName: 'Jorge',
+    lastName: 'Ccama Villanueva',
     role: 'docente',
     institucionCodigoModular: '0712345',
     nivelEducativo: 'Secundaria',
     modalidad: 'EBR',
-    condicionLaboral: 'Destacado',   // ← regla cumplida
-    cargaLaboral: 40,                // ← regla cumplida
+    condicionLaboral: 'Destacado', // ← regla cumplida
+    cargaLaboral: 40, // ← regla cumplida
     curso: 'Ciencias Sociales',
     cargoNombre: 'Coordinador Pedagógico',
     secciones: [],
@@ -339,8 +510,10 @@ const MOCK_USERS = [
 
   // ── INVITADO ──────────────────────────────────────────────────────────────
   {
-    dni: '99887766', email: 'visitante.demo@ugel-lampa.gob.pe',
-    firstName: 'Visitante', lastName: 'Demo',
+    dni: '99887766',
+    email: 'visitante.demo@ugel-lampa.gob.pe',
+    firstName: 'Visitante',
+    lastName: 'Demo',
     role: 'invitado',
   },
 ];
@@ -353,7 +526,9 @@ async function main() {
 
   // ── 1. Migración legacy ───────────────────────────────────────────────────
   try {
-    await prisma.$executeRawUnsafe(`UPDATE roles SET codigo = 'director_institucion' WHERE codigo = 'director_ie'`);
+    await prisma.$executeRawUnsafe(
+      `UPDATE roles SET codigo = 'director_institucion' WHERE codigo = 'director_ie'`,
+    );
     console.log('Migrated old director_ie role to director_institucion.');
   } catch (err) {
     console.log('Could not migrate director_ie role:', err.message);
@@ -420,9 +595,18 @@ async function main() {
   const cursoMap = {};
   for (const cursoData of MOCK_CURSOS) {
     const curso = await prisma.curso.upsert({
-      where: { nombre_nivelEducativo: { nombre: cursoData.nombre, nivelEducativo: cursoData.nivelEducativo } },
+      where: {
+        nombre_nivelEducativo: {
+          nombre: cursoData.nombre,
+          nivelEducativo: cursoData.nivelEducativo,
+        },
+      },
       update: {},
-      create: { nombre: cursoData.nombre, nivelEducativo: cursoData.nivelEducativo, modalidad: cursoData.modalidad },
+      create: {
+        nombre: cursoData.nombre,
+        nivelEducativo: cursoData.nivelEducativo,
+        modalidad: cursoData.modalidad,
+      },
     });
     // Key compuesto nombre+nivel para evitar colisiones (ej. "Comunicación" existe en Inicial, Primaria y Secundaria)
     cursoMap[`${cursoData.nombre}||${cursoData.nivelEducativo}`] = curso.id;
@@ -436,17 +620,28 @@ async function main() {
     const ie = await prisma.institucionEducativa.upsert({
       where: { codigoModular: instData.codigoModular },
       update: {
-        nombre: instData.nombre, nivelEducativo: instData.nivelEducativo,
-        modalidad: instData.modalidad, provincia: instData.provincia,
-        distrito: instData.distrito, direccion: instData.direccion,
-        zona: instData.zona, estado: instData.estado, codigoLocal: instData.codigoLocal,
+        nombre: instData.nombre,
+        nivelEducativo: instData.nivelEducativo,
+        modalidad: instData.modalidad,
+        provincia: instData.provincia,
+        distrito: instData.distrito,
+        direccion: instData.direccion,
+        zona: instData.zona,
+        estado: instData.estado,
+        codigoLocal: instData.codigoLocal,
       },
       create: {
-        codigoModular: instData.codigoModular, codigoLocal: instData.codigoLocal,
-        nombre: instData.nombre, nivelEducativo: instData.nivelEducativo,
-        modalidad: instData.modalidad, departamento: instData.departamento,
-        provincia: instData.provincia, distrito: instData.distrito,
-        direccion: instData.direccion, zona: instData.zona, estado: instData.estado,
+        codigoModular: instData.codigoModular,
+        codigoLocal: instData.codigoLocal,
+        nombre: instData.nombre,
+        nivelEducativo: instData.nivelEducativo,
+        modalidad: instData.modalidad,
+        departamento: instData.departamento,
+        provincia: instData.provincia,
+        distrito: instData.distrito,
+        direccion: instData.direccion,
+        zona: instData.zona,
+        estado: instData.estado,
       },
     });
     instMap[instData.codigoModular] = ie.id;
@@ -459,9 +654,9 @@ async function main() {
 
   // Mapa de cargo de la tabla Especialista según rol del sistema
   const especialistaCargoPorRol = {
-    'especialista': 'Especialista',
-    'jefe_area': 'Jefe de Área',
-    'jefe_gestion': 'Jefe de Gestión',
+    especialista: 'Especialista',
+    jefe_area: 'Jefe de Área',
+    jefe_gestion: 'Jefe de Gestión',
   };
 
   for (const userData of MOCK_USERS) {
@@ -475,7 +670,12 @@ async function main() {
     const persona = await prisma.persona.upsert({
       where: { dni: userData.dni },
       update: { nombres: userData.firstName, apellidos: userData.lastName, correo: userData.email },
-      create: { dni: userData.dni, nombres: userData.firstName, apellidos: userData.lastName, correo: userData.email },
+      create: {
+        dni: userData.dni,
+        nombres: userData.firstName,
+        apellidos: userData.lastName,
+        correo: userData.email,
+      },
     });
 
     // B. Usuario
@@ -483,16 +683,21 @@ async function main() {
     await prisma.usuario.upsert({
       where: { personaId: persona.id },
       update: { rolId: roleId, isActive: true },
-      create: { personaId: persona.id, rolId: roleId, passwordHash, isActive: true, isFirstLogin: true },
+      create: {
+        personaId: persona.id,
+        rolId: roleId,
+        passwordHash,
+        isActive: true,
+        isFirstLogin: true,
+      },
     });
 
     // C. Especialista (aplica para roles UGEL que operan sobre la tabla especialistas)
     if (especialistaCargoPorRol[userData.role]) {
       const cargoEsp = especialistaCargoPorRol[userData.role];
       // Jefe de Gestión → condicionLaboral siempre Nombrado (regla de negocio)
-      const condicionLaboral = cargoEsp === 'Jefe de Gestión'
-        ? 'Nombrado'
-        : (userData.condicionLaboral || 'Encargado');
+      const condicionLaboral =
+        cargoEsp === 'Jefe de Gestión' ? 'Nombrado' : userData.condicionLaboral || 'Encargado';
 
       await prisma.especialista.upsert({
         where: { personaId: persona.id },
@@ -522,7 +727,9 @@ async function main() {
     if (userData.role === 'director_institucion' || userData.role === 'docente') {
       const instId = instMap[userData.institucionCodigoModular];
       if (!instId) {
-        console.warn(`Institución '${userData.institucionCodigoModular}' no encontrada — skipping ${userData.dni}`);
+        console.warn(
+          `Institución '${userData.institucionCodigoModular}' no encontrada — skipping ${userData.dni}`,
+        );
         continue;
       }
 
@@ -560,7 +767,9 @@ async function main() {
             create: { docenteId: docente.id, cursoId },
           });
         } else {
-          console.warn(`Curso '${userData.curso}' para nivel '${userData.nivelEducativo}' no encontrado — skipping curso de ${userData.dni}`);
+          console.warn(
+            `Curso '${userData.curso}' para nivel '${userData.nivelEducativo}' no encontrado — skipping curso de ${userData.dni}`,
+          );
         }
       }
 
@@ -568,7 +777,13 @@ async function main() {
       if (userData.secciones && userData.secciones.length > 0) {
         for (const sec of userData.secciones) {
           await prisma.docenteSeccion.upsert({
-            where: { docenteId_grado_seccion: { docenteId: docente.id, grado: sec.grado, seccion: sec.seccion } },
+            where: {
+              docenteId_grado_seccion: {
+                docenteId: docente.id,
+                grado: sec.grado,
+                seccion: sec.seccion,
+              },
+            },
             update: {},
             create: { docenteId: docente.id, grado: sec.grado, seccion: sec.seccion },
           });
@@ -576,7 +791,9 @@ async function main() {
       }
 
       // G. DocenteCargo: asignar el cargo correspondiente
-      const cargoNombre = userData.cargoNombre || (userData.role === 'director_institucion' ? 'Director' : 'Docente de Aula');
+      const cargoNombre =
+        userData.cargoNombre ||
+        (userData.role === 'director_institucion' ? 'Director' : 'Docente de Aula');
       const cargoId = cargoMap[cargoNombre];
       if (cargoId) {
         const existingCargo = await prisma.docenteCargo.findFirst({
@@ -588,7 +805,9 @@ async function main() {
           });
         }
       } else {
-        console.warn(`Cargo '${cargoNombre}' no encontrado en cargoMap — skipping DocenteCargo de ${userData.dni}`);
+        console.warn(
+          `Cargo '${cargoNombre}' no encontrado en cargoMap — skipping DocenteCargo de ${userData.dni}`,
+        );
       }
     }
   }

@@ -70,6 +70,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         ...(filters?.estado && { estado: filters.estado }),
         ...(filters?.especialidad && { especialidad: filters.especialidad }),
         ...(filters?.nivelEducativo && { nivelEducativo: filters.nivelEducativo }),
+        ...(filters?.cargo && { cargo: filters.cargo }),
       },
       include: {
         persona: {

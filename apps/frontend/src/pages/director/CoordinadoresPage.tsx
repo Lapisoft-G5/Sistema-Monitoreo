@@ -12,7 +12,7 @@ import type { Docente } from '@entities/model-docentes';
 import type { Institucion } from '@entities/model-instituciones';
 import { useUser } from '@entities/model-user';
 
-export const DocentesPage = () => {
+export const CoordinadoresPage = () => {
   const navigate = useNavigate();
   const { user } = useUser();
   const [docentes, setDocentes] = useState<Docente[]>([]);
@@ -25,14 +25,10 @@ export const DocentesPage = () => {
       const teachersRes = await teachersApi.findAll();
 
       if (teachersRes.ok && teachersRes.data) {
-        let mapped = teachersRes.data.map(mapApiDocenteToFrontend);
-        const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
-        if (isDirectorIe) {
-          mapped = mapped.filter((d) => d.cargo !== 'Director');
-        }
+        const mapped = teachersRes.data.map(mapApiDocenteToFrontend);
         setDocentes(mapped);
       } else {
-        console.error('Error loading teachers:', teachersRes.error);
+        console.error('Error loading coordinators:', teachersRes.error);
       }
 
       if (user?.institucion && user?.institucionNombre) {
@@ -43,7 +39,7 @@ export const DocentesPage = () => {
             codigoModular: '',
             codigoLocal: '',
             direccion: '',
-            nivel: user.institucionNivel || 'Primaria',
+            nivel: user.institucionNivel || 'Secundaria',
             distrito: user.distrito || '',
             provincia: '',
             zona: '',
@@ -55,7 +51,7 @@ export const DocentesPage = () => {
         ]);
       }
     } catch (err) {
-      console.error('Connection error loading docentes data:', err);
+      console.error('Connection error loading coordinadores data:', err);
     } finally {
       setLoading(false);
     }
@@ -69,7 +65,7 @@ export const DocentesPage = () => {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="text-text-muted text-sm font-medium">Cargando docentes...</span>
+        <span className="text-text-muted text-sm font-medium">Cargando coordinadores...</span>
       </div>
     );
   }
@@ -77,15 +73,15 @@ export const DocentesPage = () => {
   return (
     <div className="flex flex-col w-full gap-6">
       <PageHeader
-        title="Gestión de Docentes"
-        description="Administración y asignación del personal docente de la institución."
+        title="Gestión de Coordinadores Pedagógicos"
+        description="Administración y asignación de Coordinadores Pedagógicos de la institución."
         action={
           <Button
-            onClick={() => navigate('/instituciones/docentes/nuevo')}
+            onClick={() => navigate('/instituciones/coordinadores/nuevo')}
             className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white"
           >
             <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
-            Registrar Docente
+            Asignar Coordinador
           </Button>
         }
       />
@@ -101,8 +97,8 @@ export const DocentesPage = () => {
         docentes={docentes}
         setDocentes={setDocentes}
         instituciones={instituciones}
-        targetCargo="Docente de Aula"
-        itemName="docentes"
+        targetCargo="Coordinador Pedagógico"
+        itemName="coordinadores"
         routePrefix="/instituciones/docentes"
         onView={(doc) => navigate(`/instituciones/docentes/${doc.id}`)}
       />

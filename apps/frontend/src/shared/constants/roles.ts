@@ -3,6 +3,7 @@ export type UserRole =
   | 'jefe_area'
   | 'jefe_gestion'
   | 'coordinador_pedagogico' // 🚀 Agregado para solucionar el error de TypeScript
+  | 'jefe_taller'
   | 'especialista'
   | 'director_institucion'
   | 'director_ie' // 🚀 Fallback alias para base de datos local
@@ -13,6 +14,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   director_ugel: 'Director UGEL',
   jefe_area: 'Jefe de Área',
   coordinador_pedagogico: 'Coordinador Pedagógico', // 🚀 Corregido la etiqueta
+  jefe_taller: 'Jefe de Taller',
   jefe_gestion: 'Jefe de Gestión',
   especialista: 'Especialista',
   director_institucion: 'Director de Institución',
@@ -31,6 +33,7 @@ export type MenuItem =
   | 'instituciones_padron'
   | 'instituciones_docentes'
   | 'instituciones_coordinadores'
+  | 'instituciones_jefes_taller'
   | 'especialistas'
   | 'jefes_area'
   | 'reportes'
@@ -41,23 +44,40 @@ const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   director_ugel: ['dashboard', 'reportes'],
 
-  jefe_gestion: ['monitoreo', 'monitoreo_reportes', 'especialistas', 'jefes_area', 'reportes'],
+  jefe_gestion: [
+    'monitoreo',
+    'monitoreo_reportes',
+    'especialistas',
+    'jefes_area',
+    'reportes',
+    'instituciones_padron',
+    'instituciones_docentes',
+    'instituciones_coordinadores',
+  ],
 
-  jefe_area: ['instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores'],
+  jefe_area: ['instituciones_padron', 'instituciones_docentes'],
 
-  coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', 'jefes_area', 'reportes'],
+  coordinador_pedagogico: [
+    'monitoreo',
+    'monitoreo_plan',
+    'especialistas',
+    'jefes_area',
+    'reportes',
+  ],
+
+  jefe_taller: [
+    'monitoreo',
+    'monitoreo_plan',
+    'especialistas',
+    'jefes_area',
+    'reportes',
+  ],
 
   especialista: ['monitoreo', 'monitoreo_reportes', 'reportes'], // 🚀 Se eliminó la duplicación aquí
 
-  director_institucion: [
-    'instituciones_docentes',
-    'reportes',
-  ],
+  director_institucion: ['instituciones_docentes', 'instituciones_coordinadores', 'instituciones_jefes_taller', 'reportes'],
 
-  director_ie: [
-    'instituciones_docentes',
-    'reportes',
-  ],
+  director_ie: ['instituciones_docentes', 'instituciones_coordinadores', 'instituciones_jefes_taller', 'reportes'],
 
   docente: [...BASE_PERMISSIONS],
 
@@ -97,6 +117,9 @@ export const getDefaultLandingPage = (role: UserRole): string => {
     case 'director_institucion':
     case 'director_ie':
       return '/instituciones/docentes';
+    case 'coordinador_pedagogico':
+    case 'jefe_taller':
+      return '/monitoreo/plan';
     case 'docente':
       return '/reportes';
     default:

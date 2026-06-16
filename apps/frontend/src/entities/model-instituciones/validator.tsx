@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Institucion } from './model';
+import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 
 // Esquema de validación para formularios y API
 export const institucionSchema = z.object({
@@ -14,7 +15,7 @@ export const institucionSchema = z.object({
     .regex(/^\d+$/, 'El código de local solo debe contener números'),
   nombre: z.string().min(4, 'El nombre de la institución es muy corto'),
   direccion: z.string().min(4, 'La dirección es requerida'),
-  nivel: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA']),
+  nivel: z.string().min(1, 'El nivel educativo es requerido'),
   distrito: z.string().min(2, 'Debe seleccionar un distrito'),
   director: z.string().nullable(), // Permitimos que no tenga director
   estado: z.enum(['Activa', 'Inactiva']),
@@ -30,7 +31,15 @@ export const institucionSchema = z.object({
     .email('Formato de correo inválido')
     .optional()
     .or(z.literal('')),
-  modalidad: z.enum(['Regular', 'PRONOEI', 'EBA', 'EBE']).optional(),
+  modalidad: z.enum(['EBR', 'EBA', 'EBE', 'CEPTRO'], {
+    message: 'Debe seleccionar una modalidad válida',
+  }),
+}).refine((data) => {
+  const validNiveles = MODALIDAD_NIVEL_MAP[data.modalidad] || [];
+  return validNiveles.includes(data.nivel);
+}, {
+  message: 'El nivel educativo no es válido para la modalidad seleccionada',
+  path: ['nivel'],
 });
 
 // Tipos inferidos de Zod (útil para el Feature que maneje el formulario)

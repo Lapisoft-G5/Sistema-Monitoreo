@@ -52,7 +52,6 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   nivelEducativo!: string;
 
   @IsValidEspecialidadForNivel('nivelEducativo')
-  @IsOptional()
   especialidad?: string;
 
   @IsString()

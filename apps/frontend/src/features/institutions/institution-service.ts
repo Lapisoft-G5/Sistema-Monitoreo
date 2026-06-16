@@ -1,14 +1,9 @@
 import { useState } from 'react';
-import type { Institucion, Nivel } from '@entities/model-instituciones';
+import type { Institucion } from '@entities/model-instituciones';
 import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
 import type { InstitutionRawInput } from './ui/CreateInstitutionFormBase';
 import { institutionsApi } from '@shared/api/institutions.api';
 import type { IInstitucionResponse } from '@sistema-monitoreo/shared-contracts';
-
-const toTitleCase = (str: string): string => {
-  if (!str) return '';
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-};
 
 export const mapApiInstitucionToFrontend = (apiInst: IInstitucionResponse): Institucion => {
   return {
@@ -17,11 +12,11 @@ export const mapApiInstitucionToFrontend = (apiInst: IInstitucionResponse): Inst
     codigoLocal: apiInst.codigoLocal,
     nombre: apiInst.nombre,
     direccion: apiInst.direccion,
-    nivel: (apiInst.nivelEducativo || '').toUpperCase() as Nivel,
+    nivel: apiInst.nivelEducativo || '',
     distrito: apiInst.distrito,
     provincia: apiInst.provincia,
     zona: apiInst.zona,
-    modalidad: apiInst.modalidad || 'Regular',
+    modalidad: apiInst.modalidad || 'EBR',
     director: apiInst.director || null,
     directorTelefono: apiInst.directorTelefono || undefined,
     directorCorreo: apiInst.directorCorreo || undefined,
@@ -44,14 +39,14 @@ export const useInstitutionService = () => {
         codigoModular: formData.codigoModular,
         codigoLocal: formData.codigoLocal,
         nombre: formData.nombre.trim(),
-        nivelEducativo: toTitleCase(formData.nivel),
+        nivelEducativo: formData.nivel,
         departamento: 'Puno',
         provincia: formData.provincia,
         distrito: formData.distrito,
         direccion: formData.direccion,
         zona: formData.zona,
         estado: 'Activa',
-        modalidad: formData.modalidad || 'Regular',
+        modalidad: formData.modalidad || 'EBR',
       };
 
       const res = await institutionsApi.create(dto);
@@ -80,12 +75,12 @@ export const useInstitutionService = () => {
       const dto = {
         codigoLocal: formData.codigoLocal,
         nombre: formData.nombre.trim(),
-        nivelEducativo: toTitleCase(formData.nivel),
+        nivelEducativo: formData.nivel,
         provincia: formData.provincia,
         distrito: formData.distrito,
         direccion: formData.direccion,
         zona: formData.zona,
-        modalidad: formData.modalidad || 'Regular',
+        modalidad: formData.modalidad || 'EBR',
       };
 
       const res = await institutionsApi.update(id, dto);

@@ -2,7 +2,7 @@ export const ModalidadEducativa = {
   EBR: 'EBR',
   EBA: 'EBA',
   EBE: 'EBE',
-  CEPTRO: 'CEPTROs',
+  CEPTRO: 'CEPTRO',
 } as const;
 
 export const NivelEducativoEBR = {
@@ -19,6 +19,14 @@ export const NivelEducativoEBA = {
 export const NivelEducativoEBE = {
   CEBE: 'CEBE',
   PRITE: 'PRITE',
+} as const;
+
+export const NivelEducativoCEPTRO = {
+  CORTE_ENSAMBLAJE: 'Corte y Ensamblaje',
+  MECANICA_MOTOS: 'Mecánica de Motos y Vehículos Afines',
+  PELUQUERIA_BARBERIA: 'Peluquería y barbería',
+  MADERA: 'Fabricación artesanal de productos de madera',
+  TI: 'Plataformas y servicios de tecnologías de la información',
 } as const;
 
 export const EspecialidadPrimaria = {
@@ -55,4 +63,5 @@ export const MODALIDAD_NIVEL_MAP: Record<string, string[]> = {
   [ModalidadEducativa.EBR]: Object.values(NivelEducativoEBR),
   [ModalidadEducativa.EBA]: Object.values(NivelEducativoEBA),
   [ModalidadEducativa.EBE]: Object.values(NivelEducativoEBE),
+  [ModalidadEducativa.CEPTRO]: Object.values(NivelEducativoCEPTRO),
 };

@@ -52,12 +52,12 @@ export const DirectorCell = ({ director }: { director?: string | null }) => {
 
 // ── 4. Modalidad Badge ──
 export const ModalidadBadge = ({ modalidad }: { modalidad?: string | null }) => {
-  const val = modalidad || 'Regular';
+  const val = modalidad || 'EBR';
   const colors: Record<string, string> = {
-    'Regular': 'bg-slate-100 text-slate-600 border-slate-200',
-    'PRONOEI': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'EBR': 'bg-slate-100 text-slate-600 border-slate-200',
     'EBA': 'bg-amber-100 text-amber-700 border-amber-200',
     'EBE': 'bg-sky-100 text-sky-700 border-sky-200',
+    'CEPTRO': 'bg-emerald-100 text-emerald-700 border-emerald-200',
   };
   
   const defaultColor = 'bg-gray-100 text-gray-700 border-gray-200';

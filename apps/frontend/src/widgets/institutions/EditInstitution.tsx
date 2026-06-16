@@ -65,7 +65,7 @@ export const EditInstitutionCard = () => {
     distrito: institucion.distrito,
     zona: institucion.zona || '',
     direccion: institucion.direccion,
-    modalidad: institucion.modalidad || 'Regular',
+    modalidad: institucion.modalidad || 'EBR',
   };
 
   const handleFormSubmit = async (formData: InstitutionRawInput) => {

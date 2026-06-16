@@ -56,9 +56,18 @@ export const EspecialistaFormBase = ({
     });
   }
 
-  // Validación personalizada: especialidad es requerida si se selecciona nivel Secundaria
-  if (!isJefeArea && form.niveles?.includes('Secundaria') && !form.especialidad?.trim()) {
-    errors.especialidad = 'La especialidad es requerida para el nivel Secundaria';
+  // Validación personalizada: especialidad es requerida si se selecciona nivel Secundaria o Primaria
+  if (!isJefeArea) {
+    if (form.niveles?.includes('Secundaria') && !form.especialidad?.trim()) {
+      errors.especialidad = 'La especialidad es requerida para el nivel Secundaria';
+    } else if (form.niveles?.includes('Primaria')) {
+      const esp = form.especialidad?.trim();
+      if (!esp) {
+        errors.especialidad = 'La especialidad es requerida para el nivel Primaria';
+      } else if (esp !== 'PIP' && esp !== 'Educación Física') {
+        errors.especialidad = 'La especialidad debe ser "PIP" o "Educación Física"';
+      }
+    }
   }
 
   const showError = (key: keyof EspecialistaFormData) => (submitted ? errors[key] : '');
@@ -210,16 +219,18 @@ export const EspecialistaFormBase = ({
           />
           <TextField
             label="Especialidad / Área Pedagógica"
-            required={form.niveles?.includes('Secundaria')}
+            required={form.niveles?.includes('Secundaria') || form.niveles?.includes('Primaria')}
             value={form.especialidad || ''}
             onChange={(v) => set('especialidad', v)}
             placeholder={
               form.niveles?.includes('Secundaria')
                 ? 'Ej. Matemática o Gestión Pedagógica'
-                : 'Solo disponible para el nivel Secundaria'
+                : form.niveles?.includes('Primaria')
+                  ? 'Debe ser PIP o Educación Física'
+                  : 'Solo disponible para Primaria y Secundaria'
             }
             error={showError('especialidad')}
-            disabled={!form.niveles?.includes('Secundaria')}
+            disabled={!form.niveles?.includes('Secundaria') && !form.niveles?.includes('Primaria')}
           />
         </div>
 

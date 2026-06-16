@@ -57,7 +57,6 @@ export class CreateEspecialistaDto implements ICreateEspecialistaRequest {
   nivelEducativo!: string;
 
   @IsValidEspecialidadForNivel('nivelEducativo')
-  @IsOptional()
   especialidad?: string;
 
   @IsString()

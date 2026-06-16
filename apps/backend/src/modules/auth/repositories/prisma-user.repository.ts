@@ -25,6 +25,7 @@ export class PrismaUserRepository implements UserRepository {
             docente: {
               include: { institucion: true, docenteCargos: { include: { cargo: true } } },
             },
+            especialista: true,
           },
         },
       },
@@ -49,6 +50,7 @@ export class PrismaUserRepository implements UserRepository {
             docente: {
               include: { institucion: true, docenteCargos: { include: { cargo: true } } },
             },
+            especialista: true,
           },
         },
       },

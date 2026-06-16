@@ -20,7 +20,9 @@ export const JefesAreaPage = () => {
     try {
       const res = await jefesAreaApi.findAll();
       if (res.ok && res.data) {
-        const mapped = res.data.map(mapApiJefeAreaToFrontend);
+        // Asegurar que solo se incluyan los que tienen cargo de Jefe de Área
+        const filtered = res.data.filter((esp) => esp.cargo === 'Jefe de Área');
+        const mapped = filtered.map(mapApiJefeAreaToFrontend);
         setJefes(mapped);
       } else {
         console.error('Error al cargar los jefes de área desde la API:', res.error);
@@ -56,7 +58,7 @@ export const JefesAreaPage = () => {
             className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white rounded-xl px-4 py-2.5 shadow-xs"
           >
             <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
-             Registrar Jefe de Área
+            Registrar Jefe de Área
           </Button>
         }
       />

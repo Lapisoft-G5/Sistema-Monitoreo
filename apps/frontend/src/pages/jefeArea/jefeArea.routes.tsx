@@ -4,7 +4,6 @@ import type { RouteObject } from 'react-router-dom';
 import { LazyLoader } from '@shared/ui/LazyLoader';
 import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 
-
 // ── Instituciones ──
 const InstitucionesPage = lazy(() =>
   import('./institucionesPage').then((m) => ({ default: m.InstitucionesPage })),
@@ -32,6 +31,18 @@ const DocenteEditPage = lazy(() =>
 const DocenteDetailPage = lazy(() =>
   import('../director/DocenteSwitchers').then((m) => ({ default: m.DocenteDetailSwitcher })),
 );
+const CoordinadorListPage = lazy(() =>
+  import('../director/DocenteSwitchers').then((m) => ({ default: m.CoordinadorSwitcher })),
+);
+const CoordinadorCreatePage = lazy(() =>
+  import('../director/DocenteSwitchers').then((m) => ({ default: m.CoordinadorCreateSwitcher })),
+);
+const JefesTallerPage = lazy(() =>
+  import('../director/JefesTallerPage').then((m) => ({ default: m.JefesTallerPage })),
+);
+const JefeTallerAssignPage = lazy(() =>
+  import('../director/JefeTallerAssignPage').then((m) => ({ default: m.JefeTallerAssignPage })),
+);
 
 // ── Jefes de Área (Tus nuevas páginas creadas) ──
 const JefesAreaPage = lazy(() =>
@@ -52,40 +63,174 @@ export const adminRoutes: RouteObject[] = [
   {
     element: <ProtectedRoute permission="instituciones_padron" />,
     children: [
-      { path: 'instituciones/padron', element: (<LazyLoader><InstitucionesPage /></LazyLoader>) },
-      { path: 'instituciones/nuevo', element: (<LazyLoader><InstitucionCreatePage /></LazyLoader>) },
-      { path: 'instituciones/:id/editar', element: (<LazyLoader><InstitucionEditPage /></LazyLoader>) },
-      { path: 'instituciones/:id', element: (<LazyLoader><InstitutionDetailPage /></LazyLoader>) },
+      {
+        path: 'instituciones/padron',
+        element: (
+          <LazyLoader>
+            <InstitucionesPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/nuevo',
+        element: (
+          <LazyLoader>
+            <InstitucionCreatePage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/:id/editar',
+        element: (
+          <LazyLoader>
+            <InstitucionEditPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/:id',
+        element: (
+          <LazyLoader>
+            <InstitutionDetailPage />
+          </LazyLoader>
+        ),
+      },
     ],
   },
   // Padrón de Directores / Docentes
   {
     element: <ProtectedRoute permission="instituciones_docentes" />,
     children: [
-      { path: 'instituciones/docentes', element: (<LazyLoader><DocenteListPage /></LazyLoader>) },
-      { path: 'instituciones/docentes/nuevo', element: (<LazyLoader><DocenteCreatePage /></LazyLoader>) },
-      { path: 'instituciones/docentes/:id/editar', element: (<LazyLoader><DocenteEditPage /></LazyLoader>) },
-      { path: 'instituciones/docentes/:id', element: (<LazyLoader><DocenteDetailPage /></LazyLoader>) },
+      {
+        path: 'instituciones/docentes',
+        element: (
+          <LazyLoader>
+            <DocenteListPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/docentes/nuevo',
+        element: (
+          <LazyLoader>
+            <DocenteCreatePage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/docentes/:id/editar',
+        element: (
+          <LazyLoader>
+            <DocenteEditPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/docentes/:id',
+        element: (
+          <LazyLoader>
+            <DocenteDetailPage />
+          </LazyLoader>
+        ),
+      },
     ],
   },
   // Padrón de Jefes de Gestión (Coordinadores) apuntados temporalmente a JefesArea para que compile sin archivos perdidos
   {
     element: <ProtectedRoute permission="instituciones_coordinadores" />,
     children: [
-      { path: 'instituciones/coordinadores', element: (<LazyLoader><JefesAreaPage /></LazyLoader>) },
-      { path: 'instituciones/coordinadores/nuevo', element: (<LazyLoader><JefeAreaCreatePage /></LazyLoader>) },
-      { path: 'instituciones/coordinadores/:id/editar', element: (<LazyLoader><JefeAreaEditPage /></LazyLoader>) },
-      { path: 'instituciones/coordinadores/:id', element: (<LazyLoader><JefeAreaDetailPage /></LazyLoader>) },
+      {
+        path: 'instituciones/coordinadores',
+        element: (
+          <LazyLoader>
+            <CoordinadorListPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/coordinadores/nuevo',
+        element: (
+          <LazyLoader>
+            <CoordinadorCreatePage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/coordinadores/:id/editar',
+        element: (
+          <LazyLoader>
+            <JefeAreaEditPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/coordinadores/:id',
+        element: (
+          <LazyLoader>
+            <JefeAreaDetailPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  // Padrón de Jefes de Taller
+  {
+    element: <ProtectedRoute permission="instituciones_jefes_taller" />,
+    children: [
+      {
+        path: 'instituciones/jefes-taller',
+        element: (
+          <LazyLoader>
+            <JefesTallerPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/jefes-taller/nuevo',
+        element: (
+          <LazyLoader>
+            <JefeTallerAssignPage />
+          </LazyLoader>
+        ),
+      },
     ],
   },
   // Bloque de Jefes de Área con CRUD Completo
   {
-    element: <ProtectedRoute permission="jefes_area" />, 
+    element: <ProtectedRoute permission="jefes_area" />,
     children: [
-      { path: 'jefes-area', element: <LazyLoader><JefesAreaPage /></LazyLoader> },
-      { path: 'jefes-area/nuevo', element: <LazyLoader><JefeAreaCreatePage /></LazyLoader> },
-      { path: 'jefes-area/:id/editar', element: <LazyLoader><JefeAreaEditPage /></LazyLoader> },
-      { path: 'jefes-area/:id', element: <LazyLoader><JefeAreaDetailPage /></LazyLoader> },
+      {
+        path: 'jefes-area',
+        element: (
+          <LazyLoader>
+            <JefesAreaPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'jefes-area/nuevo',
+        element: (
+          <LazyLoader>
+            <JefeAreaCreatePage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'jefes-area/:id/editar',
+        element: (
+          <LazyLoader>
+            <JefeAreaEditPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'jefes-area/:id',
+        element: (
+          <LazyLoader>
+            <JefeAreaDetailPage />
+          </LazyLoader>
+        ),
+      },
     ],
   },
 ];

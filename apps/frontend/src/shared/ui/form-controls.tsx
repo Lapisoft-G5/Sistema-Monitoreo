@@ -6,13 +6,7 @@ import { Label } from './label';
 import { Textarea } from './textarea';
 import { Card, CardHeader, CardTitle, CardContent } from './card';
 import { Button } from './button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 
 /* ============================================================
  * Controles de formulario reutilizables y responsivos,
@@ -25,7 +19,8 @@ export interface Option {
   label: string;
 }
 
-export const toOptions = (values: string[]): Option[] => values.map((v) => ({ value: v, label: v }));
+export const toOptions = (values: string[]): Option[] =>
+  values.map((v) => ({ value: v, label: v }));
 
 // Estilos de grillas en formato CSSProperties para compatibilidad
 export const twoCols: CSSProperties = {
@@ -102,10 +97,10 @@ export const TextField = ({
         placeholder={placeholder}
         disabled={disabled}
         className={cn(
-          "w-full rounded-lg text-sm transition-all",
-          error && "border-destructive focus-visible:ring-destructive/30",
-          adornment && "pr-10",
-          disabled && "bg-muted cursor-not-allowed opacity-80"
+          'w-full rounded-lg text-sm transition-all',
+          error && 'border-destructive focus-visible:ring-destructive/30',
+          adornment && 'pr-10',
+          disabled && 'bg-muted cursor-not-allowed opacity-80',
         )}
       />
       {adornment && (
@@ -140,11 +135,13 @@ export const SelectField = ({
   <div className="flex flex-col gap-1 w-full">
     <FieldLabel label={label} required={required} />
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className={cn(
-        "w-full text-left text-sm rounded-lg h-9 border border-input bg-transparent", 
-        error && "border-destructive focus-visible:ring-destructive/30",
-        disabled && "bg-muted cursor-not-allowed opacity-80"
-      )}>
+      <SelectTrigger
+        className={cn(
+          'w-full text-left text-sm rounded-lg h-9 border border-input bg-transparent',
+          error && 'border-destructive focus-visible:ring-destructive/30',
+          disabled && 'bg-muted cursor-not-allowed opacity-80',
+        )}
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent className="max-h-[300px] z-50">
@@ -184,8 +181,8 @@ export const TextAreaField = ({
       placeholder={placeholder}
       rows={rows}
       className={cn(
-        "w-full rounded-lg text-sm transition-all min-h-[80px]",
-        error && "border-destructive focus-visible:ring-destructive/30"
+        'w-full rounded-lg text-sm transition-all min-h-[80px]',
+        error && 'border-destructive focus-visible:ring-destructive/30',
       )}
     />
     <ErrorText message={error} />
@@ -208,8 +205,8 @@ export const FormButton = ({
     variant={variant === 'primary' ? 'default' : 'outline'}
     disabled={disabled}
     className={cn(
-      "font-semibold rounded-lg text-sm px-4.5 py-2",
-      variant === 'primary' ? 'shadow-sm' : ''
+      'font-semibold rounded-lg text-sm px-4.5 py-2',
+      variant === 'primary' ? 'shadow-sm' : '',
     )}
   >
     {children}

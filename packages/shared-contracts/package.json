@@ -12,7 +12,10 @@
   "scripts": {
     "build": "tsc"
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "devDependencies": {
     "typescript": "^6.0.3"
   }

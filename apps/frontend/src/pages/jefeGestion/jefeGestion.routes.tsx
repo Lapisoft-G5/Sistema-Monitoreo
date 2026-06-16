@@ -26,8 +26,6 @@ const GestionMonitoreoPage = lazy(() =>
   import('../director/GestionMonitoreoPage').then((m) => ({ default: m.GestionMonitoreoPage })),
 );
 
-
-
 export const jefeGestionRoutes: RouteObject[] = [
   {
     element: <ProtectedRoute permission="monitoreo_plan" />,

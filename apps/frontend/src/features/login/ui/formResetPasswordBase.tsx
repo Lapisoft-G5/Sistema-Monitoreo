@@ -17,7 +17,12 @@ interface ResetPasswordFormProps {
   onErrorChange: (err: string) => void;
 }
 
-export const ResetPasswordForm = ({ onSubmit, loading, error, onErrorChange }: ResetPasswordFormProps) => {
+export const ResetPasswordForm = ({
+  onSubmit,
+  loading,
+  error,
+  onErrorChange,
+}: ResetPasswordFormProps) => {
   const [pwd, setPwd] = useState('');
   const [confirm, setConfirm] = useState('');
   const [show, setShow] = useState(false);

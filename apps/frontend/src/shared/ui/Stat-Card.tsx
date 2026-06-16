@@ -10,7 +10,14 @@ interface StatCardProps {
   progressValue?: number; // Para la barrita de progreso (0 a 100)
 }
 
-export const StatCard = ({ title, icon, value, trendText, trendType = 'neutral', progressValue }: StatCardProps) => {
+export const StatCard = ({
+  title,
+  icon,
+  value,
+  trendText,
+  trendType = 'neutral',
+  progressValue,
+}: StatCardProps) => {
   const trendColors = {
     success: 'text-green-600 bg-green-500/10',
     warning: 'text-amber-600 bg-amber-500/10',
@@ -40,14 +47,14 @@ export const StatCard = ({ title, icon, value, trendText, trendType = 'neutral',
               />
             </div>
             {trendText && (
-              <span className="block mt-2 text-xs text-text-muted font-medium">
-                {trendText}
-              </span>
+              <span className="block mt-2 text-xs text-text-muted font-medium">{trendText}</span>
             )}
           </div>
         ) : (
           trendText && (
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full inline-block ${trendColors[trendType]}`}>
+            <span
+              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-block ${trendColors[trendType]}`}
+            >
               {trendText}
             </span>
           )

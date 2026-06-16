@@ -45,7 +45,6 @@ export const CondicionLaboralCargosRestrictivos = ['Nombrado', 'Destacado'] as c
 /** @deprecated Usar CondicionLaboralCargosRestrictivos */
 export const CondicionLaboralPermitidaCoordinador = CondicionLaboralCargosRestrictivos;
 
-
 /** Los tres cargos válidos para la tabla Especialista */
 export const CargoEspecialista = {
   ESPECIALISTA: 'Especialista',
@@ -53,11 +52,7 @@ export const CargoEspecialista = {
   JEFE_GESTION: 'Jefe de Gestión',
 } as const;
 
-export const CondicionLaboralEspecialista = [
-  'Encargado',
-  'Destacado',
-  'Designado',
-] as const;
+export const CondicionLaboralEspecialista = ['Encargado', 'Destacado', 'Designado'] as const;
 
 export const MODALIDAD_NIVEL_MAP: Record<string, string[]> = {
   [ModalidadEducativa.EBR]: Object.values(NivelEducativoEBR),

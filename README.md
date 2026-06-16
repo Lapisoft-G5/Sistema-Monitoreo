@@ -42,16 +42,18 @@ El monorepo cuenta con un script de semillas (`database/seeders/dev-seed.js`) di
 
 > [!IMPORTANT]
 > El seeder importa clases compiladas de TypeScript del backend, por lo que **es indispensable que el backend esté construido** antes de correr el seeder. Si acabas de clonar el repositorio, la secuencia correcta es:
+>
 > ```bash
 > pnpm build
 > pnpm --filter backend prisma:seed
 > ```
 
 ### Usuarios de Prueba Autogenerados (DNI = contraseña inicial)
-*   **Director UGEL**: DNI `76358911` (carlos.quispe@ugel-lampa.gob.pe)
-*   **Especialista Administrativo**: DNI `45678901` (juan.perez@ugel-lampa.gob.pe)
-*   **Especialista de Nivel Medio**: DNI `32145678` (maria.gomez@ugel-lampa.gob.pe)
-*   **Especialista de Nivel Bajo**: DNI `12345678` (pedro.huanca@ugel-lampa.gob.pe)
+
+- **Director UGEL**: DNI `76358911` (carlos.quispe@ugel-lampa.gob.pe)
+- **Especialista Administrativo**: DNI `45678901` (juan.perez@ugel-lampa.gob.pe)
+- **Especialista de Nivel Medio**: DNI `32145678` (maria.gomez@ugel-lampa.gob.pe)
+- **Especialista de Nivel Bajo**: DNI `12345678` (pedro.huanca@ugel-lampa.gob.pe)
 
 ---
 
@@ -61,27 +63,27 @@ El monorepo cuenta con un script de semillas (`database/seeders/dev-seed.js`) di
 
 En entornos monorepo pnpm, los scripts de ciclo de vida nativos (como la compilación de `bcrypt` mediante `node-gyp`) pueden ser bloqueados por seguridad al realizar un `pnpm install`, resultando en un error de compilación o instalación.
 
-*   **Problema**: Recibes advertencias de scripts nativos bloqueados o `bcrypt` falla al ejecutarse en tiempo de ejecución.
-*   **Solución**: Ejecuta la aprobación global de compilaciones en el espacio de trabajo:
-    ```bash
-    pnpm approve-builds
-    ```
-    O aprueba explícitamente el paquete nativo:
-    ```bash
-    pnpm approve-builds bcrypt
-    ```
-    Esto permite que pnpm compile correctamente los binarios optimizados del módulo de cifrado bcrypt en tu sistema operativo local.
+- **Problema**: Recibes advertencias de scripts nativos bloqueados o `bcrypt` falla al ejecutarse en tiempo de ejecución.
+- **Solución**: Ejecuta la aprobación global de compilaciones en el espacio de trabajo:
+  ```bash
+  pnpm approve-builds
+  ```
+  O aprueba explícitamente el paquete nativo:
+  ```bash
+  pnpm approve-builds bcrypt
+  ```
+  Esto permite que pnpm compile correctamente los binarios optimizados del módulo de cifrado bcrypt en tu sistema operativo local.
 
 ### Error de Migración en Desarrollo (Conflictos de Columnas Requeridas / NOT NULL)
 
 Si al ejecutar `pnpm --filter backend prisma:migrate` (o `prisma migrate dev`) obtienes un error indicando que no se pueden aplicar los cambios de base de datos porque se están agregando columnas obligatorias (`NOT NULL` sin `DEFAULT`) a tablas que ya contienen registros (como `roles` o `especialistas`), es debido a que tu base de datos local contiene registros antiguos incompatibles con el nuevo esquema.
 
-*   **Problema**: Mensaje de error similar a: *`Added the required column 'cargo' to the 'especialistas' table without a default value...`*
-*   **Solución**: Reinicia tu base de datos local de desarrollo para eliminar los datos antiguos, aplicar las migraciones limpias y repoblar la base de datos con las nuevas semillas:
-    ```bash
-    pnpm --filter backend exec prisma migrate reset
-    ```
-    *(Este comando vacía la base de datos local, aplica todas las migraciones en orden y ejecuta el seeder de desarrollo de manera automática).*
+- **Problema**: Mensaje de error similar a: _`Added the required column 'cargo' to the 'especialistas' table without a default value...`_
+- **Solución**: Reinicia tu base de datos local de desarrollo para eliminar los datos antiguos, aplicar las migraciones limpias y repoblar la base de datos con las nuevas semillas:
+  ```bash
+  pnpm --filter backend exec prisma migrate reset
+  ```
+  _(Este comando vacía la base de datos local, aplica todas las migraciones en orden y ejecuta el seeder de desarrollo de manera automática)._
 
 ---
 
@@ -90,14 +92,17 @@ Si al ejecutar `pnpm --filter backend prisma:migrate` (o `prisma migrate dev`) o
 Para facilitar el trabajo del equipo de QA al validar las políticas de seguridad (bloqueos temporales, auditoría de eventos e intentos fallidos), las bases de datos y herramientas de correo están aisladas en contenedores Docker estables.
 
 ### Monitoreo de Correos Recibidos (Mailpit)
+
 Todas las solicitudes de recuperación de contraseña en local son capturadas por **Mailpit**.
-*   **Bandeja de Entrada Web**: Abre [http://localhost:8025/](http://localhost:8025/) en tu navegador para auditar visualmente los correos emitidos con los enlaces de un solo uso.
+
+- **Bandeja de Entrada Web**: Abre [http://localhost:8025/](http://localhost:8025/) en tu navegador para auditar visualmente los correos emitidos con los enlaces de un solo uso.
 
 ### Consultas SQL mediante Docker (Sin necesidad de clientes gráficos)
 
 Para un trabajo consistente, **hemos fijado el nombre del contenedor de la base de datos a `monitoring-postgres`** en el archivo `docker-compose.yml` (evitando los IDs de contenedor dinámicos).
 
 #### 1. Entrar al contenedor de PostgreSQL
+
 Abre una terminal dentro del contenedor de la base de datos:
 
 ```bash
@@ -105,6 +110,7 @@ docker exec -it monitoring-postgres bash
 ```
 
 #### 2. Abrir la consola de PostgreSQL
+
 Una vez dentro del contenedor, inicia `psql` como usuario administrador:
 
 ```bash
@@ -112,6 +118,7 @@ psql -U admin -d monitoring
 ```
 
 #### 3. Ver y filtrar logs de auditoría (Login, Bloqueos, Cambios de Clave)
+
 Ejecuta esta consulta para obtener los últimos 10 logs de seguridad registrados:
 
 ```sql
@@ -122,6 +129,7 @@ LIMIT 10;
 ```
 
 #### 4. Verificar estado de bloqueos y contadores de intentos de usuarios
+
 Consulta los intentos fallidos acumulados y el tiempo de bloqueo activo (`locked_until`):
 
 ```sql
@@ -130,6 +138,7 @@ FROM users;
 ```
 
 #### 5. Ver sesiones activas y revocadas en tiempo real
+
 Verifica el estado de las sesiones persistidas (JTI, IP y estado de expiración):
 
 ```sql
@@ -138,6 +147,7 @@ FROM auth_sessions;
 ```
 
 #### 6. Salir
+
 Para salir de `psql`:
 
 ```sql
@@ -164,12 +174,12 @@ packages/
 
 ## Scripts de Workspace
 
-| Comando | Descripción |
-|---------|-------------|
-| `pnpm dev` | Arranca frontend + backend simultáneamente |
-| `pnpm dev:frontend` | Ejecuta únicamente el cliente frontend |
-| `pnpm dev:backend` | Ejecuta únicamente el servidor backend |
-| `pnpm build` | Compila todos los proyectos y paquetes compartidos |
-| `pnpm lint` | Analiza el código con ESLint en todo el monorepo |
-| `pnpm typecheck` | Valida tipos TypeScript en frontend y backend |
-| `pnpm format` | Formatea el código con Prettier |
+| Comando             | Descripción                                        |
+| ------------------- | -------------------------------------------------- |
+| `pnpm dev`          | Arranca frontend + backend simultáneamente         |
+| `pnpm dev:frontend` | Ejecuta únicamente el cliente frontend             |
+| `pnpm dev:backend`  | Ejecuta únicamente el servidor backend             |
+| `pnpm build`        | Compila todos los proyectos y paquetes compartidos |
+| `pnpm lint`         | Analiza el código con ESLint en todo el monorepo   |
+| `pnpm typecheck`    | Valida tipos TypeScript en frontend y backend      |
+| `pnpm format`       | Formatea el código con Prettier                    |

@@ -13,12 +13,12 @@ import { RootRedirect } from './RootRedirect';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <AppShell />, 
+    element: <AppShell />,
     children: [
       { index: true, element: <RootRedirect /> },
-      
+
       ...directorUgelRoutes,
-      ...adminRoutes, 
+      ...adminRoutes,
       ...jefeGestionRoutes,
       ...especialistaRoutes,
     ],

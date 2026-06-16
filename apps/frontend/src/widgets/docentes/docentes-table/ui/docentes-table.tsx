@@ -18,7 +18,7 @@ interface DocentesTableWidgetProps {
   onEdit?: (docente: Docente) => void;
   onView: (docente: Docente) => void;
   instituciones: { id: string; nombre: string }[];
-  targetCargo?: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula';
+  targetCargo?: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
   routePrefix?: string;
   itemName?: string;
 }
@@ -36,8 +36,10 @@ export const DocentesTableWidget = ({
   const [deletingDoc, setDeletingDoc] = useState<Docente | null>(null);
   const [restoringDoc, setRestoringDoc] = useState<Docente | null>(null);
 
-  const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } =
-    useDocentesTable(docentes, targetCargo);
+  const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } = useDocentesTable(
+    docentes,
+    targetCargo,
+  );
 
   const confirmDelete = async () => {
     if (!deletingDoc) return;
@@ -49,10 +51,11 @@ export const DocentesTableWidget = ({
           MOCK_DOCENTES[index].activo = false;
         }
         setDocentes((prev) =>
-          prev.map((d) => (d.id === deletingDoc.id ? { ...d, activo: false } : d))
+          prev.map((d) => (d.id === deletingDoc.id ? { ...d, activo: false } : d)),
         );
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al dar de baja el docente.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al dar de baja el docente.';
         alert(errMsg);
       }
     } catch (err) {
@@ -72,10 +75,11 @@ export const DocentesTableWidget = ({
           MOCK_DOCENTES[index].activo = true;
         }
         setDocentes((prev) =>
-          prev.map((d) => (d.id === restoringDoc.id ? { ...d, activo: true } : d))
+          prev.map((d) => (d.id === restoringDoc.id ? { ...d, activo: true } : d)),
         );
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al reactivar el docente.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al reactivar el docente.';
         alert(errMsg);
       }
     } catch (err) {
@@ -165,10 +169,14 @@ export const DocentesTableWidget = ({
                   <TableCell className="text-right pr-5">
                     <FastActions
                       onView={() => onView(doc)}
-                      onEdit={doc.activo ? () => {
-                        onEdit?.(doc);
-                        navigate(`${routePrefix}/${doc.id}/editar`);
-                      } : undefined}
+                      onEdit={
+                        doc.activo
+                          ? () => {
+                              onEdit?.(doc);
+                              navigate(`${routePrefix}/${doc.id}/editar`);
+                            }
+                          : undefined
+                      }
                       onDelete={doc.activo ? () => setDeletingDoc(doc) : undefined}
                       onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
                       viewTitle="Ver ficha"

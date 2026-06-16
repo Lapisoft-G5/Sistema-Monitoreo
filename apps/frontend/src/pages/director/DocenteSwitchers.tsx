@@ -7,6 +7,10 @@ import { DocenteEditPage as JefeDocenteEditPage } from '../jefeArea/DocenteEditP
 import { DocenteEditPage as DirectorDocenteEditPage } from './DocenteEditPage';
 import { DocenteDetailPage as JefeDocenteDetailPage } from '../jefeArea/DocenteDetailPage';
 import { DocenteDetailPage as DirectorDocenteDetailPage } from './DocenteDetailPage';
+import { CoordinadoresPage } from './CoordinadoresPage';
+import { JefesAreaPage } from '../jefeGestion/JefesAreaPage';
+import { CoordinadorAssignPage } from './CoordinadorAssignPage';
+import { JefeAreaCreatePage } from '../jefeGestion/JefeAreaCreatePage';
 
 export const DocenteListSwitcher = () => {
   const { user } = useUser();
@@ -30,4 +34,16 @@ export const DocenteDetailSwitcher = () => {
   const { user } = useUser();
   const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
   return isDirector ? <DirectorDocenteDetailPage /> : <JefeDocenteDetailPage />;
+};
+
+export const CoordinadorSwitcher = () => {
+  const { user } = useUser();
+  const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  return isDirector ? <CoordinadoresPage /> : <JefesAreaPage />;
+};
+
+export const CoordinadorCreateSwitcher = () => {
+  const { user } = useUser();
+  const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  return isDirector ? <CoordinadorAssignPage /> : <JefeAreaCreatePage />;
 };

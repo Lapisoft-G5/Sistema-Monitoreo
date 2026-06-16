@@ -53,7 +53,11 @@ export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLog
             disabled={isLoading}
             className="text-[#990537] hover:text-[#7a042c] text-xs flex items-center gap-1.5 cursor-pointer bg-transparent border-none font-semibold outline-none disabled:opacity-50"
           >
-            {showPass ? <EyeOff className="w-[14px] h-[14px]" /> : <Eye className="w-[14px] h-[14px]" />}
+            {showPass ? (
+              <EyeOff className="w-[14px] h-[14px]" />
+            ) : (
+              <Eye className="w-[14px] h-[14px]" />
+            )}
             {showPass ? 'ocultar' : 'mostrar'}
           </button>
         </div>

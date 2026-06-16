@@ -49,7 +49,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     // invalidando el acceso actual. Forzamos la redirección al login limpiando el estado local.
     const res = await authApi.changePassword(newPassword);
     if (!res.ok) {
-      throw new Error((res.error as { message?: string })?.message || 'Error al cambiar contraseña');
+      throw new Error(
+        (res.error as { message?: string })?.message || 'Error al cambiar contraseña',
+      );
     }
 
     setUser(null);

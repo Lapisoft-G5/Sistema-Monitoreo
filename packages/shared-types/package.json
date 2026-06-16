@@ -8,7 +8,9 @@
       "types": "./src/index.ts"
     }
   },
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "devDependencies": {
     "typescript": "^6.0.3"
   }

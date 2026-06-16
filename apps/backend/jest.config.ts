@@ -48,8 +48,8 @@ const config: Config = {
   collectCoverageFrom: [
     '**/*.ts',
     '!**/*.spec.ts',
-    '!**/generated/**',   // código autogenerado de Prisma
-    '!**/main.ts',        // bootstrap de NestJS, no testeable unitariamente
+    '!**/generated/**', // código autogenerado de Prisma
+    '!**/main.ts', // bootstrap de NestJS, no testeable unitariamente
   ],
   coverageDirectory: '../coverage',
 };

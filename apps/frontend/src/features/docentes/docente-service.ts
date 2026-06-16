@@ -34,7 +34,7 @@ const toTitleCase = (str: string): string => {
 
 export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
   const cargoName = apiDoc.docenteCargos?.[0]?.cargo?.nombre || 'Docente de Aula';
-  
+
   return {
     id: apiDoc.id,
     nombres: apiDoc.persona.nombres,
@@ -46,12 +46,15 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
     condicion: (apiDoc.condicionLaboral || 'Nombrado') as Docente['condicion'],
     especialidad: apiDoc.cursoAsignado || 'General',
     cargaHoraria: 30,
-    secciones: apiDoc.docenteSecciones?.map((ds) => ({
-      id: ds.id,
-      grado: ds.grado,
-      seccion: ds.seccion,
-    })) || [],
-    escala: (apiDoc.escalaMagisterial ? MAP_INT_TO_ROMAN[apiDoc.escalaMagisterial] : 'I') as Docente['escala'],
+    secciones:
+      apiDoc.docenteSecciones?.map((ds) => ({
+        id: ds.id,
+        grado: ds.grado,
+        seccion: ds.seccion,
+      })) || [],
+    escala: (apiDoc.escalaMagisterial
+      ? MAP_INT_TO_ROMAN[apiDoc.escalaMagisterial]
+      : 'I') as Docente['escala'],
     institucionId: apiDoc.institucionId,
     activo: apiDoc.estado === 'Activo',
     fechaCreacion: apiDoc.createdAt
@@ -89,7 +92,7 @@ export const useDocenteService = () => {
         institucionId: formData.institucionId,
         gradoAcademico: 'Licenciado',
         nivelEducativo: toTitleCase(formData.nivelEducativo),
-        cursoAsignado: formData.especialidad.trim(),
+        cursoAsignado: formData.especialidad?.trim() || 'General',
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
         escalaMagisterial: MAP_ROMAN_TO_INT[formData.escala] || 1,
@@ -105,7 +108,8 @@ export const useDocenteService = () => {
         MOCK_DOCENTES.push(mapped);
         return { success: true, data: mapped };
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al registrar el docente.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al registrar el docente.';
         setError(errMsg);
         return { success: false, error: res.error };
       }
@@ -140,7 +144,7 @@ export const useDocenteService = () => {
         telefono: formData.celular.trim() || undefined,
         gradoAcademico: 'Licenciado',
         nivelEducativo: toTitleCase(formData.nivelEducativo),
-        cursoAsignado: formData.especialidad.trim(),
+        cursoAsignado: formData.especialidad?.trim() || 'General',
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
         escalaMagisterial: MAP_ROMAN_TO_INT[formData.escala] || 1,
@@ -160,12 +164,15 @@ export const useDocenteService = () => {
         }
         return { success: true, data: mapped };
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al actualizar el registro del docente.';
+        const errMsg =
+          (res.error as { message?: string })?.message ||
+          'Error al actualizar el registro del docente.';
         setError(errMsg);
         return { success: false, error: res.error };
       }
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'Error al actualizar el registro del docente.';
+      const errMsg =
+        err instanceof Error ? err.message : 'Error al actualizar el registro del docente.';
       setError(errMsg);
       return { success: false, error: err };
     } finally {

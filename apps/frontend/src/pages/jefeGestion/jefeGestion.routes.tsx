@@ -25,6 +25,9 @@ const ReportesPage = lazy(() =>
 const GestionMonitoreoPage = lazy(() =>
   import('../director/GestionMonitoreoPage').then((m) => ({ default: m.GestionMonitoreoPage })),
 );
+const PlantillaCreatePage = lazy(() =>
+  import('./PlantillaCreatePage').then((m) => ({ default: m.PlantillaCreatePage })),
+);
 
 export const jefeGestionRoutes: RouteObject[] = [
   {
@@ -98,6 +101,20 @@ export const jefeGestionRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <ReportesPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  // Plantillas de Monitoreo (Jefe de Gestión)
+  {
+    element: <ProtectedRoute permission="monitoreo" />,
+    children: [
+      {
+        path: 'plantillas/nuevo',
+        element: (
+          <LazyLoader>
+            <PlantillaCreatePage />
           </LazyLoader>
         ),
       },

@@ -7,6 +7,7 @@ export const BREADCRUMBS_MAP: Record<string, string> = {
   '/instituciones/docentes': 'Padrón de Docentes', // Más específico primero
   '/instituciones': 'Padrón de Instituciones',
   '/especialistas': 'Especialistas',
+  '/plantillas': 'Catálogo de Plantillas',
   '/plantillas/nuevo': 'Registrar Plantilla',
   '/reportes': 'Reportes',
   '/configuracion': 'Configuración',

@@ -90,7 +90,7 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     id: 'plantillas',
     label: 'Plantillas de Monitoreo',
     icon: <ClipboardList className="h-[18px] w-[18px]" />,
-    path: '/plantillas/nuevo',
+    path: '/plantillas',
     children: [],
   },
   {

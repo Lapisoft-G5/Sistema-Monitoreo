@@ -90,9 +90,7 @@ export const Sidebar = () => {
               ? isJefeArea || user?.role === 'jefe_gestion'
                 ? 'Directores'
                 : 'Docentes'
-              : item.id === 'instituciones_coordinadores' && isJefeArea
-                ? 'Jefes de Gestión'
-                : item.label;
+              : item.label;
 
           const triggerClasses = `
             w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border-none

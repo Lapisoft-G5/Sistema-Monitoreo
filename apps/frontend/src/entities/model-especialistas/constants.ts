@@ -7,7 +7,7 @@ import {
 
 export const CARGOS_ESPECIALISTA = Object.values(CargoEspecialista);
 
-export const CONDICIONES_ESPECIALISTA = [...CondicionLaboralEspecialista, 'Nombrado'] as const;
+export const CONDICIONES_ESPECIALISTA = CondicionLaboralEspecialista;
 
 export const MODALIDADES_ESPECIALISTA = Object.values(ModalidadEducativa);
 

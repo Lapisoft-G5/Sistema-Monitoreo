@@ -179,7 +179,6 @@ export const EspecialistaFormBase = ({
               { value: 'Encargado', label: 'Encargado' },
               { value: 'Destacado', label: 'Destacado' },
               { value: 'Designado', label: 'Designado' },
-              { value: 'Nombrado', label: 'Nombrado' },
             ]}
             placeholder="Seleccione Condición"
             error={showError('condicionLaboral')}

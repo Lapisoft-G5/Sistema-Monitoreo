@@ -6,6 +6,7 @@ import {
   Users,
   Briefcase,
   BarChart3,
+  ClipboardList,
   Settings,
 } from 'lucide-react';
 import type { MenuItem } from '@shared/constants/roles';
@@ -83,6 +84,13 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     label: 'Jefes de Área',
     icon: <Briefcase className="h-[18px] w-[18px]" />,
     path: '/jefes-area',
+    children: [],
+  },
+  {
+    id: 'plantillas',
+    label: 'Plantillas de Monitoreo',
+    icon: <ClipboardList className="h-[18px] w-[18px]" />,
+    path: '/plantillas',
     children: [],
   },
   {

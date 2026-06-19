@@ -48,7 +48,7 @@ export const Sidebar = () => {
               UGEL Lampa
             </span>
             <span className="text-text-muted text-[0.63rem] whitespace-nowrap">
-              Gestión Pedagógica
+              Jefe de Gestión
             </span>
           </div>
         )}

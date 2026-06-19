@@ -25,7 +25,16 @@ const ReportesPage = lazy(() =>
 const GestionMonitoreoPage = lazy(() =>
   import('../director/GestionMonitoreoPage').then((m) => ({ default: m.GestionMonitoreoPage })),
 );
-
+const PlantillasPage = lazy(() =>
+  import('./PlantillasPage').then((m) => ({ default: m.PlantillasPage })),
+);
+const PlantillaCreatePage = lazy(() =>
+  import('./PlantillaCreatePage').then((m) => ({ default: m.PlantillaCreatePage })),
+);
+// 1. IMPORTACIÓN LAZY DE PÁGINA DE EDICIÓN
+const PlantillaEditPage = lazy(() =>
+  import('./PlantillaEditPage').then((m) => ({ default: m.PlantillaEditPage })),
+);
 export const jefeGestionRoutes: RouteObject[] = [
   {
     element: <ProtectedRoute permission="monitoreo_plan" />,
@@ -101,6 +110,37 @@ export const jefeGestionRoutes: RouteObject[] = [
           </LazyLoader>
         ),
       },
+    ],
+  },
+  // Plantillas de Monitoreo (Jefe de Gestión)
+  {
+    element: <ProtectedRoute permission="plantillas" />,
+    children: [
+      {
+        path: 'plantillas',
+        element: (
+          <LazyLoader>
+            <PlantillasPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'plantillas/nuevo',
+        element: (
+          <LazyLoader>
+            <PlantillaCreatePage />
+          </LazyLoader>
+        ),
+      },
+      // 2. RUTA DE EDICIÓN DE PLANTILLA
+      { 
+        path: 'plantillas/:id/editar',
+        element: (
+          <LazyLoader>
+            <PlantillaEditPage />
+          </LazyLoader>
+        ),
+      },  
     ],
   },
 ];

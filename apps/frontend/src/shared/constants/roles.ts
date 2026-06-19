@@ -52,7 +52,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes',
     'instituciones_padron',
     'instituciones_docentes',
-    'instituciones_coordinadores',
   ],
 
   jefe_area: ['instituciones_padron', 'instituciones_docentes'],

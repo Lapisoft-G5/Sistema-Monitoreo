@@ -108,7 +108,7 @@ export const jefeGestionRoutes: RouteObject[] = [
   },
   // Plantillas de Monitoreo (Jefe de Gestión)
   {
-    element: <ProtectedRoute permission="monitoreo" />,
+    element: <ProtectedRoute permission="plantillas" />,
     children: [
       {
         path: 'plantillas/nuevo',

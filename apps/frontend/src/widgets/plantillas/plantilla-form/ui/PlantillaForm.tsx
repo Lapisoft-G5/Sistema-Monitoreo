@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { FormButton } from '@shared/ui/form-controls';
-import { NIVELES_DEFAULT } from '@entities/model-plantillas';
+import { NIVELES_DEFAULT, crearDesempenoVacio } from '@entities/model-plantillas';
 import type { Baremo, NivelCalificacion, Desempeno } from '@entities/model-plantillas';
 import { PlantillaCabecera } from './PlantillaCabecera';
+import { PlantillaDesempenos } from './PlantillaDesempenos';
 
 export interface PlantillaFormState {
   tipoMonitoreo: string;
@@ -12,21 +13,19 @@ export interface PlantillaFormState {
   desempenos: Desempeno[];
 }
 
-const INITIAL: PlantillaFormState = {
-  tipoMonitoreo: 'Monitoreo Docente',
-  anioAcademico: new Date().getFullYear(),
-  baremo: 'Vigente',
-  niveles: NIVELES_DEFAULT,
-  desempenos: [],
-};
-
 interface Props {
   onCancel: () => void;
   onSubmit: (data: PlantillaFormState) => void;
 }
 
 export const PlantillaForm = ({ onCancel, onSubmit }: Props) => {
-  const [form, setForm] = useState<PlantillaFormState>(INITIAL);
+  const [form, setForm] = useState<PlantillaFormState>(() => ({
+    tipoMonitoreo: 'Monitoreo Docente',
+    anioAcademico: new Date().getFullYear(),
+    baremo: 'Vigente',
+    niveles: NIVELES_DEFAULT,
+    desempenos: [crearDesempenoVacio()],
+  }));
   const patch = (p: Partial<PlantillaFormState>) => setForm((prev) => ({ ...prev, ...p }));
 
   return (
@@ -39,10 +38,11 @@ export const PlantillaForm = ({ onCancel, onSubmit }: Props) => {
         onChange={patch}
       />
 
-      {/* Gestión de Desempeños — paso 3 */}
-      <div className="border border-dashed border-border rounded-2xl p-6 text-center text-sm text-text-muted">
-        Gestión de Desempeños (siguiente paso)
-      </div>
+      <PlantillaDesempenos
+        desempenos={form.desempenos}
+        niveles={form.niveles}
+        onChange={(desempenos) => patch({ desempenos })}
+      />
 
       <div className="flex justify-end gap-3">
         <FormButton variant="secondary" onClick={onCancel}>

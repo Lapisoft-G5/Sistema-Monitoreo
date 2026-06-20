@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Grid, List } from 'lucide-react';
 import { useCronogramas } from '@entities/model-cronogramas';
 import { usePlantillas } from '@entities/model-plantillas';
+import { useFichasCompletadas } from '@entities/model-reportes';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ReportesStats, ReportesGrid } from '@widgets/reportes';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
@@ -48,6 +49,10 @@ const getFichaState = (visitId: string) => {
 export const ReportesPage = () => {
   const { cronogramas } = useCronogramas();
   const { plantillas } = usePlantillas();
+  // Carga paralela desde el backend. Si falla, el componente sigue mostrando
+  // los datos locales (localStorage) - el query solo agrega data del server.
+  const { data: _fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
+  void _fichasCompletadasData; // disponible para futura UI - sprint 4
 
   // ── Estados de Vista e Interacción ──
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');

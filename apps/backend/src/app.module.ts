@@ -12,6 +12,7 @@ import { InstitutionsModule } from './modules/institutions/institutions.module.j
 import { EspecialistasModule } from './modules/especialistas/especialistas.module.js';
 import { CatalogsModule } from './modules/catalogs/catalogs.module.js';
 import { MonitoringModule } from './modules/monitoring/monitoring.module.js';
+import { SchedulingModule } from './modules/scheduling/scheduling.module.js';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module.js';
     EspecialistasModule,
     CatalogsModule,
     MonitoringModule,
+    SchedulingModule,
   ],
   providers: [
     {

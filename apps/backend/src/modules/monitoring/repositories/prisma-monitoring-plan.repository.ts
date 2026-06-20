@@ -1,15 +1,31 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '../../../generated/prisma/client.js';
+import type { IMonitoringPlanResponse, IPlanInstitucionCubierta } from '@sistema-monitoreo/shared-contracts';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import { MonitoringPlanRepository } from './monitoring-plan.repository.js';
-import type { IMonitoringPlanResponse } from '@sistema-monitoreo/shared-contracts';
+import {
+  CreatePlanData,
+  MonitoringPlanRepository,
+} from './monitoring-plan.repository.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
 
 @Injectable()
 export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private mapToResponse(plan: any): IMonitoringPlanResponse {
+  private async buildResponse(plan: any): Promise<IMonitoringPlanResponse> {
+    const cobertura = await this.prisma.planCoberturaIe.findMany({
+      where: { planId: plan.id },
+      include: {
+        institucion: {
+          select: { id: true, nombre: true, codigoModular: true },
+        },
+      },
+    });
+    const institucionesCubiertas: IPlanInstitucionCubierta[] = cobertura.map((c) => ({
+      institucionId: c.institucion.id,
+      institucionNombre: c.institucion.nombre,
+      institucionCodigoModular: c.institucion.codigoModular,
+    }));
+
     return {
       id: plan.id,
       titulo: plan.titulo,
@@ -17,22 +33,22 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
       tipoEntidad: plan.tipoEntidad,
       archivoUrl: plan.archivoUrl,
       estado: plan.estado,
+      autorId: plan.autorId,
+      rolAutorAlCrear: plan.rolAutorAlCrear,
+      institucionId: plan.institucionId,
+      deleted: plan.deleted,
+      deletedAt: plan.deletedAt ? plan.deletedAt.toISOString() : null,
+      institucionesCubiertas,
       createdAt: plan.createdAt.toISOString(),
       updatedAt: plan.updatedAt.toISOString(),
     };
   }
 
   async findAll(filters?: QueryPlanDto): Promise<IMonitoringPlanResponse[]> {
-    const where: Prisma.PlanMonitoreoWhereInput = {
-      deleted: false,
-    };
-
+    const where: any = { deleted: false };
     if (filters) {
       if (filters.search) {
-        where.titulo = {
-          contains: filters.search,
-          mode: 'insensitive',
-        };
+        where.titulo = { contains: filters.search, mode: 'insensitive' };
       }
       if (filters.anioAcademico !== undefined) {
         where.anioAcademico = filters.anioAcademico;
@@ -47,60 +63,94 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
 
     const plans = await this.prisma.planMonitoreo.findMany({
       where,
-      orderBy: [
-        { anioAcademico: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ anioAcademico: 'desc' }, { createdAt: 'desc' }],
     });
-
-    return plans.map((p) => this.mapToResponse(p));
+    return Promise.all(plans.map((p) => this.buildResponse(p)));
   }
 
   async findById(id: string): Promise<IMonitoringPlanResponse | null> {
-    const plan = await this.prisma.planMonitoreo.findFirst({
-      where: {
-        id,
-        deleted: false,
-      },
-    });
+    const plan = await this.prisma.planMonitoreo.findFirst({ where: { id, deleted: false } });
     if (!plan) return null;
-    return this.mapToResponse(plan);
+    return this.buildResponse(plan);
   }
 
-  async create(data: {
-    titulo: string;
-    anioAcademico: number;
-    tipoEntidad: string;
-    archivoUrl: string;
-  }): Promise<IMonitoringPlanResponse> {
+  async create(data: CreatePlanData): Promise<IMonitoringPlanResponse> {
     const plan = await this.prisma.planMonitoreo.create({
       data: {
         titulo: data.titulo,
         anioAcademico: data.anioAcademico,
         tipoEntidad: data.tipoEntidad,
         archivoUrl: data.archivoUrl,
+        autorId: data.autorId,
+        rolAutorAlCrear: data.rolAutorAlCrear,
+        institucionId: data.institucionId,
       },
     });
-    return this.mapToResponse(plan);
+
+    if (data.institucionId) {
+      await this.prisma.planCoberturaIe.create({
+        data: { planId: plan.id, institucionId: data.institucionId },
+      });
+    }
+
+    return this.buildResponse(plan);
   }
 
-  async delete(id: string): Promise<IMonitoringPlanResponse> {
-    const existing = await this.prisma.planMonitoreo.findUnique({
-      where: { id },
-    });
+  async softDelete(id: string): Promise<IMonitoringPlanResponse> {
+    const existing = await this.prisma.planMonitoreo.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
     }
-
     const newEstado = existing.estado === 'Activo' ? 'Inactivo' : 'Activo';
-
     const plan = await this.prisma.planMonitoreo.update({
       where: { id },
-      data: {
-        estado: newEstado,
+      data: { estado: newEstado },
+    });
+    return this.buildResponse(plan);
+  }
+
+  async restore(id: string): Promise<IMonitoringPlanResponse> {
+    const existing = await this.prisma.planMonitoreo.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
+    }
+    const plan = await this.prisma.planMonitoreo.update({
+      where: { id },
+      data: { estado: 'Activo' },
+    });
+    return this.buildResponse(plan);
+  }
+
+  async findCobertura(planId: string): Promise<IPlanInstitucionCubierta[]> {
+    const cobertura = await this.prisma.planCoberturaIe.findMany({
+      where: { planId },
+      include: {
+        institucion: {
+          select: { id: true, nombre: true, codigoModular: true },
+        },
       },
     });
+    return cobertura.map((c) => ({
+      institucionId: c.institucion.id,
+      institucionNombre: c.institucion.nombre,
+      institucionCodigoModular: c.institucion.codigoModular,
+    }));
+  }
 
-    return this.mapToResponse(plan);
+  async addCobertura(planId: string, institucionId: string): Promise<void> {
+    const existing = await this.prisma.planCoberturaIe.findFirst({
+      where: { planId, institucionId },
+    });
+    if (!existing) {
+      await this.prisma.planCoberturaIe.create({
+        data: { planId, institucionId },
+      });
+    }
+  }
+
+  async removeCobertura(planId: string, institucionId: string): Promise<void> {
+    await this.prisma.planCoberturaIe.deleteMany({
+      where: { planId, institucionId },
+    });
   }
 }

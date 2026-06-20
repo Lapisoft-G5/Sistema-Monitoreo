@@ -1,89 +1,67 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Param,
-  Query,
-  Body,
-  UseInterceptors,
-  UploadedFile,
   BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
   HttpCode,
   HttpStatus,
-  Req,
   ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { existsSync, mkdirSync } from 'fs';
-import { MonitoringPlanService } from '../services/monitoring-plan.service.js';
+import type { IMonitoringPlanResponse, IPlanInstitucionCubierta } from '@sistema-monitoreo/shared-contracts';
+import { MonitoringPlanService, type SessionUser } from '../services/monitoring-plan.service.js';
 import { CreatePlanDto } from '../dto/create-plan.dto.js';
 import { QueryPlanDto } from '../dto/query-plan.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
-import type { IMonitoringPlanResponse } from '@sistema-monitoreo/shared-contracts';
-
-// Configuración de almacenamiento Multer
-const storage = diskStorage({
-  destination: (req, file, callback) => {
-    const uploadPath = './uploads/planes';
-    if (!existsSync(uploadPath)) {
-      mkdirSync(uploadPath, { recursive: true });
-    }
-    callback(null, uploadPath);
-  },
-  filename: (req, file, callback) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    callback(null, `plan-${uniqueSuffix}${extname(file.originalname)}`);
-  },
-});
+import { STORAGE_SERVICE } from '../../../shared/storage/storage.constants.js';
+import type { StorageService } from '../../../shared/storage/storage.constants.js';
+import { Inject } from '@nestjs/common';
 
 @Controller('planes-monitoreo')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class MonitoringPlanController {
-  constructor(private readonly service: MonitoringPlanService) {}
+  constructor(
+    private readonly service: MonitoringPlanService,
+    @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
+  ) {}
 
   @Post()
   @RequirePermissions('monitoreo:execute')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage,
       fileFilter: (req, file, callback) => {
         if (!file.originalname.match(/\.(pdf)$/i)) {
           return callback(new BadRequestException('Solo se permiten archivos en formato PDF.'), false);
         }
         callback(null, true);
       },
-      limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB máximo
-      },
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() dto: CreatePlanDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Req() req: any,
   ): Promise<IMonitoringPlanResponse> {
     if (!file) {
       throw new BadRequestException('El archivo PDF es obligatorio.');
     }
-    const user = req.user;
-    const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
-    
-    if (isDirector) {
-      dto.tipoEntidad = 'IE';
-    } else if (user?.role === 'jefe_gestion') {
-      dto.tipoEntidad = 'UGEL';
-    }
-
-    // Generar la URL del archivo
-    const fileUrl = `/uploads/planes/${file.filename}`;
-    return this.service.create(dto, fileUrl);
+    const stored = await this.storage.savePdf('planes', file.originalname, file.buffer);
+    const dtoWithUrl: CreatePlanDto = { ...dto, archivoUrl: stored.url };
+    const session: SessionUser = this.toSession(req);
+    return this.service.create(dtoWithUrl, session);
   }
 
   @Get()
@@ -92,34 +70,70 @@ export class MonitoringPlanController {
     @Query() query: QueryPlanDto,
     @Req() req: any,
   ): Promise<IMonitoringPlanResponse[]> {
-    const user = req.user;
-    const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
-    
-    if (isDirector) {
-      // Un director solo puede ver planes de tipo 'IE'
-      query.tipoEntidad = 'IE';
+    const session: SessionUser = this.toSession(req);
+    const adjusted: QueryPlanDto = { ...query };
+    if (session.role === 'director_institucion' || session.role === 'director_ie') {
+      adjusted.tipoEntidad = 'IE';
     }
-    
-    return this.service.findAll(query);
+    return this.service.findAll(adjusted, session);
+  }
+
+  @Get(':id')
+  @RequirePermissions('monitoreo:execute')
+  async findById(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+  ): Promise<IMonitoringPlanResponse> {
+    return this.service.findById(id, this.toSession(req));
   }
 
   @Delete(':id')
   @RequirePermissions('monitoreo:execute')
-  async delete(
-    @Param('id') id: string,
+  async toggle(
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: any,
   ): Promise<IMonitoringPlanResponse> {
-    const user = req.user;
-    const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
-    
-    if (isDirector) {
-      // Un director solo puede eliminar planes de tipo 'IE'
-      const plan = await this.service.findById(id);
-      if (plan.tipoEntidad !== 'IE') {
-        throw new ForbiddenException('No cuenta con permisos para eliminar este plan de monitoreo.');
-      }
+    return this.service.toggleEstado(id, this.toSession(req));
+  }
+
+  @Get(':id/cobertura')
+  @RequirePermissions('monitoreo:execute')
+  async findCobertura(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+  ): Promise<IPlanInstitucionCubierta[]> {
+    return this.service.findCobertura(id, this.toSession(req));
+  }
+
+  @Post(':id/cobertura/:institucionId')
+  @RequirePermissions('monitoreo:execute')
+  @HttpCode(HttpStatus.CREATED)
+  async addCobertura(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('institucionId', new ParseUUIDPipe()) institucionId: string,
+    @Req() req: any,
+  ): Promise<IPlanInstitucionCubierta[]> {
+    return this.service.addCobertura(id, institucionId, this.toSession(req));
+  }
+
+  @Delete(':id/cobertura/:institucionId')
+  @RequirePermissions('monitoreo:execute')
+  async removeCobertura(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('institucionId', new ParseUUIDPipe()) institucionId: string,
+    @Req() req: any,
+  ): Promise<IPlanInstitucionCubierta[]> {
+    return this.service.removeCobertura(id, institucionId, this.toSession(req));
+  }
+
+  private toSession(req: any): SessionUser {
+    if (!req.user) {
+      throw new ForbiddenException('Sesion no encontrada.');
     }
-    
-    return this.service.delete(id);
+    return {
+      id: req.user.sub,
+      role: req.user.role,
+      institucionId: req.user.institucion_id ?? null,
+    };
   }
 }

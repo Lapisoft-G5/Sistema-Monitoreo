@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Calendar, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { useUser } from '@entities/model-user';
@@ -15,7 +15,7 @@ export const CalendarioPage = () => {
   // ── Estados de Navegación ──
   const [activeTab, setActiveTab] = useState<'CALENDARIO' | 'SOLICITUDES'>('CALENDARIO');
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2023, 9, 15, 12, 0, 0));
-  const [activeView, setActiveView] = useState<'MENSUAL' | 'SEMANAL' | 'DIARIO' | 'ANUAL'>('MENSUAL');
+  const [activeView, setActiveView] = useState<'MENSUAL' | 'SEMANAL' | 'DIARIO' | 'ANUAL' | 'LISTA'>('MENSUAL');
 
   // ── Selección activa de fecha y visita ──
   const [selectedDateStr, setSelectedDateStr] = useState<string>('2023-10-12');
@@ -27,28 +27,39 @@ export const CalendarioPage = () => {
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterEspecialista, setFilterEspecialista] = useState('Todos');
   const [filterTipo, setFilterTipo] = useState('Todos');
+  const [filterNroVisita, setFilterNroVisita] = useState('Todos');
+  const [filterEstado, setFilterEstado] = useState('Todos');
+
+  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
 
   // Cascading Nivel Options
   const nivelesDisponibles = useMemo(() => {
     if (filterModalidad === 'Todos') return [];
-    return MODALIDAD_NIVEL_MAP[filterModalidad as any] || [];
+    return MODALIDAD_NIVEL_MAP[filterModalidad as keyof typeof MODALIDAD_NIVEL_MAP] || [];
   }, [filterModalidad]);
 
-  useEffect(() => {
+  const handleModalidadChange = (modalidad: string) => {
+    setFilterModalidad(modalidad);
     setFilterNivel('Todos');
-  }, [filterModalidad]);
+  };
 
-  const isAnyFilterActive =
-    filterModalidad !== 'Todos' ||
-    filterNivel !== 'Todos' ||
-    filterEspecialista !== 'Todos' ||
-    filterTipo !== 'Todos';
+  const isAnyFilterActive = isDirector
+    ? filterTipo !== 'Todos' ||
+      filterEspecialista !== 'Todos' ||
+      filterNroVisita !== 'Todos' ||
+      filterEstado !== 'Todos'
+    : filterModalidad !== 'Todos' ||
+      filterNivel !== 'Todos' ||
+      filterEspecialista !== 'Todos' ||
+      filterTipo !== 'Todos';
 
   const handleClearFilters = () => {
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
     setFilterEspecialista('Todos');
     setFilterTipo('Todos');
+    setFilterNroVisita('Todos');
+    setFilterEstado('Todos');
   };
 
   // Nombre del especialista logueado para filtro
@@ -97,13 +108,52 @@ export const CalendarioPage = () => {
           return false;
         }
       }
-      if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
-      if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
+      if (isDirector && user) {
+        const isSameSchool =
+          user.institucionNombre &&
+          visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
+
+        const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+        const isDirectedToMe =
+          visit.tipo === 'DIRECTIVO' &&
+          (visit.docenteDirectivo.toLowerCase().includes(userFullName) ||
+            userFullName.includes(visit.docenteDirectivo.toLowerCase()) ||
+            visit.docenteDirectivo.toLowerCase().includes(user.nombres.toLowerCase()));
+
+        if (!isSameSchool && !isDirectedToMe) {
+          return false;
+        }
+      }
+
+      // Filtros específicos de Director
+      if (isDirector) {
+        if (filterNroVisita !== 'Todos' && visit.nroVisita !== filterNroVisita) return false;
+        if (filterEstado !== 'Todos' && visit.estado !== filterEstado) return false;
+      } else {
+        // Filtros de UGEL
+        if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
+        if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
+      }
+
+      // Filtros compartidos
       if (filterEspecialista !== 'Todos' && visit.especialista !== filterEspecialista) return false;
       if (filterTipo !== 'Todos' && visit.tipo !== filterTipo) return false;
+
       return true;
     });
-  }, [cronogramas, isEspecialista, specialistFilterName, filterModalidad, filterNivel, filterEspecialista, filterTipo]);
+  }, [
+    cronogramas,
+    isEspecialista,
+    specialistFilterName,
+    isDirector,
+    user,
+    filterModalidad,
+    filterNivel,
+    filterEspecialista,
+    filterTipo,
+    filterNroVisita,
+    filterEstado
+  ]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -117,7 +167,7 @@ export const CalendarioPage = () => {
         {/* Toggle de vistas principal */}
         {activeTab === 'CALENDARIO' && (
           <div className="inline-flex rounded-xl border border-border p-1 bg-surface shadow-sm">
-            {(['MENSUAL', 'SEMANAL', 'DIARIO', 'ANUAL'] as const).map((view) => (
+            {(['MENSUAL', 'SEMANAL', 'DIARIO', 'ANUAL', 'LISTA'] as const).map((view) => (
               <button
                 key={view}
                 onClick={() => {
@@ -147,7 +197,9 @@ export const CalendarioPage = () => {
                     ? 'Semanal'
                     : view === 'DIARIO'
                       ? 'Diario'
-                      : 'Anual'}
+                      : view === 'ANUAL'
+                        ? 'Anual'
+                        : 'Lista'}
               </button>
             ))}
           </div>
@@ -202,13 +254,17 @@ export const CalendarioPage = () => {
               showDetailsPanel={showDetailsPanel}
               setShowDetailsPanel={setShowDetailsPanel}
               filterModalidad={filterModalidad}
-              setFilterModalidad={setFilterModalidad}
+              setFilterModalidad={handleModalidadChange}
               filterNivel={filterNivel}
               setFilterNivel={setFilterNivel}
               filterEspecialista={filterEspecialista}
               setFilterEspecialista={setFilterEspecialista}
               filterTipo={filterTipo}
               setFilterTipo={setFilterTipo}
+              filterNroVisita={filterNroVisita}
+              setFilterNroVisita={setFilterNroVisita}
+              filterEstado={filterEstado}
+              setFilterEstado={setFilterEstado}
               listaEspecialistas={listaEspecialistas}
               nivelesDisponibles={nivelesDisponibles}
               isAnyFilterActive={isAnyFilterActive}

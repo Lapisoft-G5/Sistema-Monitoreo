@@ -7,7 +7,9 @@ import {
   Clock,
   Hash,
   Filter,
-  GraduationCap
+  GraduationCap,
+  Calendar,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
@@ -19,8 +21,8 @@ import { useUser } from '@/entities/model-user';
 interface CalendarioGridProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  activeView: 'MENSUAL' | 'SEMANAL' | 'DIARIO' | 'ANUAL';
-  setActiveView: React.Dispatch<React.SetStateAction<'MENSUAL' | 'SEMANAL' | 'DIARIO' | 'ANUAL'>>;
+  activeView: 'MENSUAL' | 'SEMANAL' | 'DIARIO' | 'ANUAL' | 'LISTA';
+  setActiveView: React.Dispatch<React.SetStateAction<'MENSUAL' | 'SEMANAL' | 'DIARIO' | 'ANUAL' | 'LISTA'>>;
   selectedDateStr: string;
   setSelectedDateStr: (d: string) => void;
   selectedVisitId: string | null;
@@ -36,6 +38,10 @@ interface CalendarioGridProps {
   setFilterEspecialista: (s: string) => void;
   filterTipo: string;
   setFilterTipo: (s: string) => void;
+  filterNroVisita: string;
+  setFilterNroVisita: (s: string) => void;
+  filterEstado: string;
+  setFilterEstado: (s: string) => void;
   listaEspecialistas: string[];
   nivelesDisponibles: string[];
   isAnyFilterActive: boolean;
@@ -64,6 +70,43 @@ const formatVisitTime = (fechaHoraStr: string) => {
     const d = new Date(fechaHoraStr);
     if (!isNaN(d.getTime())) {
       return d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+    return fechaHoraStr;
+  } catch {
+    return fechaHoraStr;
+  }
+};
+
+const formatVisitDate = (fechaHoraStr: string) => {
+  try {
+    const datePart = fechaHoraStr.includes('T') ? fechaHoraStr.split('T')[0] : fechaHoraStr;
+    const parts = datePart.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      const day = parseInt(parts[2], 10);
+      const dateObj = new Date(year, month - 1, day);
+      if (!isNaN(dateObj.getTime())) {
+        const options: Intl.DateTimeFormatOptions = {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        };
+        const formatted = dateObj.toLocaleDateString('es-ES', options);
+        return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+      }
+    }
+    const d = new Date(fechaHoraStr);
+    if (!isNaN(d.getTime())) {
+      const options: Intl.DateTimeFormatOptions = {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      };
+      const formatted = d.toLocaleDateString('es-ES', options);
+      return formatted.charAt(0).toUpperCase() + formatted.slice(1);
     }
     return fechaHoraStr;
   } catch {
@@ -142,6 +185,10 @@ export const CalendarioGrid = ({
   setFilterEspecialista,
   filterTipo,
   setFilterTipo,
+  filterNroVisita,
+  setFilterNroVisita,
+  filterEstado,
+  setFilterEstado,
   listaEspecialistas,
   nivelesDisponibles,
   isAnyFilterActive,
@@ -149,9 +196,14 @@ export const CalendarioGrid = ({
 }: CalendarioGridProps) => {
   const { user } = useUser();
   const isEspecialista = user?.role === 'especialista';
+  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  const sortedVisits = useMemo(() => {
+    return [...filteredVisits].sort((a, b) => a.fechaHora.localeCompare(b.fechaHora));
+  }, [filteredVisits]);
 
   const getLabelForHeader = () => {
     if (activeView === 'MENSUAL' || activeView === 'ANUAL') {
@@ -340,62 +392,120 @@ export const CalendarioGrid = ({
           )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <SelectField
-            label="Modalidad"
-            value={filterModalidad}
-            onChange={(val) => setFilterModalidad(val)}
-            placeholder="Seleccione modalidad"
-            options={[
-              { value: 'Todos', label: 'Todas las modalidades' },
-              ...MODALIDADES.map((m) => ({ value: m, label: m })),
-            ]}
-          />
+          {isDirector ? (
+            <>
+              <SelectField
+                label="Tipo de Monitoreo"
+                value={filterTipo}
+                onChange={(val) => setFilterTipo(val)}
+                placeholder="Seleccione tipo"
+                options={[
+                  { value: 'Todos', label: 'Todos los tipos' },
+                  { value: 'DOCENTE', label: 'Monitoreo a Docentes' },
+                  { value: 'DIRECTIVO', label: 'Monitoreo a Directivos' },
+                ]}
+              />
 
-          <SelectField
-            label="Nivel Educativo"
-            value={filterNivel}
-            onChange={(val) => setFilterNivel(val)}
-            disabled={filterModalidad === 'Todos'}
-            placeholder="Seleccione nivel"
-            options={[
-              { value: 'Todos', label: 'Todos los niveles' },
-              ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
-            ]}
-          />
+              <SelectField
+                label="Especialista Responsable"
+                value={filterEspecialista}
+                onChange={(val) => setFilterEspecialista(val)}
+                placeholder="Seleccione especialista"
+                options={[
+                  { value: 'Todos', label: 'Todos los especialistas' },
+                  ...listaEspecialistas.map((esp) => ({ value: esp, label: esp })),
+                ]}
+              />
 
-          {!isEspecialista ? (
-            <SelectField
-              label="Especialista Responsable"
-              value={filterEspecialista}
-              onChange={(val) => setFilterEspecialista(val)}
-              placeholder="Seleccione especialista"
-              options={[
-                { value: 'Todos', label: 'Todos los especialistas' },
-                ...listaEspecialistas.map((esp) => ({ value: esp, label: esp })),
-              ]}
-            />
+              <SelectField
+                label="Número de Monitoreo"
+                value={filterNroVisita}
+                onChange={(val) => setFilterNroVisita(val)}
+                placeholder="Seleccione Nº de visita"
+                options={[
+                  { value: 'Todos', label: 'Todos los números' },
+                  { value: '01', label: 'Monitoreo 01' },
+                  { value: '02', label: 'Monitoreo 02' },
+                  { value: '03', label: 'Monitoreo 03' },
+                  { value: '04', label: 'Monitoreo 04' },
+                ]}
+              />
+
+              <SelectField
+                label="Estado de Monitoreo"
+                value={filterEstado}
+                onChange={(val) => setFilterEstado(val)}
+                placeholder="Seleccione estado"
+                options={[
+                  { value: 'Todos', label: 'Todos los estados' },
+                  { value: 'PROGRAMADO', label: 'PROGRAMADO' },
+                  { value: 'EN PROCESO', label: 'EN PROCESO' },
+                  { value: 'COMPLETADO', label: 'COMPLETADO' },
+                  { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
+                  { value: 'CANCELADO', label: 'CANCELADO' },
+                ]}
+              />
+            </>
           ) : (
-            <div className="space-y-1">
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block pb-0.5">
-                Especialista Asignado
-              </label>
-              <div className="bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm shadow-inner leading-none h-10 flex items-center">
-                {user?.nombres} {user?.apellidos}
-              </div>
-            </div>
-          )}
+            <>
+              <SelectField
+                label="Modalidad"
+                value={filterModalidad}
+                onChange={(val) => setFilterModalidad(val)}
+                placeholder="Seleccione modalidad"
+                options={[
+                  { value: 'Todos', label: 'Todas las modalidades' },
+                  ...MODALIDADES.map((m) => ({ value: m, label: m })),
+                ]}
+              />
 
-          <SelectField
-            label="Tipo de Monitoreo"
-            value={filterTipo}
-            onChange={(val) => setFilterTipo(val)}
-            placeholder="Seleccione tipo"
-            options={[
-              { value: 'Todos', label: 'Todos los tipos' },
-              { value: 'DOCENTE', label: 'Monitoreo a Docentes' },
-              { value: 'DIRECTIVO', label: 'Monitoreo a Directivos' },
-            ]}
-          />
+              <SelectField
+                label="Nivel Educativo"
+                value={filterNivel}
+                onChange={(val) => setFilterNivel(val)}
+                disabled={filterModalidad === 'Todos'}
+                placeholder="Seleccione nivel"
+                options={[
+                  { value: 'Todos', label: 'Todos los niveles' },
+                  ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
+                ]}
+              />
+
+              {!isEspecialista ? (
+                <SelectField
+                  label="Especialista Responsable"
+                  value={filterEspecialista}
+                  onChange={(val) => setFilterEspecialista(val)}
+                  placeholder="Seleccione especialista"
+                  options={[
+                    { value: 'Todos', label: 'Todos los especialistas' },
+                    ...listaEspecialistas.map((esp) => ({ value: esp, label: esp })),
+                  ]}
+                />
+              ) : (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block pb-0.5">
+                    Especialista Asignado
+                  </label>
+                  <div className="bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm shadow-inner leading-none h-10 flex items-center">
+                    {user?.nombres} {user?.apellidos}
+                  </div>
+                </div>
+              )}
+
+              <SelectField
+                label="Tipo de Monitoreo"
+                value={filterTipo}
+                onChange={(val) => setFilterTipo(val)}
+                placeholder="Seleccione tipo"
+                options={[
+                  { value: 'Todos', label: 'Todos los tipos' },
+                  { value: 'DOCENTE', label: 'Monitoreo a Docentes' },
+                  { value: 'DIRECTIVO', label: 'Monitoreo a Directivos' },
+                ]}
+              />
+            </>
+          )}
         </div>
       </Card>
 
@@ -810,6 +920,128 @@ export const CalendarioGrid = ({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* 5. VISTA DE LISTA */}
+        {activeView === 'LISTA' && (
+          <div className="space-y-4">
+            <div className="border-b border-border pb-2 mb-4 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Lista de Visitas Filtradas (Cronológico)
+              </span>
+              <span className="text-xs font-extrabold text-primary bg-primary-light px-2 py-0.5 rounded">
+                {sortedVisits.length} visitas encontradas
+              </span>
+            </div>
+
+            {sortedVisits.length > 0 ? (
+              <div className="space-y-4">
+                {sortedVisits.map((visit) => {
+                  const isSelected = selectedVisitId === visit.id;
+                  const dateStr = visit.fechaHora.substring(0, 10);
+                  return (
+                    <div
+                      key={visit.id}
+                      onClick={() => handleSelectVisitDirectly(visit.id, dateStr)}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
+                        isSelected
+                          ? 'border-primary bg-primary-light/5 ring-1 ring-primary/30'
+                          : 'border-border bg-surface hover:bg-slate-50 shadow-sm'
+                      }`}
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-extrabold text-slate-800">
+                              {visit.institucion}
+                            </span>
+                            <Badge className={getVisitStatusBadgeClass(visit.estado)}>
+                              {visit.estado}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] uppercase font-bold tracking-wider text-slate-500"
+                            >
+                              {visit.tipo}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-text-muted grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-0.5">
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span>
+                                Fecha: <strong className="text-slate-700">{formatVisitDate(visit.fechaHora)}</strong>
+                              </span>
+                            </span>
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span>
+                                Hora: <strong className="text-slate-700">{formatVisitTime(visit.fechaHora)}</strong>
+                              </span>
+                            </span>
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span className="truncate">
+                                Especialista: <strong className="text-slate-700" title={visit.especialista}>{visit.especialista}</strong>
+                              </span>
+                            </span>
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span className="truncate">
+                                Evaluado: <strong className="text-slate-700" title={visit.docenteDirectivo}>{visit.docenteDirectivo}</strong>
+                              </span>
+                            </span>
+                          </div>
+                          <div className="text-xs text-text-muted flex gap-x-4">
+                            <span className="flex items-center gap-1 font-medium">
+                              <Hash className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span>
+                                Nº Visita: <strong className="text-slate-700">{visit.nroVisita}</strong>
+                              </span>
+                            </span>
+                            <span className="font-medium">
+                              Nivel/Mod: <strong className="text-slate-700">{visit.nivel} / {visit.modalidad}</strong>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs border-slate-200 text-slate-600 font-semibold cursor-pointer"
+                          >
+                            Ver detalles
+                          </Button>
+                        </div>
+                      </div>
+
+                      {visit.observaciones && (
+                        <div className="mt-3 p-3 bg-slate-50 rounded-lg text-xs text-slate-600 border border-slate-100">
+                          <strong>Detalles:</strong> {visit.observaciones}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-20 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                <AlertCircle className="h-12 w-12 text-slate-300 mx-auto stroke-1 mb-3 animate-bounce" />
+                <h3 className="text-slate-700 font-bold text-sm">Sin visitas que coincidan con los filtros</h3>
+                <p className="text-text-muted text-xs mt-1 max-w-xs mx-auto leading-relaxed">
+                  No existen registros programados o realizados que coincidan con los filtros activos.
+                </p>
+                {isAnyFilterActive && (
+                  <Button
+                    onClick={handleClearFilters}
+                    className="mt-4 text-xs font-bold bg-primary text-white hover:bg-primary-hover px-4 py-2 rounded-lg cursor-pointer"
+                  >
+                    Limpiar Filtros
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

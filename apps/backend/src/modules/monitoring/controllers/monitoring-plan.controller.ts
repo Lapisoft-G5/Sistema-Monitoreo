@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -16,6 +17,7 @@ import {
   HttpStatus,
   ForbiddenException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { IMonitoringPlanResponse, IPlanInstitucionCubierta } from '@sistema-monitoreo/shared-contracts';
 import { MonitoringPlanService, type SessionUser } from '../services/monitoring-plan.service.js';
@@ -85,6 +87,26 @@ export class MonitoringPlanController {
     @Req() req: any,
   ): Promise<IMonitoringPlanResponse> {
     return this.service.findById(id, this.toSession(req));
+  }
+
+  @Get(':id/archivo')
+  @RequirePermissions('monitoreo:execute')
+  async descargarArchivo(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+    @Res() res: Response,
+  ): Promise<void> {
+    const plan = await this.service.findById(id, this.toSession(req));
+    if (!plan.archivoUrl) {
+      res.status(404).json({ message: 'El plan no tiene archivo adjunto.' });
+      return;
+    }
+    const absolutePath = this.storage.resolveAbsolutePath(plan.archivoUrl);
+    res.sendFile(absolutePath, (err: any) => {
+      if (err && !res.headersSent) {
+        res.status(404).json({ message: 'Archivo no encontrado en disco.' });
+      }
+    });
   }
 
   @Delete(':id')

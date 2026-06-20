@@ -272,18 +272,33 @@ export const CronogramaPage = () => {
   const [formModalidad, setFormModalidad] = useState('');
   const [formNivel, setFormNivel] = useState('');
   const [formObservaciones, setFormObservaciones] = useState('');
-  const [formSubmitted, setFormSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const docentesDeMiInstitucion = useMemo(() => {
-    if (!isDirector || !user || !user.institucion) return [];
-    return MOCK_DOCENTES.filter(
-      (doc) => doc.institucionId === user.institucion && doc.cargo !== 'Director'
+  const docentesDeLaInstitucion = useMemo(() => {
+    if (isDirector) {
+      if (!user || !user.institucion) return [];
+      return MOCK_DOCENTES.filter(
+        (doc) => doc.institucionId === user.institucion && doc.cargo !== 'Director'
+      );
+    }
+
+    if (!formInstitucion) return [];
+    const matchInst = MOCK_INSTITUCIONES.find(
+      (inst) => inst.nombre.toLowerCase() === formInstitucion.toLowerCase()
     );
-  }, [isDirector, user]);
+    if (!matchInst) return [];
+
+    const dbId = matchInst.id.replace(/^i/, '');
+    return MOCK_DOCENTES.filter((doc) => {
+      const matchInstId = doc.institucionId === dbId;
+      const isDirectorCargo = doc.cargo === 'Director';
+      const matchCargo = formTipo === 'DIRECTIVO' ? isDirectorCargo : !isDirectorCargo;
+      return matchInstId && matchCargo;
+    });
+  }, [isDirector, user, formInstitucion, formTipo]);
 
   const docenteOptions = useMemo(() => {
-    const list = docentesDeMiInstitucion.map((doc) => ({
+    const list = docentesDeLaInstitucion.map((doc) => ({
       value: `${doc.nombres} ${doc.apellidos}`,
       label: `${doc.nombres} ${doc.apellidos} (${doc.cargo})`,
     }));
@@ -293,7 +308,7 @@ export const CronogramaPage = () => {
     }
 
     return list;
-  }, [docentesDeMiInstitucion, formDocente]);
+  }, [docentesDeLaInstitucion, formDocente]);
 
   // --- Estados de Detalles / Ver ---
   const [viewCronograma, setViewCronograma] = useState<Cronograma | null>(null);
@@ -463,7 +478,6 @@ export const CronogramaPage = () => {
     setFormEstado('PROGRAMADO');
     setFormObservaciones('');
     setFormError(null);
-    setFormSubmitted(false);
 
     if (isDirector && user) {
       setFormInstitucion(user.institucionNombre || '');
@@ -513,14 +527,12 @@ export const CronogramaPage = () => {
       }, 0);
     }, 0);
     setFormError(null);
-    setFormSubmitted(false);
     setShowFormModal(true);
   };
 
   // --- Guardar Formulario ---
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormSubmitted(true);
     setFormError(null);
 
     if (!formModalidad || !formNivel || !formEspecialista || !formInstitucion || !formDocente.trim() || !formFechaHora) {
@@ -962,7 +974,10 @@ export const CronogramaPage = () => {
                         <SelectField
                           label="Institución Educativa (filtro) *"
                           value={formInstitucion}
-                          onChange={setFormInstitucion}
+                          onChange={(val) => {
+                            setFormInstitucion(val);
+                            setFormDocente('');
+                          }}
                           placeholder={
                             !formModalidad || !formNivel
                               ? 'Seleccione modalidad y nivel...'
@@ -992,7 +1007,10 @@ export const CronogramaPage = () => {
                     <div className="flex items-center gap-0 rounded-xl border border-border overflow-hidden w-fit">
                       <button
                         type="button"
-                        onClick={() => setFormTipo('DOCENTE')}
+                        onClick={() => {
+                          setFormTipo('DOCENTE');
+                          setFormDocente('');
+                        }}
                         className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
                           formTipo === 'DOCENTE'
                             ? 'bg-primary text-white shadow-sm'
@@ -1003,7 +1021,10 @@ export const CronogramaPage = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setFormTipo('DIRECTIVO')}
+                        onClick={() => {
+                          setFormTipo('DIRECTIVO');
+                          setFormDocente('');
+                        }}
                         className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer border-l border-border ${
                           formTipo === 'DIRECTIVO'
                             ? 'bg-primary text-white shadow-sm'
@@ -1026,13 +1047,19 @@ export const CronogramaPage = () => {
                     options={docenteOptions}
                   />
                 ) : (
-                  <TextField
+                  <SelectField
                     label={`Seleccionar ${formTipo === 'DOCENTE' ? 'Docente' : 'Directivo'} a Evaluar *`}
                     value={formDocente}
                     onChange={setFormDocente}
-                    placeholder="Buscar por DNI o nombre..."
-                    adornment={<Search className="w-[16px] h-[16px] text-text-muted" />}
-                    error={formSubmitted && !formDocente.trim() ? 'Este campo es obligatorio' : ''}
+                    placeholder={
+                      !formInstitucion
+                        ? 'Seleccione institución primero...'
+                        : docenteOptions.length === 0
+                          ? `No hay ${formTipo === 'DOCENTE' ? 'docentes' : 'directivos'} para esta institución`
+                          : 'Seleccionar...'
+                    }
+                    disabled={!formInstitucion}
+                    options={docenteOptions}
                   />
                 )}
 

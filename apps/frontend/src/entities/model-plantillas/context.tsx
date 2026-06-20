@@ -2,6 +2,7 @@ import { createContext, useState, useEffect, useCallback, type ReactNode } from 
 import { plantillasApi } from './api/plantillas.api.js';
 import type { Plantilla } from './model';
 import { MOCK_PLANTILLAS } from './mocks';
+import { FEATURES } from '@shared/config/features';
 
 export interface PlantillasContextType {
   plantillas: Plantilla[];
@@ -16,6 +17,7 @@ export const PlantillasContext = createContext<PlantillasContextType | undefined
 
 export const PlantillasProvider = ({ children }: { children: ReactNode }) => {
   const [plantillas, setPlantillas] = useState<Plantilla[]>(() => {
+    if (FEATURES.apiOnly) return MOCK_PLANTILLAS;
     const saved = localStorage.getItem('sistema-monitoreo:plantillas');
     if (saved) {
       try {
@@ -28,6 +30,7 @@ export const PlantillasProvider = ({ children }: { children: ReactNode }) => {
   });
 
   useEffect(() => {
+    if (FEATURES.apiOnly) return;
     localStorage.setItem('sistema-monitoreo:plantillas', JSON.stringify(plantillas));
   }, [plantillas]);
 

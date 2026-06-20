@@ -4,10 +4,12 @@ import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
 import { MOCK_CRONOGRAMAS } from './mocks';
 import { CronogramaContext } from './cronograma-context';
 import { cronogramasApi } from './api/cronogramas.api.js';
+import { FEATURES } from '@shared/config/features';
 
 export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
   // 1. Estado de Cronogramas
   const [cronogramas, setCronogramas] = useState<Cronograma[]>(() => {
+    if (FEATURES.apiOnly) return MOCK_CRONOGRAMAS;
     const saved = localStorage.getItem('sistema-monitoreo:cronogramas');
     if (saved) {
       try {
@@ -19,8 +21,9 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
     return MOCK_CRONOGRAMAS;
   });
 
-  // Sincronizar cronogramas con localStorage
+  // Sincronizar cronogramas con localStorage (skip si apiOnly)
   useEffect(() => {
+    if (FEATURES.apiOnly) return;
     localStorage.setItem('sistema-monitoreo:cronogramas', JSON.stringify(cronogramas));
   }, [cronogramas]);
 
@@ -30,26 +33,29 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
   // Carga de solicitudes de reprogramación asociadas
   const loadReprogramaciones = useCallback(() => {
     const nextReprog: Record<string, SolicitudReprogramacion> = {};
-    
-    // Semilla para la visita ID 13 (mock obligatorio)
-    const key13 = 'sistema-monitoreo:reprogramar-state:13';
-    if (!localStorage.getItem(key13)) {
-      const mockRequest: SolicitudReprogramacion = {
-        id: 'REQ-2023-089',
-        fechaOriginal: '2023-10-15T08:30',
-        fechaNueva: '2023-10-12T08:30',
-        motivo: 'El director de la I.E. 70005 - Lampa Central me ha informado formalmente (Oficio Nº 045-2023-DIR) que el día 15 de Octubre el plantel participará en el desfile cívico distrital obligatorio, por lo que no habrá atención administrativa regular. Solicito reprogramación para el día 12.',
-        archivoNombre: 'Oficio_045_2023_DIR_LampaCentral.pdf',
-        estado: 'APROBADO',
-        fechaRegistro: '2023-10-11',
-        aprobador: 'Carlos Mendoza',
-        aprobadorComentario: 'Se verifica cruce de horarios justificado por evento cívico distrital. Proceder con el cambio de fecha propuesto.',
-        fechaAprobacion: '2023-10-12 14:30'
-      };
-      localStorage.setItem(key13, JSON.stringify(mockRequest));
+
+    if (!FEATURES.apiOnly) {
+      // Semilla para la visita ID 13 (mock obligatorio)
+      const key13 = 'sistema-monitoreo:reprogramar-state:13';
+      if (!localStorage.getItem(key13)) {
+        const mockRequest: SolicitudReprogramacion = {
+          id: 'REQ-2023-089',
+          fechaOriginal: '2023-10-15T08:30',
+          fechaNueva: '2023-10-12T08:30',
+          motivo: 'El director de la I.E. 70005 - Lampa Central me ha informado formalmente (Oficio Nº 045-2023-DIR) que el día 15 de Octubre el plantel participará en el desfile cívico distrital obligatorio, por lo que no habrá atención administrativa regular. Solicito reprogramación para el día 12.',
+          archivoNombre: 'Oficio_045_2023_DIR_LampaCentral.pdf',
+          estado: 'APROBADO',
+          fechaRegistro: '2023-10-11',
+          aprobador: 'Carlos Mendoza',
+          aprobadorComentario: 'Se verifica cruce de horarios justificado por evento cívico distrital. Proceder con el cambio de fecha propuesto.',
+          fechaAprobacion: '2023-10-12 14:30'
+        };
+        localStorage.setItem(key13, JSON.stringify(mockRequest));
+      }
     }
 
     cronogramas.forEach((visit) => {
+      if (FEATURES.apiOnly) return;
       const saved = localStorage.getItem(`sistema-monitoreo:reprogramar-state:${visit.id}`);
       if (saved) {
         try {
@@ -85,7 +91,9 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
       fechaRegistro: new Date().toISOString().split('T')[0]
     };
 
-    localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(newRequest));
+    if (!FEATURES.apiOnly) {
+      localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(newRequest));
+    }
     loadReprogramaciones();
 
     // Best-effort: tambien persistir en backend via API
@@ -116,7 +124,9 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
       fechaAprobacion: new Date().toISOString().replace('T', ' ').substring(0, 16)
     };
 
-    localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(approvedRequest));
+    if (!FEATURES.apiOnly) {
+      localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(approvedRequest));
+    }
 
     // Al aprobar, mutamos el cronograma
     setCronogramas((prev) =>
@@ -160,7 +170,9 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
       fechaAprobacion: new Date().toISOString().replace('T', ' ').substring(0, 16)
     };
 
-    localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(rejectedRequest));
+    if (!FEATURES.apiOnly) {
+      localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(rejectedRequest));
+    }
     loadReprogramaciones();
 
     // Best-effort: rechazar en backend

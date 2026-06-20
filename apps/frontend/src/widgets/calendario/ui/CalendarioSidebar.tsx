@@ -19,6 +19,7 @@ import { useCronogramas, type Cronograma } from '@/entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
 import { usePlantillas } from '@/entities/model-plantillas';
 import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
+import { FEATURES } from '@shared/config/features';
 import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm
@@ -220,7 +221,9 @@ export const CalendarioSidebar = ({
       generalComments:
         'El monitoreo se desarrolló conforme a los compromisos de gestión. Se observa una adecuada planificación didáctica, alta concentración de alumnos en tareas significativas y un clima de aula respetuoso y participativo. Se recomienda continuar con las jornadas de reflexión interna.',
     };
-    localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+    if (!FEATURES.apiOnly) {
+      localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+    }
   };
 
   const handleSaveBorrador = async (
@@ -232,7 +235,9 @@ export const CalendarioSidebar = ({
     }
   ) => {
     // Persistir localmente (UX inmediata)
-    localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+    if (!FEATURES.apiOnly) {
+      localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+    }
     setCronogramas((prev) =>
       prev.map((c) => (c.id === visitId ? { ...c, estado: 'EN PROCESO' } : c))
     );

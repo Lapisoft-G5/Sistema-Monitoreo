@@ -2,6 +2,8 @@ import '../../apps/backend/node_modules/dotenv/config.js';
 import { PrismaClient } from '../../apps/backend/src/generated/prisma/client.js';
 import { PrismaPg } from '../../apps/backend/node_modules/@prisma/adapter-pg/dist/index.js';
 import bcrypt from '../../apps/backend/node_modules/bcrypt/bcrypt.js';
+import { randomUUID } from 'node:crypto';
+const crypto = { randomUUID };
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -809,6 +811,280 @@ async function main() {
           `Cargo '${cargoNombre}' no encontrado en cargoMap — skipping DocenteCargo de ${userData.dni}`,
         );
       }
+    }
+  }
+
+  // ── 9. SPRINT 3 - Planes de Monitoreo ──────────────────────────────────────
+  console.log('Seeding planes de monitoreo (sprint 3)...');
+  const jefeGestion = await prisma.usuario.findFirst({
+    where: { rol: { codigo: 'jefe_gestion' } },
+  });
+  const directorIe = await prisma.usuario.findFirst({
+    where: { rol: { codigo: 'director_institucion' } },
+  });
+  const primeraIe = await prisma.institucionEducativa.findFirst();
+
+  // Helper: get-or-create por campos no-id (no podemos upsert por id en UUID auto)
+  const findOrCreatePlan = async (where, create) => {
+    const existing = await prisma.planMonitoreo.findFirst({ where });
+    if (existing) return existing;
+    return prisma.planMonitoreo.create({ data: { id: crypto.randomUUID(), ...create } });
+  };
+
+  let planUgel2026 = null;
+  if (jefeGestion) {
+    planUgel2026 = await findOrCreatePlan(
+      { titulo: 'Plan Anual de Monitoreo UGEL Lampa 2026', anioAcademico: 2026, tipoEntidad: 'UGEL', deleted: false },
+      {
+        titulo: 'Plan Anual de Monitoreo UGEL Lampa 2026',
+        anioAcademico: 2026,
+        tipoEntidad: 'UGEL',
+        archivoUrl: '/uploads/planes/plan-ugel-2026-seed.pdf',
+        estado: 'Activo',
+        autorId: jefeGestion.id,
+        rolAutorAlCrear: 'jefe_gestion',
+        institucionId: null,
+        deleted: false,
+      },
+    );
+    console.log(`  Plan UGEL 2026: ${planUgel2026.id}`);
+  }
+
+  let planIe2026 = null;
+  if (directorIe && primeraIe) {
+    planIe2026 = await findOrCreatePlan(
+      { titulo: 'Plan de Monitoreo IE 2026', anioAcademico: 2026, tipoEntidad: 'IE', deleted: false },
+      {
+        titulo: 'Plan de Monitoreo IE 2026',
+        anioAcademico: 2026,
+        tipoEntidad: 'IE',
+        archivoUrl: '/uploads/planes/plan-ie-2026-seed.pdf',
+        estado: 'Activo',
+        autorId: directorIe.id,
+        rolAutorAlCrear: 'director_ie',
+        institucionId: primeraIe.id,
+        deleted: false,
+      },
+    );
+    if (primeraIe) {
+      const coberturaExistente = await prisma.planCoberturaIe.findFirst({
+        where: { planId: planIe2026.id, institucionId: primeraIe.id },
+      });
+      if (!coberturaExistente) {
+        await prisma.planCoberturaIe.create({
+          data: {
+            id: crypto.randomUUID(),
+            planId: planIe2026.id,
+            institucionId: primeraIe.id,
+          },
+        });
+      }
+    }
+    console.log(`  Plan IE 2026: ${planIe2026.id}`);
+  }
+
+  // ── 10. SPRINT 3 - Plantillas de Monitoreo ─────────────────────────────────
+  console.log('Seeding plantillas de monitoreo (sprint 3)...');
+  if (jefeGestion) {
+    // Plantilla Docente Vigente 2026
+    const plantillaDocenteExistente = await prisma.plantillaMonitoreo.findFirst({
+      where: { tipoMonitoreo: 'DOCENTE', anioAcademico: 2026, version: 1 },
+    });
+
+    if (!plantillaDocenteExistente) {
+      const nivelesIds = {
+        I: crypto.randomUUID(),
+        II: crypto.randomUUID(),
+        III: crypto.randomUUID(),
+        IV: crypto.randomUUID(),
+      };
+
+      const plantillaDocente = await prisma.plantillaMonitoreo.create({
+        data: {
+          id: crypto.randomUUID(),
+          tipoMonitoreo: 'DOCENTE',
+          anioAcademico: 2026,
+          version: 1,
+          baremo: 'Vigente',
+          descripcion: 'Ficha oficial UGEL para evaluacion docente 2026 (seed).',
+          estado: 'Vigente',
+          autorId: jefeGestion.id,
+          rolAutorAlCrear: 'jefe_gestion',
+          institucionId: null,
+          nivelesCalificacion: {
+            create: [
+              { id: nivelesIds.I, nivelRomano: 'I', denominacion: 'Muy Insatisfactorio', rangoMin: 0, color: '#ef4444', orden: 1 },
+              { id: nivelesIds.II, nivelRomano: 'II', denominacion: 'En Proceso', rangoMin: 11, color: '#f59e0b', orden: 2 },
+              { id: nivelesIds.III, nivelRomano: 'III', denominacion: 'Satisfactorio', rangoMin: 15, color: '#22c55e', orden: 3 },
+              { id: nivelesIds.IV, nivelRomano: 'IV', denominacion: 'Destacado', rangoMin: 18, color: '#3b82f6', orden: 4 },
+            ],
+          },
+        },
+      });
+      console.log(`  Plantilla Docente: ${plantillaDocente.id}`);
+
+      const desempenosData = [
+        {
+          nombre: 'Involucra activamente a los estudiantes en el proceso de aprendizaje',
+          descripcionCorta: 'Promueve el interes y la participacion activa.',
+          aspectos: [
+            'Promueve el interes y motivacion de los alumnos.',
+            'Brinda oportunidades equitativas de intervencion.',
+            'Adapta estrategias segun necesidades detectadas.',
+          ],
+        },
+        {
+          nombre: 'Maximiza el tiempo dedicado al aprendizaje',
+          descripcionCorta: 'Gestiona la sesion evitando tiempos muertos.',
+          aspectos: [
+            'Comienza y cierra actividades respetando tiempos.',
+            'Transiciones fluidas entre actividades.',
+          ],
+        },
+        {
+          nombre: 'Fomenta el razonamiento y pensamiento critico',
+          descripcionCorta: 'Propone retos que exigen analisis.',
+          aspectos: [
+            'Plantea preguntas abiertas y problematicas.',
+            'Promueve argumentacion con bases logicas.',
+          ],
+        },
+      ];
+
+      for (const [idx, d] of desempenosData.entries()) {
+        const desempeno = await prisma.desempenoPlantilla.create({
+          data: {
+            id: crypto.randomUUID(),
+            plantillaId: plantillaDocente.id,
+            nombre: d.nombre,
+            descripcionCorta: d.descripcionCorta,
+            orden: idx + 1,
+            aspectos: {
+              create: d.aspectos.map((a, i) => ({
+                id: crypto.randomUUID(),
+                descripcion: a,
+                orden: i + 1,
+              })),
+            },
+          },
+        });
+        for (const nivel of ['I', 'II', 'III', 'IV']) {
+          await prisma.rubricaNivel.create({
+            data: {
+              id: crypto.randomUUID(),
+              desempenoId: desempeno.id,
+              nivelCalificacionId: nivelesIds[nivel],
+              descripcion: `Nivel ${nivel}: comportamiento observado para "${d.nombre.substring(0, 40)}".`,
+            },
+          });
+        }
+      }
+      console.log(`  3 desempenos docente con aspectos y rubricas creados.`);
+    }
+
+    // Plantilla Directivo Vigente 2026
+    const plantillaDirectivoExistente = await prisma.plantillaMonitoreo.findFirst({
+      where: { tipoMonitoreo: 'DIRECTIVO', anioAcademico: 2026, version: 1 },
+    });
+    if (!plantillaDirectivoExistente) {
+      const nivelesIdsDir = {
+        I: crypto.randomUUID(),
+        II: crypto.randomUUID(),
+        III: crypto.randomUUID(),
+        IV: crypto.randomUUID(),
+      };
+
+      const plantillaDirectivo = await prisma.plantillaMonitoreo.create({
+        data: {
+          id: crypto.randomUUID(),
+          tipoMonitoreo: 'DIRECTIVO',
+          anioAcademico: 2026,
+          version: 1,
+          baremo: 'Vigente',
+          descripcion: 'Ficha oficial UGEL para evaluacion directivo 2026 (seed).',
+          estado: 'Vigente',
+          autorId: jefeGestion.id,
+          rolAutorAlCrear: 'jefe_gestion',
+          institucionId: null,
+          nivelesCalificacion: {
+            create: [
+              { id: nivelesIdsDir.I, nivelRomano: 'I', denominacion: 'Muy Insatisfactorio', rangoMin: 0, color: '#ef4444', orden: 1 },
+              { id: nivelesIdsDir.II, nivelRomano: 'II', denominacion: 'En Proceso', rangoMin: 11, color: '#f59e0b', orden: 2 },
+              { id: nivelesIdsDir.III, nivelRomano: 'III', denominacion: 'Satisfactorio', rangoMin: 15, color: '#22c55e', orden: 3 },
+              { id: nivelesIdsDir.IV, nivelRomano: 'IV', denominacion: 'Destacado', rangoMin: 18, color: '#3b82f6', orden: 4 },
+            ],
+          },
+        },
+      });
+      console.log(`  Plantilla Directivo: ${plantillaDirectivo.id}`);
+
+      const desempenosDirectivo = [
+        { nombre: 'Planificacion y gestion de condiciones operativas (CGE 3)', descripcionCorta: 'Consolidacion de instrumentos de gestion.' },
+        { nombre: 'Liderazgo pedagogico y acompanamiento docente (CGE 4)', descripcionCorta: 'Fortalecimiento de capacidades mediante visitas.' },
+      ];
+
+      for (const [idx, d] of desempenosDirectivo.entries()) {
+        const desempeno = await prisma.desempenoPlantilla.create({
+          data: {
+            id: crypto.randomUUID(),
+            plantillaId: plantillaDirectivo.id,
+            nombre: d.nombre,
+            descripcionCorta: d.descripcionCorta,
+            orden: idx + 1,
+            aspectos: {
+              create: [
+                { id: crypto.randomUUID(), descripcion: 'Cumple con el primer criterio clave.', orden: 1 },
+                { id: crypto.randomUUID(), descripcion: 'Cumple con el segundo criterio clave.', orden: 2 },
+              ],
+            },
+          },
+        });
+        for (const nivel of ['I', 'II', 'III', 'IV']) {
+          await prisma.rubricaNivel.create({
+            data: {
+              id: crypto.randomUUID(),
+              desempenoId: desempeno.id,
+              nivelCalificacionId: nivelesIdsDir[nivel],
+              descripcion: `Nivel ${nivel} para "${d.nombre.substring(0, 30)}".`,
+            },
+          });
+        }
+      }
+      console.log(`  2 desempenos directivo con rubricas creados.`);
+    }
+  }
+
+  // ── 11. SPRINT 3 - Cronograma de ejemplo ───────────────────────────────────
+  console.log('Seeding cronograma de ejemplo (sprint 3)...');
+  const monitorEjemplo = await prisma.especialista.findFirst();
+  const evaluadoEjemplo = primeraIe
+    ? await prisma.docente.findFirst({ where: { institucionId: primeraIe.id } })
+    : null;
+
+  if (monitorEjemplo && evaluadoEjemplo && primeraIe && planUgel2026) {
+    const fechaEjemplo = new Date('2026-03-15');
+    const cronogramaExistente = await prisma.cronograma.findFirst({
+      where: { evaluadoId: evaluadoEjemplo.id, fechaProgramada: fechaEjemplo },
+    });
+    if (!cronogramaExistente) {
+      await prisma.cronograma.create({
+        data: {
+          id: crypto.randomUUID(),
+          monitorId: monitorEjemplo.id,
+          institucionId: primeraIe.id,
+          evaluadoId: evaluadoEjemplo.id,
+          planId: planUgel2026.id,
+          tipoMonitoreo: 'DOCENTE',
+          numeroVisita: 1,
+          fechaProgramada: fechaEjemplo,
+          horaInicio: '09:00:00',
+          detalles: 'Visita de monitoreo seed (sprint 3).',
+          estado: 'PROGRAMADO',
+          modalidad: 'EBR',
+          nivelEducativo: 'Primaria',
+        },
+      });
+      console.log(`  Cronograma DOCENTE 2026-03-15 09:00 creado.`);
     }
   }
 

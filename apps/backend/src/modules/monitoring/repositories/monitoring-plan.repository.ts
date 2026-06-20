@@ -1,4 +1,7 @@
-import type { IMonitoringPlanResponse, IPlanInstitucionCubierta } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IMonitoringPlanResponse,
+  IPlanInstitucionCubierta,
+} from '@sistema-monitoreo/shared-contracts';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
 
 export interface CreatePlanData {

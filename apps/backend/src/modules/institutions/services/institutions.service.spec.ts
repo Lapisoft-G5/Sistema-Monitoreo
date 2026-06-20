@@ -82,7 +82,11 @@ describe('InstitutionsService', () => {
     describe('Jefe de Área constraints', () => {
       it('should allow Jefe de Área with level Inicial to create EBR Inicial', async () => {
         const user = { role: 'jefe_area', especialista_nivel: 'Inicial' } as any;
-        const initialDto = { ...dto, modalidad: 'EBR', nivelEducativo: 'Inicial' } as CreateInstitucionDto;
+        const initialDto = {
+          ...dto,
+          modalidad: 'EBR',
+          nivelEducativo: 'Inicial',
+        } as CreateInstitucionDto;
         findByCodigoModularMock.mockResolvedValue(null);
         createMock.mockResolvedValue({ id: 'ie-uuid', ...initialDto } as unknown as Institucion);
 
@@ -103,16 +107,24 @@ describe('InstitutionsService', () => {
 
       it('should block Jefe de Área with level Inicial from creating EBR Primaria', async () => {
         const user = { role: 'jefe_area', especialista_nivel: 'Inicial' } as any;
-        const invalidDto = { ...dto, modalidad: 'EBR', nivelEducativo: 'Primaria' } as CreateInstitucionDto;
+        const invalidDto = {
+          ...dto,
+          modalidad: 'EBR',
+          nivelEducativo: 'Primaria',
+        } as CreateInstitucionDto;
 
         await expect(service.create(invalidDto, user)).rejects.toThrow(
-          'Un Jefe de Área de nivel Inicial solo puede crear instituciones de nivel Inicial (EBR) o de la modalidad Especial (EBE).'
+          'Un Jefe de Área de nivel Inicial solo puede crear instituciones de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
         );
       });
 
       it('should allow Jefe de Área with level Primaria to create EBR Primaria', async () => {
         const user = { role: 'jefe_area', especialista_nivel: 'Primaria' } as any;
-        const primDto = { ...dto, modalidad: 'EBR', nivelEducativo: 'Primaria' } as CreateInstitucionDto;
+        const primDto = {
+          ...dto,
+          modalidad: 'EBR',
+          nivelEducativo: 'Primaria',
+        } as CreateInstitucionDto;
         findByCodigoModularMock.mockResolvedValue(null);
         createMock.mockResolvedValue({ id: 'ie-uuid', ...primDto } as unknown as Institucion);
 
@@ -122,16 +134,24 @@ describe('InstitutionsService', () => {
 
       it('should block Jefe de Área with level Primaria from creating EBR Secundaria', async () => {
         const user = { role: 'jefe_area', especialista_nivel: 'Primaria' } as any;
-        const invalidDto = { ...dto, modalidad: 'EBR', nivelEducativo: 'Secundaria' } as CreateInstitucionDto;
+        const invalidDto = {
+          ...dto,
+          modalidad: 'EBR',
+          nivelEducativo: 'Secundaria',
+        } as CreateInstitucionDto;
 
         await expect(service.create(invalidDto, user)).rejects.toThrow(
-          'Un Jefe de Área de nivel Primaria solo puede crear instituciones de nivel Primaria (EBR).'
+          'Un Jefe de Área de nivel Primaria solo puede crear instituciones de nivel Primaria (EBR).',
         );
       });
 
       it('should allow Jefe de Área with level Secundaria to create EBR Secundaria', async () => {
         const user = { role: 'jefe_area', especialista_nivel: 'Secundaria' } as any;
-        const secDto = { ...dto, modalidad: 'EBR', nivelEducativo: 'Secundaria' } as CreateInstitucionDto;
+        const secDto = {
+          ...dto,
+          modalidad: 'EBR',
+          nivelEducativo: 'Secundaria',
+        } as CreateInstitucionDto;
         findByCodigoModularMock.mockResolvedValue(null);
         createMock.mockResolvedValue({ id: 'ie-uuid', ...secDto } as unknown as Institucion);
 
@@ -141,7 +161,11 @@ describe('InstitutionsService', () => {
 
       it('should allow Jefe de Área with level Secundaria to create CEPTRO', async () => {
         const user = { role: 'jefe_area', especialista_nivel: 'Secundaria' } as any;
-        const ceptroDto = { ...dto, modalidad: 'CEPTRO', nivelEducativo: 'Corte y Ensamblaje' } as CreateInstitucionDto;
+        const ceptroDto = {
+          ...dto,
+          modalidad: 'CEPTRO',
+          nivelEducativo: 'Corte y Ensamblaje',
+        } as CreateInstitucionDto;
         findByCodigoModularMock.mockResolvedValue(null);
         createMock.mockResolvedValue({ id: 'ie-uuid', ...ceptroDto } as unknown as Institucion);
 
@@ -151,10 +175,14 @@ describe('InstitutionsService', () => {
 
       it('should block Jefe de Área with level Secundaria from creating EBR Primaria', async () => {
         const user = { role: 'jefe_area', especialista_nivel: 'Secundaria' } as any;
-        const invalidDto = { ...dto, modalidad: 'EBR', nivelEducativo: 'Primaria' } as CreateInstitucionDto;
+        const invalidDto = {
+          ...dto,
+          modalidad: 'EBR',
+          nivelEducativo: 'Primaria',
+        } as CreateInstitucionDto;
 
         await expect(service.create(invalidDto, user)).rejects.toThrow(
-          'Un Jefe de Área de nivel Secundaria solo puede crear instituciones de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.'
+          'Un Jefe de Área de nivel Secundaria solo puede crear instituciones de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
         );
       });
     });

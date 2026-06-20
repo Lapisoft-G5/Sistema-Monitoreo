@@ -13,7 +13,7 @@ describe('RlsMiddleware (integration)', () => {
   let middleware: RlsMiddleware;
   let pool: Pool;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
     prisma = {
       $executeRawUnsafe: async (sql: string, ...params: unknown[]) => {

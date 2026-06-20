@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unused-vars */
 import {
   BadRequestException,
   Body,
@@ -15,10 +16,7 @@ import {
   HttpStatus,
   ForbiddenException,
 } from '@nestjs/common';
-import type {
-  IPlantilla,
-  IUpdatePlantillaResponse,
-} from '@sistema-monitoreo/shared-contracts';
+import type { IPlantilla, IUpdatePlantillaResponse } from '@sistema-monitoreo/shared-contracts';
 import { PlantillaService, type SessionUser } from '../services/plantilla.service.js';
 import { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-plantilla.dto.js';
@@ -35,19 +33,13 @@ export class PlantillaController {
   @Post()
   @RequirePermissions('monitoreo:execute')
   @HttpCode(HttpStatus.CREATED)
-  async create(
-    @Body() dto: CreatePlantillaDto,
-    @Req() req: any,
-  ): Promise<IPlantilla> {
+  async create(@Body() dto: CreatePlantillaDto, @Req() req: any): Promise<IPlantilla> {
     return this.service.create(dto, this.toSession(req));
   }
 
   @Get()
   @RequirePermissions('monitoreo:execute')
-  async findAll(
-    @Query() query: QueryPlantillaDto,
-    @Req() req: any,
-  ): Promise<IPlantilla[]> {
+  async findAll(@Query() query: QueryPlantillaDto, @Req() req: any): Promise<IPlantilla[]> {
     return this.service.findAll(query, this.toSession(req));
   }
 

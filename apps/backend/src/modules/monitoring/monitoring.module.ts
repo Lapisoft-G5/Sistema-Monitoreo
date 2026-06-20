@@ -25,11 +25,6 @@ import { AuthModule } from '../auth/auth.module.js';
       useClass: PrismaPlantillaRepository,
     },
   ],
-  exports: [
-    MonitoringPlanService,
-    MonitoringPlanRepository,
-    PlantillaService,
-    PlantillaRepository,
-  ],
+  exports: [MonitoringPlanService, MonitoringPlanRepository, PlantillaService, PlantillaRepository],
 })
 export class MonitoringModule {}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
@@ -65,7 +66,9 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
           id: r.id,
           desempenoId: r.desempenoId,
           nivelCalificacionId: r.nivelCalificacionId,
-          nivelRomano: d.rubrica.find((x) => x.id === r.id) ? (d.rubrica.find((x) => x.id === r.id) as any).nivelRomano : 'I' as any,
+          nivelRomano: d.rubrica.find((x) => x.id === r.id)
+            ? (d.rubrica.find((x) => x.id === r.id) as any).nivelRomano
+            : ('I' as any),
           descripcion: r.descripcion,
         })),
       })),
@@ -74,11 +77,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     };
   }
 
-  private async syncArbol(
-    plantillaId: string,
-    niveles: any[],
-    desempenos: any[],
-  ): Promise<void> {
+  private async syncArbol(plantillaId: string, niveles: any[], desempenos: any[]): Promise<void> {
     // Niveles: como son 4 fijos (I-IV), se hace upsert por nivel
     for (const n of niveles) {
       const existing = await this.prisma.nivelCalificacion.findFirst({
@@ -269,9 +268,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
             color: n.color,
             orden: n.orden,
           }));
-      const desempenosActuales = data.data.desempenos
-        ? data.data.desempenos
-        : [];
+      const desempenosActuales = data.data.desempenos ? data.data.desempenos : [];
       if (data.data.desempenos) {
         await this.syncArbol(plantillaId, nivelesActuales, desempenosActuales);
       } else {

@@ -2,7 +2,6 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DiskStorageService } from './disk-storage.service.js';
 import { STORAGE_SERVICE } from './storage.constants.js';
-import type { StorageService } from './storage.constants.js';
 
 @Global()
 @Module({

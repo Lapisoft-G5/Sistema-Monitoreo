@@ -26,10 +26,6 @@ import { AuthModule } from '../auth/auth.module.js';
       useClass: PrismaSolicitudReprogramacionRepository,
     },
   ],
-  exports: [
-    SchedulingService,
-    CronogramaRepository,
-    SolicitudReprogramacionRepository,
-  ],
+  exports: [SchedulingService, CronogramaRepository, SolicitudReprogramacionRepository],
 })
 export class SchedulingModule {}

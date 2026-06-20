@@ -59,7 +59,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       const result = await service.cambiarEstado(
         'plantilla-v1',
         { estado: 'Vigente' },
-        { id: 'admin', rol: 'admin' }
+        { id: 'admin', rol: 'admin' },
       );
 
       expect(result.estado).toBe('Vigente');
@@ -70,7 +70,11 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       repo.findById = jest.fn().mockResolvedValue(null);
 
       await expect(
-        service.cambiarEstado('plantilla-inexistente', { estado: 'Vigente' }, { id: 'admin', rol: 'admin' })
+        service.cambiarEstado(
+          'plantilla-inexistente',
+          { estado: 'Vigente' },
+          { id: 'admin', rol: 'admin' },
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -79,7 +83,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       repo.findById = jest.fn().mockResolvedValue(historico);
 
       await expect(
-        service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, { id: 'admin', rol: 'admin' })
+        service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, { id: 'admin', rol: 'admin' }),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -90,7 +94,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       repo.findAll = jest.fn().mockResolvedValue([basePlantilla, otraVigente]);
 
       await expect(
-        service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, { id: 'admin', rol: 'admin' })
+        service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, { id: 'admin', rol: 'admin' }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -100,7 +104,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       const result = await service.cambiarEstado(
         'plantilla-v1',
         { estado: 'Vigente' },
-        { id: 'admin', rol: 'admin' }
+        { id: 'admin', rol: 'admin' },
       );
 
       expect(result).toBe(basePlantilla);
@@ -118,7 +122,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       const result = await service.update(
         'plantilla-v1',
         { descripcion: 'cambiada' },
-        { id: 'admin', rol: 'admin' }
+        { id: 'admin', rol: 'admin' },
       );
 
       expect(result.modo).toBe('VERSIONADO');
@@ -130,12 +134,14 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
     it('debe hacer updateInPlace si NO tiene fichas asociadas', async () => {
       repo.findById = jest.fn().mockResolvedValue(basePlantilla);
       repo.countFichasAsociadas = jest.fn().mockResolvedValue(0);
-      repo.updateInPlace = jest.fn().mockResolvedValue({ ...basePlantilla, descripcion: 'actualizada' });
+      repo.updateInPlace = jest
+        .fn()
+        .mockResolvedValue({ ...basePlantilla, descripcion: 'actualizada' });
 
       const result = await service.update(
         'plantilla-v1',
         { descripcion: 'actualizada' },
-        { id: 'admin', rol: 'admin' }
+        { id: 'admin', rol: 'admin' },
       );
 
       expect(result.modo).toBe('IN_PLACE');
@@ -147,7 +153,11 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       repo.findById = jest.fn().mockResolvedValue(null);
 
       await expect(
-        service.update('plantilla-inexistente', { descripcion: 'x' }, { id: 'admin', rol: 'admin' })
+        service.update(
+          'plantilla-inexistente',
+          { descripcion: 'x' },
+          { id: 'admin', rol: 'admin' },
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });

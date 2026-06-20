@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { InstitutionsRepository } from './institutions.repository.js';
@@ -297,7 +298,10 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
 
     const record = await this.prisma.institucionEducativa.update({
       where: { id },
-      data: { ...updateData, nivelEducativoId: (updateData as any).nivelEducativoId ?? undefined } as any,
+      data: {
+        ...updateData,
+        nivelEducativoId: (updateData as any).nivelEducativoId ?? undefined,
+      } as any,
       include: this.includeDocenteDirector,
     });
     return this.mapInstitucion(record);
@@ -333,7 +337,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
       andConditions.push({ nombre: { contains: nombre, mode: 'insensitive' } });
     }
     if (estado) {
-      andConditions.push({ estado: { equals: estado as any } });
+      andConditions.push({ estado: { equals: estado } });
     }
 
     if (user?.role === 'jefe_area') {

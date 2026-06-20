@@ -107,9 +107,7 @@ export class TeachersService {
     // 5. Si es Director de IE, validar que no intente asignar Director
     if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
       if ((cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
-        throw new ForbiddenException(
-          'El Director de I.E. no puede asignar el cargo de Director.',
-        );
+        throw new ForbiddenException('El Director de I.E. no puede asignar el cargo de Director.');
       }
     }
 
@@ -237,9 +235,7 @@ export class TeachersService {
     // 5. Si es Director de IE, validar que no intente asignar Director
     if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
       if ((cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
-        throw new ForbiddenException(
-          'El Director de I.E. no puede asignar el cargo de Director.',
-        );
+        throw new ForbiddenException('El Director de I.E. no puede asignar el cargo de Director.');
       }
     }
 
@@ -328,13 +324,8 @@ export class TeachersService {
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
-        if (
-          currentCargo &&
-          (currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR
-        ) {
-          throw new ForbiddenException(
-            'El Director de I.E. no puede dar de baja a un Director.',
-          );
+        if (currentCargo && (currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
+          throw new ForbiddenException('El Director de I.E. no puede dar de baja a un Director.');
         }
       }
     }
@@ -416,13 +407,8 @@ export class TeachersService {
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
-        if (
-          currentCargo &&
-          (currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR
-        ) {
-          throw new ForbiddenException(
-            'El Director de I.E. no puede dar de alta a un Director.',
-          );
+        if (currentCargo && (currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
+          throw new ForbiddenException('El Director de I.E. no puede dar de alta a un Director.');
         }
       }
     }

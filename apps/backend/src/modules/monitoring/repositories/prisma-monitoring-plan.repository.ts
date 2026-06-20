@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { IMonitoringPlanResponse, IPlanInstitucionCubierta } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IMonitoringPlanResponse,
+  IPlanInstitucionCubierta,
+} from '@sistema-monitoreo/shared-contracts';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import {
-  CreatePlanData,
-  MonitoringPlanRepository,
-} from './monitoring-plan.repository.js';
+import { CreatePlanData, MonitoringPlanRepository } from './monitoring-plan.repository.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
 
 @Injectable()

@@ -18,10 +18,7 @@ export class ReporteService {
     return this.repository.findFichasCompletadas(filters, session);
   }
 
-  async resumenPorIE(
-    anioAcademico: number,
-    session: SessionScope,
-  ): Promise<IReporteResumenIE[]> {
+  async resumenPorIE(anioAcademico: number, session: SessionScope): Promise<IReporteResumenIE[]> {
     return this.repository.findResumenPorIE(anioAcademico, session);
   }
 

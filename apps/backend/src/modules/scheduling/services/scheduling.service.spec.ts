@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { SchedulingService } from './scheduling.service.js';
 import {
   CronogramaRepository,
@@ -61,7 +61,10 @@ describe('SchedulingService - Reprogramaciones', () => {
         { provide: CronogramaRepository, useValue: mockCron },
         { provide: SolicitudReprogramacionRepository, useValue: mockSol },
         { provide: STORAGE_SERVICE, useValue: mockStorage },
-        { provide: PrismaService, useValue: { $executeRawUnsafe: jest.fn().mockResolvedValue(undefined) } },
+        {
+          provide: PrismaService,
+          useValue: { $executeRawUnsafe: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
     service = moduleRef.get(SchedulingService);
@@ -155,7 +158,7 @@ describe('SchedulingService - Reprogramaciones', () => {
           justificacion: 'Huelga distrital programada',
           archivoSustentoBase64: Buffer.from('PDF').toString('base64'),
           archivoSustentoNombre: 'oficio.pdf',
-        } as any,
+        },
         sesionEspecialista,
       );
       expect(storage.savePdf).toHaveBeenCalledWith(
@@ -278,29 +281,21 @@ describe('SchedulingService - Reprogramaciones', () => {
         ...visitaBase,
         institucionId: 'ie-2',
       });
-      await expect(
-        service.findVisitaById('vis-1', sesionDirector),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.findVisitaById('vis-1', sesionDirector)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
   describe('actualizarVisita - cambio de fecha/hora directo', () => {
     it('rechaza cambio directo de fecha/hora (solo via solicitud)', async () => {
       await expect(
-        service.actualizarVisita(
-          'vis-1',
-          { fechaProgramada: '2026-05-01' } as any,
-          sesionJefe,
-        ),
+        service.actualizarVisita('vis-1', { fechaProgramada: '2026-05-01' } as any, sesionJefe),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('permite cambio de estado sin tocar fecha/hora', async () => {
-      await service.actualizarVisita(
-        'vis-1',
-        { estado: 'EN_PROCESO' } as any,
-        sesionJefe,
-      );
+      await service.actualizarVisita('vis-1', { estado: 'EN_PROCESO' }, sesionJefe);
       expect(cronogramaRepo.update).toHaveBeenCalledWith('vis-1', {
         detalles: undefined,
         estado: 'EN_PROCESO',

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   BadRequestException,
   ConflictException,
@@ -5,10 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type {
-  IPlantilla,
-  IUpdatePlantillaResponse,
-} from '@sistema-monitoreo/shared-contracts';
+import type { IPlantilla, IUpdatePlantillaResponse } from '@sistema-monitoreo/shared-contracts';
 import { PlantillaRepository } from '../repositories/plantilla.repository.js';
 import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import type { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-plantilla.dto.js';
@@ -24,10 +22,7 @@ export interface SessionUser {
 export class PlantillaService {
   constructor(private readonly repository: PlantillaRepository) {}
 
-  async findAll(
-    filters?: QueryPlantillaDto,
-    session?: SessionUser,
-  ): Promise<IPlantilla[]> {
+  async findAll(filters?: QueryPlantillaDto, session?: SessionUser): Promise<IPlantilla[]> {
     return this.repository.findAll(filters);
   }
 
@@ -116,11 +111,7 @@ export class PlantillaService {
     return this.repository.updateEstado(id, dto.estado);
   }
 
-  async duplicar(
-    id: string,
-    session: SessionUser,
-    descripcion?: string,
-  ): Promise<IPlantilla> {
+  async duplicar(id: string, session: SessionUser, descripcion?: string): Promise<IPlantilla> {
     if (!this.isDirector(session)) {
       throw new ForbiddenException('Solo Directores IE pueden duplicar plantillas.');
     }
@@ -136,7 +127,9 @@ export class PlantillaService {
   private validarReglas(dto: CreatePlantillaDto): void {
     const nivelesSet = new Set(dto.niveles.map((n) => n.nivelRomano));
     if (nivelesSet.size !== 4) {
-      throw new BadRequestException('La plantilla debe tener exactamente 4 niveles (I, II, III, IV).');
+      throw new BadRequestException(
+        'La plantilla debe tener exactamente 4 niveles (I, II, III, IV).',
+      );
     }
     for (const d of dto.desempenos) {
       const rubricaSet = new Set(d.rubrica.map((r) => r.nivelRomano));

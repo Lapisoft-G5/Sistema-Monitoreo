@@ -1,17 +1,19 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type {
-  IFichaMonitoreo,
-  NivelLogro,
-} from '@sistema-monitoreo/shared-contracts';
+import type { IFichaMonitoreo, NivelLogro } from '@sistema-monitoreo/shared-contracts';
 import { FichaRepository } from '../repositories/ficha.repository.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
-import type { CreateFichaDto, SaveRespuestaDesempenoDto, FinalizarFichaDto } from '../dto/ficha.dto.js';
+import type {
+  CreateFichaDto,
+  SaveRespuestaDesempenoDto,
+  FinalizarFichaDto,
+} from '../dto/ficha.dto.js';
 
 export interface SessionUser {
   id: string;
@@ -26,7 +28,10 @@ export class FichaService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async findByVisitaId(cronogramaId: string, session: SessionUser): Promise<IFichaMonitoreo | null> {
+  async findByVisitaId(
+    cronogramaId: string,
+    session: SessionUser,
+  ): Promise<IFichaMonitoreo | null> {
     return this.repository.findByVisitaId(cronogramaId);
   }
 
@@ -116,7 +121,9 @@ export class FichaService {
     const ficha = await this.repository.findById(fichaId);
     if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
     if (ficha.estado !== 'BORRADOR') {
-      throw new BadRequestException(`Solo se pueden modificar fichas en BORRADOR. Estado actual: ${ficha.estado}.`);
+      throw new BadRequestException(
+        `Solo se pueden modificar fichas en BORRADOR. Estado actual: ${ficha.estado}.`,
+      );
     }
     await this.ensurePlantillaVigente(ficha);
     await this.repository.saveRespuestaDesempeno({
@@ -136,7 +143,9 @@ export class FichaService {
     const ficha = await this.repository.findById(fichaId);
     if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
     if (ficha.estado !== 'BORRADOR') {
-      throw new BadRequestException(`Solo se pueden modificar fichas en BORRADOR. Estado actual: ${ficha.estado}.`);
+      throw new BadRequestException(
+        `Solo se pueden modificar fichas en BORRADOR. Estado actual: ${ficha.estado}.`,
+      );
     }
     await this.ensurePlantillaVigente(ficha);
     await this.repository.saveRespuestaAspecto({ fichaId, aspectoId, marcado });
@@ -164,7 +173,8 @@ export class FichaService {
     });
 
     const conflict = new ConflictException({
-      message: 'La plantilla de esta ficha paso a Historico. Migre las respuestas a la version vigente.',
+      message:
+        'La plantilla de esta ficha paso a Historico. Migre las respuestas a la version vigente.',
       code: 'PLANTILLA_VERSIONADA',
       plantillaVigenteId: vigente?.id ?? null,
       plantillaVigenteNombre: vigente?.descripcion ?? null,

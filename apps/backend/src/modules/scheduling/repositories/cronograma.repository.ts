@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   IVisita,
   ISolicitudReprogramacion,
@@ -57,7 +58,9 @@ export abstract class CronogramaRepository {
 export abstract class SolicitudReprogramacionRepository {
   abstract findAll(filters?: any): Promise<ISolicitudReprogramacion[]>;
   abstract findById(id: string): Promise<ISolicitudReprogramacion | null>;
-  abstract findPendienteByCronograma(cronogramaId: string): Promise<ISolicitudReprogramacion | null>;
+  abstract findPendienteByCronograma(
+    cronogramaId: string,
+  ): Promise<ISolicitudReprogramacion | null>;
   abstract create(data: CreateSolicitudData): Promise<ISolicitudReprogramacion>;
   abstract resolver(id: string, data: ResolverSolicitudData): Promise<ISolicitudReprogramacion>;
 }

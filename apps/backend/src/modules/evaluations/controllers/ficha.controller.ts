@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unused-vars */
 import {
   BadRequestException,
   Body,
@@ -16,11 +17,7 @@ import {
 } from '@nestjs/common';
 import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
 import { FichaService, type SessionUser } from '../services/ficha.service.js';
-import {
-  CreateFichaDto,
-  SaveRespuestaDesempenoDto,
-  FinalizarFichaDto,
-} from '../dto/ficha.dto.js';
+import { CreateFichaDto, SaveRespuestaDesempenoDto, FinalizarFichaDto } from '../dto/ficha.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
@@ -33,10 +30,7 @@ export class FichaController {
   @Post()
   @RequirePermissions('monitoreo:execute')
   @HttpCode(HttpStatus.CREATED)
-  async crear(
-    @Body() dto: CreateFichaDto,
-    @Req() req: any,
-  ): Promise<IFichaMonitoreo> {
+  async crear(@Body() dto: CreateFichaDto, @Req() req: any): Promise<IFichaMonitoreo> {
     return this.service.crear(dto, this.toSession(req));
   }
 

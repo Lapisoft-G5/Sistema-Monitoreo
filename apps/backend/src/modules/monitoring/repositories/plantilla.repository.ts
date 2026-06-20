@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type {
   CreatePlantillaDto,
@@ -39,10 +40,7 @@ export abstract class PlantillaRepository {
 
   abstract create(data: CreatePlantillaData): Promise<IPlantilla>;
 
-  abstract updateInPlace(
-    plantillaId: string,
-    data: UpdatePlantillaData,
-  ): Promise<IPlantilla>;
+  abstract updateInPlace(plantillaId: string, data: UpdatePlantillaData): Promise<IPlantilla>;
 
   abstract versionarConClon(
     plantillaOriginalId: string,

@@ -9,7 +9,7 @@ describe('RLS Policies - Sprint 3', () => {
   let pool: Pool;
   let adminPool: Pool;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     adminPool = new Pool({ connectionString: TEST_DB });
     pool = new Pool({ connectionString: TEST_DB });
   });
@@ -41,7 +41,7 @@ describe('RLS Policies - Sprint 3', () => {
 
       const result = await pool.query(
         `SELECT count(*) FROM fichas_monitoreo WHERE creado_por_id != $1::uuid`,
-        [especialistaXId]
+        [especialistaXId],
       );
 
       await pool.query(`RESET ROLE`);
@@ -70,7 +70,7 @@ describe('RLS Policies - Sprint 3', () => {
 
       const result = await pool.query(
         `SELECT count(*) FROM cronogramas WHERE monitor_id != $1::uuid AND monitor_id IS NOT NULL`,
-        [monitorId]
+        [monitorId],
       );
 
       await pool.query(`RESET ROLE`);
@@ -91,7 +91,7 @@ describe('RLS Policies - Sprint 3', () => {
       const result = await pool.query(
         `SELECT count(*) FROM solicitudes_reprogramacion
          WHERE solicitante_id != $1::uuid AND (resuelto_por_id IS NULL OR resuelto_por_id != $1::uuid)`,
-        [solicitanteId]
+        [solicitanteId],
       );
 
       await pool.query(`RESET ROLE`);

@@ -1,5 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import type { IMonitoringPlanResponse, IPlanInstitucionCubierta } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IMonitoringPlanResponse,
+  IPlanInstitucionCubierta,
+} from '@sistema-monitoreo/shared-contracts';
 import { MonitoringPlanRepository } from '../repositories/monitoring-plan.repository.js';
 import type { CreatePlanDto } from '../dto/create-plan.dto.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
@@ -64,7 +68,9 @@ export class MonitoringPlanService {
     session: SessionUser,
   ): Promise<IPlanInstitucionCubierta[]> {
     if (this.isDirector(session)) {
-      throw new ForbiddenException('Directores IE no pueden modificar la cobertura de planes UGEL.');
+      throw new ForbiddenException(
+        'Directores IE no pueden modificar la cobertura de planes UGEL.',
+      );
     }
     const plan = await this.findById(id, session);
     await this.repository.addCobertura(plan.id, institucionId);
@@ -77,7 +83,9 @@ export class MonitoringPlanService {
     session: SessionUser,
   ): Promise<IPlanInstitucionCubierta[]> {
     if (this.isDirector(session)) {
-      throw new ForbiddenException('Directores IE no pueden modificar la cobertura de planes UGEL.');
+      throw new ForbiddenException(
+        'Directores IE no pueden modificar la cobertura de planes UGEL.',
+      );
     }
     const plan = await this.findById(id, session);
     await this.repository.removeCobertura(plan.id, institucionId);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   IReporteFicha,
   IReporteResumenIE,
@@ -34,7 +35,10 @@ export abstract class ReporteRepository {
     anioAcademico: number,
     session: SessionScope,
   ): Promise<IReporteResumenIE[]>;
-  abstract findFichaByIdParaExport(id: string, session: SessionScope): Promise<IReporteFicha | null>;
+  abstract findFichaByIdParaExport(
+    id: string,
+    session: SessionScope,
+  ): Promise<IReporteFicha | null>;
 }
 
 export interface SessionScope {

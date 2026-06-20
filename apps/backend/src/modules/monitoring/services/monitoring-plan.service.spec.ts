@@ -1,10 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MonitoringPlanService, type SessionUser } from './monitoring-plan.service.js';
 import { MonitoringPlanRepository } from '../repositories/monitoring-plan.repository.js';
 import type { IMonitoringPlanResponse } from '@sistema-monitoreo/shared-contracts';
@@ -31,7 +28,11 @@ describe('MonitoringPlanService', () => {
   };
 
   const sesionJefe: SessionUser = { id: 'user-1', role: 'jefe_gestion' };
-  const sesionDirector: SessionUser = { id: 'user-2', role: 'director_institucion', institucionId: 'ie-1' };
+  const sesionDirector: SessionUser = {
+    id: 'user-2',
+    role: 'director_institucion',
+    institucionId: 'ie-1',
+  };
 
   beforeEach(async () => {
     const mockRepo: Partial<jest.Mocked<MonitoringPlanRepository>> = {
@@ -45,10 +46,7 @@ describe('MonitoringPlanService', () => {
       removeCobertura: jest.fn(),
     };
     const moduleRef = await Test.createTestingModule({
-      providers: [
-        MonitoringPlanService,
-        { provide: MonitoringPlanRepository, useValue: mockRepo },
-      ],
+      providers: [MonitoringPlanService, { provide: MonitoringPlanRepository, useValue: mockRepo }],
     }).compile();
     service = moduleRef.get(MonitoringPlanService);
     repo = moduleRef.get(MonitoringPlanRepository);
@@ -108,9 +106,9 @@ describe('MonitoringPlanService', () => {
   describe('toggleEstado conスコoping', () => {
     it('Director IE no puede modificar plan UGEL', async () => {
       repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'UGEL' });
-      await expect(
-        service.toggleEstado('plan-1', sesionDirector),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.toggleEstado('plan-1', sesionDirector)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('Jefe Gestion puede activar/desactivar cualquier plan', async () => {
@@ -124,9 +122,9 @@ describe('MonitoringPlanService', () => {
   describe('addCobertura / removeCobertura conスコoping', () => {
     it('Director IE no puede agregar cobertura a planes UGEL', async () => {
       repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'UGEL' });
-      await expect(
-        service.addCobertura('plan-1', 'ie-99', sesionDirector),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.addCobertura('plan-1', 'ie-99', sesionDirector)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('Jefe Gestion puede gestionar cobertura', async () => {

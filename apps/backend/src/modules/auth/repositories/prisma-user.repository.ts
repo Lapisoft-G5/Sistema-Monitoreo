@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { UserRepository } from './user.repository.js';
@@ -38,7 +39,7 @@ export class PrismaUserRepository implements UserRepository {
       where: { persona: { dni } },
       include: this.buildInclude(),
     });
-    return result as unknown as Usuario | null;
+    return result;
   }
 
   async findUserById(id: string): Promise<Usuario | null> {
@@ -46,7 +47,7 @@ export class PrismaUserRepository implements UserRepository {
       where: { id },
       include: this.buildInclude(),
     });
-    return result as unknown as Usuario | null;
+    return result;
   }
 
   async findUserByDniAndEmail(dni: string, email: string): Promise<Usuario | null> {

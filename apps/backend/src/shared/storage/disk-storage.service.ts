@@ -1,15 +1,10 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { extname } from 'path';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, promises as fs } from 'node:fs';
 import { join, resolve as pathResolve } from 'node:path';
-import {
-  STORAGE_SERVICE,
-  StorageBucket,
-  StoragePutResult,
-  StorageService,
-} from './storage.constants.js';
+import { StorageBucket, StoragePutResult, StorageService } from './storage.constants.js';
 
 @Injectable()
 export class DiskStorageService implements StorageService, OnModuleInit {

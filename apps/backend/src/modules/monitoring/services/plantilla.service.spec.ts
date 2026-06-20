@@ -50,10 +50,7 @@ describe('PlantillaService - ILA-0046', () => {
       clone: jest.fn(),
     };
     const moduleRef = await Test.createTestingModule({
-      providers: [
-        PlantillaService,
-        { provide: PlantillaRepository, useValue: mockRepo },
-      ],
+      providers: [PlantillaService, { provide: PlantillaRepository, useValue: mockRepo }],
     }).compile();
     service = moduleRef.get(PlantillaService);
     repo = moduleRef.get(PlantillaRepository);
@@ -138,7 +135,12 @@ describe('PlantillaService - ILA-0046', () => {
     it('hace VERSIONADO si tiene fichas asociadas', async () => {
       repo.findById.mockResolvedValue(plantillaVigente);
       repo.countFichasAsociadas.mockResolvedValue(5);
-      const clonV2 = { ...plantillaVigente, id: 'plantilla-v2', version: 2, estado: 'Borrador' as const };
+      const clonV2 = {
+        ...plantillaVigente,
+        id: 'plantilla-v2',
+        version: 2,
+        estado: 'Borrador' as const,
+      };
       repo.versionarConClon.mockResolvedValue(clonV2);
 
       const r = await service.update('plantilla-v1', dtoUpdate, sesionJefe);
@@ -156,7 +158,9 @@ describe('PlantillaService - ILA-0046', () => {
 
     it('lanza NotFound si la plantilla no existe', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.update('no-existe', dtoUpdate, sesionJefe)).rejects.toThrow(NotFoundException);
+      await expect(service.update('no-existe', dtoUpdate, sesionJefe)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -170,9 +174,7 @@ describe('PlantillaService - ILA-0046', () => {
 
     it('rechaza promover a Vigente si ya hay otra Vigente', async () => {
       repo.findById.mockResolvedValue({ ...plantillaVigente, estado: 'Borrador' });
-      repo.findAll.mockResolvedValue([
-        { ...plantillaVigente, id: 'otra-vigente' },
-      ]);
+      repo.findAll.mockResolvedValue([{ ...plantillaVigente, id: 'otra-vigente' }]);
       await expect(
         service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, sesionJefe),
       ).rejects.toThrow(ConflictException);
@@ -214,7 +216,9 @@ describe('PlantillaService - ILA-0046', () => {
 
   describe('duplicar', () => {
     it('rechaza si no es Director IE', async () => {
-      await expect(service.duplicar('plantilla-v1', sesionJefe)).rejects.toThrow(ForbiddenException);
+      await expect(service.duplicar('plantilla-v1', sesionJefe)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('rechaza si Director IE no tiene institucionId', async () => {

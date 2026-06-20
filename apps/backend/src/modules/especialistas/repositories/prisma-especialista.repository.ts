@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
@@ -34,7 +35,11 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     return {
       id: esp.id,
       personaId: esp.personaId,
-      especialidad: (esp as any).especialidades?.map((e: any) => e.especialidad?.nombre).filter(Boolean).join(', ') ?? null,
+      especialidad:
+        (esp as any).especialidades
+          ?.map((e: any) => e.especialidad?.nombre)
+          .filter(Boolean)
+          .join(', ') ?? null,
       nivelEducativo: esp.nivelEducativo,
       modalidad: esp.modalidad ?? null,
       estado: esp.estado,

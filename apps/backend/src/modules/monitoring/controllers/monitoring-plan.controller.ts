@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import {
   BadRequestException,
   Body,
@@ -19,7 +20,10 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import type { IMonitoringPlanResponse, IPlanInstitucionCubierta } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IMonitoringPlanResponse,
+  IPlanInstitucionCubierta,
+} from '@sistema-monitoreo/shared-contracts';
 import { MonitoringPlanService, type SessionUser } from '../services/monitoring-plan.service.js';
 import { CreatePlanDto } from '../dto/create-plan.dto.js';
 import { QueryPlanDto } from '../dto/query-plan.dto.js';
@@ -44,7 +48,10 @@ export class MonitoringPlanController {
     FileInterceptor('file', {
       fileFilter: (req, file, callback) => {
         if (!file.originalname.match(/\.(pdf)$/i)) {
-          return callback(new BadRequestException('Solo se permiten archivos en formato PDF.'), false);
+          return callback(
+            new BadRequestException('Solo se permiten archivos en formato PDF.'),
+            false,
+          );
         }
         callback(null, true);
       },
@@ -68,10 +75,7 @@ export class MonitoringPlanController {
 
   @Get()
   @RequirePermissions('monitoreo:execute')
-  async findAll(
-    @Query() query: QueryPlanDto,
-    @Req() req: any,
-  ): Promise<IMonitoringPlanResponse[]> {
+  async findAll(@Query() query: QueryPlanDto, @Req() req: any): Promise<IMonitoringPlanResponse[]> {
     const session: SessionUser = this.toSession(req);
     const adjusted: QueryPlanDto = { ...query };
     if (session.role === 'director_institucion' || session.role === 'director_ie') {

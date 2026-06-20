@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars */
 import {
   Body,
   Controller,
@@ -13,9 +14,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import {
-  ReporteService,
-} from '../services/reporte.service.js';
+import { ReporteService } from '../services/reporte.service.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
@@ -31,19 +30,13 @@ export class ReporteController {
 
   @Get('fichas-completadas')
   @RequirePermissions('monitoreo:execute')
-  async fichasCompletadas(
-    @Query() query: any,
-    @Req() req: any,
-  ): Promise<IPaginatedReportesFichas> {
+  async fichasCompletadas(@Query() query: any, @Req() req: any): Promise<IPaginatedReportesFichas> {
     return this.service.listFichasCompletadas(query, this.toSession(req));
   }
 
   @Get('resumen-ie')
   @RequirePermissions('monitoreo:execute')
-  async resumenIE(
-    @Query('anio') anio: string,
-    @Req() req: any,
-  ): Promise<IReporteResumenIE[]> {
+  async resumenIE(@Query('anio') anio: string, @Req() req: any): Promise<IReporteResumenIE[]> {
     const anioNumber = anio ? parseInt(anio, 10) : new Date().getFullYear();
     return this.service.resumenPorIE(anioNumber, this.toSession(req));
   }

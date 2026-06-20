@@ -69,11 +69,19 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         estado: 'Vigente',
       });
       repo.saveRespuestaDesempeno = jest.fn().mockResolvedValue(undefined);
-      repo.findById = jest.fn()
+      repo.findById = jest
+        .fn()
         .mockResolvedValueOnce(baseFicha)
-        .mockResolvedValueOnce({ ...baseFicha, respuestasDesempeno: [{ desempenoId: 'd1', nivel: 3 }] });
+        .mockResolvedValueOnce({
+          ...baseFicha,
+          respuestasDesempeno: [{ desempenoId: 'd1', nivel: 3 }],
+        });
 
-      const result = await service.guardarRespuesta('ficha-1', { desempenoId: 'd1', nivel: 3 }, { id: 'user-1', role: 'especialista' });
+      const result = await service.guardarRespuesta(
+        'ficha-1',
+        { desempenoId: 'd1', nivel: 3 },
+        { id: 'user-1', role: 'especialista' },
+      );
 
       expect(result.respuestasDesempeno).toHaveLength(1);
       expect(repo.saveRespuestaDesempeno).toHaveBeenCalled();
@@ -95,7 +103,11 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
       });
 
       try {
-        await service.guardarRespuesta('ficha-1', { desempenoId: 'd1', nivel: 3 }, { id: 'user-1', role: 'especialista' });
+        await service.guardarRespuesta(
+          'ficha-1',
+          { desempenoId: 'd1', nivel: 3 },
+          { id: 'user-1', role: 'especialista' },
+        );
         fail('Debio lanzar ConflictException');
       } catch (err) {
         expect(err).toBeInstanceOf(ConflictException);
@@ -119,7 +131,11 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
       (prisma.plantillaMonitoreo.findFirst as jest.Mock).mockResolvedValue(null);
 
       try {
-        await service.guardarRespuesta('ficha-1', { desempenoId: 'd1', nivel: 3 }, { id: 'user-1', role: 'especialista' });
+        await service.guardarRespuesta(
+          'ficha-1',
+          { desempenoId: 'd1', nivel: 3 },
+          { id: 'user-1', role: 'especialista' },
+        );
         fail('Debio lanzar ConflictException');
       } catch (err) {
         const body = (err as ConflictException).getResponse() as Record<string, unknown>;
@@ -141,7 +157,10 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
       (prisma.plantillaMonitoreo.findFirst as jest.Mock).mockResolvedValue(null);
 
       try {
-        await service.guardarRespuestaAspecto('ficha-1', 'aspecto-1', true, { id: 'user-1', role: 'especialista' });
+        await service.guardarRespuestaAspecto('ficha-1', 'aspecto-1', true, {
+          id: 'user-1',
+          role: 'especialista',
+        });
         fail('Debio lanzar ConflictException');
       } catch (err) {
         expect(err).toBeInstanceOf(ConflictException);
@@ -157,7 +176,11 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
     it('lanza NotFound si la ficha no existe', async () => {
       repo.findById = jest.fn().mockResolvedValue(null);
       await expect(
-        service.guardarRespuesta('ficha-x', { desempenoId: 'd1', nivel: 1 }, { id: 'user-1', role: 'especialista' }),
+        service.guardarRespuesta(
+          'ficha-x',
+          { desempenoId: 'd1', nivel: 1 },
+          { id: 'user-1', role: 'especialista' },
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });

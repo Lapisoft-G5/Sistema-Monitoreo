@@ -3,6 +3,7 @@ import type { Cronograma } from './model';
 import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
 import { MOCK_CRONOGRAMAS } from './mocks';
 import { CronogramaContext } from './cronograma-context';
+import { cronogramasApi } from './api/cronogramas.api.js';
 
 export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
   // 1. Estado de Cronogramas
@@ -86,6 +87,17 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
 
     localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(newRequest));
     loadReprogramaciones();
+
+    // Best-effort: tambien persistir en backend via API
+    cronogramasApi
+      .crearSolicitud({
+        cronogramaId: visitId,
+        fechaPropuesta: new Date(request.fechaNueva).toISOString().slice(0, 10),
+        horaPropuesta: new Date(request.fechaNueva).toISOString().slice(11, 19),
+        justificacion: request.motivo,
+        archivoSustentoNombre: request.archivoNombre,
+      })
+      .catch((err: unknown) => console.warn('[cronograma] No se pudo crear solicitud en backend:', err));
   }, [loadReprogramaciones]);
 
   const approveRescheduleRequest = useCallback((
@@ -105,7 +117,7 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
     };
 
     localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(approvedRequest));
-    
+
     // Al aprobar, mutamos el cronograma
     setCronogramas((prev) =>
       prev.map((c) => {
@@ -119,6 +131,17 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
         return c;
       })
     );
+
+    // Best-effort: aprobar en backend
+    cronogramasApi
+      .findAllSolicitudes({ cronogramaId: visitId, estado: 'PENDIENTE' })
+      .then((solicitudes) => {
+        const solicitud = solicitudes[0];
+        if (solicitud) {
+          return cronogramasApi.aprobarSolicitud(solicitud.id, comentario || 'Aprobado');
+        }
+      })
+      .catch((err: unknown) => console.warn('[cronograma] No se pudo aprobar solicitud en backend:', err));
   }, [reprogramaciones]);
 
   const rejectRescheduleRequest = useCallback((
@@ -139,6 +162,17 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
 
     localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(rejectedRequest));
     loadReprogramaciones();
+
+    // Best-effort: rechazar en backend
+    cronogramasApi
+      .findAllSolicitudes({ cronogramaId: visitId, estado: 'PENDIENTE' })
+      .then((solicitudes) => {
+        const solicitud = solicitudes[0];
+        if (solicitud) {
+          return cronogramasApi.rechazarSolicitud(solicitud.id, comentario || 'Rechazado');
+        }
+      })
+      .catch((err: unknown) => console.warn('[cronograma] No se pudo rechazar solicitud en backend:', err));
   }, [reprogramaciones, loadReprogramaciones]);
 
   const deleteCronograma = useCallback((id: string) => {

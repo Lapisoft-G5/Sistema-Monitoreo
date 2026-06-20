@@ -29,6 +29,9 @@ export type MenuItem =
   | 'monitoreo_plan'
   | 'monitoreo_gestion'
   | 'monitoreo_reportes'
+  | 'monitoreo_plan_anual'
+  | 'monitoreo_cronograma'
+  | 'monitoreo_calendario'
   | 'plantillas'
   | 'instituciones'
   | 'instituciones_padron'
@@ -47,7 +50,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   jefe_gestion: [
     'monitoreo',
-    'monitoreo_reportes',
+    'monitoreo_plan_anual',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
     'plantillas',
     'especialistas',
     'jefes_area',

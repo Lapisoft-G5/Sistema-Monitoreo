@@ -3,6 +3,9 @@ import type { UserRole } from '@shared/constants/roles';
 export const BREADCRUMBS_MAP: Record<string, string> = {
   '/dashboard': 'Panel de Control',
   '/monitoreo/plan': 'Plan de Monitoreo',
+  '/monitoreo/plan-anual': 'Plan de Monitoreo Anual',
+  '/monitoreo/cronograma': 'Cronograma',
+  '/monitoreo/calendario': 'Calendario',
   '/monitoreo/gestion': 'Gestión de Monitoreo',
   '/instituciones/docentes': 'Padrón de Docentes', // Más específico primero
   '/instituciones': 'Padrón de Instituciones',

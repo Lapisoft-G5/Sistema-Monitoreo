@@ -2,6 +2,38 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fichasApi, type CreateFichaInput } from '../api/fichas.api.js';
 import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
 
+/**
+ * Codigos de error que el backend puede devolver cuando la ficha
+ * intento guardarse contra una plantilla que ya es Historico.
+ * Usado por las paginas para abrir ModalMigracionPlantilla.
+ */
+export const ERROR_CODES = {
+  PLANTILLA_VERSIONADA: 'PLANTILLA_VERSIONADA',
+  PLANTILLA_NO_ENCONTRADA: 'PLANTILLA_NO_ENCONTRADA',
+} as const;
+
+export type FichaErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
+
+export interface FichaApiError extends Error {
+  code?: FichaErrorCode;
+  plantillaVigenteId?: string;
+  plantillaVigenteNombre?: string;
+  status?: number;
+}
+
+function toFichaError(err: unknown): FichaApiError {
+  const anyErr = err as {
+    response?: { data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string }; status?: number };
+    message?: string;
+  };
+  const e: FichaApiError = new Error(anyErr?.message ?? 'Ficha error') as FichaApiError;
+  e.status = anyErr?.response?.status;
+  e.code = (anyErr?.response?.data?.code as FichaErrorCode | undefined) ?? undefined;
+  e.plantillaVigenteId = anyErr?.response?.data?.plantillaVigenteId;
+  e.plantillaVigenteNombre = anyErr?.response?.data?.plantillaVigenteNombre;
+  return e;
+}
+
 export const useFichaByVisita = (cronogramaId: string | undefined) =>
   useQuery({
     queryKey: ['ficha', 'visita', cronogramaId],
@@ -29,10 +61,14 @@ export const useCrearFicha = () => {
 
 export const useGuardarRespuesta = (fichaId: string) => {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ desempenoId, nivel }: { desempenoId: string; nivel: number }) =>
+  return useMutation<
+    IFichaMonitoreo,
+    FichaApiError,
+    { desempenoId: string; nivel: number }
+  >({
+    mutationFn: ({ desempenoId, nivel }) =>
       fichasApi.saveRespuestaDesempeno(fichaId, desempenoId, nivel),
-    onSuccess: (ficha: IFichaMonitoreo) => {
+    onSuccess: (ficha) => {
       qc.setQueryData(['ficha', ficha.id], ficha);
       qc.setQueryData(['ficha', 'visita', ficha.cronogramaId], ficha);
     },
@@ -41,10 +77,14 @@ export const useGuardarRespuesta = (fichaId: string) => {
 
 export const useGuardarRespuestaAspecto = (fichaId: string) => {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ aspectoId, marcado }: { aspectoId: string; marcado: boolean }) =>
+  return useMutation<
+    IFichaMonitoreo,
+    FichaApiError,
+    { aspectoId: string; marcado: boolean }
+  >({
+    mutationFn: ({ aspectoId, marcado }) =>
       fichasApi.saveRespuestaAspecto(fichaId, aspectoId, marcado),
-    onSuccess: (ficha: IFichaMonitoreo) => {
+    onSuccess: (ficha) => {
       qc.setQueryData(['ficha', ficha.id], ficha);
       qc.setQueryData(['ficha', 'visita', ficha.cronogramaId], ficha);
     },
@@ -77,3 +117,7 @@ export const useMigrarPlantilla = () => {
     },
   });
 };
+
+// Re-export del helper para que las paginas lo usen
+export { toFichaError };
+

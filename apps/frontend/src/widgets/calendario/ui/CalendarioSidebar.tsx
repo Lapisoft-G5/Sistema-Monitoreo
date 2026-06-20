@@ -18,7 +18,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useCronogramas, type Cronograma } from '@/entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
 import { usePlantillas } from '@/entities/model-plantillas';
-import { LlenarFichaForm } from '@/features/monitoreos';
+import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
 import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm
@@ -103,6 +103,12 @@ export const CalendarioSidebar = ({
   const [showSolicitarReprogramarModal, setShowSolicitarReprogramarModal] = useState<boolean>(false);
   const [showReprogramarModal, setShowReprogramarModal] = useState<boolean>(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showMigracionModal, setShowMigracionModal] = useState<boolean>(false);
+  const [migracionContext, setMigracionContext] = useState<{
+    visitId: string;
+    plantillaVigenteId: string | null;
+    plantillaVigenteNombre: string;
+  } | null>(null);
 
   // Plantillas cargadas de la entidad
   const { plantillas } = usePlantillas();
@@ -255,7 +261,18 @@ export const CalendarioSidebar = ({
       for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
         await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string } } };
+      if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
+        // ILA-0046: la plantilla paso a Historico, abrir modal de migracion
+        setMigracionContext({
+          visitId,
+          plantillaVigenteId: apiErr.response.data.plantillaVigenteId ?? null,
+          plantillaVigenteNombre: apiErr.response.data.plantillaVigenteNombre ?? 'Plantilla vigente',
+        });
+        setShowMigracionModal(true);
+        return;
+      }
       console.warn('No se pudo persistir la ficha en backend:', err);
     }
 
@@ -288,7 +305,17 @@ export const CalendarioSidebar = ({
         await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
       }
       await fichasApi.finalizar(ficha.id, data.generalComments);
-    } catch (err) {
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string } } };
+      if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
+        setMigracionContext({
+          visitId,
+          plantillaVigenteId: apiErr.response.data.plantillaVigenteId ?? null,
+          plantillaVigenteNombre: apiErr.response.data.plantillaVigenteNombre ?? 'Plantilla vigente',
+        });
+        setShowMigracionModal(true);
+        return;
+      }
       console.warn('No se pudo finalizar la ficha en backend:', err);
     }
 
@@ -667,6 +694,35 @@ export const CalendarioSidebar = ({
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteConfirmId(null)}
           danger
+        />
+      )}
+
+      {migracionContext && (
+        <ModalMigracionPlantilla
+          isOpen={showMigracionModal}
+          onClose={() => {
+            setShowMigracionModal(false);
+            setMigracionContext(null);
+          }}
+          fichaId={migracionContext.visitId}
+          plantillaActualId=""
+          plantillaNuevaId={migracionContext.plantillaVigenteId ?? ''}
+          plantillaNuevaNombre={migracionContext.plantillaVigenteNombre}
+          onMigrar={async () => {
+            const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+            const ficha = await fichasApi.findByVisita(migracionContext.visitId);
+            if (ficha && migracionContext.plantillaVigenteId) {
+              await fichasApi.migrarPlantilla(ficha.id, migracionContext.plantillaVigenteId);
+            }
+            setShowMigracionModal(false);
+            setMigracionContext(null);
+            setShowFichaModal(false);
+          }}
+          onFinalizarConV1={async () => {
+            setShowMigracionModal(false);
+            setMigracionContext(null);
+            setShowFichaModal(false);
+          }}
         />
       )}
     </div>

@@ -118,6 +118,7 @@ export class FichaService {
     if (ficha.estado !== 'BORRADOR') {
       throw new BadRequestException(`Solo se pueden modificar fichas en BORRADOR. Estado actual: ${ficha.estado}.`);
     }
+    await this.ensurePlantillaVigente(ficha);
     await this.repository.saveRespuestaDesempeno({
       fichaId,
       desempenoId: dto.desempenoId,
@@ -137,8 +138,38 @@ export class FichaService {
     if (ficha.estado !== 'BORRADOR') {
       throw new BadRequestException(`Solo se pueden modificar fichas en BORRADOR. Estado actual: ${ficha.estado}.`);
     }
+    await this.ensurePlantillaVigente(ficha);
     await this.repository.saveRespuestaAspecto({ fichaId, aspectoId, marcado });
     return this.repository.findById(fichaId) as Promise<IFichaMonitoreo>;
+  }
+
+  /**
+   * ILA-0046: si la plantilla de la ficha paso a Historico (porque se creo
+   * una v2), rechaza el guardado con 409 + code PLANTILLA_VERSIONADA.
+   * El frontend abre ModalMigracionPlantilla al recibir este codigo.
+   */
+  private async ensurePlantillaVigente(ficha: IFichaMonitoreo): Promise<void> {
+    const plantilla = await this.prisma.plantillaMonitoreo.findUnique({
+      where: { id: ficha.plantillaId },
+    });
+    if (plantilla && plantilla.estado === 'Vigente') return;
+
+    const vigente = await this.prisma.plantillaMonitoreo.findFirst({
+      where: {
+        tipoMonitoreo: plantilla?.tipoMonitoreo,
+        anioAcademico: plantilla?.anioAcademico,
+        estado: 'Vigente',
+        deleted: false,
+      },
+    });
+
+    const conflict = new ConflictException({
+      message: 'La plantilla de esta ficha paso a Historico. Migre las respuestas a la version vigente.',
+      code: 'PLANTILLA_VERSIONADA',
+      plantillaVigenteId: vigente?.id ?? null,
+      plantillaVigenteNombre: vigente?.descripcion ?? null,
+    });
+    throw conflict;
   }
 
   async finalizar(

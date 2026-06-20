@@ -90,6 +90,13 @@ model Usuario {
   sesionesAuth        SesionAuth[]
   tokensRecuperacion  TokenRecuperacion[]
   logsAuditoria       LogAuditoria[]
+  planesAutor         PlanMonitoreo[]
+  plantillasAutor     PlantillaMonitoreo[]
+  cronogramasCreados  Cronograma[]          @relation("CronogramaCreador")
+  solicitudesCreadas  SolicitudReprogramacion[] @relation("SolicitudSolicitante")
+  solicitudesResueltas SolicitudReprogramacion[] @relation("SolicitudResolutor")
+  fichasCreadas       FichaMonitoreo[]      @relation("FichaCreador")
+  fichasFinalizadas   FichaMonitoreo[]      @relation("FichaFinalizador")
 
   @@index([personaId])
   @@index([rolId])
@@ -169,6 +176,7 @@ model Especialista {
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
   persona           Persona  @relation(fields: [personaId], references: [id])
+  cronogramas       Cronograma[]
 
   @@map("especialistas")
 }
@@ -193,7 +201,11 @@ model InstitucionEducativa {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
-  docentes       Docente[]
+  docentes         Docente[]
+  planCobertura    PlanCoberturaIe[]
+  planes           PlanMonitoreo[]    @relation("PlanInstitucion")
+  plantillas       PlantillaMonitoreo[]
+  cronogramas      Cronograma[]
 
   @@map("instituciones_educativas")
 }
@@ -218,6 +230,7 @@ model Docente {
   docenteCargos     DocenteCargo[]
   docenteCursos     DocenteCurso[]
   docenteSecciones  DocenteSeccion[]
+  cronogramas       Cronograma[]
 
   @@index([institucionId])
   @@map("docentes")
@@ -243,6 +256,7 @@ model Curso {
   createdAt      DateTime @default(now()) @map("created_at")
 
   docenteCursos  DocenteCurso[]
+  fichasContexto FichaContexto[]
 
   @@unique([nombre, nivelEducativo])
   @@map("cursos")
@@ -287,16 +301,273 @@ model DocenteCargo {
 }
 
 model PlanMonitoreo {
-  id              String    @id @default(uuid()) @db.Uuid
-  titulo          String    @db.VarChar(150)
-  anioAcademico   Int       @map("anio_academico")
-  tipoEntidad     String    @map("tipo_entidad") @db.VarChar(10) // 'UGEL' | 'IE'
-  archivoUrl      String    @map("archivo_url") @db.VarChar(255)
-  estado          String    @default("Activo") @db.VarChar(20) // 'Activo' | 'Inactivo'
-  deleted         Boolean   @default(false)
-  deletedAt       DateTime? @map("deleted_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+  id                String    @id @default(uuid()) @db.Uuid
+  titulo            String    @db.VarChar(150)
+  anioAcademico     Int       @map("anio_academico")
+  tipoEntidad       String    @map("tipo_entidad") @db.VarChar(10) // 'UGEL' | 'IE' (legacy, ver plan_cobertura_ie)
+  archivoUrl        String    @map("archivo_url") @db.VarChar(255)
+  estado            String    @default("Activo") @db.VarChar(20) // 'Activo' | 'Inactivo'
+  autorId           String?   @map("autor_id") @db.Uuid
+  rolAutorAlCrear   String?   @map("rol_autor_al_crear") @db.VarChar(50) // 'jefe_gestion' | 'director_ie' (sello historico)
+  institucionId     String?   @map("institucion_id") @db.Uuid
+  deleted           Boolean   @default(false)
+  deletedAt         DateTime? @map("deleted_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
 
+  autor             Usuario?               @relation(fields: [autorId], references: [id], onDelete: Restrict)
+  institucion       InstitucionEducativa?  @relation("PlanInstitucion", fields: [institucionId], references: [id], onDelete: Restrict)
+  cobertura         PlanCoberturaIe[]
+  cronogramas       Cronograma[]
+
+  @@index([autorId])
+  @@index([institucionId])
   @@map("planes_monitoreo")
+}
+
+// ==========================================
+// 6. PLANES - COBERTURA POR IE (Sprint 3)
+// ==========================================
+
+model PlanCoberturaIe {
+  id            String              @id @default(uuid()) @db.Uuid
+  planId        String              @map("plan_id") @db.Uuid
+  institucionId String              @map("institucion_id") @db.Uuid
+
+  plan          PlanMonitoreo       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  institucion   InstitucionEducativa @relation(fields: [institucionId], references: [id], onDelete: Restrict)
+
+  @@unique([planId, institucionId], name: "uq_plan_cobertura")
+  @@index([institucionId])
+  @@map("plan_cobertura_ie")
+}
+
+// ==========================================
+// 7. PLANTILLAS DE MONITOREO (EDU-0010 / ILA-0046)
+// ==========================================
+
+model PlantillaMonitoreo {
+  id                String   @id @default(uuid()) @db.Uuid
+  tipoMonitoreo     String   @map("tipo_monitoreo") @db.VarChar(20) // DOCENTE | DIRECTIVO
+  anioAcademico     Int      @map("anio_academico")
+  version           Int      @default(1)
+  baremo            String   @db.VarChar(20) // VIGENTE | PORCENTUAL
+  descripcion       String?  @db.Text
+  estado            String   @default("Borrador") @db.VarChar(20) // Borrador | Vigente | Historico
+  autorId           String   @map("autor_id") @db.Uuid
+  rolAutorAlCrear   String   @map("rol_autor_al_crear") @db.VarChar(50) // jefe_gestion | director_ie
+  institucionId     String?  @map("institucion_id") @db.Uuid
+  deleted           Boolean  @default(false)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  autor             Usuario                @relation(fields: [autorId], references: [id], onDelete: Restrict)
+  institucion       InstitucionEducativa?  @relation(fields: [institucionId], references: [id], onDelete: Restrict)
+  nivelesCalificacion NivelCalificacion[]
+  desempenos        DesempenoPlantilla[]
+  fichas            FichaMonitoreo[]
+
+  @@unique([tipoMonitoreo, anioAcademico, version])
+  @@index([estado])
+  @@index([autorId])
+  @@map("plantillas_monitoreo")
+}
+
+model NivelCalificacion {
+  id           String   @id @default(uuid()) @db.Uuid
+  plantillaId  String   @map("plantilla_id") @db.Uuid
+  nivelRomano  String   @map("nivel_romano") @db.VarChar(4) // I | II | III | IV
+  denominacion String   @db.VarChar(100)
+  rangoMin     Int      @map("rango_min")
+  color        String   @db.Char(7)
+  orden        Int
+
+  plantilla    PlantillaMonitoreo @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  rubrica      RubricaNivel[]
+
+  @@unique([plantillaId, nivelRomano])
+  @@index([plantillaId, orden])
+  @@map("niveles_calificacion")
+}
+
+model DesempenoPlantilla {
+  id                String   @id @default(uuid()) @db.Uuid
+  plantillaId       String   @map("plantilla_id") @db.Uuid
+  nombre            String   @db.VarChar(255)
+  descripcionCorta  String?  @map("descripcion_corta") @db.Text
+  orden             Int
+
+  plantilla         PlantillaMonitoreo @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  aspectos          AspectoEvaluado[]
+  rubrica           RubricaNivel[]
+  respuestas        FichaRespuestaDesempeno[]
+
+  @@index([plantillaId, orden])
+  @@map("desempenos_plantilla")
+}
+
+model AspectoEvaluado {
+  id           String   @id @default(uuid()) @db.Uuid
+  desempenoId  String   @map("desempeno_id") @db.Uuid
+  descripcion  String   @db.Text
+  orden        Int
+
+  desempeno    DesempenoPlantilla @relation(fields: [desempenoId], references: [id], onDelete: Cascade)
+  respuestas   FichaRespuestaAspecto[]
+
+  @@index([desempenoId, orden])
+  @@map("aspectos_evaluados")
+}
+
+model RubricaNivel {
+  id                   String   @id @default(uuid()) @db.Uuid
+  desempenoId          String   @map("desempeno_id") @db.Uuid
+  nivelCalificacionId  String   @map("nivel_calificacion_id") @db.Uuid
+  descripcion          String   @db.Text
+
+  desempeno            DesempenoPlantilla @relation(fields: [desempenoId], references: [id], onDelete: Cascade)
+  nivelCalificacion    NivelCalificacion  @relation(fields: [nivelCalificacionId], references: [id], onDelete: Cascade)
+
+  @@unique([desempenoId, nivelCalificacionId])
+  @@map("rubrica_niveles")
+}
+
+// ==========================================
+// 8. CRONOGRAMAS Y REPROGRAMACIONES (EDU-0011)
+// ==========================================
+
+model Cronograma {
+  id                String   @id @default(uuid()) @db.Uuid
+  monitorId         String   @map("monitor_id") @db.Uuid
+  institucionId     String   @map("institucion_id") @db.Uuid
+  evaluadoId        String   @map("evaluado_id") @db.Uuid
+  planId            String?  @map("plan_id") @db.Uuid
+  tipoMonitoreo     String   @map("tipo_monitoreo") @db.VarChar(20) // DOCENTE | DIRECTIVO
+  numeroVisita      Int      @map("numero_visita") @db.SmallInt
+  fechaProgramada   DateTime @map("fecha_programada") @db.Date
+  horaInicio        String   @map("hora_inicio") @db.VarChar(8) // HH:mm:ss
+  detalles          String?  @db.Text
+  estado            String   @default("PROGRAMADO") @db.VarChar(20) // PROGRAMADO | EN_PROCESO | COMPLETADO | REPROGRAMADO | CANCELADO
+  modalidad         String   @db.VarChar(20) // EBR | EBA | EBE | CEPTRO
+  nivelEducativo    String   @map("nivel_educativo") @db.VarChar(100)
+  creadoPorId       String?  @map("creado_por_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  monitor           Especialista  @relation(fields: [monitorId], references: [id], onDelete: Restrict)
+  institucion       InstitucionEducativa @relation(fields: [institucionId], references: [id], onDelete: Restrict)
+  evaluado          Docente       @relation(fields: [evaluadoId], references: [id], onDelete: Restrict)
+  plan              PlanMonitoreo? @relation(fields: [planId], references: [id], onDelete: Restrict)
+  creadoPor         Usuario?      @relation("CronogramaCreador", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  solicitudes       SolicitudReprogramacion[]
+  ficha             FichaMonitoreo?
+
+  @@index([institucionId, fechaProgramada])
+  @@index([monitorId, fechaProgramada])
+  @@index([estado])
+  @@index([evaluadoId, tipoMonitoreo])
+  @@map("cronogramas")
+}
+
+model SolicitudReprogramacion {
+  id                    String    @id @default(uuid()) @db.Uuid
+  cronogramaId          String    @map("cronograma_id") @db.Uuid
+  solicitanteId         String    @map("solicitante_id") @db.Uuid
+  solicitanteRolAlCrear String    @map("solicitante_rol_al_crear") @db.VarChar(50)
+  fechaOriginal         DateTime  @map("fecha_original") @db.Date
+  horaOriginal          String    @map("hora_original") @db.VarChar(8)
+  fechaPropuesta        DateTime  @map("fecha_propuesta") @db.Date
+  horaPropuesta         String    @map("hora_propuesta") @db.VarChar(8)
+  justificacion         String    @db.Text
+  archivoSustentoUrl    String    @map("archivo_sustento_url") @db.VarChar(500)
+  estado                String    @default("PENDIENTE") @db.VarChar(20) // PENDIENTE | APROBADO | RECHAZADO
+  resueltoPorId         String?   @map("resuelto_por_id") @db.Uuid
+  comentarioResolucion   String?   @map("comentario_resolucion") @db.Text
+  fechaResolucion       DateTime? @map("fecha_resolucion")
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  cronograma     Cronograma @relation(fields: [cronogramaId], references: [id], onDelete: Restrict)
+  solicitante    Usuario    @relation("SolicitudSolicitante", fields: [solicitanteId], references: [id], onDelete: Restrict)
+  resueltoPor    Usuario?   @relation("SolicitudResolutor", fields: [resueltoPorId], references: [id], onDelete: SetNull)
+
+  @@index([cronogramaId])
+  @@index([estado])
+  @@map("solicitudes_reprogramacion")
+}
+
+// ==========================================
+// 9. FICHAS DE MONITOREO (EDU-0009 / ESP-0042A)
+// ==========================================
+
+model FichaMonitoreo {
+  id                  String   @id @default(uuid()) @db.Uuid
+  cronogramaId        String   @unique @map("cronograma_id") @db.Uuid
+  plantillaId         String   @map("plantilla_id") @db.Uuid
+  fichaContextoId     String   @unique @map("ficha_contexto_id") @db.Uuid
+  anioAcademico       Int      @map("anio_academico")
+  puntajeTotal        Int      @map("puntaje_total") @db.SmallInt
+  promedio            Decimal  @db.Decimal(4, 2)
+  nivelLogro          String   @map("nivel_logro") @db.VarChar(20) // INICIO | EN_PROCESO | LOGRO_ESPERADO | LOGRO_DESTACADO
+  estado              String   @default("BORRADOR") @db.VarChar(20) // BORRADOR | FINALIZADO | MIGRADA
+  creadoPorId         String?  @map("creado_por_id") @db.Uuid
+  finalizadaPorId     String?  @map("finalizada_por_id") @db.Uuid
+  observaciones       String?  @db.Text
+  createdAt           DateTime @default(now()) @map("created_at")
+  finalizadaAt        DateTime? @map("finalizada_at")
+
+  cronograma          Cronograma          @relation(fields: [cronogramaId], references: [id], onDelete: Restrict)
+  plantilla           PlantillaMonitoreo  @relation(fields: [plantillaId], references: [id], onDelete: Restrict)
+  fichaContexto       FichaContexto       @relation(fields: [fichaContextoId], references: [id], onDelete: Cascade)
+  creadoPor           Usuario?            @relation("FichaCreador", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  finalizadaPor       Usuario?            @relation("FichaFinalizador", fields: [finalizadaPorId], references: [id], onDelete: SetNull)
+  respuestasDesempeno FichaRespuestaDesempeno[]
+  respuestasAspecto   FichaRespuestaAspecto[]
+
+  @@index([plantillaId])
+  @@index([estado])
+  @@index([anioAcademico, estado, nivelLogro], name: "idx_fichas_reporte")
+  @@map("fichas_monitoreo")
+}
+
+model FichaContexto {
+  id                       String   @id @default(uuid()) @db.Uuid
+  areaCurricular           String?  @map("area_curricular") @db.VarChar(100)
+  grado                    String?  @db.VarChar(50)
+  seccion                  String?  @db.VarChar(10)
+  cantidadEstudiantes      Int?     @map("cantidad_estudiantes")
+  cantidadEstudiantesNee   Int?     @map("cantidad_estudiantes_nee")
+  cursoId                  String?  @map("curso_id") @db.Uuid
+
+  curso                    Curso?   @relation(fields: [cursoId], references: [id], onDelete: SetNull)
+  ficha                    FichaMonitoreo?
+
+  @@map("ficha_contexto")
+}
+
+model FichaRespuestaDesempeno {
+  id           String   @id @default(uuid()) @db.Uuid
+  fichaId      String   @map("ficha_id") @db.Uuid
+  desempenoId  String   @map("desempeno_id") @db.Uuid
+  nivel        Int      @db.SmallInt
+
+  ficha        FichaMonitoreo      @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  desempeno    DesempenoPlantilla  @relation(fields: [desempenoId], references: [id], onDelete: Restrict)
+
+  @@unique([fichaId, desempenoId])
+  @@index([desempenoId])
+  @@map("ficha_respuestas_desempeno")
+}
+
+model FichaRespuestaAspecto {
+  id          String   @id @default(uuid()) @db.Uuid
+  fichaId     String   @map("ficha_id") @db.Uuid
+  aspectoId   String   @map("aspecto_id") @db.Uuid
+  marcado     Boolean  @default(false)
+
+  ficha       FichaMonitoreo    @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  aspecto     AspectoEvaluado   @relation(fields: [aspectoId], references: [id], onDelete: Restrict)
+
+  @@unique([fichaId, aspectoId])
+  @@index([aspectoId])
+  @@map("ficha_respuestas_aspecto")
 }

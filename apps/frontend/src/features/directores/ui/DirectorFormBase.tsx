@@ -49,7 +49,7 @@ export const DirectorFormBase = ({
     set('institucionId', id);
     const selectedIe = instituciones.find((i) => i.id === id);
     if (selectedIe && selectedIe.nivel) {
-      set('nivelEducativo', selectedIe.nivel.toUpperCase() as any);
+      set('nivelEducativo', selectedIe.nivel.toUpperCase() as "SECUNDARIA" | "INICIAL" | "PRIMARIA");
     }
   };
 
@@ -170,7 +170,7 @@ export const DirectorFormBase = ({
             label="Nivel Educativo"
             required
             value={form.nivelEducativo}
-            onChange={(v) => set('nivelEducativo', v as any)}
+            onChange={(v) => set('nivelEducativo', v as "SECUNDARIA" | "INICIAL" | "PRIMARIA")}
             options={[
               { value: 'INICIAL', label: 'Inicial' },
               { value: 'PRIMARIA', label: 'Primaria' },
@@ -194,7 +194,7 @@ export const DirectorFormBase = ({
             label="Escala Magisterial"
             required
             value={form.escala}
-            onChange={(v) => set('escala', v as any)}
+            onChange={(v) => set('escala', v as "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | "VIII")}
             options={ESCALAS_MAGISTERIALES}
             placeholder="Seleccione Escala"
             error={showError('escala')}

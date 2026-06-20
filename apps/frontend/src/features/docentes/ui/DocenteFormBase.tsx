@@ -43,6 +43,7 @@ const CURSOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> 
   ],
 };
 
+/* eslint-disable-next-line react-refresh/only-export-components */
 export const GRADOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> = {
   INICIAL: ['3 años', '4 años', '5 años'],
   PRIMARIA: ['1°', '2°', '3°', '4°', '5°', '6°'],
@@ -110,7 +111,7 @@ export const DocenteFormBase = ({
 
   useEffect(() => {
     const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
-    setSelectedGrado(defaultGrados[0] || '');
+    setTimeout(() => setSelectedGrado(defaultGrados[0] || ''), 0);
   }, [form.nivelEducativo]);
 
   const set = <K extends keyof DocenteFormData>(key: K, value: DocenteFormData[K]) =>

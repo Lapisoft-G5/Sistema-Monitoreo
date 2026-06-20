@@ -88,22 +88,28 @@ export const LlenarFichaForm = ({
       if (savedState) {
         try {
           const parsed = JSON.parse(savedState);
-          setCheckedAspects(parsed.checkedAspects || {});
-          setSelectedLevels(parsed.selectedLevels || {});
-          setGeneralComments(parsed.generalComments || '');
+          setTimeout(() => {
+            setCheckedAspects(parsed.checkedAspects || {});
+            setSelectedLevels(parsed.selectedLevels || {});
+            setGeneralComments(parsed.generalComments || '');
+          }, 0);
         } catch {
-          setCheckedAspects({});
-          setSelectedLevels({});
-          setGeneralComments('');
+          setTimeout(() => {
+            setCheckedAspects({});
+            setSelectedLevels({});
+            setGeneralComments('');
+          }, 0);
         }
       } else {
-        setCheckedAspects({});
-        setSelectedLevels({});
-        setGeneralComments('');
+        setTimeout(() => {
+            setCheckedAspects({});
+            setSelectedLevels({});
+            setGeneralComments('');
+          }, 0);
       }
 
       if (template && template.desempenos.length > 0) {
-        setFichaSelectedDesempenoId(template.desempenos[0].id);
+        setTimeout(() => setFichaSelectedDesempenoId(template.desempenos[0].id), 0);
       }
     }
   }, [isOpen, visit, template]);

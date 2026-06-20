@@ -9,10 +9,17 @@ import { Badge } from '@shared/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { useUser } from '@entities/model-user';
-import { MOCK_DOCENTES } from '@entities/model-docentes';
+import { type Docente } from '@entities/model-docentes';
+import { cronogramasApi } from '@shared/api/cronogramas.api';
+import { especialistasApi } from '@shared/api/especialistas.api';
+import { institutionsApi } from '@shared/api/institutions.api';
+import { teachersApi } from '@shared/api/teachers.api';
+import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 import {
   ModalidadEducativa,
   MODALIDAD_NIVEL_MAP,
+  type EstadoVisita,
+  type ICreateVisitaRequest,
 } from '@sistema-monitoreo/shared-contracts';
 
 // ── Tipos ──
@@ -40,16 +47,7 @@ interface MockEspecialista {
   nivelEducativo: string;
 }
 
-const MOCK_ESPECIALISTAS: MockEspecialista[] = [
-  { id: 'e1', nombre: 'Juan Pérez', initials: 'JP', modalidad: 'EBR', nivelEducativo: 'Inicial' },
-  { id: 'e2', nombre: 'María García', initials: 'MG', modalidad: 'EBR', nivelEducativo: 'Primaria' },
-  { id: 'e3', nombre: 'Carlos Mendoza', initials: 'CM', modalidad: 'EBR', nivelEducativo: 'Secundaria' },
-  { id: 'e4', nombre: 'Ana Torres', initials: 'AT', modalidad: 'EBA', nivelEducativo: 'Inicial-Intermedio' },
-  { id: 'e5', nombre: 'Pedro Alvarado', initials: 'PA', modalidad: 'EBA', nivelEducativo: 'Avanzado' },
-  { id: 'e6', nombre: 'Rosa Quispe', initials: 'RQ', modalidad: 'EBE', nivelEducativo: 'CEBE' },
-  { id: 'e7', nombre: 'Luis Mamani', initials: 'LM', modalidad: 'EBE', nivelEducativo: 'PRITE' },
-  { id: 'e8', nombre: 'Sofía Ramos', initials: 'SR', modalidad: 'CEPTRO', nivelEducativo: 'Corte y Ensamblaje' },
-];
+// MOCK_ESPECIALISTAS removed
 
 // ── Datos mock de Instituciones (con modalidad y nivel) ──
 interface MockInstitucion {
@@ -59,181 +57,56 @@ interface MockInstitucion {
   nivelEducativo: string;
 }
 
-const MOCK_INSTITUCIONES: MockInstitucion[] = [
-  { id: 'i1', nombre: 'IE 1023 Santa Rosa', modalidad: 'EBR', nivelEducativo: 'Inicial' },
-  { id: 'i2', nombre: 'IE 4055 Libertador', modalidad: 'EBR', nivelEducativo: 'Primaria' },
-  { id: 'i3', nombre: 'IE 3022 Sagrado Corazón', modalidad: 'EBR', nivelEducativo: 'Secundaria' },
-  { id: 'i4', nombre: 'IE 5011 Fe y Alegría', modalidad: 'EBR', nivelEducativo: 'Primaria' },
-  { id: 'i5', nombre: 'IEI 70001 San Martín', modalidad: 'EBR', nivelEducativo: 'Inicial' },
-  { id: 'i6', nombre: 'CEBA Túpac Amaru', modalidad: 'EBA', nivelEducativo: 'Inicial-Intermedio' },
-  { id: 'i7', nombre: 'CEBA José Carlos Mariátegui', modalidad: 'EBA', nivelEducativo: 'Avanzado' },
-  { id: 'i8', nombre: 'CEBE San Juan de Dios', modalidad: 'EBE', nivelEducativo: 'CEBE' },
-  { id: 'i9', nombre: 'PRITE Virgen de la Candelaria', modalidad: 'EBE', nivelEducativo: 'PRITE' },
-  { id: 'i10', nombre: 'CETPRO Industrial Puno', modalidad: 'CEPTRO', nivelEducativo: 'Corte y Ensamblaje' },
-];
+// MOCK_INSTITUCIONES removed
 
 // ── Datos mock de Cronogramas ──
-const MOCK_CRONOGRAMAS: Cronograma[] = [
-  {
-    id: '1',
-    fechaHora: '2023-10-15T09:00',
-    especialista: 'Juan Pérez',
-    especialistaInitials: 'JP',
-    institucion: 'IE 1023 Santa Rosa',
-    docenteDirectivo: 'Ana Miranda Ortiz',
-    tipo: 'DOCENTE',
-    nroVisita: '02',
-    estado: 'PROGRAMADO',
-    modalidad: 'EBR',
-    nivel: 'Inicial',
-  },
-  {
-    id: '2',
-    fechaHora: '2023-10-18T10:30',
-    especialista: 'María García',
-    especialistaInitials: 'MG',
-    institucion: 'IE 4055 Libertador',
-    docenteDirectivo: 'Roberto Sánchez',
-    tipo: 'DIRECTIVO',
-    nroVisita: '01',
-    estado: 'EN PROCESO',
-    modalidad: 'EBR',
-    nivel: 'Primaria',
-  },
-  {
-    id: '3',
-    fechaHora: '2023-10-20T08:00',
-    especialista: 'Carlos Mendoza',
-    especialistaInitials: 'CM',
-    institucion: 'IE 3022 Sagrado Corazón',
-    docenteDirectivo: 'Luis Alberto Arce',
-    tipo: 'DOCENTE',
-    nroVisita: '03',
-    estado: 'COMPLETADO',
-    modalidad: 'EBR',
-    nivel: 'Secundaria',
-  },
-  {
-    id: '4',
-    fechaHora: '2023-10-22T14:00',
-    especialista: 'Ana Torres',
-    especialistaInitials: 'AT',
-    institucion: 'CEBA Túpac Amaru',
-    docenteDirectivo: 'Carmen Rosa Díaz',
-    tipo: 'DOCENTE',
-    nroVisita: '01',
-    estado: 'REPROGRAMADO',
-    modalidad: 'EBA',
-    nivel: 'Inicial-Intermedio',
-  },
-  {
-    id: '5',
-    fechaHora: '2023-10-25T11:00',
-    especialista: 'Juan Pérez',
-    especialistaInitials: 'JP',
-    institucion: 'IEI 70001 San Martín',
-    docenteDirectivo: 'Sofía Ramos',
-    tipo: 'DIRECTIVO',
-    nroVisita: '02',
-    estado: 'CANCELADO',
-    modalidad: 'EBR',
-    nivel: 'Inicial',
-  },
-  {
-    id: '6',
-    fechaHora: '2023-10-28T08:30',
-    especialista: 'María García',
-    especialistaInitials: 'MG',
-    institucion: 'IE 5011 Fe y Alegría',
-    docenteDirectivo: 'Pedro Infante',
-    tipo: 'DOCENTE',
-    nroVisita: '01',
-    estado: 'PROGRAMADO',
-    modalidad: 'EBR',
-    nivel: 'Primaria',
-  },
-  {
-    id: '7',
-    fechaHora: '2023-11-02T15:00',
-    especialista: 'Rosa Quispe',
-    especialistaInitials: 'RQ',
-    institucion: 'CEBE San Juan de Dios',
-    docenteDirectivo: 'Juana de Arco',
-    tipo: 'DIRECTIVO',
-    nroVisita: '04',
-    estado: 'PROGRAMADO',
-    modalidad: 'EBE',
-    nivel: 'CEBE',
-  },
-  {
-    id: '8',
-    fechaHora: '2023-11-05T09:30',
-    especialista: 'Carlos Mendoza',
-    especialistaInitials: 'CM',
-    institucion: 'IE 3022 Sagrado Corazón',
-    docenteDirectivo: 'Julio César',
-    tipo: 'DOCENTE',
-    nroVisita: '02',
-    estado: 'EN PROCESO',
-    modalidad: 'EBR',
-    nivel: 'Secundaria',
-  },
-  {
-    id: '9',
-    fechaHora: '2023-11-10T10:00',
-    especialista: 'Juan Pérez',
-    especialistaInitials: 'JP',
-    institucion: 'IE 1023 Santa Rosa',
-    docenteDirectivo: 'Marco Aurelio',
-    tipo: 'DOCENTE',
-    nroVisita: '01',
-    estado: 'COMPLETADO',
-    modalidad: 'EBR',
-    nivel: 'Inicial',
-  },
-  {
-    id: '10',
-    fechaHora: '2023-11-12T13:00',
-    especialista: 'Pedro Alvarado',
-    especialistaInitials: 'PA',
-    institucion: 'CEBA José Carlos Mariátegui',
-    docenteDirectivo: 'Cleopatra Mendoza',
-    tipo: 'DIRECTIVO',
-    nroVisita: '03',
-    estado: 'PROGRAMADO',
-    modalidad: 'EBA',
-    nivel: 'Avanzado',
-  },
-  {
-    id: '11',
-    fechaHora: '2023-11-15T08:00',
-    especialista: 'María García',
-    especialistaInitials: 'MG',
-    institucion: 'IE 4055 Libertador',
-    docenteDirectivo: 'Simón Bolívar',
-    tipo: 'DOCENTE',
-    nroVisita: '02',
-    estado: 'REPROGRAMADO',
-    modalidad: 'EBR',
-    nivel: 'Primaria',
-  },
-  {
-    id: '12',
-    fechaHora: '2023-11-18T16:00',
-    especialista: 'Luis Mamani',
-    especialistaInitials: 'LM',
-    institucion: 'PRITE Virgen de la Candelaria',
-    docenteDirectivo: 'José de San Martín',
-    tipo: 'DIRECTIVO',
-    nroVisita: '01',
-    estado: 'COMPLETADO',
-    modalidad: 'EBE',
-    nivel: 'PRITE',
-  },
-];
+// MOCK_CRONOGRAMAS removed
 
 // ── Constantes de modalidades ──
 const MODALIDADES = Object.values(ModalidadEducativa);
+
+// --- Procesamiento de Iniciales ---
+const getInitials = (name: string) => {
+  const parts = name.split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
+const getInitialsColor = (initials: string) => {
+  const colors: Record<string, string> = {
+    JP: 'bg-pink-100 text-pink-700 dark:bg-pink-950/30 dark:text-pink-400',
+    MG: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400',
+    CM: 'bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400',
+    AT: 'bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400',
+    PA: 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400',
+    RQ: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
+    LM: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-400',
+    SR: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',
+  };
+  return colors[initials] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+};
+
+// --- Formateador de Fecha y Hora ---
+const formatTableDateTime = (isoString: string) => {
+  try {
+    const date = new Date(isoString);
+    const datePart = date.toLocaleDateString('es-PE', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    const timePart = date.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    return { datePart, timePart };
+  } catch {
+    return { datePart: isoString, timePart: '' };
+  }
+};
 
 export const CronogramaPage = () => {
   const { user } = useUser();
@@ -244,14 +117,81 @@ export const CronogramaPage = () => {
     user?.role === 'jefe_taller';
 
   // --- Estados de Datos ---
-  const [cronogramas, setCronogramas] = useState<Cronograma[]>(() => {
-    const saved = localStorage.getItem('sistema-monitoreo:cronogramas');
-    return saved ? JSON.parse(saved) : MOCK_CRONOGRAMAS;
-  });
+  const [cronogramas, setCronogramas] = useState<Cronograma[]>([]);
+  const [MOCK_ESPECIALISTAS, setEspecialistas] = useState<MockEspecialista[]>([]);
+  const [MOCK_INSTITUCIONES, setInstituciones] = useState<MockInstitucion[]>([]);
+  const [MOCK_DOCENTES, setDocentes] = useState<Docente[]>([]);
 
   useEffect(() => {
-    localStorage.setItem('sistema-monitoreo:cronogramas', JSON.stringify(cronogramas));
-  }, [cronogramas]);
+    const fetchData = async () => {
+      try {
+        const [espRes, instRes, docRes, cronoRes] = await Promise.all([
+          especialistasApi.findAll(),
+          institutionsApi.findAll(),
+          teachersApi.findAll(),
+          cronogramasApi.findAll()
+        ]);
+
+        let loadedEsp: MockEspecialista[] = [];
+        let loadedInst: MockInstitucion[] = [];
+        let loadedDoc: Docente[] = [];
+
+        if (espRes.ok && espRes.data) {
+          loadedEsp = espRes.data.map(e => ({
+            id: e.id,
+            nombre: `${e.persona.nombres} ${e.persona.apellidos}`,
+            initials: getInitials(`${e.persona.nombres} ${e.persona.apellidos}`),
+            modalidad: e.modalidad || 'EBR',
+            nivelEducativo: e.nivelEducativo || 'Primaria'
+          }));
+          setEspecialistas(loadedEsp);
+        }
+
+        if (instRes.ok && instRes.data) {
+          loadedInst = instRes.data.data.map(i => ({
+            id: i.id,
+            nombre: i.nombre,
+            modalidad: i.modalidad || 'EBR',
+            nivelEducativo: i.nivelEducativo
+          }));
+          setInstituciones(loadedInst);
+        }
+
+        if (docRes.ok && docRes.data) {
+          loadedDoc = docRes.data.map(d => mapApiDocenteToFrontend(d));
+          setDocentes(loadedDoc);
+        }
+
+        if (cronoRes.ok && cronoRes.data) {
+          const mappedCrono = cronoRes.data.map(c => {
+            const esp = loadedEsp.find(e => e.id === c.monitorId);
+            const inst = loadedInst.find(i => i.id === c.institucionId);
+            const doc = loadedDoc.find(d => d.id === c.evaluadoId);
+
+            return {
+              id: c.id,
+              fechaHora: `${String(c.fechaProgramada).split('T')[0]}T${c.horaInicio}`,
+              especialista: esp ? esp.nombre : 'Sin Asignar',
+              especialistaInitials: esp ? esp.initials : 'SA',
+              institucion: inst ? inst.nombre : 'Sin I.E.',
+              docenteDirectivo: doc ? `${doc.nombres} ${doc.apellidos}` : 'Sin Docente',
+              tipo: c.tipoMonitoreo as 'DOCENTE' | 'DIRECTIVO',
+              nroVisita: String(c.numeroVisita).padStart(2, '0'),
+              estado: c.estado as 'PROGRAMADO' | 'EN PROCESO' | 'COMPLETADO' | 'REPROGRAMADO' | 'CANCELADO',
+              modalidad: c.modalidad,
+              nivel: c.nivelEducativo,
+              observaciones: c.detalles || undefined,
+            };
+          });
+          setCronogramas(mappedCrono);
+        }
+      } catch(err) {
+        console.error('Error fetching data:', err);
+      }
+    };
+    fetchData();
+  }, []);
+
 
   // --- Estados de Filtro ---
   const [searchEsp, setSearchEsp] = useState('');
@@ -293,13 +233,13 @@ export const CronogramaPage = () => {
     if (!matchInst) return [];
 
     const dbId = matchInst.id.replace(/^i/, '');
-    return MOCK_DOCENTES.filter((doc) => {
-      const matchInstId = doc.institucionId === dbId;
-      const isDirectorCargo = doc.cargo === 'Director';
-      const matchCargo = formTipo === 'DIRECTIVO' ? isDirectorCargo : !isDirectorCargo;
-      return matchInstId && matchCargo;
-    });
-  }, [isDirector, user, formInstitucion, formTipo]);
+      return MOCK_DOCENTES.filter((doc) => {
+        const matchInstId = doc.institucionId === dbId;
+        const isDirectorCargo = doc.cargo === 'Director';
+        const matchCargo = formTipo === 'DIRECTIVO' ? isDirectorCargo : !isDirectorCargo;
+        return matchInstId && matchCargo;
+      });
+    }, [isDirector, user, formInstitucion, formTipo, MOCK_DOCENTES, MOCK_INSTITUCIONES]);
 
   const docenteOptions = useMemo(() => {
     const list = docentesDeLaInstitucion.map((doc) => ({
@@ -318,11 +258,11 @@ export const CronogramaPage = () => {
     const targetInstName = isDirector ? user?.institucionNombre : formInstitucion;
     if (!targetInstName) return false;
 
-    const matchInst = MOCK_INSTITUCIONES.find(
-      (inst) => inst.nombre.toLowerCase() === targetInstName.toLowerCase()
-    );
-    return matchInst?.nivelEducativo.toLowerCase() === 'secundaria';
-  }, [isDirector, user, formInstitucion]);
+      const matchInst = MOCK_INSTITUCIONES.find(
+        (inst) => inst.nombre.toLowerCase() === targetInstName.toLowerCase()
+      );
+      return matchInst?.nivelEducativo.toLowerCase() === 'secundaria';
+    }, [isDirector, user, formInstitucion, MOCK_INSTITUCIONES]);
 
   const evaluadoresDeLaInstitucion = useMemo(() => {
     const targetInstName = isDirector ? user?.institucionNombre : formInstitucion;
@@ -341,7 +281,7 @@ export const CronogramaPage = () => {
           doc.cargo === 'Coordinador Pedagógico' ||
           doc.cargo === 'Jefe de Taller')
     );
-  }, [isDirector, user, formInstitucion]);
+  }, [isDirector, user, formInstitucion, MOCK_DOCENTES, MOCK_INSTITUCIONES]);
 
   const evaluadorOptions = useMemo(() => {
     const list = evaluadoresDeLaInstitucion.map((doc) => ({
@@ -369,20 +309,20 @@ export const CronogramaPage = () => {
   }, [formModalidad]);
 
   // ── Especialistas filtrados por modalidad + nivel ──
-  const especialistasFiltrados = useMemo(() => {
-    if (!formModalidad || !formNivel) return [];
-    return MOCK_ESPECIALISTAS.filter(
-      (esp) => esp.modalidad === formModalidad && esp.nivelEducativo === formNivel
-    );
-  }, [formModalidad, formNivel]);
+    const especialistasFiltrados = useMemo(() => {
+      if (!formModalidad || !formNivel) return [];
+      return MOCK_ESPECIALISTAS.filter(
+        (esp) => esp.modalidad === formModalidad && esp.nivelEducativo === formNivel
+      );
+    }, [formModalidad, formNivel, MOCK_ESPECIALISTAS]);
 
   // ── Instituciones filtradas por modalidad + nivel ──
-  const institucionesFiltradas = useMemo(() => {
-    if (!formModalidad || !formNivel) return [];
-    return MOCK_INSTITUCIONES.filter(
-      (inst) => inst.modalidad === formModalidad && inst.nivelEducativo === formNivel
-    );
-  }, [formModalidad, formNivel]);
+    const institucionesFiltradas = useMemo(() => {
+      if (!formModalidad || !formNivel) return [];
+      return MOCK_INSTITUCIONES.filter(
+        (inst) => inst.modalidad === formModalidad && inst.nivelEducativo === formNivel
+      );
+    }, [formModalidad, formNivel, MOCK_INSTITUCIONES]);
 
   const handleFormModalidadChange = (modalidad: string) => {
     setFormModalidad(modalidad);
@@ -407,49 +347,6 @@ export const CronogramaPage = () => {
     setCurrentPage(1);
     setPrevFilters(filters);
   }
-
-  // --- Procesamiento de Iniciales ---
-  const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
-  };
-
-  const getInitialsColor = (initials: string) => {
-    const colors: Record<string, string> = {
-      JP: 'bg-pink-100 text-pink-700 dark:bg-pink-950/30 dark:text-pink-400',
-      MG: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400',
-      CM: 'bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400',
-      AT: 'bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400',
-      PA: 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400',
-      RQ: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
-      LM: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-400',
-      SR: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',
-    };
-    return colors[initials] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
-  };
-
-  // --- Formateador de Fecha y Hora ---
-  const formatTableDateTime = (isoString: string) => {
-    try {
-      const date = new Date(isoString);
-      const datePart = date.toLocaleDateString('es-PE', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-      const timePart = date.toLocaleTimeString('es-PE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      });
-      return { datePart, timePart };
-    } catch {
-      return { datePart: isoString, timePart: '' };
-    }
-  };
 
   // --- Lógica de Filtro ---
   const filteredBaseCronogramas = useMemo(() => {
@@ -577,7 +474,7 @@ export const CronogramaPage = () => {
   };
 
   // --- Guardar Formulario ---
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -586,52 +483,89 @@ export const CronogramaPage = () => {
       return;
     }
 
-    if (editCronogramaId) {
-      setCronogramas((prev) =>
-        prev.map((c) =>
-          c.id === editCronogramaId
-            ? {
-                ...c,
-                fechaHora: formFechaHora,
-                especialista: formEspecialista,
-                especialistaInitials: getInitials(formEspecialista),
-                institucion: formInstitucion,
-                docenteDirectivo: formDocente.trim(),
-                tipo: formTipo,
-                nroVisita: formVisita,
-                estado: formEstado,
-                modalidad: formModalidad,
-                nivel: formNivel,
-                observaciones: formObservaciones.trim(),
-              }
-            : c,
-        ),
-      );
-    } else {
-      const newCronograma: Cronograma = {
-        id: Date.now().toString(),
-        fechaHora: formFechaHora,
-        especialista: formEspecialista,
-        especialistaInitials: getInitials(formEspecialista),
-        institucion: formInstitucion,
-        docenteDirectivo: formDocente.trim(),
-        tipo: formTipo,
-        nroVisita: formVisita,
-        estado: 'PROGRAMADO',
-        modalidad: formModalidad,
-        nivel: formNivel,
-        observaciones: formObservaciones.trim(),
-      };
-      setCronogramas((prev) => [newCronograma, ...prev]);
+    const matchedEsp = MOCK_ESPECIALISTAS.find(e => e.nombre === formEspecialista);
+    const matchedInst = MOCK_INSTITUCIONES.find(i => i.nombre === formInstitucion);
+    const matchedDoc = MOCK_DOCENTES.find(d => `${d.nombres} ${d.apellidos}` === formDocente.trim());
+
+    if (!matchedEsp || !matchedInst || !matchedDoc) {
+      setFormError('Error de resolución: No se encontraron los IDs correspondientes.');
+      return;
     }
 
-    setShowFormModal(false);
+    const payload = {
+      monitorId: matchedEsp.id,
+      institucionId: matchedInst.id,
+      evaluadoId: matchedDoc.id,
+      tipoMonitoreo: formTipo,
+      numeroVisita: parseInt(formVisita, 10),
+      fechaProgramada: formFechaHora.split('T')[0],
+      horaInicio: formFechaHora.split('T')[1] + (formFechaHora.split('T')[1].length === 5 ? ':00' : ''),
+      estado: formEstado as EstadoVisita,
+      modalidad: formModalidad,
+      nivelEducativo: formNivel,
+      detalles: formObservaciones.trim() || undefined
+    };
+
+    if (editCronogramaId) {
+      const res = await cronogramasApi.update(editCronogramaId, payload);
+      if (res.ok && res.data) {
+        setCronogramas((prev) =>
+          prev.map((c) =>
+            c.id === editCronogramaId
+              ? {
+                  ...c,
+                  fechaHora: formFechaHora,
+                  especialista: formEspecialista,
+                  especialistaInitials: getInitials(formEspecialista),
+                  institucion: formInstitucion,
+                  docenteDirectivo: formDocente.trim(),
+                  tipo: formTipo,
+                  nroVisita: formVisita,
+                  estado: formEstado,
+                  modalidad: formModalidad,
+                  nivel: formNivel,
+                  observaciones: formObservaciones.trim(),
+                }
+              : c,
+          ),
+        );
+        setShowFormModal(false);
+      } else {
+        setFormError('Error guardando en BD');
+      }
+    } else {
+      const res = await cronogramasApi.create(payload as ICreateVisitaRequest);
+      if (res.ok && res.data) {
+        const c = res.data;
+        const newCronograma: Cronograma = {
+          id: c.id,
+          fechaHora: formFechaHora,
+          especialista: formEspecialista,
+          especialistaInitials: getInitials(formEspecialista),
+          institucion: formInstitucion,
+          docenteDirectivo: formDocente.trim(),
+          tipo: formTipo,
+          nroVisita: formVisita,
+          estado: 'PROGRAMADO',
+          modalidad: formModalidad,
+          nivel: formNivel,
+          observaciones: formObservaciones.trim(),
+        };
+        setCronogramas((prev) => [newCronograma, ...prev]);
+        setShowFormModal(false);
+      } else {
+        setFormError('Error creando en BD');
+      }
+    }
   };
 
   // --- Confirmar Eliminado ---
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteCronogramaId) return;
-    setCronogramas((prev) => prev.filter((c) => c.id !== deleteCronogramaId));
+    const res = await cronogramasApi.delete(deleteCronogramaId);
+    if (res.ok) {
+      setCronogramas((prev) => prev.filter((c) => c.id !== deleteCronogramaId));
+    }
     setDeleteCronogramaId(null);
   };
 

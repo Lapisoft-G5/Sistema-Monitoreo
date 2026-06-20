@@ -97,7 +97,7 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
     return {
       ...INITIAL_FORM,
       modalidad: defaultModalidad,
-      nivel: defaultNivel as any,
+      nivel: defaultNivel as string,
     };
   });
   const [submitted, setSubmitted] = useState(false);
@@ -177,7 +177,7 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
             value={form.modalidad || ''}
             onChange={(v) => {
               const nextLevels = getAllowedNiveles(v);
-              setForm((prev) => ({ ...prev, modalidad: v, nivel: (nextLevels[0] || '') as any }));
+              setForm((prev) => ({ ...prev, modalidad: v, nivel: (nextLevels[0] || '') as string }));
             }}
             options={allowedModalidades}
             placeholder="Seleccione Modalidad"

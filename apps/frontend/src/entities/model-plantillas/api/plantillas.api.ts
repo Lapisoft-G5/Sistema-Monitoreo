@@ -25,15 +25,15 @@ export interface CreatePlantillaInput {
   anioAcademico: number;
   baremo: 'Vigente' | 'Porcentual';
   descripcion?: string;
-  niveles: any[];
-  desempenos: any[];
+  niveles: unknown[];
+  desempenos: unknown[];
 }
 
 export interface UpdatePlantillaInput {
   baremo?: 'Vigente' | 'Porcentual';
   descripcion?: string;
-  niveles?: any[];
-  desempenos?: any[];
+  niveles?: unknown[];
+  desempenos?: unknown[];
 }
 
 export const plantillasApi = {

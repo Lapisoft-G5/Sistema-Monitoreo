@@ -46,7 +46,9 @@ const getFichaState = (visitId: string) => {
   if (saved) {
     try {
       return JSON.parse(saved);
-    } catch {}
+    } catch (err) {
+      console.warn('Invalid JSON in localStorage', err);
+    }
   }
   
   // Mock pre-filled state for completed mock visits

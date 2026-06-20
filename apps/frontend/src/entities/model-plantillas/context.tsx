@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { plantillasApi } from './api/plantillas.api.js';
 import type { Plantilla } from './model';
@@ -68,7 +69,7 @@ export const PlantillasProvider = ({ children }: { children: ReactNode }) => {
     setPlantillas((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
-        let nextEstado: Plantilla['estado'] = 'Vigente';
+        let nextEstado: Plantilla['estado'];
         if (p.estado === 'Vigente') nextEstado = 'Histórico';
         else if (p.estado === 'Histórico') nextEstado = 'Borrador';
         else nextEstado = 'Vigente';

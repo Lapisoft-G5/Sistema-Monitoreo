@@ -160,7 +160,7 @@ export const EspecialistaFormBase = ({
             label="Cargo *"
             required
             value={form.cargo}
-            onChange={(v) => set('cargo', v as any)}
+            onChange={(v) => set('cargo', v as "Jefe de Área" | "Jefe de Gestión" | "Especialista")}
             options={[
               { value: 'Especialista', label: 'Especialista' },
               { value: 'Jefe de Área', label: 'Jefe de Área' },
@@ -174,7 +174,7 @@ export const EspecialistaFormBase = ({
             label="Condición Laboral *"
             required
             value={form.condicionLaboral}
-            onChange={(v) => set('condicionLaboral', v as any)}
+            onChange={(v) => set('condicionLaboral', v as "Destacado" | "Designado" | "Encargado")}
             options={[
               { value: 'Encargado', label: 'Encargado' },
               { value: 'Destacado', label: 'Destacado' },
@@ -194,7 +194,7 @@ export const EspecialistaFormBase = ({
               const levels = MODALIDAD_NIVEL_MAP[v] || [];
               setForm((prev) => ({
                 ...prev,
-                modalidad: v as any,
+                modalidad: v as "EBR" | "EBA" | "EBE" | "CEPTRO",
                 nivelEducativo: levels[0] || '',
                 especialidad: '',
               }));

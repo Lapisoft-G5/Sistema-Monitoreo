@@ -11,9 +11,9 @@ import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts'
 
 interface Props {
   onCancel: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: JefeAreaEditFormData | JefeAreaCreateFormData) => void;
   isLoading: boolean;
-  initialData?: any;
+  initialData?: Partial<JefeAreaEditFormData & JefeAreaCreateFormData>;
   isEdit?: boolean;
 }
 

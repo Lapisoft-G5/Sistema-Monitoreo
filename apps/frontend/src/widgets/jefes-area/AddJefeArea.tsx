@@ -39,7 +39,8 @@ export const AddJefeArea = () => {
       <JefeAreaFormBase
         isEdit={false}
         initialData={initialData}
-        onSubmit={handleFormSubmit}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onSubmit={(data) => handleFormSubmit(data as any)}
         onCancel={() => navigate('/jefes-area')}
         isLoading={loading}
       />

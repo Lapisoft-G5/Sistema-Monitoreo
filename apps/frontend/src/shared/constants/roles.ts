@@ -8,7 +8,8 @@ export type UserRole =
   | 'director_institucion'
   | 'director_ie' // 🚀 Fallback alias para base de datos local
   | 'docente'
-  | 'invitado';
+  | 'invitado'
+  | 'admin';
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   director_ugel: 'Director UGEL',
@@ -21,6 +22,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   director_ie: 'Director de Institución',
   docente: 'Docente',
   invitado: 'Invitado',
+  admin: 'Administrador del Sistema',
 };
 
 export type MenuItem =
@@ -46,6 +48,13 @@ export type MenuItem =
 const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
 
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
+  admin: [
+    'dashboard', 'monitoreo', 'monitoreo_plan', 'monitoreo_gestion', 'monitoreo_reportes',
+    'monitoreo_plan_anual', 'monitoreo_cronograma', 'monitoreo_calendario', 'plantillas',
+    'instituciones', 'instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores',
+    'instituciones_jefes_taller', 'especialistas', 'jefes_area', 'reportes', 'configuracion'
+  ],
+
   director_ugel: ['dashboard', 'reportes'],
 
   jefe_gestion: [
@@ -139,6 +148,8 @@ export const isReadOnlyRole = (role: UserRole): boolean => READ_ONLY_ROLES.inclu
 
 export const getDefaultLandingPage = (role: UserRole): string => {
   switch (role) {
+    case 'admin':
+      return '/dashboard';
     case 'jefe_area':
       return '/instituciones/padron';
     case 'jefe_gestion':

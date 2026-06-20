@@ -59,6 +59,7 @@ export const CoordinadoresPage = () => {
 
   useEffect(() => {
     Promise.resolve().then(() => fetchAllData());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {

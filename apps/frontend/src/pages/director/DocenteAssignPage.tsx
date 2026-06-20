@@ -75,15 +75,15 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
       // Forzar Nombrado o Destacado si tiene otro tipo (por restricciones del backend)
       const currentCond = selectedDocente.condicion as string;
       if (currentCond === 'Nombrado' || currentCond === 'Destacado') {
-        setCondicionLaboral(currentCond);
+        setTimeout(() => setCondicionLaboral(currentCond), 0);
       } else {
-        setCondicionLaboral('Nombrado');
+        setTimeout(() => setCondicionLaboral('Nombrado'), 0);
       }
 
       if (targetCargo === 'Coordinador Pedagógico') {
-        setCargaLaboral(40);
+        setTimeout(() => setCargaLaboral(40), 0);
       } else {
-        setCargaLaboral(selectedDocente.cargaHoraria || 30);
+        setTimeout(() => setCargaLaboral(selectedDocente.cargaHoraria || 30), 0);
       }
     }
   }, [selectedDocente, targetCargo]);
@@ -131,7 +131,8 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
           (res.error as { message?: string })?.message || `Error al asignar el cargo de ${targetCargo}.`;
         setError(errMsg);
       }
-    } catch (err: any) {
+    } catch (e) {
+      const err = e as Error;
       setError(err.message || 'Error al procesar la asignación.');
       console.error('Error making assignment:', err);
     } finally {

@@ -1,77 +1,135 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Cronograma } from './model';
 import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
-import { MOCK_CRONOGRAMAS } from './mocks';
 import { CronogramaContext } from './cronograma-context';
 import { cronogramasApi } from './api/cronogramas.api.js';
-import { FEATURES } from '@shared/config/features';
+import { institutionsApi } from '@shared/api/institutions.api';
+import { especialistasApi } from '@shared/api/especialistas.api';
+import { teachersApi } from '@shared/api/teachers.api';
+import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import type { Docente } from '@entities/model-docentes';
+
+function getInitials(name: string) {
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
 
 export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
-  // 1. Estado de Cronogramas
-  const [cronogramas, setCronogramas] = useState<Cronograma[]>(() => {
-    if (FEATURES.apiOnly) return MOCK_CRONOGRAMAS;
-    const saved = localStorage.getItem('sistema-monitoreo:cronogramas');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return MOCK_CRONOGRAMAS;
-      }
-    }
-    return MOCK_CRONOGRAMAS;
-  });
-
-  // Sincronizar cronogramas con localStorage (skip si apiOnly)
-  useEffect(() => {
-    if (FEATURES.apiOnly) return;
-    localStorage.setItem('sistema-monitoreo:cronogramas', JSON.stringify(cronogramas));
-  }, [cronogramas]);
-
-  // 2. Estado de Reprogramaciones
+  const [cronogramas, setCronogramas] = useState<Cronograma[]>([]);
   const [reprogramaciones, setReprogramaciones] = useState<Record<string, SolicitudReprogramacion>>({});
 
-  // Carga de solicitudes de reprogramación asociadas
-  const loadReprogramaciones = useCallback(() => {
-    const nextReprog: Record<string, SolicitudReprogramacion> = {};
+  const fetchData = useCallback(async () => {
+    try {
+      const [espRes, instRes, docRes, cronoRes, solRes] = await Promise.all([
+        especialistasApi.findAll(),
+        institutionsApi.findAll({ limit: 1000 }),
+        teachersApi.findAll(),
+        cronogramasApi.findAll(),
+        cronogramasApi.findAllSolicitudes()
+      ]);
 
-    if (!FEATURES.apiOnly) {
-      // Semilla para la visita ID 13 (mock obligatorio)
-      const key13 = 'sistema-monitoreo:reprogramar-state:13';
-      if (!localStorage.getItem(key13)) {
-        const mockRequest: SolicitudReprogramacion = {
-          id: 'REQ-2023-089',
-          fechaOriginal: '2023-10-15T08:30',
-          fechaNueva: '2023-10-12T08:30',
-          motivo: 'El director de la I.E. 70005 - Lampa Central me ha informado formalmente (Oficio Nº 045-2023-DIR) que el día 15 de Octubre el plantel participará en el desfile cívico distrital obligatorio, por lo que no habrá atención administrativa regular. Solicito reprogramación para el día 12.',
-          archivoNombre: 'Oficio_045_2023_DIR_LampaCentral.pdf',
-          estado: 'APROBADO',
-          fechaRegistro: '2023-10-11',
-          aprobador: 'Carlos Mendoza',
-          aprobadorComentario: 'Se verifica cruce de horarios justificado por evento cívico distrital. Proceder con el cambio de fecha propuesto.',
-          fechaAprobacion: '2023-10-12 14:30'
-        };
-        localStorage.setItem(key13, JSON.stringify(mockRequest));
+      let loadedEsp: Array<{ id: string; nombre: string; initials: string; modalidad: string; nivelEducativo: string }> = [];
+      let loadedInst: Array<{ id: string; nombre: string; modalidad: string; nivelEducativo: string }> = [];
+      let loadedDoc: Docente[] = [];
+
+      if (espRes.ok && espRes.data) {
+        loadedEsp = espRes.data.map(e => ({
+          id: e.id,
+          nombre: `${e.persona.nombres} ${e.persona.apellidos}`,
+          initials: getInitials(`${e.persona.nombres} ${e.persona.apellidos}`),
+          modalidad: e.modalidad || 'EBR',
+          nivelEducativo: e.nivelEducativo || 'Primaria'
+        })) as unknown as Array<{ id: string; nombre: string; initials: string; modalidad: string; nivelEducativo: string }>;
       }
+      if (instRes.ok && instRes.data) {
+        loadedInst = instRes.data.data.map(i => ({
+          id: i.id,
+          nombre: i.nombre,
+          modalidad: i.modalidad || 'EBR',
+          nivelEducativo: i.nivelEducativo
+        })) as unknown as Array<{ id: string; nombre: string; modalidad: string; nivelEducativo: string }>;
+      }
+      if (docRes.ok && docRes.data) {
+        loadedDoc = docRes.data.map(d => mapApiDocenteToFrontend(d));
+      }
+      if (cronoRes) {
+        const mappedCrono = cronoRes.map(c => {
+          const esp = loadedEsp.find(e => e.id === c.monitorId);
+          const inst = loadedInst.find(i => i.id === c.institucionId);
+          const doc = loadedDoc.find(d => d.id === c.evaluadoId);
+          return {
+            id: c.id,
+            fechaHora: `${String(c.fechaProgramada).split('T')[0]}T${c.horaInicio}`,
+            especialista: esp ? esp.nombre : 'Sin Asignar',
+            especialistaInitials: esp ? esp.initials : 'SA',
+            institucion: inst ? inst.nombre : 'Sin I.E.',
+            docenteDirectivo: doc ? `${doc.nombres} ${doc.apellidos}` : 'Sin Docente',
+            tipo: c.tipoMonitoreo as 'DOCENTE' | 'DIRECTIVO',
+            nroVisita: String(c.numeroVisita).padStart(2, '0'),
+            estado: c.estado as 'PROGRAMADO' | 'EN PROCESO' | 'COMPLETADO' | 'REPROGRAMADO' | 'CANCELADO',
+            fechaEjecutada: undefined,
+            modalidad: 'EBR',
+            nivel: 'Primaria'
+          };
+        });
+        setCronogramas(mappedCrono);
+      }
+      if (solRes) {
+        const solMap: Record<string, SolicitudReprogramacion> = {};
+        solRes.forEach(s => {
+          solMap[s.cronogramaId] = {
+            id: s.id,
+            fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
+            fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
+            motivo: s.justificacion,
+            archivoNombre: s.archivoSustentoUrl || 'oficio.pdf',
+            estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
+            fechaRegistro: s.createdAt,
+            aprobador: s.resueltoPorId || undefined,
+            aprobadorComentario: s.comentarioResolucion || undefined,
+            fechaAprobacion: s.fechaResolucion || undefined
+          };
+        });
+        setReprogramaciones(solMap);
+      }
+    } catch (err) {
+      console.error('Error fetching data for CronogramaProvider', err);
     }
-
-    cronogramas.forEach((visit) => {
-      if (FEATURES.apiOnly) return;
-      const saved = localStorage.getItem(`sistema-monitoreo:reprogramar-state:${visit.id}`);
-      if (saved) {
-        try {
-          nextReprog[visit.id] = JSON.parse(saved);
-        } catch {}
-      }
-    });
-
-    setReprogramaciones(nextReprog);
-  }, [cronogramas]);
+  }, []);
 
   useEffect(() => {
-    loadReprogramaciones();
-  }, [cronogramas, loadReprogramaciones]);
+    const t = setTimeout(() => {
+      fetchData();
+    }, 0);
+    return () => clearTimeout(t);
+  }, [fetchData]);
 
-  // Acciones
+  const loadReprogramaciones = useCallback(() => {
+    cronogramasApi.findAllSolicitudes()
+      .then(solRes => {
+        const solMap: Record<string, SolicitudReprogramacion> = {};
+        solRes.forEach(s => {
+          solMap[s.cronogramaId] = {
+            id: s.id,
+            fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
+            fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
+            motivo: s.justificacion,
+            archivoNombre: s.archivoSustentoUrl || 'oficio.pdf',
+            estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
+            fechaRegistro: s.createdAt,
+            aprobador: s.resueltoPorId || undefined,
+            aprobadorComentario: s.comentarioResolucion || undefined,
+            fechaAprobacion: s.fechaResolucion || undefined
+          };
+        });
+        setReprogramaciones(solMap);
+      })
+      .catch(err => console.error(err));
+  }, []);
+
   const submitRescheduleRequest = useCallback((
     visitId: string,
     request: {
@@ -81,22 +139,6 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
       archivoNombre: string;
     }
   ) => {
-    const newRequest: SolicitudReprogramacion = {
-      id: 'REQ-2023-' + Math.floor(Math.random() * 900 + 100),
-      fechaOriginal: request.fechaOriginal,
-      fechaNueva: request.fechaNueva,
-      motivo: request.motivo,
-      archivoNombre: request.archivoNombre || 'Oficio_Sustentatorio.pdf',
-      estado: 'PENDIENTE',
-      fechaRegistro: new Date().toISOString().split('T')[0]
-    };
-
-    if (!FEATURES.apiOnly) {
-      localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(newRequest));
-    }
-    loadReprogramaciones();
-
-    // Best-effort: tambien persistir en backend via API
     cronogramasApi
       .crearSolicitud({
         cronogramaId: visitId,
@@ -105,44 +147,15 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
         justificacion: request.motivo,
         archivoSustentoNombre: request.archivoNombre,
       })
+      .then(() => loadReprogramaciones())
       .catch((err: unknown) => console.warn('[cronograma] No se pudo crear solicitud en backend:', err));
   }, [loadReprogramaciones]);
 
   const approveRescheduleRequest = useCallback((
     visitId: string,
-    aprobador: string,
+    _aprobador: string,
     comentario: string
   ) => {
-    const activeReq = reprogramaciones[visitId];
-    if (!activeReq) return;
-
-    const approvedRequest: SolicitudReprogramacion = {
-      ...activeReq,
-      estado: 'APROBADO',
-      aprobador: aprobador || 'Carlos Mendoza',
-      aprobadorComentario: comentario || 'Se verifica cruce de horarios justificado por evento cívico distrital. Proceder con el cambio de fecha propuesto.',
-      fechaAprobacion: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    };
-
-    if (!FEATURES.apiOnly) {
-      localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(approvedRequest));
-    }
-
-    // Al aprobar, mutamos el cronograma
-    setCronogramas((prev) =>
-      prev.map((c) => {
-        if (c.id === visitId) {
-          return {
-            ...c,
-            fechaHora: activeReq.fechaNueva,
-            estado: 'REPROGRAMADO'
-          };
-        }
-        return c;
-      })
-    );
-
-    // Best-effort: aprobar en backend
     cronogramasApi
       .findAllSolicitudes({ cronogramaId: visitId, estado: 'PENDIENTE' })
       .then((solicitudes) => {
@@ -151,31 +164,18 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
           return cronogramasApi.aprobarSolicitud(solicitud.id, comentario || 'Aprobado');
         }
       })
+      .then(() => {
+        loadReprogramaciones();
+        fetchData();
+      })
       .catch((err: unknown) => console.warn('[cronograma] No se pudo aprobar solicitud en backend:', err));
-  }, [reprogramaciones]);
+  }, [loadReprogramaciones, fetchData]);
 
   const rejectRescheduleRequest = useCallback((
     visitId: string,
-    aprobador: string,
+    _aprobador: string,
     comentario: string
   ) => {
-    const activeReq = reprogramaciones[visitId];
-    if (!activeReq) return;
-
-    const rejectedRequest: SolicitudReprogramacion = {
-      ...activeReq,
-      estado: 'RECHAZADO',
-      aprobador: aprobador || 'Carlos Mendoza',
-      aprobadorComentario: comentario || 'Solicitud de cambio de fecha rechazada por no cumplir con la anticipación debida o falta de justificación formal.',
-      fechaAprobacion: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    };
-
-    if (!FEATURES.apiOnly) {
-      localStorage.setItem(`sistema-monitoreo:reprogramar-state:${visitId}`, JSON.stringify(rejectedRequest));
-    }
-    loadReprogramaciones();
-
-    // Best-effort: rechazar en backend
     cronogramasApi
       .findAllSolicitudes({ cronogramaId: visitId, estado: 'PENDIENTE' })
       .then((solicitudes) => {
@@ -184,13 +184,15 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
           return cronogramasApi.rechazarSolicitud(solicitud.id, comentario || 'Rechazado');
         }
       })
+      .then(() => loadReprogramaciones())
       .catch((err: unknown) => console.warn('[cronograma] No se pudo rechazar solicitud en backend:', err));
-  }, [reprogramaciones, loadReprogramaciones]);
+  }, [loadReprogramaciones]);
 
   const deleteCronograma = useCallback((id: string) => {
-    setCronogramas((prev) => prev.filter((c) => c.id !== id));
-    localStorage.removeItem(`sistema-monitoreo:reprogramar-state:${id}`);
-  }, []);
+    cronogramasApi.remove(id)
+      .then(() => fetchData())
+      .catch(console.error);
+  }, [fetchData]);
 
   return (
     <CronogramaContext.Provider

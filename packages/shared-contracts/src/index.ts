@@ -12,3 +12,7 @@ export * from './especialistas/especialistas.contract.js';
 export * from './constants/domain.constants.js';
 export * from './jefes-area/jefes-area.contract.js';
 export * from './monitoring/monitoring-plan.contract.js';
+export * from './scheduling/index.js';
+export * from './plantillas/index.js';
+export * from './evaluations/index.js';
+export * from './reports/index.js';

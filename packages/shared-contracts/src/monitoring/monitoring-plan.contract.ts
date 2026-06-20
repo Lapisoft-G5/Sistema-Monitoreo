@@ -7,10 +7,23 @@ export interface IMonitoringPlanResponse {
   estado: string;
   createdAt: string;
   updatedAt: string;
+  autorId?: string;
+  rolAutorAlCrear?: string;
+  institucionId?: string | null;
+  deleted?: boolean;
+  deletedAt?: string | null;
+  institucionesCubiertas?: IPlanInstitucionCubierta[];
+}
+
+export interface IPlanInstitucionCubierta {
+  institucionId: string;
+  institucionNombre: string;
+  institucionCodigoModular: string;
 }
 
 export interface ICreateMonitoringPlanRequest {
   titulo: string;
   anioAcademico: number;
   tipoEntidad: string;
+  institucionId?: string;
 }

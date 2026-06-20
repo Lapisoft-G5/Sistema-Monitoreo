@@ -3,24 +3,23 @@ export class Persona {
   dni!: string;
   nombres!: string;
   apellidos!: string;
-  correo!: string | null;
+  correo: string | null = null;
   createdAt!: Date;
   updatedAt!: Date;
   docente?: {
     id: string;
     institucionId: string;
     gradoAcademico: string | null;
-    nivelEducativo: string;
+    nivelEducativoId: string;
     estado: string;
-  } | null;
+  } | null = null;
   especialista?: {
     id: string;
     cargo: string;
-    nivelEducativo: string;
+    nivelEducativoId: string;
     condicionLaboral: string;
     cargaLaboral: number;
     estado: string;
-    especialidad: string | null;
     modalidad: string | null;
-  } | null;
+  } | null = null;
 }

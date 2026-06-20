@@ -169,7 +169,6 @@ model Especialista {
   condicionLaboral  String   @map("condicion_laboral") @db.VarChar(50)
   cargaLaboral      Int      @default(40) @map("carga_laboral")
   estado            String   @default("Activo") @db.VarChar(20)
-  especialidad      String?  @db.VarChar(100)
   modalidad         String?  @map("modalidad") @db.VarChar(50)
   escalaMagisterial Int?     @map("escala_magisterial")
   createdAt         DateTime @default(now()) @map("created_at")
@@ -177,6 +176,7 @@ model Especialista {
 
   persona           Persona  @relation(fields: [personaId], references: [id])
   cronogramas       Cronograma[]
+  especialidades    EspecialistaEspecialidad[]
 
   @@map("especialistas")
 }
@@ -186,26 +186,28 @@ model Especialista {
 // ==========================================
 
 model InstitucionEducativa {
-  id             String   @id @default(uuid()) @db.Uuid
-  codigoModular  String   @unique @map("codigo_modular") @db.VarChar(7)
-  codigoLocal    String   @map("codigo_local") @db.VarChar(8)
-  nombre         String   @db.VarChar(100)
-  nivelEducativo String   @map("nivel_educativo") @db.VarChar(50)
-  departamento   String   @default("Puno") @db.VarChar(50)
-  provincia      String   @db.VarChar(50)
-  distrito       String   @db.VarChar(50)
-  direccion      String   @db.VarChar(150)
-  zona           String   @db.VarChar(20)
-  estado         String   @default("Activa") @db.VarChar(20)
-  modalidad      String?  @map("modalidad") @db.VarChar(50)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id                String   @id @default(uuid()) @db.Uuid
+  codigoModular     String   @unique @map("codigo_modular") @db.VarChar(7)
+  codigoLocal       String   @map("codigo_local") @db.VarChar(8)
+  nombre            String   @db.VarChar(100)
+  nivelEducativoId  String?  @map("nivel_educativo_id") @db.Uuid
+  nivelEducativo    String   @map("nivel_educativo") @db.VarChar(50)
+  modalidad         String   @map("modalidad") @db.VarChar(50)
+  departamento        String   @default("Puno") @db.VarChar(50)
+  provincia         String   @db.VarChar(50)
+  distrito          String   @db.VarChar(50)
+  direccion         String   @db.VarChar(150)
+  zona              String   @db.VarChar(20)
+  estado            String   @default("Activa") @db.VarChar(20)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
-  docentes         Docente[]
-  planCobertura    PlanCoberturaIe[]
-  planes           PlanMonitoreo[]    @relation("PlanInstitucion")
-  plantillas       PlantillaMonitoreo[]
-  cronogramas      Cronograma[]
+  nivelEducativoRel NivelEducativo?    @relation(fields: [nivelEducativoId], references: [id], onDelete: SetNull)
+  docentes          Docente[]
+  planCobertura     PlanCoberturaIe[]
+  planes            PlanMonitoreo[]    @relation("PlanInstitucion")
+  plantillas        PlantillaMonitoreo[]
+  cronogramas       Cronograma[]
 
   @@map("instituciones_educativas")
 }
@@ -216,20 +218,22 @@ model Docente {
   institucionId     String   @map("institucion_id") @db.Uuid
   gradoAcademico    String?  @map("grado_academico") @db.VarChar(50)
   nivelEducativo    String   @map("nivel_educativo") @db.VarChar(50)
+  nivelEducativoId  String?  @map("nivel_educativo_id") @db.Uuid
   escalaMagisterial Int?     @map("escala_magisterial")
   condicionLaboral  String?  @map("condicion_laboral") @db.VarChar(50)
   estado            String   @default("Activo") @db.VarChar(20)
   modalidad         String?  @map("modalidad") @db.VarChar(50)
-  especialidad      String?  @map("especialidad") @db.VarChar(100)
   cargaLaboral      Int?     @map("carga_laboral")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
   persona           Persona  @relation(fields: [personaId], references: [id])
   institucion       InstitucionEducativa @relation(fields: [institucionId], references: [id])
+  nivelEducativoRel NivelEducativo? @relation(fields: [nivelEducativoId], references: [id], onDelete: SetNull)
   docenteCargos     DocenteCargo[]
   docenteCursos     DocenteCurso[]
   docenteSecciones  DocenteSeccion[]
+  docenteEspecialidades DocenteEspecialidad[]
   cronogramas       Cronograma[]
 
   @@index([institucionId])
@@ -249,16 +253,16 @@ model DocenteSeccion {
 }
 
 model Curso {
-  id             String   @id @default(uuid()) @db.Uuid
-  nombre         String   @db.VarChar(100)
-  nivelEducativo String   @map("nivel_educativo") @db.VarChar(50)
-  modalidad      String?  @map("modalidad") @db.VarChar(50)
-  createdAt      DateTime @default(now()) @map("created_at")
+  id                  String   @id @default(uuid()) @db.Uuid
+  nombre              String   @db.VarChar(100)
+  nivelEducativoId    String   @map("nivel_educativo_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at")
 
-  docenteCursos  DocenteCurso[]
-  fichasContexto FichaContexto[]
+  nivelEducativo      NivelEducativo @relation(fields: [nivelEducativoId], references: [id], onDelete: Restrict)
+  docenteCursos       DocenteCurso[]
+  fichasContexto      FichaContexto[]
 
-  @@unique([nombre, nivelEducativo])
+  @@unique([nombre, nivelEducativoId])
   @@map("cursos")
 }
 
@@ -323,6 +327,77 @@ model PlanMonitoreo {
   @@index([autorId])
   @@index([institucionId])
   @@map("planes_monitoreo")
+}
+
+// ==========================================
+// 5.5. CATALOGOS TRANSVERSALES (Sprint 3)
+// ==========================================
+
+model Modalidad {
+  id        String   @id @default(uuid()) @db.Uuid
+  codigo    String   @unique @db.VarChar(20)
+  nombre    String   @db.VarChar(100)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  niveles   NivelEducativo[]
+
+  @@map("modalidades")
+}
+
+model NivelEducativo {
+  id           String   @id @default(uuid()) @db.Uuid
+  codigo       String   @db.VarChar(50)
+  nombre       String   @db.VarChar(100)
+  modalidadId  String   @map("modalidad_id") @db.Uuid
+  isActive     Boolean  @default(true) @map("is_active")
+
+  modalidad    Modalidad @relation(fields: [modalidadId], references: [id], onDelete: Restrict)
+  instituciones InstitucionEducativa[]
+  cursos       Curso[]
+  especialidades Especialidad[]
+  docentes     Docente[]
+
+  @@unique([codigo, modalidadId])
+  @@map("niveles_educativos")
+}
+
+model Especialidad {
+  id                String   @id @default(uuid()) @db.Uuid
+  nombre            String   @db.VarChar(100)
+  nivelEducativoId  String   @map("nivel_educativo_id") @db.Uuid
+  isActive          Boolean  @default(true) @map("is_active")
+
+  nivelEducativo    NivelEducativo @relation(fields: [nivelEducativoId], references: [id], onDelete: Restrict)
+  docentes          DocenteEspecialidad[]
+  especialistas      EspecialistaEspecialidad[]
+
+  @@unique([nombre, nivelEducativoId])
+  @@map("especialidades")
+}
+
+model DocenteEspecialidad {
+  id            String   @id @default(uuid()) @db.Uuid
+  docenteId     String   @map("docente_id") @db.Uuid
+  especialidadId String   @map("especialidad_id") @db.Uuid
+
+  docente       Docente      @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+  especialidad  Especialidad @relation(fields: [especialidadId], references: [id], onDelete: Cascade)
+
+  @@unique([docenteId, especialidadId])
+  @@map("docente_especialidades")
+}
+
+model EspecialistaEspecialidad {
+  id            String   @id @default(uuid()) @db.Uuid
+  especialistaId String   @map("especialista_id") @db.Uuid
+  especialidadId String   @map("especialidad_id") @db.Uuid
+
+  especialista   Especialista @relation(fields: [especialistaId], references: [id], onDelete: Cascade)
+  especialidad   Especialidad  @relation(fields: [especialidadId], references: [id], onDelete: Cascade)
+
+  @@unique([especialistaId, especialidadId])
+  @@map("especialista_especialidades")
 }
 
 // ==========================================

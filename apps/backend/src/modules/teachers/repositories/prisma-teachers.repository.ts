@@ -34,7 +34,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
       gradoAcademico: docente.gradoAcademico,
       nivelEducativo: docente.nivelEducativo,
       modalidad: docente.modalidad ?? null,
-      especialidad: docente.especialidad ?? null,
+      especialidad: (docente as any).docenteEspecialidades?.map((de: any) => de.especialidad?.nombre).filter(Boolean).join(', ') ?? null,
       cursoAsignado: docente.docenteCursos?.[0]?.curso?.nombre || null,
       condicionLaboral: docente.condicionLaboral,
       escalaMagisterial: docente.escalaMagisterial,
@@ -276,18 +276,21 @@ export class PrismaTeachersRepository implements TeachersRepository {
 
       // Registrar curso asignado si se proporciona
       if (dto.cursoAsignado) {
+        const nivelEducativo = await this.prisma.nivelEducativo.findFirst({
+          where: { codigo: dto.nivelEducativo, isActive: true },
+        });
         const curso = await tx.curso.upsert({
           where: {
-            nombre_nivelEducativo: {
+            nombre_nivelEducativoId: {
               nombre: dto.cursoAsignado,
-              nivelEducativo: dto.nivelEducativo,
+              nivelEducativoId: nivelEducativo?.id ?? '00000000-0000-0000-0000-000000000000',
             },
           },
           update: {},
           create: {
             nombre: dto.cursoAsignado,
-            nivelEducativo: dto.nivelEducativo,
-          },
+            nivelEducativoId: nivelEducativo?.id ?? null,
+          } as any,
         });
 
         await tx.docenteCurso.create({
@@ -445,18 +448,21 @@ export class PrismaTeachersRepository implements TeachersRepository {
       });
 
       if (dto.cursoAsignado) {
+        const nivelEducativo = await this.prisma.nivelEducativo.findFirst({
+          where: { codigo: dto.nivelEducativo, isActive: true },
+        });
         const curso = await tx.curso.upsert({
           where: {
-            nombre_nivelEducativo: {
+            nombre_nivelEducativoId: {
               nombre: dto.cursoAsignado,
-              nivelEducativo: dto.nivelEducativo,
+              nivelEducativoId: nivelEducativo?.id ?? '00000000-0000-0000-0000-000000000000',
             },
           },
           update: {},
           create: {
             nombre: dto.cursoAsignado,
-            nivelEducativo: dto.nivelEducativo,
-          },
+            nivelEducativoId: nivelEducativo?.id ?? null,
+          } as any,
         });
 
         await tx.docenteCurso.create({

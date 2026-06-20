@@ -13,7 +13,45 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROLES
+// CATALOGOS TRANSVERSALES (modalidades, niveles, especialidades) - se siembran antes
+// porque instituciones, cursos y docentes dependen de ellos.
+// ─────────────────────────────────────────────────────────────────────────────
+const MOCK_MODALIDADES = [
+  { codigo: 'EBR', nombre: 'Educacion Basica Regular' },
+  { codigo: 'EBA', nombre: 'Educacion Basica Alternativa' },
+  { codigo: 'EBE', nombre: 'Educacion Basica Especial' },
+  { codigo: 'CEPTRO', nombre: 'Centros de Educacion Tecnico-Productiva' },
+];
+
+const MOCK_NIVELES_POR_MODALIDAD = {
+  EBR: [
+    { codigo: 'Inicial', nombre: 'Inicial' },
+    { codigo: 'Primaria', nombre: 'Primaria' },
+    { codigo: 'Secundaria', nombre: 'Secundaria' },
+  ],
+  EBA: [
+    { codigo: 'Inicial-Intermedio', nombre: 'Inicial-Intermedio' },
+    { codigo: 'Avanzado', nombre: 'Avanzado' },
+  ],
+  EBE: [
+    { codigo: 'CEBE', nombre: 'Centro de Educacion Basica Especial' },
+    { codigo: 'PRITE', nombre: 'Programa de Intervencion Temprana' },
+  ],
+  CEPTRO: [
+    { codigo: 'Corte y Ensamblaje', nombre: 'Corte y Ensamblaje' },
+    { codigo: 'Mecanica de Motos', nombre: 'Mecanica de Motos y Vehiculos Afines' },
+  ],
+};
+
+const MOCK_ESPECIALIDADES = [
+  { nombre: 'PIP', nivel: 'Primaria' },
+  { nombre: 'Educacion Fisica', nivel: 'Primaria' },
+  { nombre: 'CTA', nivel: 'Secundaria' },
+  { nombre: 'Matematica', nivel: 'Secundaria' },
+  { nombre: 'Comunicacion', nivel: 'Secundaria' },
+];
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 const MOCK_ROLES = [
   { code: 'director_ugel', name: 'Director UGEL', description: 'Director de la UGEL Lampa' },
@@ -592,22 +630,58 @@ async function main() {
   }
   console.log('Cargos seeded.');
 
+  // ── 5.5. Catalogos: modalidades, niveles_educativos, especialidades ──────────
+  console.log('Seeding catalogos (modalidades, niveles, especialidades)...');
+  const nivelMap = {};
+  for (const modData of MOCK_MODALIDADES) {
+    const mod = await prisma.modalidad.upsert({
+      where: { codigo: modData.codigo },
+      update: { nombre: modData.nombre },
+      create: { codigo: modData.codigo, nombre: modData.nombre },
+    });
+    const niveles = MOCK_NIVELES_POR_MODALIDAD[modData.codigo] || [];
+    for (const nivData of niveles) {
+      const niv = await prisma.nivelEducativo.upsert({
+        where: { codigo_modalidadId: { codigo: nivData.codigo, modalidadId: mod.id } },
+        update: { nombre: nivData.nombre },
+        create: { codigo: nivData.codigo, nombre: nivData.nombre, modalidadId: mod.id },
+      });
+      nivelMap[nivData.codigo] = niv.id;
+    }
+  }
+  for (const espData of MOCK_ESPECIALIDADES) {
+    const nivelId = nivelMap[espData.nivel];
+    if (!nivelId) continue;
+    await prisma.especialidad.upsert({
+      where: { nombre_nivelEducativoId: { nombre: espData.nombre, nivelEducativoId: nivelId } },
+      update: {},
+      create: { nombre: espData.nombre, nivelEducativoId: nivelId },
+    });
+  }
+  console.log('Catalogos seeded.');
+
   // ── 6. Cursos ─────────────────────────────────────────────────────────────
   console.log('Seeding cursos...');
   const cursoMap = {};
   for (const cursoData of MOCK_CURSOS) {
+    const nivel = await prisma.nivelEducativo.findFirst({
+      where: { codigo: cursoData.nivelEducativo, isActive: true },
+    });
+    if (!nivel) {
+      console.warn(`Nivel ${cursoData.nivelEducativo} no encontrado, saltando curso ${cursoData.nombre}`);
+      continue;
+    }
     const curso = await prisma.curso.upsert({
       where: {
-        nombre_nivelEducativo: {
+        nombre_nivelEducativoId: {
           nombre: cursoData.nombre,
-          nivelEducativo: cursoData.nivelEducativo,
+          nivelEducativoId: nivel.id,
         },
       },
       update: {},
       create: {
         nombre: cursoData.nombre,
-        nivelEducativo: cursoData.nivelEducativo,
-        modalidad: cursoData.modalidad,
+        nivelEducativoId: nivel.id,
       },
     });
     // Key compuesto nombre+nivel para evitar colisiones (ej. "Comunicación" existe en Inicial, Primaria y Secundaria)
@@ -619,11 +693,15 @@ async function main() {
   console.log('Seeding instituciones educativas...');
   const instMap = {};
   for (const instData of MOCK_INSTITUCIONES) {
+    const nivelIe = await prisma.nivelEducativo.findFirst({
+      where: { codigo: instData.nivelEducativo, isActive: true },
+    });
     const ie = await prisma.institucionEducativa.upsert({
       where: { codigoModular: instData.codigoModular },
       update: {
         nombre: instData.nombre,
         nivelEducativo: instData.nivelEducativo,
+        nivelEducativoId: nivelIe?.id ?? null,
         modalidad: instData.modalidad,
         provincia: instData.provincia,
         distrito: instData.distrito,
@@ -637,6 +715,7 @@ async function main() {
         codigoLocal: instData.codigoLocal,
         nombre: instData.nombre,
         nivelEducativo: instData.nivelEducativo,
+        nivelEducativoId: nivelIe?.id ?? null,
         modalidad: instData.modalidad,
         departamento: instData.departamento,
         provincia: instData.provincia,
@@ -709,7 +788,6 @@ async function main() {
           condicionLaboral,
           cargaLaboral: 40,
           estado: 'Activo',
-          especialidad: userData.especialidad ?? null,
           modalidad: 'EBR',
         },
         create: {
@@ -719,10 +797,26 @@ async function main() {
           condicionLaboral,
           cargaLaboral: 40,
           estado: 'Activo',
-          especialidad: userData.especialidad ?? null,
           modalidad: 'EBR',
         },
       });
+
+      // Vincular especialidad si existe (M:N via especialista_especialidades)
+      if (userData.especialidad) {
+        const esp = await prisma.especialidad.findFirst({
+          where: { nombre: userData.especialidad, isActive: true },
+        });
+        if (esp) {
+          const espRow = await prisma.especialista.findUnique({ where: { personaId: persona.id } });
+          if (espRow) {
+            await prisma.especialistaEspecialidad.upsert({
+              where: { especialistaId_especialidadId: { especialistaId: espRow.id, especialidadId: esp.id } },
+              update: {},
+              create: { especialistaId: espRow.id, especialidadId: esp.id },
+            });
+          }
+        }
+      }
     }
 
     // D. Docente (aplica para directores y docentes de IE)
@@ -735,11 +829,15 @@ async function main() {
         continue;
       }
 
+      const nivelDocente = await prisma.nivelEducativo.findFirst({
+        where: { codigo: userData.nivelEducativo || 'Secundaria', isActive: true },
+      });
       const docente = await prisma.docente.upsert({
         where: { personaId: persona.id },
         update: {
           institucionId: instId,
           nivelEducativo: userData.nivelEducativo || 'Secundaria',
+          nivelEducativoId: nivelDocente?.id ?? null,
           modalidad: userData.modalidad || 'EBR',
           gradoAcademico: 'Licenciado',
           estado: 'Activo',
@@ -750,6 +848,7 @@ async function main() {
           personaId: persona.id,
           institucionId: instId,
           nivelEducativo: userData.nivelEducativo || 'Secundaria',
+          nivelEducativoId: nivelDocente?.id ?? null,
           modalidad: userData.modalidad || 'EBR',
           gradoAcademico: 'Licenciado',
           estado: 'Activo',

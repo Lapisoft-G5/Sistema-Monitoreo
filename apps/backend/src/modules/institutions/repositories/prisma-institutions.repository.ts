@@ -246,6 +246,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
         codigoLocal: createData.codigoLocal,
         nombre: createData.nombre,
         nivelEducativo: createData.nivelEducativo,
+        nivelEducativoId: (createData as any).nivelEducativoId ?? null,
         departamento: createData.departamento ?? 'Puno',
         provincia: createData.provincia,
         distrito: createData.distrito,
@@ -253,7 +254,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
         zona: createData.zona,
         estado: createData.estado ?? EstadoInstitucion.ACTIVA,
         modalidad: createData.modalidad,
-      },
+      } as any,
       include: this.includeDocenteDirector,
     });
 
@@ -266,7 +267,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
       include: this.includeDocenteDirector,
     });
 
-    return this.mapInstitucion(reloaded || record);
+    return this.mapInstitucion(reloaded || (record as any));
   }
 
   async findById(id: string): Promise<Institucion | null> {
@@ -296,7 +297,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
 
     const record = await this.prisma.institucionEducativa.update({
       where: { id },
-      data: updateData,
+      data: { ...updateData, nivelEducativoId: (updateData as any).nivelEducativoId ?? undefined } as any,
       include: this.includeDocenteDirector,
     });
     return this.mapInstitucion(record);

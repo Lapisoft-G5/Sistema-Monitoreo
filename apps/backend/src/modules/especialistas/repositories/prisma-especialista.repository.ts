@@ -34,7 +34,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     return {
       id: esp.id,
       personaId: esp.personaId,
-      especialidad: esp.especialidad ?? null,
+      especialidad: (esp as any).especialidades?.map((e: any) => e.especialidad?.nombre).filter(Boolean).join(', ') ?? null,
       nivelEducativo: esp.nivelEducativo,
       modalidad: esp.modalidad ?? null,
       estado: esp.estado,
@@ -68,7 +68,6 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     const list = await this.prisma.especialista.findMany({
       where: {
         ...(filters?.estado && { estado: filters.estado }),
-        ...(filters?.especialidad && { especialidad: filters.especialidad }),
         ...(filters?.nivelEducativo && { nivelEducativo: filters.nivelEducativo }),
         ...(filters?.cargo && { cargo: filters.cargo }),
       },
@@ -140,7 +139,6 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
       const especialista = await tx.especialista.create({
         data: {
           personaId: persona.id,
-          especialidad: data.especialidad,
           nivelEducativo: data.nivelEducativo,
           estado: EstadoRegistro.ACTIVO,
           cargo: data.cargo || CargoNombre.ESPECIALISTA,
@@ -203,11 +201,10 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         });
       }
 
-      // C. Actualizar Especialista (especialidad, nivel, estado)
+      // C. Actualizar Especialista (nivel, estado)
       await tx.especialista.update({
         where: { id },
         data: {
-          especialidad: data.especialidad,
           nivelEducativo: data.nivelEducativo,
           estado: data.estado,
           ...(data.cargo && { cargo: data.cargo }),

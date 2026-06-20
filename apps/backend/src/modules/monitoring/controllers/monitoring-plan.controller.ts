@@ -12,6 +12,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -65,10 +67,20 @@ export class MonitoringPlanController {
   async create(
     @Body() dto: CreatePlanDto,
     @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
   ): Promise<IMonitoringPlanResponse> {
     if (!file) {
       throw new BadRequestException('El archivo PDF es obligatorio.');
     }
+    const user = req.user;
+    const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+    
+    if (isDirector) {
+      dto.tipoEntidad = 'IE';
+    } else if (user?.role === 'jefe_gestion') {
+      dto.tipoEntidad = 'UGEL';
+    }
+
     // Generar la URL del archivo
     const fileUrl = `/uploads/planes/${file.filename}`;
     return this.service.create(dto, fileUrl);
@@ -76,13 +88,38 @@ export class MonitoringPlanController {
 
   @Get()
   @RequirePermissions('monitoreo:execute')
-  async findAll(@Query() query: QueryPlanDto): Promise<IMonitoringPlanResponse[]> {
+  async findAll(
+    @Query() query: QueryPlanDto,
+    @Req() req: any,
+  ): Promise<IMonitoringPlanResponse[]> {
+    const user = req.user;
+    const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+    
+    if (isDirector) {
+      // Un director solo puede ver planes de tipo 'IE'
+      query.tipoEntidad = 'IE';
+    }
+    
     return this.service.findAll(query);
   }
 
   @Delete(':id')
   @RequirePermissions('monitoreo:execute')
-  async delete(@Param('id') id: string): Promise<IMonitoringPlanResponse> {
+  async delete(
+    @Param('id') id: string,
+    @Req() req: any,
+  ): Promise<IMonitoringPlanResponse> {
+    const user = req.user;
+    const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+    
+    if (isDirector) {
+      // Un director solo puede eliminar planes de tipo 'IE'
+      const plan = await this.service.findById(id);
+      if (plan.tipoEntidad !== 'IE') {
+        throw new ForbiddenException('No cuenta con permisos para eliminar este plan de monitoreo.');
+      }
+    }
+    
     return this.service.delete(id);
   }
 }

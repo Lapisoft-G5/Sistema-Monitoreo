@@ -1,5 +1,5 @@
 import { validate } from 'class-validator';
-import { LoginDto } from './login.dto.js';
+import { LoginDto } from '../../../../../src/modules/auth/dto/login.dto.js';
 
 describe('LoginDto', () => {
   it('should pass validation with correct data', async () => {

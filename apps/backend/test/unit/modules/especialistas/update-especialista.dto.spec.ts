@@ -1,5 +1,5 @@
 import { validate } from 'class-validator';
-import { UpdateEspecialistaDto } from './update-especialista.dto.js';
+import { UpdateEspecialistaDto } from '../../../../src/modules/especialistas/dto/update-especialista.dto.js';
 
 describe('UpdateEspecialistaDto', () => {
   it('should pass validation with all required fields', async () => {

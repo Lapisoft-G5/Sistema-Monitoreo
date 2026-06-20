@@ -31,7 +31,7 @@ describe('RlsMiddleware (integration)', () => {
     const req = {
       user: { sub: 'test-user-id', role: 'ESPECIALISTA', dni: '40000004' },
     } as unknown as Request;
-    const next = jest.fn() as unknown as NextFunction;
+    const next = jest.fn<any>() as unknown as NextFunction;
 
     await middleware.use(req, {} as Response, next);
 
@@ -46,7 +46,7 @@ describe('RlsMiddleware (integration)', () => {
 
   it('no hace nada si no hay user en la request', async () => {
     const req = {} as Request;
-    const next = jest.fn() as unknown as NextFunction;
+    const next = jest.fn<any>() as unknown as NextFunction;
 
     await middleware.use(req, {} as Response, next);
 

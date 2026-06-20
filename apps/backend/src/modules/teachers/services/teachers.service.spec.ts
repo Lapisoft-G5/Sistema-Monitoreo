@@ -22,14 +22,14 @@ describe('TeachersService', () => {
   let updateDocenteWithTransactionMock: jest.Mock<any>;
 
   beforeEach(async () => {
-    findInstitucionByIdMock = jest.fn();
-    findCargoByIdMock = jest.fn();
-    findDocenteByIdMock = jest.fn();
-    findDocentesMock = jest.fn();
-    findPersonaByEmailNotIdMock = jest.fn();
-    updateDocenteEstadoMock = jest.fn();
-    createDocenteWithTransactionMock = jest.fn();
-    updateDocenteWithTransactionMock = jest.fn();
+    findInstitucionByIdMock = jest.fn<any>();
+    findCargoByIdMock = jest.fn<any>();
+    findDocenteByIdMock = jest.fn<any>();
+    findDocentesMock = jest.fn<any>();
+    findPersonaByEmailNotIdMock = jest.fn<any>();
+    updateDocenteEstadoMock = jest.fn<any>();
+    createDocenteWithTransactionMock = jest.fn<any>();
+    updateDocenteWithTransactionMock = jest.fn<any>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

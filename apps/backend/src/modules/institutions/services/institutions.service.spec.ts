@@ -19,13 +19,13 @@ describe('InstitutionsService', () => {
   let findAllMock: jest.Mock<(query: any) => Promise<{ data: Institucion[]; total: number }>>;
 
   beforeEach(async () => {
-    findByIdMock = jest.fn();
-    findByCodigoModularMock = jest.fn();
-    createMock = jest.fn();
-    updateMock = jest.fn();
-    softDeleteMock = jest.fn();
-    restoreMock = jest.fn();
-    findAllMock = jest.fn();
+    findByIdMock = jest.fn<any>();
+    findByCodigoModularMock = jest.fn<any>();
+    createMock = jest.fn<any>();
+    updateMock = jest.fn<any>();
+    softDeleteMock = jest.fn<any>();
+    restoreMock = jest.fn<any>();
+    findAllMock = jest.fn<any>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

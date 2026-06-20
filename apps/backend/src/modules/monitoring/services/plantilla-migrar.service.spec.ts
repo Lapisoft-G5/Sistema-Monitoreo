@@ -32,14 +32,14 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
         {
           provide: PlantillaRepository,
           useValue: {
-            findById: jest.fn(),
-            findAll: jest.fn(),
-            countFichasAsociadas: jest.fn(),
-            create: jest.fn(),
-            updateInPlace: jest.fn(),
-            versionarConClon: jest.fn(),
-            updateEstado: jest.fn(),
-            clone: jest.fn(),
+            findById: jest.fn<any>(),
+            findAll: jest.fn<any>(),
+            countFichasAsociadas: jest.fn<any>(),
+            create: jest.fn<any>(),
+            updateInPlace: jest.fn<any>(),
+            versionarConClon: jest.fn<any>(),
+            updateEstado: jest.fn<any>(),
+            clone: jest.fn<any>(),
           },
         },
       ],
@@ -52,14 +52,16 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
   describe('cambiarEstado (Borrador -> Vigente)', () => {
     it('debe transicionar Borrador a Vigente', async () => {
       const borrador = { ...basePlantilla, estado: 'Borrador' as const };
-      repo.findById = jest.fn().mockResolvedValue(borrador);
-      repo.findAll = jest.fn().mockResolvedValue([]);
-      repo.updateEstado = jest.fn().mockResolvedValue({ ...borrador, estado: 'Vigente' as const });
+      repo.findById = jest.fn<any>().mockResolvedValue(borrador);
+      repo.findAll = jest.fn<any>().mockResolvedValue([]);
+      repo.updateEstado = jest
+        .fn<any>()
+        .mockResolvedValue({ ...borrador, estado: 'Vigente' as const });
 
       const result = await service.cambiarEstado(
         'plantilla-v1',
         { estado: 'Vigente' },
-        { id: 'admin', rol: 'admin' },
+        { id: 'admin', role: 'admin' },
       );
 
       expect(result.estado).toBe('Vigente');
@@ -67,44 +69,52 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
     });
 
     it('debe fallar con NotFoundException si la plantilla no existe', async () => {
-      repo.findById = jest.fn().mockResolvedValue(null);
+      repo.findById = jest.fn<any>().mockResolvedValue(null);
 
       await expect(
         service.cambiarEstado(
           'plantilla-inexistente',
           { estado: 'Vigente' },
-          { id: 'admin', rol: 'admin' },
+          { id: 'admin', role: 'admin' },
         ),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('debe fallar con BadRequest si la plantilla ya es Historico', async () => {
       const historico = { ...basePlantilla, estado: 'Historico' as const };
-      repo.findById = jest.fn().mockResolvedValue(historico);
+      repo.findById = jest.fn<any>().mockResolvedValue(historico);
 
       await expect(
-        service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, { id: 'admin', rol: 'admin' }),
+        service.cambiarEstado(
+          'plantilla-v1',
+          { estado: 'Vigente' },
+          { id: 'admin', role: 'admin' },
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('debe fallar con Conflict si ya existe otra plantilla Vigente del mismo tipo+anio', async () => {
       const borrador = { ...basePlantilla, estado: 'Borrador' as const };
       const otraVigente = { ...basePlantilla, id: 'otra-vigente', estado: 'Vigente' as const };
-      repo.findById = jest.fn().mockResolvedValue(borrador);
-      repo.findAll = jest.fn().mockResolvedValue([basePlantilla, otraVigente]);
+      repo.findById = jest.fn<any>().mockResolvedValue(borrador);
+      repo.findAll = jest.fn<any>().mockResolvedValue([basePlantilla, otraVigente]);
 
       await expect(
-        service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, { id: 'admin', rol: 'admin' }),
+        service.cambiarEstado(
+          'plantilla-v1',
+          { estado: 'Vigente' },
+          { id: 'admin', role: 'admin' },
+        ),
       ).rejects.toThrow(ConflictException);
     });
 
     it('debe ser idempotente: si el estado es el mismo, retorna sin error', async () => {
-      repo.findById = jest.fn().mockResolvedValue(basePlantilla);
+      repo.findById = jest.fn<any>().mockResolvedValue(basePlantilla);
 
       const result = await service.cambiarEstado(
         'plantilla-v1',
         { estado: 'Vigente' },
-        { id: 'admin', rol: 'admin' },
+        { id: 'admin', role: 'admin' },
       );
 
       expect(result).toBe(basePlantilla);
@@ -115,14 +125,14 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
   describe('update (versionado por fichas asociadas)', () => {
     it('debe versionar (clonar a v+1) si la plantilla tiene fichas asociadas', async () => {
       const clon = { ...basePlantilla, id: 'plantilla-v2', version: 2 };
-      repo.findById = jest.fn().mockResolvedValue(basePlantilla);
-      repo.countFichasAsociadas = jest.fn().mockResolvedValue(3);
-      repo.versionarConClon = jest.fn().mockResolvedValue(clon);
+      repo.findById = jest.fn<any>().mockResolvedValue(basePlantilla);
+      repo.countFichasAsociadas = jest.fn<any>().mockResolvedValue(3);
+      repo.versionarConClon = jest.fn<any>().mockResolvedValue(clon);
 
       const result = await service.update(
         'plantilla-v1',
         { descripcion: 'cambiada' },
-        { id: 'admin', rol: 'admin' },
+        { id: 'admin', role: 'admin' },
       );
 
       expect(result.modo).toBe('VERSIONADO');
@@ -132,16 +142,16 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
     });
 
     it('debe hacer updateInPlace si NO tiene fichas asociadas', async () => {
-      repo.findById = jest.fn().mockResolvedValue(basePlantilla);
-      repo.countFichasAsociadas = jest.fn().mockResolvedValue(0);
+      repo.findById = jest.fn<any>().mockResolvedValue(basePlantilla);
+      repo.countFichasAsociadas = jest.fn<any>().mockResolvedValue(0);
       repo.updateInPlace = jest
-        .fn()
+        .fn<any>()
         .mockResolvedValue({ ...basePlantilla, descripcion: 'actualizada' });
 
       const result = await service.update(
         'plantilla-v1',
         { descripcion: 'actualizada' },
-        { id: 'admin', rol: 'admin' },
+        { id: 'admin', role: 'admin' },
       );
 
       expect(result.modo).toBe('IN_PLACE');
@@ -150,13 +160,13 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
     });
 
     it('debe fallar con NotFound si la plantilla no existe', async () => {
-      repo.findById = jest.fn().mockResolvedValue(null);
+      repo.findById = jest.fn<any>().mockResolvedValue(null);
 
       await expect(
         service.update(
           'plantilla-inexistente',
           { descripcion: 'x' },
-          { id: 'admin', rol: 'admin' },
+          { id: 'admin', role: 'admin' },
         ),
       ).rejects.toThrow(NotFoundException);
     });

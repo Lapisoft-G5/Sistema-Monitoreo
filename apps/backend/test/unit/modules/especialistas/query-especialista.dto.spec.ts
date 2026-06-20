@@ -1,5 +1,5 @@
 import { validate } from 'class-validator';
-import { QueryEspecialistaDto } from './query-especialista.dto.js';
+import { QueryEspecialistaDto } from '../../../../src/modules/especialistas/dto/query-especialista.dto.js';
 
 describe('QueryEspecialistaDto', () => {
   it('should pass validation with no fields (all optional)', async () => {

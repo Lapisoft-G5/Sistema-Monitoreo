@@ -1,12 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { jest } from '@jest/globals';
-import { EspecialistaController, AuthenticatedRequest } from './especialista.controller.js';
-import { EspecialistaService } from '../services/especialista.service.js';
-import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
-import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';
-import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
-import { AuthGuard } from '../../auth/guards/auth.guard.js';
-import { RolesGuard } from '../../auth/guards/roles.guard.js';
+import {
+  EspecialistaController,
+  AuthenticatedRequest,
+} from '../../../../src/modules/especialistas/controllers/especialista.controller.js';
+import { EspecialistaService } from '../../../../src/modules/especialistas/services/especialista.service.js';
+import { CreateEspecialistaDto } from '../../../../src/modules/especialistas/dto/create-especialista.dto.js';
+import { UpdateEspecialistaDto } from '../../../../src/modules/especialistas/dto/update-especialista.dto.js';
+import { QueryEspecialistaDto } from '../../../../src/modules/especialistas/dto/query-especialista.dto.js';
+import { AuthGuard } from '../../../../src/modules/auth/guards/auth.guard.js';
+import { RolesGuard } from '../../../../src/modules/auth/guards/roles.guard.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 
 function buildEspecialistaResponse(
@@ -49,11 +52,11 @@ describe('EspecialistaController', () => {
   let deleteMock: jest.Mock<any>;
 
   beforeEach(async () => {
-    findAllMock = jest.fn();
-    findByIdMock = jest.fn();
-    createMock = jest.fn();
-    updateMock = jest.fn();
-    deleteMock = jest.fn();
+    findAllMock = jest.fn<any>();
+    findByIdMock = jest.fn<any>();
+    createMock = jest.fn<any>();
+    updateMock = jest.fn<any>();
+    deleteMock = jest.fn<any>();
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EspecialistaController],

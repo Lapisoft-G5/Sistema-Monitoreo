@@ -1,5 +1,5 @@
 import { validate } from 'class-validator';
-import { CreateEspecialistaDto } from './create-especialista.dto.js';
+import { CreateEspecialistaDto } from '../../../../src/modules/especialistas/dto/create-especialista.dto.js';
 
 describe('CreateEspecialistaDto', () => {
   it('should pass validation with all required fields', async () => {

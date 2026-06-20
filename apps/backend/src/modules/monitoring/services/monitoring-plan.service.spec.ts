@@ -36,14 +36,14 @@ describe('MonitoringPlanService', () => {
 
   beforeEach(async () => {
     const mockRepo: Partial<jest.Mocked<MonitoringPlanRepository>> = {
-      findAll: jest.fn(),
-      findById: jest.fn(),
-      create: jest.fn(),
-      softDelete: jest.fn(),
-      restore: jest.fn(),
-      findCobertura: jest.fn(),
-      addCobertura: jest.fn(),
-      removeCobertura: jest.fn(),
+      findAll: jest.fn<any>(),
+      findById: jest.fn<any>(),
+      create: jest.fn<any>(),
+      softDelete: jest.fn<any>(),
+      restore: jest.fn<any>(),
+      findCobertura: jest.fn<any>(),
+      addCobertura: jest.fn<any>(),
+      removeCobertura: jest.fn<any>(),
     };
     const moduleRef = await Test.createTestingModule({
       providers: [MonitoringPlanService, { provide: MonitoringPlanRepository, useValue: mockRepo }],

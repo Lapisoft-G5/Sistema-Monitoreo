@@ -16,36 +16,36 @@ describe('EspecialistasModule', () => {
     })
       .overrideProvider(CatalogsRepository)
       .useValue({
-        findRoleByCode: jest.fn(),
-        findPersonaByDni: jest.fn(),
+        findRoleByCode: jest.fn<any>(),
+        findPersonaByDni: jest.fn<any>(),
       })
       .overrideProvider(PrismaService)
       .useValue({
         especialista: {
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          update: jest.fn(),
+          findMany: jest.fn<any>(),
+          findUnique: jest.fn<any>(),
+          create: jest.fn<any>(),
+          update: jest.fn<any>(),
         },
         persona: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          update: jest.fn(),
+          findUnique: jest.fn<any>(),
+          create: jest.fn<any>(),
+          update: jest.fn<any>(),
         },
         user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          update: jest.fn(),
-          updateMany: jest.fn(),
+          findUnique: jest.fn<any>(),
+          create: jest.fn<any>(),
+          update: jest.fn<any>(),
+          updateMany: jest.fn<any>(),
         },
-        role: { findUnique: jest.fn() },
-        $transaction: jest.fn(),
-        $queryRaw: jest.fn(),
+        role: { findUnique: jest.fn<any>() },
+        $transaction: jest.fn<any>(),
+        $queryRaw: jest.fn<any>(),
       })
       .overrideProvider(ConfigService)
       .useValue({
-        getOrThrow: jest.fn().mockReturnValue('test_secret'),
-        get: jest.fn().mockReturnValue(undefined),
+        getOrThrow: jest.fn<any>().mockReturnValue('test_secret'),
+        get: jest.fn<any>().mockReturnValue(undefined),
       })
       .compile();
   });

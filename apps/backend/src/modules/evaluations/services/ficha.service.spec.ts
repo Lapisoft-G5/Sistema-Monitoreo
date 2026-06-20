@@ -35,19 +35,19 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         {
           provide: FichaRepository,
           useValue: {
-            findById: jest.fn(),
-            findByVisitaId: jest.fn(),
-            create: jest.fn(),
-            saveRespuestaDesempeno: jest.fn(),
-            saveRespuestaAspecto: jest.fn(),
+            findById: jest.fn<any>(),
+            findByVisitaId: jest.fn<any>(),
+            create: jest.fn<any>(),
+            saveRespuestaDesempeno: jest.fn<any>(),
+            saveRespuestaAspecto: jest.fn<any>(),
           },
         },
         {
           provide: PrismaService,
           useValue: {
             plantillaMonitoreo: {
-              findUnique: jest.fn(),
-              findFirst: jest.fn(),
+              findUnique: jest.fn<any>(),
+              findFirst: jest.fn<any>(),
             },
           },
         },
@@ -61,16 +61,16 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
 
   describe('guardarRespuesta con plantilla vigente', () => {
     it('permite guardar normalmente', async () => {
-      repo.findById = jest.fn().mockResolvedValue(baseFicha);
-      (prisma.plantillaMonitoreo.findUnique as jest.Mock).mockResolvedValue({
+      repo.findById = jest.fn<any>().mockResolvedValue(baseFicha);
+      (prisma.plantillaMonitoreo.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'plantilla-v1',
         tipoMonitoreo: 'DOCENTE',
         anioAcademico: 2026,
         estado: 'Vigente',
       });
-      repo.saveRespuestaDesempeno = jest.fn().mockResolvedValue(undefined);
+      repo.saveRespuestaDesempeno = jest.fn<any>().mockResolvedValue(undefined);
       repo.findById = jest
-        .fn()
+        .fn<any>()
         .mockResolvedValueOnce(baseFicha)
         .mockResolvedValueOnce({
           ...baseFicha,
@@ -90,14 +90,14 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
 
   describe('guardarRespuesta con plantilla HISTORICO (ILA-0046)', () => {
     it('lanza 409 con code PLANTILLA_VERSIONADA y datos de la v2', async () => {
-      repo.findById = jest.fn().mockResolvedValue(baseFicha);
-      (prisma.plantillaMonitoreo.findUnique as jest.Mock).mockResolvedValue({
+      repo.findById = jest.fn<any>().mockResolvedValue(baseFicha);
+      (prisma.plantillaMonitoreo.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'plantilla-v1',
         tipoMonitoreo: 'DOCENTE',
         anioAcademico: 2026,
         estado: 'Historico',
       });
-      (prisma.plantillaMonitoreo.findFirst as jest.Mock).mockResolvedValue({
+      (prisma.plantillaMonitoreo.findFirst as jest.Mock<any>).mockResolvedValue({
         id: 'plantilla-v2',
         descripcion: 'Plantilla DOCENTE 2026 v2',
       });
@@ -121,14 +121,14 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
     });
 
     it('lanza 409 sin plantillaVigenteId si no hay vigente', async () => {
-      repo.findById = jest.fn().mockResolvedValue(baseFicha);
-      (prisma.plantillaMonitoreo.findUnique as jest.Mock).mockResolvedValue({
+      repo.findById = jest.fn<any>().mockResolvedValue(baseFicha);
+      (prisma.plantillaMonitoreo.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'plantilla-v1',
         tipoMonitoreo: 'DOCENTE',
         anioAcademico: 2026,
         estado: 'Historico',
       });
-      (prisma.plantillaMonitoreo.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.plantillaMonitoreo.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       try {
         await service.guardarRespuesta(
@@ -147,14 +147,14 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
 
   describe('guardarRespuestaAspecto con plantilla HISTORICO (ILA-0046)', () => {
     it('tambien aplica a aspectos', async () => {
-      repo.findById = jest.fn().mockResolvedValue(baseFicha);
-      (prisma.plantillaMonitoreo.findUnique as jest.Mock).mockResolvedValue({
+      repo.findById = jest.fn<any>().mockResolvedValue(baseFicha);
+      (prisma.plantillaMonitoreo.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'plantilla-v1',
         tipoMonitoreo: 'DOCENTE',
         anioAcademico: 2026,
         estado: 'Historico',
       });
-      (prisma.plantillaMonitoreo.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.plantillaMonitoreo.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       try {
         await service.guardarRespuestaAspecto('ficha-1', 'aspecto-1', true, {
@@ -174,7 +174,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
 
   describe('errores que ya existian', () => {
     it('lanza NotFound si la ficha no existe', async () => {
-      repo.findById = jest.fn().mockResolvedValue(null);
+      repo.findById = jest.fn<any>().mockResolvedValue(null);
       await expect(
         service.guardarRespuesta(
           'ficha-x',

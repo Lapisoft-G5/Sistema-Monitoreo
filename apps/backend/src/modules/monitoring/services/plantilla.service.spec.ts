@@ -40,14 +40,14 @@ describe('PlantillaService - ILA-0046', () => {
 
   beforeEach(async () => {
     const mockRepo: Partial<jest.Mocked<PlantillaRepository>> = {
-      findById: jest.fn(),
-      findAll: jest.fn(),
-      countFichasAsociadas: jest.fn(),
-      create: jest.fn(),
-      updateInPlace: jest.fn(),
-      versionarConClon: jest.fn(),
-      updateEstado: jest.fn(),
-      clone: jest.fn(),
+      findById: jest.fn<any>(),
+      findAll: jest.fn<any>(),
+      countFichasAsociadas: jest.fn<any>(),
+      create: jest.fn<any>(),
+      updateInPlace: jest.fn<any>(),
+      versionarConClon: jest.fn<any>(),
+      updateEstado: jest.fn<any>(),
+      clone: jest.fn<any>(),
     };
     const moduleRef = await Test.createTestingModule({
       providers: [PlantillaService, { provide: PlantillaRepository, useValue: mockRepo }],

@@ -21,6 +21,19 @@ import { usePlantillas, type Plantilla } from '@entities/model-plantillas';
 import { useUser } from '@entities/model-user';
 import { PlantillaPreviewModal } from './PlantillaPreviewModal';
 
+const createCopiedPlantilla = (plantilla: Plantilla, userId: string, userInstitucion: string): Plantilla => {
+  return {
+    ...plantilla,
+    id: 'pl-copia-' + Date.now(),
+    creadoPorRole: 'director_ie',
+    creadoPorId: userId,
+    ieId: userInstitucion,
+    estado: 'Borrador',
+    fechaCreacion: new Date().toISOString().split('T')[0],
+    descripcion: `Copia personalizada para mi I.E. basada en la ficha general de ${plantilla.tipoMonitoreo}.`,
+  };
+};
+
 export const PlantillasCatalog = () => {
   const { plantillas, addPlantilla, deletePlantilla, togglePlantillaEstado } = usePlantillas();
   const navigate = useNavigate();
@@ -105,16 +118,7 @@ export const PlantillasCatalog = () => {
 
   const handleDuplicate = (plantilla: Plantilla) => {
     if (!isDirector || !user) return;
-    const copied: Plantilla = {
-      ...plantilla,
-      id: 'pl-copia-' + Date.now(),
-      creadoPorRole: 'director_ie',
-      creadoPorId: user.id,
-      ieId: user.institucion || '',
-      estado: 'Borrador',
-      fechaCreacion: new Date().toISOString().split('T')[0],
-      descripcion: `Copia personalizada para mi I.E. basada en la ficha general de ${plantilla.tipoMonitoreo}.`,
-    };
+    const copied = createCopiedPlantilla(plantilla, user.id, user.institucion || '');
     addPlantilla(copied);
   };
 

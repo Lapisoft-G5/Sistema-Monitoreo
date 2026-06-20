@@ -10,7 +10,8 @@ import {
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
-import { useCronogramas } from '@/entities/model-cronogramas';
+import { useCronogramas, type Cronograma } from '@/entities/model-cronogramas';
+import type { SolicitudReprogramacion } from '@/entities/model-reprogramaciones';
 import { useUser } from '@/entities/model-user';
 import {
   SolicitarReprogramacionForm,
@@ -69,7 +70,7 @@ export const BandejaReprogramaciones = () => {
 
   // Obtener todas las solicitudes
   const allRequests = useMemo(() => {
-    const list: any[] = [];
+    const list: Array<SolicitudReprogramacion & { visit: Cronograma }> = [];
     cronogramas.forEach((visit) => {
       const req = reprogramaciones[visit.id];
       if (req) {

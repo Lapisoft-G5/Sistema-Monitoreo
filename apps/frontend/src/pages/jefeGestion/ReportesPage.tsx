@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Grid, List } from 'lucide-react';
 import { useCronogramas } from '@entities/model-cronogramas';
 import { usePlantillas } from '@entities/model-plantillas';
@@ -61,12 +61,13 @@ export const ReportesPage = () => {
   // Cascading Nivel
   const nivelesDisponibles = useMemo(() => {
     if (filterModalidad === 'Todos') return [];
-    return MODALIDAD_NIVEL_MAP[filterModalidad as any] || [];
+    return MODALIDAD_NIVEL_MAP[filterModalidad as keyof typeof MODALIDAD_NIVEL_MAP] || [];
   }, [filterModalidad]);
 
-  useEffect(() => {
+  const handleModalidadChange = (modalidad: string) => {
+    setFilterModalidad(modalidad);
     setFilterNivel('Todos');
-  }, [filterModalidad]);
+  };
 
   // ── Filtrado de Fichas Completadas ──
   const completedVisits = useMemo(() => {
@@ -185,7 +186,7 @@ export const ReportesPage = () => {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         filterModalidad={filterModalidad}
-        setFilterModalidad={setFilterModalidad}
+        setFilterModalidad={handleModalidadChange}
         filterNivel={filterNivel}
         setFilterNivel={setFilterNivel}
         filterTipo={filterTipo}

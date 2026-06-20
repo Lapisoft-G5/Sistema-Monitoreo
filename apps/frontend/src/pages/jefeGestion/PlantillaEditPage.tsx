@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -10,27 +10,22 @@ export const PlantillaEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { plantillas, updatePlantilla } = usePlantillas();
-  
-  const [initialData, setInitialData] = useState<PlantillaFormState | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  
+  const plantilla = useMemo(() => plantillas.find((p) => p.id === id), [plantillas, id]);
 
-  useEffect(() => {
-    // Buscar la plantilla simulada usando el ID que viene en la URL
-    const plantilla = plantillas.find((p) => p.id === id);
+  const initialData = useMemo<PlantillaFormState | null>(() => {
+    if (!plantilla) return null;
+    return {
+      tipoMonitoreo: plantilla.tipoMonitoreo,
+      anioAcademico: plantilla.anioAcademico,
+      baremo: plantilla.baremo,
+      niveles: plantilla.niveles,
+      desempenos: plantilla.desempenos,
+    };
+  }, [plantilla]);
 
-    if (plantilla) {
-      setInitialData({
-        tipoMonitoreo: plantilla.tipoMonitoreo,
-        anioAcademico: plantilla.anioAcademico,
-        baremo: plantilla.baremo,
-        niveles: plantilla.niveles,
-        desempenos: plantilla.desempenos,
-      });
-    } else {
-      setError('No se encontró la plantilla de monitoreo solicitada.');
-    }
-  }, [id, plantillas]);
+  const error = !plantilla && id ? 'No se encontró la plantilla de monitoreo solicitada.' : null;
 
   const handleSubmit = (data: PlantillaFormState) => {
     if (!id) return;

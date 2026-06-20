@@ -7,7 +7,15 @@ export const AddJefeArea = () => {
   const navigate = useNavigate();
   const { createJefeArea, loading, error } = useJefeAreaService();
 
-  const handleFormSubmit = async (formData: any) => {
+  const handleFormSubmit = async (formData: {
+    nivelEducativo: 'Inicial' | 'Primaria' | 'Secundaria';
+    specialistId: string;
+    nombres: string;
+    apellidos: string;
+    correo?: string;
+    celular?: string;
+    cargaHoraria?: number;
+  }) => {
     const result = await createJefeArea(formData, 'jefe_area');
     if (result.success) {
       navigate('/jefes-area');

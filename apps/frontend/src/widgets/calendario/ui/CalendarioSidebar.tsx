@@ -143,6 +143,48 @@ export const CalendarioSidebar = ({
     return matchedTemplate;
   }, [selectedVisit, plantillas, user]);
 
+  // Determinar si el usuario actual es el evaluador autorizado para iniciar esta visita
+  const isEvaluadorAutorizado = useMemo(() => {
+    if (!selectedVisit || !user) return false;
+
+    // Caso 1: Visita con plantilla de la I.E. (creada por un Director)
+    if (activeTemplate?.creadoPorRole === 'director_ie') {
+      const isDirector = user.role === 'director_ie' || user.role === 'director_institucion';
+      const isSameSchool =
+        user.institucion === activeTemplate.ieId ||
+        user.institucionNombre?.toLowerCase() === selectedVisit.institucion.toLowerCase();
+      return isDirector && isSameSchool;
+    }
+
+    // Caso 2: Visita con plantilla de la UGEL (creada por el Jefe de Gestión)
+    // Solo el especialista asignado a la visita puede completarla
+    if (user.role === 'especialista') {
+      const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+      const visitEspecialista = selectedVisit.especialista.toLowerCase();
+      return (
+        userFullName.includes(visitEspecialista) ||
+        visitEspecialista.includes(userFullName) ||
+        visitEspecialista.includes(user.nombres.toLowerCase())
+      );
+    }
+
+    return false;
+  }, [selectedVisit, user, activeTemplate]);
+
+  // Determinar si el día actual coincide con la fecha programada
+  const isFechaCoincidente = useMemo(() => {
+    if (!selectedVisit) return false;
+
+    // Fecha actual real (en formato YYYY-MM-DD local)
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    // Fecha programada
+    const visitDateStr = selectedVisit.fechaHora.substring(0, 10);
+
+    return todayStr === visitDateStr;
+  }, [selectedVisit]);
+
   const simulateFichaLlena = (visitId: string) => {
     const aspects: Record<string, boolean> = {
       d1_a1: true,
@@ -356,70 +398,72 @@ export const CalendarioSidebar = ({
 
           {/* BOTONES DE ACCIÓN */}
           <div className="space-y-2 pt-4 border-t border-border mt-6">
-            {isEspecialista ? (
+            {isEvaluadorAutorizado ? (
               <>
                 {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO') && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowFichaModal(true)}
-                      className="flex-1 justify-center border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors font-bold text-xs py-2.5 h-10 flex items-center gap-2 cursor-pointer"
-                    >
-                      <PlayCircle className="h-4.5 w-4.5" />
-                      <span>
-                        {selectedVisit.estado === 'PROGRAMADO' ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}
-                      </span>
-                    </Button>
+                  <div className="flex flex-col gap-2.5">
+                    {/* Advertencia si no es la fecha programada */}
+                    {selectedVisit.estado === 'PROGRAMADO' && !isFechaCoincidente && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
+                        <AlertTriangle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
+                        <span>
+                          <strong>Restricción de Fecha:</strong> Solo puede iniciar esta visita el día programado ({formatVisitDate(selectedVisit.fechaHora)}).
+                        </span>
+                      </div>
+                    )}
 
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        if (activeRequest) {
-                          setShowReprogramarModal(true);
-                        } else {
-                          setShowSolicitarReprogramarModal(true);
-                        }
-                      }}
-                      className="border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors font-semibold text-xs py-2.5 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5 text-primary" />
-                      <span>{activeRequest ? 'Ver Solicitud' : 'Reprogramar'}</span>
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        disabled={selectedVisit.estado === 'PROGRAMADO' && !isFechaCoincidente}
+                        onClick={() => setShowFichaModal(true)}
+                        className="flex-1 justify-center border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors font-bold text-xs py-2.5 h-10 flex items-center gap-2 cursor-pointer"
+                      >
+                        <PlayCircle className="h-4.5 w-4.5" />
+                        <span>
+                          {selectedVisit.estado === 'PROGRAMADO' ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}
+                        </span>
+                      </Button>
+
+                      {/* Reprogramar: solo para el Especialista (solicitar reprogramación) */}
+                      {user?.role === 'especialista' && (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            if (activeRequest) {
+                              setShowReprogramarModal(true);
+                            } else {
+                              setShowSolicitarReprogramarModal(true);
+                            }
+                          }}
+                          className="border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors font-semibold text-xs py-2.5 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                          <span>{activeRequest ? 'Ver Solicitud' : 'Reprogramar'}</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )}
               </>
             ) : (
               <>
-                {selectedVisit.estado === 'PROGRAMADO' && (
+                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO') && (
                   <div className="flex flex-col gap-2">
                     <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                       <Clock className="h-4.5 w-4.5 text-blue-500 mt-0.5 shrink-0" />
                       <span>
-                        <strong>Visita Programada:</strong> Vista informativa. Solo el especialista asignado (
-                        <strong>{selectedVisit.especialista}</strong>) tiene permisos para dar inicio al monitoreo.
-                      </span>
-                    </div>
-
-                    {activeRequest && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowReprogramarModal(true)}
-                        className="w-full justify-center border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs py-2 h-10 flex items-center gap-1.5 shadow-sm cursor-pointer"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5 text-primary animate-spin-hover" />
-                        <span>Revisar Reprogramación ({activeRequest.estado})</span>
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {selectedVisit.estado === 'EN PROCESO' && (
-                  <div className="flex flex-col gap-2">
-                    <div className="p-3 bg-rose-50/50 border border-rose-100 rounded-xl text-rose-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
-                      <PlayCircle className="h-4.5 w-4.5 text-rose-500 mt-0.5 shrink-0" />
-                      <span>
-                        <strong>En Proceso:</strong> El especialista asignado se encuentra ejecutando la visita de
-                        monitoreo en la institución.
+                        {activeTemplate?.creadoPorRole === 'director_ie' ? (
+                          <>
+                            <strong>Visita de I.E.:</strong> Solo el Director correspondiente a la institución{' '}
+                            <strong>{selectedVisit.institucion}</strong> tiene permisos para ejecutar esta ficha.
+                          </>
+                        ) : (
+                          <>
+                            <strong>Visita de UGEL:</strong> Solo el especialista asignado ({' '}
+                            <strong>{selectedVisit.especialista}</strong>) tiene permisos para ejecutar esta ficha.
+                          </>
+                        )}
                       </span>
                     </div>
 
@@ -430,7 +474,7 @@ export const CalendarioSidebar = ({
                         className="w-full justify-center border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs py-2 h-10 flex items-center gap-1.5 shadow-sm cursor-pointer"
                       >
                         <RefreshCw className="h-3.5 w-3.5 text-primary" />
-                        <span>Ver Solicitud de Cambio</span>
+                        <span>Ver Solicitud de Cambio ({activeRequest.estado})</span>
                       </Button>
                     )}
                   </div>

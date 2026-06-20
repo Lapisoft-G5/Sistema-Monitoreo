@@ -78,7 +78,7 @@ export const EditDirectorCard = () => {
     condicion: director.condicion as DirectorFormData['condicion'],
     escala: director.escala,
     institucionId: director.institucionId,
-    nivelEducativo: director.nivelEducativo as any,
+    nivelEducativo: director.nivelEducativo as DirectorFormData['nivelEducativo'],
     especialidad: director.especialidad,
   };
 

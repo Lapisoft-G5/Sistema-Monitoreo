@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   CheckCircle2,
   FileText,
@@ -53,18 +53,17 @@ export const FichaAuditorModal = ({
   downloadingId,
   onDownloadPDF,
 }: FichaAuditorModalProps) => {
-  const [fichaSelectedDesempenoId, setFichaSelectedDesempenoId] = useState<string>('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen && template && template.desempenos.length > 0) {
-      setFichaSelectedDesempenoId(template.desempenos[0].id);
-    }
-  }, [isOpen, template]);
-
+  // Derivamos el desempeño activo de forma reactiva y pura
   const activeFichaDesempeno = useMemo(() => {
-    if (!template || !fichaSelectedDesempenoId) return null;
-    return template.desempenos.find((d) => d.id === fichaSelectedDesempenoId) || null;
-  }, [template, fichaSelectedDesempenoId]);
+    if (!template || template.desempenos.length === 0) return null;
+    const defaultId = template.desempenos[0].id;
+    const activeId = (selectedId && template.desempenos.some(d => d.id === selectedId)) ? selectedId : defaultId;
+    return template.desempenos.find((d) => d.id === activeId) || null;
+  }, [template, selectedId]);
+
+  const fichaSelectedDesempenoId = activeFichaDesempeno?.id || '';
 
   if (!isOpen || !visit || !template || !fichaState) return null;
 
@@ -113,7 +112,7 @@ export const FichaAuditorModal = ({
               return (
                 <div
                   key={des.id}
-                  onClick={() => setFichaSelectedDesempenoId(des.id)}
+                  onClick={() => setSelectedId(des.id)}
                   className={`p-3 border rounded-xl cursor-pointer transition-all flex items-start gap-2 text-left select-none relative ${
                     isSelected
                       ? 'border-primary ring-1 ring-primary/40 bg-primary-light/50 font-extrabold text-primary shadow-sm'

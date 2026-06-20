@@ -38,11 +38,13 @@ export const PlanMonitoreoAnualPage = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [localUploadError, setLocalUploadError] = useState<string | null>(null);
 
-  // Sincronizar tipo de entidad según el rol cargado
-  useEffect(() => {
+  // Sincronizar tipo de entidad según el rol cargado de forma síncrona durante el render
+  const [prevDefaultEntity, setPrevDefaultEntity] = useState(defaultEntity);
+  if (defaultEntity !== prevDefaultEntity) {
     setTipoEntidad(defaultEntity);
     setUploadEntity(defaultEntity);
-  }, [defaultEntity]);
+    setPrevDefaultEntity(defaultEntity);
+  }
 
   // --- Hook de Servicio ---
   const {
@@ -67,8 +69,14 @@ export const PlanMonitoreoAnualPage = () => {
 
   useEffect(() => {
     fetchPlanes(activeFilters);
-    setCurrentPage(1); // Reiniciar paginación al filtrar
   }, [fetchPlanes, activeFilters]);
+
+  // Resetear paginación síncronamente cuando cambian los filtros
+  const [prevFilters, setPrevFilters] = useState(activeFilters);
+  if (JSON.stringify(activeFilters) !== JSON.stringify(prevFilters)) {
+    setCurrentPage(1);
+    setPrevFilters(activeFilters);
+  }
 
   // --- Paginación básica (6 elementos por página) ---
   const itemsPerPage = 6;
@@ -531,7 +539,7 @@ export const PlanMonitoreoAnualPage = () => {
                 <SelectField
                   label="Tipo de Entidad *"
                   value={uploadEntity}
-                  onChange={(v) => setUploadEntity(v as any)}
+                  onChange={(v) => setUploadEntity(v as 'UGEL' | 'IE')}
                   placeholder="Seleccionar tipo..."
                   disabled={true}
                   options={[

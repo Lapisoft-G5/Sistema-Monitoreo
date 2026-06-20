@@ -54,6 +54,8 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@swc/cli": "^0.8.1",
+    "@swc/core": "^1.15.41",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
@@ -80,6 +82,6 @@
     "typescript-eslint": "^8.20.0"
   },
   "prisma": {
-    "seed": "node --import tsx ../../database/seeders/dev-seed.js"
+    "seed": "node --import tsx ../../database/seeders/index.js"
   }
 }

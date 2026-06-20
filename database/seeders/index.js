@@ -48,7 +48,7 @@ async function main() {
   console.log('\n=== Seeding completado ===');
   console.log('Credenciales: el DNI es la contrasena inicial (usuarios en isFirstLogin=true).');
   console.log('Usuarios creados:');
-  console.log('  admin        → DNI: 40000001  (Carlos Mendoza Quispe)');
+  console.log('  director_ugel→ DNI: 40000001  (Carlos Mendoza Quispe)');
   console.log('  jefe_gestion → DNI: 40000002  (Maria Elena Huaman Vargas)');
   console.log('  jefe_area    → DNI: 40000003  (Jose Luis Quispe Mamani)');
   console.log('  especialista → DNI: 40000004  (Ana Lucia Ticona Coila)');

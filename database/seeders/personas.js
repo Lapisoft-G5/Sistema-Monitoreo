@@ -19,7 +19,7 @@ const USERS = [
     firstName: 'Carlos',
     lastName: 'Mendoza Quispe',
     email: 'carlos.mendoza@ugel.gob.pe',
-    role: 'admin',
+    role: 'director_ugel',
     fechaNacimiento: '1975-03-15',
   },
   {

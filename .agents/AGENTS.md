@@ -4,25 +4,28 @@ Estas son reglas y pautas obligatorias que todo agente de IA debe seguir al trab
 
 ## 1. Reglas Generales y Flujo de Trabajo (Obligatorio)
 - **Validación de Cambios (CERO ERRORES)**: Bajo NINGUNA circunstancia puedes dar un trabajo por concluido sin antes ejecutar localmente las validaciones. Debes correr siempre estos comandos en tu terminal interactiva para garantizar que no rompiste nada:
-  1. \`pnpm --filter backend run lint\` (No debe arrojar errores)
-  2. \`pnpm --filter backend run build\` (Debe compilar la carpeta dist sin fallos)
-  3. \`pnpm typecheck\` (Si estás modificando ambos lados)
-- **No inventar código zombie**: Si una funcionalidad fue refactorizada (ej. \`jefes-area\` fue absorbido por \`Especialistas\`), no intentes recrear controladores, tablas o repositorios redundantes. Revisa siempre la estructura actual antes de crear nuevos archivos.
+  1. `pnpm --filter backend run lint` (No debe arrojar errores)
+  2. `pnpm --filter backend run build` (Debe compilar la carpeta dist sin fallos)
+  3. `pnpm --filter frontend exec eslint .` (Frontend debe estar en 0 errores de Lint)
+  4. `pnpm --filter frontend run build` (El TypeScript Check y el Build de Vite no deben fallar)
+  5. `pnpm typecheck` (Si estás modificando ambos lados)
+- **No inventar código zombie**: Si una funcionalidad fue refactorizada (ej. `jefes-area` fue absorbido por `Especialistas`), no intentes recrear controladores, tablas o repositorios redundantes. Revisa siempre la estructura actual antes de crear nuevos archivos.
 
 ## 2. Desarrollo en el Backend (NestJS + Prisma)
-- **Caché y Compilación**: Este backend utiliza TypeScript en modo NodeNext/ESM. Si modificas archivos críticos como `tsconfig.json` o necesitas un build limpio, elimina primero `tsconfig.build.tsbuildinfo` y `tsconfig.tsbuildinfo` con `Remove-Item` en PowerShell (no uses comandos Linux directamente) o desactiva la caché incremental antes del despliegue.
-- **Tests (Jest)**: Los tests `*.spec.ts` y archivos en `test/` NO DEBEN ser excluidos del `tsconfig.json` base. Solo deben excluirse en el `tsconfig.build.json`. De lo contrario, `eslint` lanzará errores de parseo o de "project service".
-- **Imports**: Siempre añade la extensión `.js` al final de los imports relativos de TypeScript en el backend. Esto es obligatorio para que ESM resuelva los módulos al compilar a NodeNext. (Ej: `import { UserService } from './user.service.js';`).
-- **Prisma**: No edites directamente los seeders de forma monolítica, usa los validadores y mantén el dominio limpio.
+- **Caché y Compilación**: Este backend utiliza TypeScript en modo NodeNext/ESM. Si modificas archivos críticos como `tsconfig.json` o necesitas un build limpio, elimina primero `tsconfig.build.tsbuildinfo` y `tsconfig.tsbuildinfo` con PowerShell, o desactiva la caché incremental. 
+- **El plugin `@nestjs/swagger` ROMPE ESM**: NO HABILITES la carga automática de Swagger en `nest-cli.json` usando el CLI plugin. El plugin de Swagger inyecta llamadas a `require()` en tiempo de compilación y destruye la compatibilidad ESM (`ReferenceError: require is not defined`). Utiliza siempre los decoradores de Swagger manualmente (`@ApiProperty()`) en los DTOs.
+- **Tests (Jest)**: Los tests `*.spec.ts` y archivos en `test/` NO DEBEN ser excluidos del `tsconfig.json` base. Solo deben excluirse en el `tsconfig.build.json`. 
+- **Imports**: Siempre añade la extensión `.js` al final de los imports relativos de TypeScript en el backend. Esto es obligatorio para que ESM resuelva los módulos.
 - **Reglas de Negocio Vitales**:
-  - Especialidad: Es obligatoria en nivel Primaria. En Primaria debe ser `PIP` o `Educación Física`.
-  - Cargos: `Jefe Area` se mapea usando el discriminador `cargo` en la tabla `Especialista`. La condición laboral `Nombrado` es por defecto en Especialistas, a menos que el cargo indique `Encargado`, `Destacado` o `Designado`.
+  - Especialidad: Obligatoria en Primaria (`PIP` o `Educación Física`).
+  - Cargos: `Jefe Area` se mapea con discriminador `cargo` en la tabla `Especialista`. Condición laboral `Nombrado` por defecto.
 
 ## 3. Desarrollo en Frontend (React + Vite)
-- **Performance de Build**: Si importas componentes enormes, asegúrate de utilizar code-splitting (`React.lazy` o `dynamic import()`) si el componente no es esencial para el renderizado inicial, esto para evitar que los chunks superen el límite de 500kB.
-- **Arquitectura de API**: Las llamadas deben centralizarse usando los contratos de API y TanStack Query. Usa variables de entorno para manejar las características de fallback a LocalStorage vs Backend (`FEATURES.apiOnly`).
-- **Imports**: Para los contratos y componentes compartidos entre front y back, debes importar del paquete `@sistema-monitoreo/shared-contracts` en lugar de apuntar a las carpetas `src` relativas profundas.
+- **Regla Estricta de React - Evitar Render Loops en useEffect**: Está TOTALMENTE PROHIBIDO usar setters síncronos de `useState` directamente dentro del cuerpo principal de un `useEffect` (`react-hooks/set-state-in-effect`), ya que causa renders en cascada y penaliza el performance. Si es imprescindible sincronizar estado desde un efecto, envuelve el setter en un `setTimeout(..., 0)` o rediseña el ciclo de vida.
+- **Componentes y Hooks de Vite**: Nunca exportes funciones puras y componentes en el mismo archivo si es procesado por React Refresh (`react-refresh/only-export-components`). Separa tu contexto de tus componentes.
+- **Performance de Build**: Utiliza code-splitting (`React.lazy`) si el componente no es esencial para el renderizado inicial.
+- **Imports**: Para componentes compartidos entre front y back, debes importar de `@sistema-monitoreo/shared-contracts`.
 
-## 4. Resolución de Conflictos y Linter
-- **Linter**: Soluciona el linter activamente. Presta especial atención a errores como `Unsafe assignment of an any value` y `Unsafe member access`. El código backend usa configuraciones de tipo estrictas con `@typescript-eslint/recommended-requiring-type-checking`.
-- Nunca apagues las reglas de tipado estricto o `@typescript-eslint/no-explicit-any` de forma global para saltarte un error, es mejor inferir el tipo correcto desde Prisma o DTO.
+## 4. Resolución de Conflictos y Tipos de TypeScript (¡Prohibido el `any` Global!)
+- **Prohibido el `any` Perezoso**: Nunca apagues las reglas de tipado estricto o `@typescript-eslint/no-explicit-any` de forma global para saltarte un error.
+- **Inferencia Real**: Si te topas con errores `Unsafe assignment of an any value`, NO intentes solucionarlo cegando al linter ni usando `unknown` si el estado espera valores estrictos (como `"INICIAL" | "PRIMARIA"`). **Infiere el tipo correcto** mirando el DTO, el `Prisma schema` o la propia firma de TypeScript, e inyecta la unión (cast) de tipos explícita (`as "Ejemplo"`). Solo en callbacks asíncronos y respuestas HTTP anónimas puedes relajar el tipado localmente.

@@ -33,7 +33,10 @@ const formatVisitDate = (fechaHoraStr: string) => {
 
 export const BandejaReprogramaciones = () => {
   const { user } = useUser();
-  const isEspecialista = user?.role === 'especialista';
+  const isEspecialista =
+    user?.role === 'especialista' ||
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
   const {
     cronogramas,
     reprogramaciones,
@@ -50,9 +53,11 @@ export const BandejaReprogramaciones = () => {
   const [showSolicitarReprogramarModal, setShowSolicitarReprogramarModal] = useState<boolean>(false);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
 
-  // Nombre del especialista logueado para filtro
   const specialistFilterName = useMemo(() => {
     if (!isEspecialista || !user) return '';
+    if (user.role === 'coordinador_pedagogico' || user.role === 'jefe_taller') {
+      return `${user.nombres} ${user.apellidos}`;
+    }
     const firstName = user.nombres.split(' ')[0].toLowerCase();
     
     if (firstName.startsWith('juan')) return 'Juan Pérez';
@@ -87,15 +92,62 @@ export const BandejaReprogramaciones = () => {
   // Solicitudes filtradas
   const filteredRequests = useMemo(() => {
     return allRequests.filter((req) => {
+      // 1. Requesters (Specialists, Coordinators, Workshop Heads) only see their own requests
       if (isEspecialista && req.visit.especialista !== specialistFilterName) {
         return false;
       }
+
+      // 2. Deciders filter:
+      if (!isEspecialista) {
+        const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+        if (isDirector) {
+          // Director only sees requests from their own school
+          const isSameSchool =
+            user.institucionNombre &&
+            req.visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
+          
+          // And the requester must be CP or JT (not UGEL specialist)
+          const isCPorJT =
+            req.visit.especialista !== 'Juan Pérez' &&
+            req.visit.especialista !== 'María García' &&
+            req.visit.especialista !== 'Carlos Mendoza' &&
+            req.visit.especialista !== 'Ana Torres' &&
+            req.visit.especialista !== 'Pedro Alvarado' &&
+            req.visit.especialista !== 'Rosa Quispe' &&
+            req.visit.especialista !== 'Luis Mamani' &&
+            req.visit.especialista !== 'Sofía Ramos' &&
+            req.visit.especialista !== 'Klisman Condori' &&
+            req.visit.especialista !== 'Jean Carlos Choque';
+
+          if (!isSameSchool || !isCPorJT) {
+            return false;
+          }
+        } else {
+          // Jefe de Gestión / Admin only see requests from Specialists (UGEL)
+          const isSpecialistEvaluator =
+            req.visit.especialista === 'Juan Pérez' ||
+            req.visit.especialista === 'María García' ||
+            req.visit.especialista === 'Carlos Mendoza' ||
+            req.visit.especialista === 'Ana Torres' ||
+            req.visit.especialista === 'Pedro Alvarado' ||
+            req.visit.especialista === 'Rosa Quispe' ||
+            req.visit.especialista === 'Luis Mamani' ||
+            req.visit.especialista === 'Sofía Ramos' ||
+            req.visit.especialista === 'Klisman Condori' ||
+            req.visit.especialista === 'Jean Carlos Choque';
+
+          if (!isSpecialistEvaluator) {
+            return false;
+          }
+        }
+      }
+
       if (filterRequestStatus !== 'Todos' && req.estado !== filterRequestStatus) {
         return false;
       }
       return true;
     });
-  }, [allRequests, isEspecialista, specialistFilterName, filterRequestStatus]);
+  }, [allRequests, isEspecialista, specialistFilterName, filterRequestStatus, user]);
 
   const selectedVisit = useMemo(() => {
     return cronogramas.find((c) => c.id === selectedVisitId) || null;
@@ -134,7 +186,9 @@ export const BandejaReprogramaciones = () => {
           <p className="text-xs text-text-muted mt-1">
             {isEspecialista
               ? 'Revisa el estado de tus solicitudes enviadas o registra una nueva reprogramación para tus visitas a futuro.'
-              : 'Audita y aprueba o rechaza los cambios de fecha propuestos por los especialistas de monitoreo.'}
+              : user?.role === 'director_ie' || user?.role === 'director_institucion'
+                ? 'Audita y aprueba o rechaza los cambios de fecha propuestos por los coordinadores pedagógicos y jefes de taller.'
+                : 'Audita y aprueba o rechaza los cambios de fecha propuestos por los especialistas de monitoreo.'}
           </p>
         </div>
 

@@ -54,7 +54,7 @@ export const PlanMonitoreoAnualPage = () => {
     actionLoading,
     fetchPlanes,
     uploadPlan,
-    deletePlan,
+    toggleEstado,
   } = usePlanesMonitoreo();
 
   // --- Cargar datos con filtros ---
@@ -138,7 +138,7 @@ export const PlanMonitoreoAnualPage = () => {
   // --- Manejo de Eliminado Lógico ---
   const handleDeleteConfirm = async () => {
     if (!deletePlanId) return;
-    const res = await deletePlan(deletePlanId);
+    const res = await toggleEstado(deletePlanId);
     if (res.success) {
       setDeletePlanId(null);
     }

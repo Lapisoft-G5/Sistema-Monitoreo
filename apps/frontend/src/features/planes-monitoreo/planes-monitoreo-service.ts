@@ -17,14 +17,10 @@ export const usePlanesMonitoreo = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await planesMonitoreoApi.findAll(filters);
-      if (res.ok && res.data) {
-        setPlanes(res.data);
-      } else {
-        setError('Error al cargar los planes de monitoreo.');
-      }
+      const data = await planesMonitoreoApi.findAll(filters);
+      setPlanes(data);
     } catch (err) {
-      setError('Error de conexión al cargar los planes.');
+      setError('Error al cargar los planes de monitoreo.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -46,51 +42,33 @@ export const usePlanesMonitoreo = () => {
       formData.append('anioAcademico', String(data.anioAcademico));
       formData.append('tipoEntidad', data.tipoEntidad);
 
-      const res = await planesMonitoreoApi.create(formData);
-      if (res.ok && res.data) {
-        setPlanes((prev) => [res.data!, ...prev]);
-        return { success: true, data: res.data };
-      } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al registrar el plan de monitoreo.';
-        setError(errMsg);
-        return { success: false, error: errMsg };
-      }
+      const plan = await planesMonitoreoApi.create(formData);
+      setPlanes((prev) => [plan, ...prev]);
+      return { success: true, data: plan };
     } catch (err) {
-      setError('Error de conexión al subir el plan.');
-      return { success: false, error: err };
+      const errMsg = err instanceof Error ? err.message : 'Error al registrar el plan de monitoreo.';
+      setError(errMsg);
+      return { success: false, error: errMsg };
     } finally {
       setActionLoading(false);
     }
   };
 
-  const deletePlan = async (id: string) => {
+  const toggleEstado = async (id: string) => {
     setActionLoading(true);
     setError(null);
     try {
-      const res = await planesMonitoreoApi.delete(id);
-      if (res.ok) {
-        setPlanes((prev) => prev.filter((p) => p.id !== id));
-        return { success: true };
-      } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al eliminar el plan de monitoreo.';
-        setError(errMsg);
-        return { success: false, error: errMsg };
-      }
+      const plan = await planesMonitoreoApi.toggleEstado(id);
+      setPlanes((prev) => prev.map((p) => (p.id === id ? plan : p)));
+      return { success: true, data: plan };
     } catch (err) {
-      setError('Error de conexión al eliminar el plan.');
-      return { success: false, error: err };
+      const errMsg = err instanceof Error ? err.message : 'Error al cambiar el estado del plan.';
+      setError(errMsg);
+      return { success: false, error: errMsg };
     } finally {
       setActionLoading(false);
     }
   };
 
-  return {
-    planes,
-    loading,
-    error,
-    actionLoading,
-    fetchPlanes,
-    uploadPlan,
-    deletePlan,
-  };
+  return { planes, loading, error, actionLoading, fetchPlanes, uploadPlan, toggleEstado };
 };

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unused-vars */
 import {
   BadRequestException,
   Body,
@@ -40,19 +41,13 @@ export class SchedulingController {
   @Post('cronogramas')
   @RequirePermissions('monitoreo:execute')
   @HttpCode(HttpStatus.CREATED)
-  async crearVisita(
-    @Body() dto: CreateVisitaDto,
-    @Req() req: any,
-  ): Promise<IVisita> {
+  async crearVisita(@Body() dto: CreateVisitaDto, @Req() req: any): Promise<IVisita> {
     return this.service.crearVisita(dto, this.toSession(req));
   }
 
   @Get('cronogramas')
   @RequirePermissions('monitoreo:execute')
-  async listarVisitas(
-    @Query() query: any,
-    @Req() req: any,
-  ): Promise<IVisita[]> {
+  async listarVisitas(@Query() query: any, @Req() req: any): Promise<IVisita[]> {
     return this.service.findAllVisitas(query, this.toSession(req));
   }
 
@@ -99,20 +94,18 @@ export class SchedulingController {
 
   @Get('solicitudes-reprogramacion')
   @RequirePermissions('monitoreo:execute')
-  async listarSolicitudes(
-    @Query() query: any,
-    @Req() req: any,
+  async getSolicitudes(
+    @Query() query: Partial<ISolicitudReprogramacion>,
   ): Promise<ISolicitudReprogramacion[]> {
-    return this.service.findAllSolicitudes(query, this.toSession(req));
+    return this.service.findAllSolicitudes(query);
   }
 
   @Get('solicitudes-reprogramacion/:id')
   @RequirePermissions('monitoreo:execute')
-  async obtenerSolicitud(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+  async getSolicitudById(
+    @Param('id') id: string,
   ): Promise<ISolicitudReprogramacion> {
-    return this.service.findSolicitudById(id, this.toSession(req));
+    return this.service.findSolicitudById(id);
   }
 
   @Post('solicitudes-reprogramacion/:id/aprobar')

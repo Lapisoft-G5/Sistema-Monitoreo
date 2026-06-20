@@ -7,15 +7,22 @@ import {
 } from '@nestjs/common';
 import { STORAGE_SERVICE, type StorageService } from '../../../shared/storage/storage.constants.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
+import {
+  CronogramaRepository,
+  SolicitudReprogramacionRepository,
+} from '../repositories/cronograma.repository.js';
 import type {
-  IVisita,
-  ISolicitudReprogramacion,
-  EstadoSolicitudReprogramacion,
-} from '@sistema-monitoreo/shared-contracts';
-import { CronogramaRepository, SolicitudReprogramacionRepository } from '../repositories/cronograma.repository.js';
-import type { CreateVisitaData, UpdateVisitaData, CreateSolicitudData, ResolverSolicitudData } from '../repositories/cronograma.repository.js';
+  CreateVisitaData,
+  UpdateVisitaData,
+  CreateSolicitudData,
+  ResolverSolicitudData,
+} from '../repositories/cronograma.repository.js';
 import type { CreateVisitaDto, UpdateVisitaDto } from '../dto/create-visita.dto.js';
-import type { CreateSolicitudReprogramacionDto, ResolverSolicitudDto } from '../dto/solicitud-reprogramacion.dto.js';
+import type {
+  CreateSolicitudReprogramacionDto,
+  ResolverSolicitudDto,
+} from '../dto/solicitud-reprogramacion.dto.js';
 
 export interface SessionUser {
   id: string;
@@ -53,7 +60,7 @@ export class SchedulingService {
     if (!planId) {
       throw new BadRequestException(
         `No existe Plan de Monitoreo Activo que habilite el registro de visitas para el anio ${anio}. ` +
-        'El Jefe de Gestion debe registrar y activar un plan antes de programar visitas (EDU-0002).',
+          'El Jefe de Gestion debe registrar y activar un plan antes de programar visitas (EDU-0002).',
       );
     }
 
@@ -87,6 +94,7 @@ export class SchedulingService {
     }
     const data: UpdateVisitaData = {
       detalles: dto.detalles,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       estado: dto.estado as any,
     };
     return this.cronogramaRepo.update(id, data);
@@ -106,11 +114,11 @@ export class SchedulingService {
 
   // ============== Solicitudes ==============
 
-  async findAllSolicitudes(filters?: any, session?: SessionUser): Promise<ISolicitudReprogramacion[]> {
+  async findAllSolicitudes(filters?: any): Promise<ISolicitudReprogramacion[]> {
     return this.solicitudRepo.findAll(filters);
   }
 
-  async findSolicitudById(id: string, session?: SessionUser): Promise<ISolicitudReprogramacion> {
+  async findSolicitudById(id: string): Promise<ISolicitudReprogramacion> {
     const s = await this.solicitudRepo.findById(id);
     if (!s) throw new NotFoundException(`Solicitud ${id} no encontrada.`);
     return s;
@@ -190,7 +198,9 @@ export class SchedulingService {
     const solicitud = await this.solicitudRepo.findById(id);
     if (!solicitud) throw new NotFoundException(`Solicitud ${id} no encontrada.`);
     if (solicitud.estado !== 'PENDIENTE') {
-      throw new BadRequestException(`La solicitud ya esta ${solicitud.estado}, no se puede ${estado.toLowerCase()}.`);
+      throw new BadRequestException(
+        `La solicitud ya esta ${solicitud.estado}, no se puede ${estado.toLowerCase()}.`,
+      );
     }
 
     const data: ResolverSolicitudData = {
@@ -218,11 +228,7 @@ export class SchedulingService {
   // ============== Helpers ==============
 
   private esAutoridad(session: SessionUser): boolean {
-    return [
-      'jefe_gestion',
-      'director_institucion',
-      'director_ie',
-    ].includes(session.role);
+    return ['jefe_gestion', 'director_institucion', 'director_ie'].includes(session.role);
   }
 
   private aplicarScopingVisitas(visitas: IVisita[], session?: SessionUser): IVisita[] {

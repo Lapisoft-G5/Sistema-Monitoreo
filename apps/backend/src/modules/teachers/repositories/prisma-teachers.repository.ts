@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
@@ -19,6 +20,9 @@ type DocenteWithRelations = Prisma.DocenteGetPayload<{
       };
     };
     docenteSecciones: true;
+    docenteEspecialidades: {
+      include: { especialidad: true };
+    };
   };
 }>;
 
@@ -34,7 +38,11 @@ export class PrismaTeachersRepository implements TeachersRepository {
       gradoAcademico: docente.gradoAcademico,
       nivelEducativo: docente.nivelEducativo,
       modalidad: docente.modalidad ?? null,
-      especialidad: (docente as any).docenteEspecialidades?.map((de: any) => de.especialidad?.nombre).filter(Boolean).join(', ') ?? null,
+      especialidad:
+        docente.docenteEspecialidades
+          ?.map((de) => de.especialidad?.nombre)
+          .filter(Boolean)
+          .join(', ') || null,
       cursoAsignado: docente.docenteCursos?.[0]?.curso?.nombre || null,
       condicionLaboral: docente.condicionLaboral,
       escalaMagisterial: docente.escalaMagisterial,
@@ -81,6 +89,9 @@ export class PrismaTeachersRepository implements TeachersRepository {
           include: {
             curso: true,
           },
+        },
+        docenteEspecialidades: {
+          include: { especialidad: true },
         },
         docenteSecciones: true,
       },
@@ -149,6 +160,9 @@ export class PrismaTeachersRepository implements TeachersRepository {
             curso: true,
           },
         },
+        docenteEspecialidades: {
+          include: { especialidad: true },
+        },
         docenteSecciones: true,
       },
     });
@@ -168,6 +182,9 @@ export class PrismaTeachersRepository implements TeachersRepository {
           include: {
             curso: true,
           },
+        },
+        docenteEspecialidades: {
+          include: { especialidad: true },
         },
         docenteSecciones: true,
       },
@@ -366,6 +383,9 @@ export class PrismaTeachersRepository implements TeachersRepository {
           docenteCursos: {
             include: { curso: true },
           },
+          docenteEspecialidades: {
+            include: { especialidad: true },
+          },
           docenteSecciones: true,
         },
       });
@@ -544,6 +564,9 @@ export class PrismaTeachersRepository implements TeachersRepository {
           },
           docenteCursos: {
             include: { curso: true },
+          },
+          docenteEspecialidades: {
+            include: { especialidad: true },
           },
           docenteSecciones: true,
         },

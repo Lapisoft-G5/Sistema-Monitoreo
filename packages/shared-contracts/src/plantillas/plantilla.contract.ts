@@ -1,10 +1,10 @@
 export type TipoPlantilla = 'DOCENTE' | 'DIRECTIVO';
 
-export type EstadoPlantilla = 'BORRADOR' | 'VIGENTE' | 'HISTORICO';
+export type EstadoPlantilla = 'Borrador' | 'Vigente' | 'Historico';
 
 export type NivelRomano = 'I' | 'II' | 'III' | 'IV';
 
-export type Baremo = 'VIGENTE' | 'PORCENTUAL';
+export type Baremo = 'Vigente' | 'Porcentual';
 
 export type ModoVersionado = 'IN_PLACE' | 'VERSIONADO';
 

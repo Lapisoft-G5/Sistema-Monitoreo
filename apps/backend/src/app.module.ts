@@ -14,6 +14,7 @@ import { CatalogsModule } from './modules/catalogs/catalogs.module.js';
 import { MonitoringModule } from './modules/monitoring/monitoring.module.js';
 import { SchedulingModule } from './modules/scheduling/scheduling.module.js';
 import { EvaluationsModule } from './modules/evaluations/evaluations.module.js';
+import { ReportsModule } from './modules/reports/reports.module.js';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { EvaluationsModule } from './modules/evaluations/evaluations.module.js';
     MonitoringModule,
     SchedulingModule,
     EvaluationsModule,
+    ReportsModule,
   ],
   providers: [
     {

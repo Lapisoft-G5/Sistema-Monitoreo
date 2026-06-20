@@ -40,6 +40,9 @@ const PlantillasPage = lazy(() =>
 const PlantillaCreatePage = lazy(() =>
   import('./PlantillaCreatePage').then((m) => ({ default: m.PlantillaCreatePage })),
 );
+const PlantillaEditPage = lazy(() =>
+  import('./PlantillaEditPage').then((m) => ({ default: m.PlantillaEditPage })),
+);
 
 export const jefeGestionRoutes: RouteObject[] = [
   {
@@ -174,6 +177,14 @@ export const jefeGestionRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <PlantillaCreatePage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'plantillas/:id/editar',
+        element: (
+          <LazyLoader>
+            <PlantillaEditPage />
           </LazyLoader>
         ),
       },

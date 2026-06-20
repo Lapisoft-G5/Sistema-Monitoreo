@@ -43,4 +43,9 @@ export interface Plantilla {
   niveles: NivelCalificacion[]; // los 4 niveles de la escala
   desempenos: Desempeno[];
   fechaCreacion: string;
+  estado: 'Vigente' | 'Borrador' | 'Histórico';
+  descripcion: string;
+  creadoPorRole?: 'jefe_gestion' | 'director_ie';
+  creadoPorId?: string;
+  ieId?: string;
 }

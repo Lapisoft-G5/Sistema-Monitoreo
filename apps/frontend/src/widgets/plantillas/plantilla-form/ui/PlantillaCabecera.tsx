@@ -2,6 +2,7 @@ import { Settings } from 'lucide-react';
 import { SectionCard, SelectField, TextField } from '@shared/ui/form-controls';
 import type { Baremo, NivelCalificacion } from '@entities/model-plantillas';
 import { TIPOS_MONITOREO, BAREMOS } from '@entities/model-plantillas';
+import { useUser } from '@entities/model-user';
 
 interface Props {
   tipoMonitoreo: string;
@@ -23,6 +24,8 @@ export const PlantillaCabecera = ({
   niveles,
   onChange,
 }: Props) => {
+  const { user } = useUser();
+  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
   const setNivel = (i: number, p: Partial<NivelCalificacion>) =>
     onChange({ niveles: niveles.map((n, idx) => (idx === i ? { ...n, ...p } : n)) });
 
@@ -44,8 +47,9 @@ export const PlantillaCabecera = ({
             required
             value={tipoMonitoreo}
             onChange={(v) => onChange({ tipoMonitoreo: v })}
-            options={TIPOS_MONITOREO.map((t) => ({ value: t, label: t }))}
+            options={(isDirector ? ['Monitoreo Docente'] : TIPOS_MONITOREO).map((t) => ({ value: t, label: t }))}
             placeholder="Seleccione el tipo"
+            disabled={isDirector}
           />
           <TextField
             label="Año Académico"

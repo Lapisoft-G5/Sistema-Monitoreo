@@ -4,11 +4,12 @@ import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { EditarPlantillaForm } from '@widgets/plantillas';
 import type { PlantillaFormState } from '@widgets/plantillas';
-import { MOCK_PLANTILLAS } from '@entities/model-plantillas'; 
+import { usePlantillas } from '@entities/model-plantillas'; 
 
 export const PlantillaEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { plantillas, updatePlantilla } = usePlantillas();
   
   const [initialData, setInitialData] = useState<PlantillaFormState | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -16,7 +17,7 @@ export const PlantillaEditPage = () => {
 
   useEffect(() => {
     // Buscar la plantilla simulada usando el ID que viene en la URL
-    const plantilla = MOCK_PLANTILLAS.find((p) => p.id === id);
+    const plantilla = plantillas.find((p) => p.id === id);
 
     if (plantilla) {
       setInitialData({
@@ -29,15 +30,21 @@ export const PlantillaEditPage = () => {
     } else {
       setError('No se encontró la plantilla de monitoreo solicitada.');
     }
-  }, [id]);
+  }, [id, plantillas]);
 
   const handleSubmit = (data: PlantillaFormState) => {
+    if (!id) return;
     setIsSaving(true);
-    // Formatear a JSON tal como se hace en la creación
-    const json = JSON.stringify(data, null, 2);
-    console.log('Plantilla Actualizada (JSON a enviar):', json);
     
-    // TODO: Conectar con el servicio HTTP de actualización cuando la API esté lista
+    // Actualizar la plantilla en el contexto
+    updatePlantilla(id, {
+      tipoMonitoreo: data.tipoMonitoreo,
+      anioAcademico: Number(data.anioAcademico),
+      baremo: data.baremo,
+      niveles: data.niveles,
+      desempenos: data.desempenos,
+    });
+    
     setIsSaving(false);
     navigate(-1);
   };
@@ -55,7 +62,7 @@ export const PlantillaEditPage = () => {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate(-1)}
-          className="p-2.5 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer shadow-sm"
+          className="p-2.5 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer shadow-sm animate-in zoom-in-95 duration-200"
         >
           <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
         </button>

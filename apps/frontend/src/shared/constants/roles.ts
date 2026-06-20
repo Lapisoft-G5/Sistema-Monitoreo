@@ -79,13 +79,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes',
   ],
 
-  especialista: ['monitoreo', 'monitoreo_reportes', 'reportes'], // 🚀 Se eliminó la duplicación aquí
+  especialista: ['monitoreo', 'monitoreo_calendario', 'reportes'],
 
   director_institucion: [
     'monitoreo',
     'monitoreo_plan_anual',
     'monitoreo_cronograma',
     'monitoreo_calendario',
+    'plantillas',
     'instituciones_docentes',
     'instituciones_coordinadores',
     'instituciones_jefes_taller',
@@ -97,6 +98,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_plan_anual',
     'monitoreo_cronograma',
     'monitoreo_calendario',
+    'plantillas',
     'instituciones_docentes',
     'instituciones_coordinadores',
     'instituciones_jefes_taller',

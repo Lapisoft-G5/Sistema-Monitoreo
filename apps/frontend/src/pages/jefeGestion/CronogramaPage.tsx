@@ -9,6 +9,7 @@ import { Badge } from '@shared/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { useUser } from '@entities/model-user';
+import { MOCK_DOCENTES } from '@entities/model-docentes';
 import {
   ModalidadEducativa,
   MODALIDAD_NIVEL_MAP,
@@ -274,6 +275,26 @@ export const CronogramaPage = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const docentesDeMiInstitucion = useMemo(() => {
+    if (!isDirector || !user || !user.institucion) return [];
+    return MOCK_DOCENTES.filter(
+      (doc) => doc.institucionId === user.institucion && doc.cargo !== 'Director'
+    );
+  }, [isDirector, user]);
+
+  const docenteOptions = useMemo(() => {
+    const list = docentesDeMiInstitucion.map((doc) => ({
+      value: `${doc.nombres} ${doc.apellidos}`,
+      label: `${doc.nombres} ${doc.apellidos} (${doc.cargo})`,
+    }));
+
+    if (formDocente && !list.some((opt) => opt.value === formDocente)) {
+      list.unshift({ value: formDocente, label: formDocente });
+    }
+
+    return list;
+  }, [docentesDeMiInstitucion, formDocente]);
+
   // --- Estados de Detalles / Ver ---
   const [viewCronograma, setViewCronograma] = useState<Cronograma | null>(null);
 
@@ -436,10 +457,6 @@ export const CronogramaPage = () => {
   const handleOpenCreate = () => {
     setEditCronogramaId(null);
     setFormFechaHora(getDefaultDateTime());
-    setFormModalidad('');
-    setFormNivel('');
-    setFormEspecialista('');
-    setFormInstitucion('');
     setFormDocente('');
     setFormTipo('DOCENTE');
     setFormVisita('01');
@@ -447,6 +464,28 @@ export const CronogramaPage = () => {
     setFormObservaciones('');
     setFormError(null);
     setFormSubmitted(false);
+
+    if (isDirector && user) {
+      setFormInstitucion(user.institucionNombre || '');
+      setFormEspecialista(`${user.nombres} ${user.apellidos}`);
+      
+      const matchInst = MOCK_INSTITUCIONES.find(
+        (inst) => inst.nombre.toLowerCase() === user.institucionNombre?.toLowerCase()
+      );
+      if (matchInst) {
+        setFormModalidad(matchInst.modalidad);
+        setFormNivel(matchInst.nivelEducativo);
+      } else {
+        setFormModalidad('EBR');
+        setFormNivel(user.institucionNivel || 'Primaria');
+      }
+    } else {
+      setFormModalidad('');
+      setFormNivel('');
+      setFormEspecialista('');
+      setFormInstitucion('');
+    }
+
     setShowFormModal(true);
   };
 
@@ -459,15 +498,20 @@ export const CronogramaPage = () => {
     setTimeout(() => {
       setFormNivel(item.nivel);
       setTimeout(() => {
-        setFormEspecialista(item.especialista);
-        setFormInstitucion(item.institucion);
+        setFormDocente(item.docenteDirectivo);
+        setFormTipo(item.tipo);
+        setFormVisita(item.nroVisita);
+        setFormEstado(item.estado);
+        setFormObservaciones(item.observaciones || '');
+        if (isDirector && user) {
+          setFormInstitucion(user.institucionNombre || item.institucion);
+          setFormEspecialista(item.especialista);
+        } else {
+          setFormEspecialista(item.especialista);
+          setFormInstitucion(item.institucion);
+        }
       }, 0);
     }, 0);
-    setFormDocente(item.docenteDirectivo);
-    setFormTipo(item.tipo);
-    setFormVisita(item.nroVisita);
-    setFormEstado(item.estado);
-    setFormObservaciones(item.observaciones || '');
     setFormError(null);
     setFormSubmitted(false);
     setShowFormModal(true);
@@ -839,120 +883,158 @@ export const CronogramaPage = () => {
                   </div>
                 )}
 
-                {/* Fila 1: Modalidad Educativa & Nivel Educativo */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <SelectField
-                    label="Modalidad Educativa *"
-                    value={formModalidad}
-                    onChange={handleFormModalidadChange}
-                    placeholder="Seleccionar modalidad..."
-                    options={MODALIDADES.map((m) => ({ value: m, label: m }))}
-                  />
-                  <SelectField
-                    label="Nivel Educativo *"
-                    value={formNivel}
-                    onChange={handleFormNivelChange}
-                    placeholder={formModalidad ? 'Seleccionar nivel...' : 'Seleccione modalidad primero'}
-                    options={nivelesDisponibles.map((n) => ({ value: n, label: n }))}
-                  />
-                </div>
+                {/* Fila 1: Modalidad Educativa & Nivel Educativo (oculto para Director) */}
+                {!isDirector && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <SelectField
+                        label="Modalidad Educativa *"
+                        value={formModalidad}
+                        onChange={handleFormModalidadChange}
+                        placeholder="Seleccionar modalidad..."
+                        options={MODALIDADES.map((m) => ({ value: m, label: m }))}
+                      />
+                      <SelectField
+                        label="Nivel Educativo *"
+                        value={formNivel}
+                        onChange={handleFormNivelChange}
+                        placeholder={formModalidad ? 'Seleccionar nivel...' : 'Seleccione modalidad primero'}
+                        options={nivelesDisponibles.map((n) => ({ value: n, label: n }))}
+                      />
+                    </div>
 
-                {/* Nota informativa si no hay modalidad/nivel seleccionado */}
-                {(!formModalidad || !formNivel) && (
-                  <div className="flex items-center gap-2 bg-primary/5 border border-primary/15 rounded-xl p-3 text-primary text-xs">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>Seleccione modalidad y nivel educativo para habilitar la selección de especialista e institución.</span>
-                  </div>
+                    {/* Nota informativa si no hay modalidad/nivel seleccionado */}
+                    {(!formModalidad || !formNivel) && (
+                      <div className="flex items-center gap-2 bg-primary/5 border border-primary/15 rounded-xl p-3 text-primary text-xs">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>Seleccione modalidad y nivel educativo para habilitar la selección de especialista e institución.</span>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Fila 2: Especialista & Institución Educativa (filtrados) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <SelectField
-                      label="Especialista (filtro por nivel) *"
-                      value={formEspecialista}
-                      onChange={setFormEspecialista}
-                      placeholder={
-                        !formModalidad || !formNivel
-                          ? 'Seleccione modalidad y nivel...'
-                          : especialistasFiltrados.length === 0
-                            ? 'No hay especialistas para este nivel'
-                            : 'Seleccionar especialista...'
-                      }
-                      options={especialistasFiltrados.map((esp) => ({
-                        value: esp.nombre,
-                        label: esp.nombre,
-                      }))}
-                    />
-                    {formModalidad && formNivel && especialistasFiltrados.length > 0 && (
-                      <span className="text-[10px] text-text-muted pl-1">
-                        {especialistasFiltrados.length} especialista(s) de {formModalidad} - {formNivel}
-                      </span>
+                    {isDirector ? (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-text-muted">Evaluador *</label>
+                        <div className="bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm shadow-inner leading-none h-10 flex items-center">
+                          {formEspecialista}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <SelectField
+                          label="Especialista (filtro por nivel) *"
+                          value={formEspecialista}
+                          onChange={setFormEspecialista}
+                          placeholder={
+                            !formModalidad || !formNivel
+                              ? 'Seleccione modalidad y nivel...'
+                              : especialistasFiltrados.length === 0
+                                ? 'No hay especialistas para este nivel'
+                                : 'Seleccionar especialista...'
+                          }
+                          options={especialistasFiltrados.map((esp) => ({
+                            value: esp.nombre,
+                            label: esp.nombre,
+                          }))}
+                        />
+                        {formModalidad && formNivel && especialistasFiltrados.length > 0 && (
+                          <span className="text-[10px] text-text-muted pl-1">
+                            {especialistasFiltrados.length} especialista(s) de {formModalidad} - {formNivel}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <SelectField
-                      label="Institución Educativa (filtro) *"
-                      value={formInstitucion}
-                      onChange={setFormInstitucion}
-                      placeholder={
-                        !formModalidad || !formNivel
-                          ? 'Seleccione modalidad y nivel...'
-                          : institucionesFiltradas.length === 0
-                            ? 'No hay instituciones para este nivel'
-                            : 'Seleccionar institución...'
-                      }
-                      options={institucionesFiltradas.map((inst) => ({
-                        value: inst.nombre,
-                        label: inst.nombre,
-                      }))}
-                    />
-                    {formModalidad && formNivel && institucionesFiltradas.length > 0 && (
-                      <span className="text-[10px] text-text-muted pl-1">
-                        {institucionesFiltradas.length} institución(es) de {formModalidad} - {formNivel}
-                      </span>
+                    {isDirector ? (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-text-muted">Institución Educativa *</label>
+                        <div className="bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm shadow-inner leading-none h-10 flex items-center">
+                          {formInstitucion}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <SelectField
+                          label="Institución Educativa (filtro) *"
+                          value={formInstitucion}
+                          onChange={setFormInstitucion}
+                          placeholder={
+                            !formModalidad || !formNivel
+                              ? 'Seleccione modalidad y nivel...'
+                              : institucionesFiltradas.length === 0
+                                ? 'No hay instituciones para este nivel'
+                                : 'Seleccionar institución...'
+                          }
+                          options={institucionesFiltradas.map((inst) => ({
+                            value: inst.nombre,
+                            label: inst.nombre,
+                          }))}
+                        />
+                        {formModalidad && formNivel && institucionesFiltradas.length > 0 && (
+                          <span className="text-[10px] text-text-muted pl-1">
+                            {institucionesFiltradas.length} institución(es) de {formModalidad} - {formNivel}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
 
                 {/* Tipo de Monitoreo - Toggle Buttons */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-text-muted">Tipo de Monitoreo *</label>
-                  <div className="flex items-center gap-0 rounded-xl border border-border overflow-hidden w-fit">
-                    <button
-                      type="button"
-                      onClick={() => setFormTipo('DOCENTE')}
-                      className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
-                        formTipo === 'DOCENTE'
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'bg-surface text-text-muted hover:bg-muted/60'
-                      }`}
-                    >
-                      Docente
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormTipo('DIRECTIVO')}
-                      className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer border-l border-border ${
-                        formTipo === 'DIRECTIVO'
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'bg-surface text-text-muted hover:bg-muted/60'
-                      }`}
-                    >
-                      Directivo
-                    </button>
+                {!isDirector && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-text-muted">Tipo de Monitoreo *</label>
+                    <div className="flex items-center gap-0 rounded-xl border border-border overflow-hidden w-fit">
+                      <button
+                        type="button"
+                        onClick={() => setFormTipo('DOCENTE')}
+                        className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
+                          formTipo === 'DOCENTE'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-surface text-text-muted hover:bg-muted/60'
+                        }`}
+                      >
+                        Docente
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormTipo('DIRECTIVO')}
+                        className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer border-l border-border ${
+                          formTipo === 'DIRECTIVO'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-surface text-text-muted hover:bg-muted/60'
+                        }`}
+                      >
+                        Directivo
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Seleccionar Docente a Evaluar */}
-                <TextField
-                  label={`Seleccionar ${formTipo === 'DOCENTE' ? 'Docente' : 'Directivo'} a Evaluar *`}
-                  value={formDocente}
-                  onChange={setFormDocente}
-                  placeholder="Buscar por DNI o nombre..."
-                  adornment={<Search className="w-[16px] h-[16px] text-text-muted" />}
-                  error={formSubmitted && !formDocente.trim() ? 'Este campo es obligatorio' : ''}
-                />
+                {isDirector ? (
+                  <SelectField
+                    label="Docente a Evaluar *"
+                    value={formDocente}
+                    onChange={setFormDocente}
+                    placeholder="Seleccionar docente..."
+                    options={docenteOptions}
+                  />
+                ) : (
+                  <TextField
+                    label={`Seleccionar ${formTipo === 'DOCENTE' ? 'Docente' : 'Directivo'} a Evaluar *`}
+                    value={formDocente}
+                    onChange={setFormDocente}
+                    placeholder="Buscar por DNI o nombre..."
+                    adornment={<Search className="w-[16px] h-[16px] text-text-muted" />}
+                    error={formSubmitted && !formDocente.trim() ? 'Este campo es obligatorio' : ''}
+                  />
+                )}
 
                 {/* Fila: Fecha y Hora Programada & Número de Visita */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

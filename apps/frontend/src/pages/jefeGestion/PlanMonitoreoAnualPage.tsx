@@ -38,6 +38,12 @@ export const PlanMonitoreoAnualPage = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [localUploadError, setLocalUploadError] = useState<string | null>(null);
 
+  // Sincronizar tipo de entidad según el rol cargado
+  useEffect(() => {
+    setTipoEntidad(defaultEntity);
+    setUploadEntity(defaultEntity);
+  }, [defaultEntity]);
+
   // --- Hook de Servicio ---
   const {
     planes,
@@ -167,7 +173,7 @@ export const PlanMonitoreoAnualPage = () => {
 
       {/* ── Filtros ── */}
       <Card className="border border-border bg-surface shadow-sm rounded-2xl p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <TextField
             label="Buscar por Título"
             value={search}
@@ -186,17 +192,6 @@ export const PlanMonitoreoAnualPage = () => {
               { value: '2024', label: '2024' },
               { value: '2025', label: '2025' },
               { value: '2026', label: '2026' },
-            ]}
-          />
-          <SelectField
-            label="Tipo de Entidad"
-            value={tipoEntidad}
-            onChange={setTipoEntidad}
-            placeholder="Seleccionar tipo..."
-            options={[
-              { value: 'Todos', label: 'Todos los tipos' },
-              { value: 'UGEL', label: 'UGEL' },
-              { value: 'IE', label: 'IE' },
             ]}
           />
           <SelectField

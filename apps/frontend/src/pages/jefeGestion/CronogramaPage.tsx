@@ -237,7 +237,11 @@ const MODALIDADES = Object.values(ModalidadEducativa);
 
 export const CronogramaPage = () => {
   const { user } = useUser();
-  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+  const isDirector =
+    user?.role === 'director_ie' ||
+    user?.role === 'director_institucion' ||
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
 
   // --- Estados de Datos ---
   const [cronogramas, setCronogramas] = useState<Cronograma[]>(() => {
@@ -309,6 +313,48 @@ export const CronogramaPage = () => {
 
     return list;
   }, [docentesDeLaInstitucion, formDocente]);
+
+  const isSecundaria = useMemo(() => {
+    const targetInstName = isDirector ? user?.institucionNombre : formInstitucion;
+    if (!targetInstName) return false;
+
+    const matchInst = MOCK_INSTITUCIONES.find(
+      (inst) => inst.nombre.toLowerCase() === targetInstName.toLowerCase()
+    );
+    return matchInst?.nivelEducativo.toLowerCase() === 'secundaria';
+  }, [isDirector, user, formInstitucion]);
+
+  const evaluadoresDeLaInstitucion = useMemo(() => {
+    const targetInstName = isDirector ? user?.institucionNombre : formInstitucion;
+    if (!targetInstName) return [];
+
+    const matchInst = MOCK_INSTITUCIONES.find(
+      (inst) => inst.nombre.toLowerCase() === targetInstName.toLowerCase()
+    );
+    if (!matchInst) return [];
+
+    const dbId = matchInst.id.replace(/^i/, '');
+    return MOCK_DOCENTES.filter(
+      (doc) =>
+        doc.institucionId === dbId &&
+        (doc.cargo === 'Director' ||
+          doc.cargo === 'Coordinador Pedagógico' ||
+          doc.cargo === 'Jefe de Taller')
+    );
+  }, [isDirector, user, formInstitucion]);
+
+  const evaluadorOptions = useMemo(() => {
+    const list = evaluadoresDeLaInstitucion.map((doc) => ({
+      value: `${doc.nombres} ${doc.apellidos}`,
+      label: `${doc.nombres} ${doc.apellidos} (${doc.cargo})`,
+    }));
+
+    if (formEspecialista && !list.some((opt) => opt.value === formEspecialista)) {
+      list.unshift({ value: formEspecialista, label: formEspecialista });
+    }
+
+    return list;
+  }, [evaluadoresDeLaInstitucion, formEspecialista]);
 
   // --- Estados de Detalles / Ver ---
   const [viewCronograma, setViewCronograma] = useState<Cronograma | null>(null);
@@ -929,12 +975,22 @@ export const CronogramaPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     {isDirector ? (
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-bold text-text-muted">Evaluador *</label>
-                        <div className="bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm shadow-inner leading-none h-10 flex items-center">
-                          {formEspecialista}
+                      isSecundaria ? (
+                        <SelectField
+                          label="Evaluador *"
+                          value={formEspecialista}
+                          onChange={setFormEspecialista}
+                          placeholder="Seleccionar evaluador..."
+                          options={evaluadorOptions}
+                        />
+                      ) : (
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-text-muted">Evaluador *</label>
+                          <div className="bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm shadow-inner leading-none h-10 flex items-center">
+                            {formEspecialista}
+                          </div>
                         </div>
-                      </div>
+                      )
                     ) : (
                       <>
                         <SelectField

@@ -102,9 +102,7 @@ export class SchedulingController {
 
   @Get('solicitudes-reprogramacion/:id')
   @RequirePermissions('monitoreo:execute')
-  async getSolicitudById(
-    @Param('id') id: string,
-  ): Promise<ISolicitudReprogramacion> {
+  async getSolicitudById(@Param('id') id: string): Promise<ISolicitudReprogramacion> {
     return this.service.findSolicitudById(id);
   }
 

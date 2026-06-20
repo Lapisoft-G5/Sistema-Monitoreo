@@ -40,21 +40,23 @@ describe('SchedulingService - Reprogramaciones', () => {
 
   beforeEach(async () => {
     const mockCron: Partial<jest.Mocked<CronogramaRepository>> = {
-      findAll: jest.fn().mockResolvedValue([visitaBase]),
-      findById: jest.fn().mockResolvedValue(visitaBase),
-      findPlanVigentePara: jest.fn(),
-      create: jest.fn().mockResolvedValue(visitaBase),
-      update: jest.fn().mockResolvedValue({ ...visitaBase, estado: 'REPROGRAMADO' }),
-      remove: jest.fn(),
+      findAll: jest.fn<any>().mockResolvedValue([visitaBase]),
+      findById: jest.fn<any>().mockResolvedValue(visitaBase),
+      findPlanVigentePara: jest.fn<any>(),
+      create: jest.fn<any>().mockResolvedValue(visitaBase),
+      update: jest.fn<any>().mockResolvedValue({ ...visitaBase, estado: 'REPROGRAMADO' }),
+      remove: jest.fn<any>(),
     };
     const mockSol: Partial<jest.Mocked<SolicitudReprogramacionRepository>> = {
-      findAll: jest.fn(),
-      findById: jest.fn(),
-      findPendienteByCronograma: jest.fn(),
-      create: jest.fn().mockResolvedValue({}),
-      resolver: jest.fn(),
+      findAll: jest.fn<any>(),
+      findById: jest.fn<any>(),
+      findPendienteByCronograma: jest.fn<any>(),
+      create: jest.fn<any>().mockResolvedValue({}),
+      resolver: jest.fn<any>(),
     };
-    const mockStorage = { savePdf: jest.fn().mockResolvedValue({ url: '/uploads/reprog/x.pdf' }) };
+    const mockStorage = {
+      savePdf: jest.fn<any>().mockResolvedValue({ url: '/uploads/reprog/x.pdf' }),
+    };
     const moduleRef = await Test.createTestingModule({
       providers: [
         SchedulingService,
@@ -63,7 +65,7 @@ describe('SchedulingService - Reprogramaciones', () => {
         { provide: STORAGE_SERVICE, useValue: mockStorage },
         {
           provide: PrismaService,
-          useValue: { $executeRawUnsafe: jest.fn().mockResolvedValue(undefined) },
+          useValue: { $executeRawUnsafe: jest.fn<any>().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

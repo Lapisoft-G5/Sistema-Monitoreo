@@ -5,8 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { STORAGE_SERVICE } from '../../../shared/storage/storage.constants.js';
-import type { StorageService } from '../../../shared/storage/storage.constants.js';
+import { STORAGE_SERVICE, type StorageService } from '../../../shared/storage/storage.constants.js';
+import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type {
   IVisita,
   ISolicitudReprogramacion,
@@ -29,6 +29,7 @@ export class SchedulingService {
     private readonly cronogramaRepo: CronogramaRepository,
     private readonly solicitudRepo: SolicitudReprogramacionRepository,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
+    private readonly prisma: PrismaService,
   ) {}
 
   // ============== Cronogramas ==============
@@ -89,6 +90,18 @@ export class SchedulingService {
       estado: dto.estado as any,
     };
     return this.cronogramaRepo.update(id, data);
+  }
+
+  async eliminarVisita(id: string, session: SessionUser): Promise<void> {
+    const existing = await this.cronogramaRepo.findById(id);
+    if (!existing) throw new NotFoundException(`Visita ${id} no encontrada.`);
+    this.validarAccesoVisita(existing, session);
+    if (existing.estado === 'COMPLETADO') {
+      throw new BadRequestException(
+        'No se puede eliminar una visita en estado COMPLETADO (tiene ficha asociada).',
+      );
+    }
+    await this.cronogramaRepo.remove(id);
   }
 
   // ============== Solicitudes ==============
@@ -189,6 +202,10 @@ export class SchedulingService {
 
     // Si se aprobo, mutamos el cronograma en la misma operacion
     if (estado === 'APROBADO') {
+      // El trigger SQL exige esta bandera de sesion para aceptar el UPDATE
+      await this.prisma.$executeRawUnsafe(
+        `SELECT set_config('app.reprogramacion_apply', 'true', true)`,
+      );
       await this.cronogramaRepo.update(solicitud.cronogramaId, {
         fechaProgramada: new Date(solicitud.fechaPropuesta),
         horaInicio: solicitud.horaPropuesta,

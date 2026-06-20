@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -10,7 +11,6 @@ import {
   Query,
   Req,
   UseGuards,
-  HttpCode,
   HttpStatus,
   ForbiddenException,
 } from '@nestjs/common';
@@ -87,6 +87,17 @@ export class FichaController {
     @Req() req: any,
   ): Promise<IFichaMonitoreo> {
     return this.service.finalizar(id, dto, this.toSession(req));
+  }
+
+  @Post(':id/migrar-plantilla')
+  @RequirePermissions('monitoreo:execute')
+  @HttpCode(HttpStatus.OK)
+  async migrarPlantilla(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: { plantillaId: string },
+    @Req() req: any,
+  ): Promise<IFichaMonitoreo> {
+    return this.service.migrarPlantilla(id, body.plantillaId, this.toSession(req));
   }
 
   private toSession(req: any): SessionUser {

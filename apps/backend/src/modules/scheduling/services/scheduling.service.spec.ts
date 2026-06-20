@@ -6,6 +6,7 @@ import {
   CronogramaRepository,
   SolicitudReprogramacionRepository,
 } from '../repositories/cronograma.repository.js';
+import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { STORAGE_SERVICE } from '../../../shared/storage/storage.constants.js';
 
 describe('SchedulingService - Reprogramaciones', () => {
@@ -60,6 +61,7 @@ describe('SchedulingService - Reprogramaciones', () => {
         { provide: CronogramaRepository, useValue: mockCron },
         { provide: SolicitudReprogramacionRepository, useValue: mockSol },
         { provide: STORAGE_SERVICE, useValue: mockStorage },
+        { provide: PrismaService, useValue: { $executeRawUnsafe: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     service = moduleRef.get(SchedulingService);

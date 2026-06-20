@@ -10,12 +10,14 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
   UseInterceptors,
   HttpCode,
   HttpStatus,
   ForbiddenException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
 import { SchedulingService, type SessionUser } from '../services/scheduling.service.js';
@@ -71,6 +73,16 @@ export class SchedulingController {
     @Req() req: any,
   ): Promise<IVisita> {
     return this.service.actualizarVisita(id, dto, this.toSession(req));
+  }
+
+  @Delete('cronogramas/:id')
+  @RequirePermissions('monitoreo:execute')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async eliminarVisita(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+  ): Promise<void> {
+    await this.service.eliminarVisita(id, this.toSession(req));
   }
 
   // ============== Solicitudes de Reprogramacion ==============

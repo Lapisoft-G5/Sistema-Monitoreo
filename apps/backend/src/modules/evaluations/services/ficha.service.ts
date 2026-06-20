@@ -169,6 +169,82 @@ export class FichaService {
     );
   }
 
+  async migrarPlantilla(
+    fichaId: string,
+    nuevaPlantillaId: string,
+    session: SessionUser,
+  ): Promise<IFichaMonitoreo> {
+    const ficha = await this.repository.findById(fichaId);
+    if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
+    if (ficha.estado !== 'BORRADOR') {
+      throw new BadRequestException(
+        `Solo se pueden migrar fichas en BORRADOR. Estado actual: ${ficha.estado}.`,
+      );
+    }
+
+    // Verificar que la plantilla nueva existe y es del mismo tipo
+    const plantillaNueva = await this.prisma.plantillaMonitoreo.findUnique({
+      where: { id: nuevaPlantillaId },
+    });
+    if (!plantillaNueva) {
+      throw new NotFoundException(`Plantilla ${nuevaPlantillaId} no encontrada.`);
+    }
+
+    // Mapear desempenoId v1 -> desempenoId v2 por nombre
+    const desempenosV2 = await this.prisma.desempenoPlantilla.findMany({
+      where: { plantillaId: nuevaPlantillaId },
+      include: { aspectos: true },
+    });
+    const desempenoPorNombre = new Map<string, (typeof desempenosV2)[number]>();
+    for (const d of desempenosV2) {
+      desempenoPorNombre.set(d.nombre, d);
+    }
+
+    // Mutar respuestas a la nueva plantilla
+    await this.prisma.$transaction(async (tx) => {
+      // Eliminar respuestas del desempeno viejo
+      await tx.fichaRespuestaDesempeno.deleteMany({ where: { fichaId } });
+      await tx.fichaRespuestaAspecto.deleteMany({ where: { fichaId } });
+      // Re-crear respuestas para desempenos de la nueva plantilla
+      for (const r of ficha.respuestasDesempeno) {
+        // Buscar desempeno equivalente en v2 por nombre
+        const desempenoV1 = await tx.desempenoPlantilla.findUnique({
+          where: { id: r.desempenoId },
+        });
+        const desempenoV2 = desempenoV1 ? desempenoPorNombre.get(desempenoV1.nombre) : null;
+        if (desempenoV2) {
+          await tx.fichaRespuestaDesempeno.create({
+            data: { fichaId, desempenoId: desempenoV2.id, nivel: r.nivel },
+          });
+        }
+        // Si no hay equivalente, la respuesta se pierde (silenciosamente)
+      }
+      for (const r of ficha.respuestasAspecto) {
+        const aspectoV1 = await tx.aspectoEvaluado.findUnique({
+          where: { id: r.aspectoId },
+          include: { desempeno: true },
+        });
+        if (!aspectoV1) continue;
+        const desempenoV2 = desempenoPorNombre.get(aspectoV1.desempeno.nombre);
+        const aspectoV2 = desempenoV2?.aspectos.find(
+          (a) => a.descripcion === aspectoV1.descripcion,
+        );
+        if (aspectoV2) {
+          await tx.fichaRespuestaAspecto.create({
+            data: { fichaId, aspectoId: aspectoV2.id, marcado: r.marcado },
+          });
+        }
+      }
+      // Actualizar la ficha con la nueva plantillaId
+      await tx.fichaMonitoreo.update({
+        where: { id: fichaId },
+        data: { plantillaId: nuevaPlantillaId },
+      });
+    });
+
+    return this.repository.findById(fichaId) as Promise<IFichaMonitoreo>;
+  }
+
   // ============== Motor de baremo (expuesto para tests y reuso) ==============
   static readonly baremo = BaremoCalculatorService;
 }

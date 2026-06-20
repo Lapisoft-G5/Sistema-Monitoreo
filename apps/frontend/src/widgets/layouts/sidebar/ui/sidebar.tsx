@@ -48,7 +48,7 @@ export const Sidebar = () => {
               UGEL Lampa
             </span>
             <span className="text-text-muted text-[0.63rem] whitespace-nowrap">
-              Gestión Pedagógica
+              Jefe de Gestión
             </span>
           </div>
         )}
@@ -90,7 +90,12 @@ export const Sidebar = () => {
               ? isJefeArea || user?.role === 'jefe_gestion'
                 ? 'Directores'
                 : 'Docentes'
-              : item.label;
+              : item.id === 'monitoreo' &&
+                (user?.role === 'jefe_gestion' ||
+                  user?.role === 'director_institucion' ||
+                  user?.role === 'director_ie')
+                ? 'Plan Monitoreo'
+                : item.label;
 
           const triggerClasses = `
             w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border-none

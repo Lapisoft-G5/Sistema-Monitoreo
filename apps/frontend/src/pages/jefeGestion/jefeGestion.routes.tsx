@@ -7,6 +7,15 @@ import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 const PlanMonitoreoPage = lazy(() =>
   import('./PlanMonitoreoPage').then((m) => ({ default: m.PlanMonitoreoPage })),
 );
+const PlanMonitoreoAnualPage = lazy(() =>
+  import('./PlanMonitoreoAnualPage').then((m) => ({ default: m.PlanMonitoreoAnualPage })),
+);
+const CronogramaPage = lazy(() =>
+  import('./CronogramaPage').then((m) => ({ default: m.CronogramaPage })),
+);
+const CalendarioPage = lazy(() =>
+  import('./CalendarioPage').then((m) => ({ default: m.CalendarioPage })),
+);
 const EspecialistasPage = lazy(() =>
   import('./EspecialistasPage').then((m) => ({ default: m.EspecialistasPage })),
 );
@@ -25,6 +34,15 @@ const ReportesPage = lazy(() =>
 const GestionMonitoreoPage = lazy(() =>
   import('../director/GestionMonitoreoPage').then((m) => ({ default: m.GestionMonitoreoPage })),
 );
+const PlantillasPage = lazy(() =>
+  import('./PlantillasPage').then((m) => ({ default: m.PlantillasPage })),
+);
+const PlantillaCreatePage = lazy(() =>
+  import('./PlantillaCreatePage').then((m) => ({ default: m.PlantillaCreatePage })),
+);
+const PlantillaEditPage = lazy(() =>
+  import('./PlantillaEditPage').then((m) => ({ default: m.PlantillaEditPage })),
+);
 
 export const jefeGestionRoutes: RouteObject[] = [
   {
@@ -35,6 +53,45 @@ export const jefeGestionRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <PlanMonitoreoPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute permission="monitoreo_plan_anual" />,
+    children: [
+      {
+        path: 'monitoreo/plan-anual',
+        element: (
+          <LazyLoader>
+            <PlanMonitoreoAnualPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute permission="monitoreo_cronograma" />,
+    children: [
+      {
+        path: 'monitoreo/cronograma',
+        element: (
+          <LazyLoader>
+            <CronogramaPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute permission="monitoreo_calendario" />,
+    children: [
+      {
+        path: 'monitoreo/calendario',
+        element: (
+          <LazyLoader>
+            <CalendarioPage />
           </LazyLoader>
         ),
       },
@@ -98,6 +155,36 @@ export const jefeGestionRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <ReportesPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  // Plantillas de Monitoreo (Jefe de Gestión)
+  {
+    element: <ProtectedRoute permission="plantillas" />,
+    children: [
+      {
+        path: 'plantillas',
+        element: (
+          <LazyLoader>
+            <PlantillasPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'plantillas/nuevo',
+        element: (
+          <LazyLoader>
+            <PlantillaCreatePage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'plantillas/:id/editar',
+        element: (
+          <LazyLoader>
+            <PlantillaEditPage />
           </LazyLoader>
         ),
       },

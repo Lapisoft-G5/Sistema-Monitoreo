@@ -29,6 +29,10 @@ export type MenuItem =
   | 'monitoreo_plan'
   | 'monitoreo_gestion'
   | 'monitoreo_reportes'
+  | 'monitoreo_plan_anual'
+  | 'monitoreo_cronograma'
+  | 'monitoreo_calendario'
+  | 'plantillas'
   | 'instituciones'
   | 'instituciones_padron'
   | 'instituciones_docentes'
@@ -46,7 +50,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   jefe_gestion: [
     'monitoreo',
-    'monitoreo_reportes',
+    'monitoreo_plan_anual',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
+    'plantillas',
     'especialistas',
     'jefes_area',
     'reportes',
@@ -59,6 +66,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   coordinador_pedagogico: [
     'monitoreo',
     'monitoreo_plan',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
     'especialistas',
     'jefes_area',
     'reportes',
@@ -67,16 +76,38 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   jefe_taller: [
     'monitoreo',
     'monitoreo_plan',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
     'especialistas',
     'jefes_area',
     'reportes',
   ],
 
-  especialista: ['monitoreo', 'monitoreo_reportes', 'reportes'], // 🚀 Se eliminó la duplicación aquí
+  especialista: ['monitoreo', 'monitoreo_calendario', 'reportes'],
 
-  director_institucion: ['instituciones_docentes', 'instituciones_coordinadores', 'instituciones_jefes_taller', 'reportes'],
+  director_institucion: [
+    'monitoreo',
+    'monitoreo_plan_anual',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
+    'plantillas',
+    'instituciones_docentes',
+    'instituciones_coordinadores',
+    'instituciones_jefes_taller',
+    'reportes',
+  ],
 
-  director_ie: ['instituciones_docentes', 'instituciones_coordinadores', 'instituciones_jefes_taller', 'reportes'],
+  director_ie: [
+    'monitoreo',
+    'monitoreo_plan_anual',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
+    'plantillas',
+    'instituciones_docentes',
+    'instituciones_coordinadores',
+    'instituciones_jefes_taller',
+    'reportes',
+  ],
 
   docente: [...BASE_PERMISSIONS],
 
@@ -86,6 +117,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_plan',
     'monitoreo_gestion',
     'monitoreo_reportes',
+    'plantillas',
     'instituciones',
     'instituciones_padron',
     'instituciones_docentes',

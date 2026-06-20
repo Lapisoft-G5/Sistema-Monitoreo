@@ -8,6 +8,8 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
 
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import express from 'express';
+import path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -22,6 +24,7 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(cookieParser());
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
   app.setGlobalPrefix('api');
 
   app.useGlobalPipes(

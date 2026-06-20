@@ -10,6 +10,7 @@ import { TeachersModule } from './modules/teachers/teachers.module.js';
 import { InstitutionsModule } from './modules/institutions/institutions.module.js';
 import { EspecialistasModule } from './modules/especialistas/especialistas.module.js';
 import { CatalogsModule } from './modules/catalogs/catalogs.module.js';
+import { MonitoringModule } from './modules/monitoring/monitoring.module.js';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { CatalogsModule } from './modules/catalogs/catalogs.module.js';
     InstitutionsModule,
     EspecialistasModule,
     CatalogsModule,
+    MonitoringModule,
   ],
   providers: [
     {

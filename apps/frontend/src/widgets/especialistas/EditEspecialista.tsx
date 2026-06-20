@@ -67,10 +67,10 @@ export const EditEspecialistaCard = () => {
     celular: especialista.celular,
     especialidad: especialista.especialidad || undefined,
     nivelEducativo: especialista.nivelEducativo,
-    modalidad: (especialista.modalidad as any) || 'EBR',
-    cargo: (especialista.cargo as any) || 'Especialista',
+    modalidad: (especialista.modalidad as EspecialistaFormData['modalidad']) || 'EBR',
+    cargo: (especialista.cargo as EspecialistaFormData['cargo']) || 'Especialista',
     activo: especialista.activo,
-    condicionLaboral: especialista.condicionLaboral as any,
+    condicionLaboral: especialista.condicionLaboral as EspecialistaFormData['condicionLaboral'],
     cargaLaboral: especialista.cargaLaboral,
     escalaMagisterial: especialista.escalaMagisterial || undefined,
   };

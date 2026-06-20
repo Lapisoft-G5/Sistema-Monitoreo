@@ -133,7 +133,7 @@ const MOCK_ROL_PERMISOS = {
     'docentes:write',
   ],
   especialista: ['monitoreo:execute', 'reports:read'],
-  director_institucion: ['docentes:read', 'docentes:write', 'reports:read'],
+  director_institucion: ['docentes:read', 'docentes:write', 'reports:read', 'monitoreo:execute'],
   coordinador_pedagogico: ['docentes:read', 'reports:read', 'monitoreo:execute'],
   jefe_taller: ['docentes:read', 'reports:read', 'monitoreo:execute'],
   docente: ['reports:own'],

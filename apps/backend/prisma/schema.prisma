@@ -285,3 +285,18 @@ model DocenteCargo {
   @@index([docenteId, cargoId, fechaInicio])
   @@map("docente_cargos")
 }
+
+model PlanMonitoreo {
+  id              String    @id @default(uuid()) @db.Uuid
+  titulo          String    @db.VarChar(150)
+  anioAcademico   Int       @map("anio_academico")
+  tipoEntidad     String    @map("tipo_entidad") @db.VarChar(10) // 'UGEL' | 'IE'
+  archivoUrl      String    @map("archivo_url") @db.VarChar(255)
+  estado          String    @default("Activo") @db.VarChar(20) // 'Activo' | 'Inactivo'
+  deleted         Boolean   @default(false)
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("planes_monitoreo")
+}

@@ -29,3 +29,7 @@ Estas son reglas y pautas obligatorias que todo agente de IA debe seguir al trab
 ## 4. Resolución de Conflictos y Tipos de TypeScript (¡Prohibido el `any` Global!)
 - **Prohibido el `any` Perezoso**: Nunca apagues las reglas de tipado estricto o `@typescript-eslint/no-explicit-any` de forma global para saltarte un error.
 - **Inferencia Real**: Si te topas con errores `Unsafe assignment of an any value`, NO intentes solucionarlo cegando al linter ni usando `unknown` si el estado espera valores estrictos (como `"INICIAL" | "PRIMARIA"`). **Infiere el tipo correcto** mirando el DTO, el `Prisma schema` o la propia firma de TypeScript, e inyecta la unión (cast) de tipos explícita (`as "Ejemplo"`). Solo en callbacks asíncronos y respuestas HTTP anónimas puedes relajar el tipado localmente.
+
+## 5. Pruebas Unitarias (Jest)
+- **Tipado de Mocks (`never` constraint)**: Nunca uses `jest.fn()` desnudo al simular métodos de repositorios en Prisma. La firma actual de Tipos de Jest fuerza los argumentos a `never`, lo que hará que el Build explote con `error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'`. **Usa siempre `jest.fn<any>()`** o castea las funciones de prisma con `(prisma.modelo.metodo as jest.Mock<any>)`.
+- **Rutas Relativas sin Aliases**: En la carpeta `test/unit/`, está estrictamente prohibido usar aliases como `@modules/` para importar el código fuente. Debes calcular la ruta relativa de la prueba hacia la clase bajo test (ejemplo: `../../../src/modules/auth/dto/login.dto.js`). ¡No olvides el `.js` al final!

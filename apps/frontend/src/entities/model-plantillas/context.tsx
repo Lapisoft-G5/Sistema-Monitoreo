@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { plantillasApi } from './api/plantillas.api.js';
 import type { Plantilla } from './model';
 import { MOCK_PLANTILLAS } from './mocks';
 
@@ -32,12 +33,28 @@ export const PlantillasProvider = ({ children }: { children: ReactNode }) => {
 
   const addPlantilla = useCallback((plantilla: Plantilla) => {
     setPlantillas((prev) => [...prev, plantilla]);
+    // Best-effort: persistir descripcion y anio en backend. El mapping completo
+    // de desempenos/niveles requiere sincronizar tipos entre Plantilla (frontend)
+    // y IPlantilla (backend, contract); queda como TODO(sprint4) refactor.
+    plantillasApi
+      .create({
+        tipoMonitoreo: 'DOCENTE',
+        anioAcademico: plantilla.anioAcademico,
+        baremo: 'Vigente',
+        descripcion: plantilla.descripcion,
+        niveles: [],
+        desempenos: [],
+      })
+      .catch((err: unknown) => console.warn('[plantilla] No se pudo crear en backend:', err));
   }, []);
 
   const updatePlantilla = useCallback((id: string, data: Partial<Plantilla>) => {
     setPlantillas((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...data } : p))
     );
+    plantillasApi
+      .update(id, { descripcion: data.descripcion })
+      .catch((err: unknown) => console.warn('[plantilla] No se pudo actualizar en backend:', err));
   }, []);
 
   const deletePlantilla = useCallback((id: string) => {

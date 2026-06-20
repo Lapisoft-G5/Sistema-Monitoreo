@@ -217,7 +217,7 @@ export const CalendarioSidebar = ({
     localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
   };
 
-  const handleSaveBorrador = (
+  const handleSaveBorrador = async (
     visitId: string,
     data: {
       checkedAspects: Record<string, boolean>;
@@ -225,14 +225,44 @@ export const CalendarioSidebar = ({
       generalComments: string;
     }
   ) => {
+    // Persistir localmente (UX inmediata)
     localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
     setCronogramas((prev) =>
       prev.map((c) => (c.id === visitId ? { ...c, estado: 'EN PROCESO' } : c))
     );
+
+    // Persistir en backend (best-effort, no bloquea la UI)
+    try {
+      const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+      let ficha = await fichasApi.findByVisita(visitId);
+      if (!ficha) {
+        ficha = await fichasApi.create({
+          cronogramaId: visitId,
+          areaCurricular: undefined,
+          grado: undefined,
+          seccion: undefined,
+          cantidadEstudiantes: undefined,
+          cantidadEstudiantesNee: undefined,
+          cursoId: undefined,
+        });
+      }
+      // Guardar respuestas de desempeno (1-4)
+      const desempenoMap = data.selectedLevels;
+      for (const [desempenoId, nivelRoman] of Object.entries(desempenoMap)) {
+        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman));
+      }
+      // Guardar respuestas de aspecto
+      for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
+        await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
+      }
+    } catch (err) {
+      console.warn('No se pudo persistir la ficha en backend:', err);
+    }
+
     setShowFichaModal(false);
   };
 
-  const handleFinalizeMonitoreo = (
+  const handleFinalizeMonitoreo = async (
     visitId: string,
     data: {
       checkedAspects: Record<string, boolean>;
@@ -244,7 +274,30 @@ export const CalendarioSidebar = ({
     setCronogramas((prev) =>
       prev.map((c) => (c.id === visitId ? { ...c, estado: 'COMPLETADO' } : c))
     );
+
+    try {
+      const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+      let ficha = await fichasApi.findByVisita(visitId);
+      if (!ficha) {
+        ficha = await fichasApi.create({ cronogramaId: visitId });
+      }
+      for (const [desempenoId, nivelRoman] of Object.entries(data.selectedLevels)) {
+        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman));
+      }
+      for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
+        await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
+      }
+      await fichasApi.finalizar(ficha.id, data.generalComments);
+    } catch (err) {
+      console.warn('No se pudo finalizar la ficha en backend:', err);
+    }
+
     setShowFichaModal(false);
+  };
+
+  const romanToNumber = (roman: string): number => {
+    const map: Record<string, number> = { I: 1, II: 2, III: 3, IV: 4 };
+    return map[roman] || 1;
   };
 
   const handleDeleteConfirm = () => {

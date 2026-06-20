@@ -297,23 +297,29 @@ export const CronogramaPage = () => {
     );
   }, [formModalidad, formNivel]);
 
-  // ── Limpiar campos dependientes al cambiar modalidad ──
-  useEffect(() => {
+  const handleFormModalidadChange = (modalidad: string) => {
+    setFormModalidad(modalidad);
     setFormNivel('');
     setFormEspecialista('');
     setFormInstitucion('');
-  }, [formModalidad]);
+  };
 
-  // ── Limpiar especialista e institución al cambiar nivel ──
-  useEffect(() => {
+  const handleFormNivelChange = (nivel: string) => {
+    setFormNivel(nivel);
     setFormEspecialista('');
     setFormInstitucion('');
-  }, [formNivel]);
+  };
 
-  // --- Resetear Paginación ante cambios en Filtros ---
-  useEffect(() => {
+  // Resetear paginación síncronamente cuando cambian los filtros
+  const filters = useMemo(
+    () => ({ searchEsp, filterInst, filterTipo, filterEstado }),
+    [searchEsp, filterInst, filterTipo, filterEstado]
+  );
+  const [prevFilters, setPrevFilters] = useState(filters);
+  if (JSON.stringify(filters) !== JSON.stringify(prevFilters)) {
     setCurrentPage(1);
-  }, [searchEsp, filterInst, filterTipo, filterEstado]);
+    setPrevFilters(filters);
+  }
 
   // --- Procesamiento de Iniciales ---
   const getInitials = (name: string) => {
@@ -782,14 +788,14 @@ export const CronogramaPage = () => {
                   <SelectField
                     label="Modalidad Educativa *"
                     value={formModalidad}
-                    onChange={(val) => setFormModalidad(val)}
+                    onChange={handleFormModalidadChange}
                     placeholder="Seleccionar modalidad..."
                     options={MODALIDADES.map((m) => ({ value: m, label: m }))}
                   />
                   <SelectField
                     label="Nivel Educativo *"
                     value={formNivel}
-                    onChange={(val) => setFormNivel(val)}
+                    onChange={handleFormNivelChange}
                     placeholder={formModalidad ? 'Seleccionar nivel...' : 'Seleccione modalidad primero'}
                     options={nivelesDisponibles.map((n) => ({ value: n, label: n }))}
                   />
@@ -933,7 +939,7 @@ export const CronogramaPage = () => {
                   <SelectField
                     label="Estado de Visita *"
                     value={formEstado}
-                    onChange={(val) => setFormEstado(val as any)}
+                    onChange={(val) => setFormEstado(val as Cronograma['estado'])}
                     placeholder="Seleccionar estado..."
                     options={[
                       { value: 'PROGRAMADO', label: 'PROGRAMADO' },

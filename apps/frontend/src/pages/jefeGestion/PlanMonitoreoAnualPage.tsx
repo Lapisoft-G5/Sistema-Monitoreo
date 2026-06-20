@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Compass, PlusCircle, Search, Trash2, Eye, FileText, X, AlertCircle, LayoutGrid, List } from 'lucide-react';
+import { Compass, PlusCircle, Search, Trash2, Eye, FileText, X, AlertCircle, LayoutGrid, List, RotateCcw } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -264,7 +264,9 @@ export const PlanMonitoreoAnualPage = () => {
               {paginatedPlanes.map((plan) => (
                 <Card
                   key={plan.id}
-                  className="border border-border/80 bg-surface shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden flex"
+                  className={`border border-border/80 shadow-sm hover:shadow-md transition-all rounded-2xl overflow-hidden flex ${
+                    plan.estado === 'Inactivo' ? 'opacity-70 bg-surface/50 grayscale-[20%]' : 'bg-surface'
+                  }`}
                 >
                   <CardContent className="p-4 w-full flex gap-4 items-start">
                     {/* Vista Previa / Icono de PDF */}
@@ -288,6 +290,15 @@ export const PlanMonitoreoAnualPage = () => {
                           }`}
                         >
                           {plan.tipoEntidad}
+                        </Badge>
+                        <Badge
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            plan.estado === 'Activo'
+                              ? 'bg-green-500/10 text-green-600 border border-green-500/25'
+                              : 'bg-destructive/10 text-destructive border border-destructive/25'
+                          }`}
+                        >
+                          {plan.estado}
                         </Badge>
                       </div>
 
@@ -313,15 +324,27 @@ export const PlanMonitoreoAnualPage = () => {
                           <Eye className="w-3.5 h-3.5" />
                           Ver
                         </a>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeletePlanId(plan.id)}
-                          className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
-                          title="Eliminar Plan"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {plan.estado === 'Activo' ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeletePlanId(plan.id)}
+                            className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                            title="Desactivar Plan"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeletePlanId(plan.id)}
+                            className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/15 transition-colors rounded-lg cursor-pointer"
+                            title="Reactivar Plan"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -333,7 +356,9 @@ export const PlanMonitoreoAnualPage = () => {
               {paginatedPlanes.map((plan) => (
                 <Card
                   key={plan.id}
-                  className="border border-border/80 bg-surface shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden"
+                  className={`border border-border/80 shadow-sm hover:shadow-md transition-all rounded-2xl overflow-hidden ${
+                    plan.estado === 'Inactivo' ? 'opacity-70 bg-surface/50 grayscale-[20%]' : 'bg-surface'
+                  }`}
                 >
                   <CardContent className="p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
@@ -364,6 +389,16 @@ export const PlanMonitoreoAnualPage = () => {
                             {plan.tipoEntidad}
                           </Badge>
                           <span className="w-1 h-1 rounded-full bg-border" />
+                          <Badge
+                            className={`text-[9px] font-bold px-1.5 py-0 rounded ${
+                              plan.estado === 'Activo'
+                                ? 'bg-green-500/10 text-green-600 border border-green-500/25'
+                                : 'bg-destructive/10 text-destructive border border-destructive/25'
+                            }`}
+                          >
+                            {plan.estado}
+                          </Badge>
+                          <span className="w-1 h-1 rounded-full bg-border" />
                           <span>Registrado: {formatDate(plan.createdAt)}</span>
                         </div>
                       </div>
@@ -380,15 +415,27 @@ export const PlanMonitoreoAnualPage = () => {
                         <Eye className="w-3.5 h-3.5" />
                         Ver
                       </a>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeletePlanId(plan.id)}
-                        className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
-                        title="Eliminar Plan"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {plan.estado === 'Activo' ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeletePlanId(plan.id)}
+                          className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                          title="Desactivar Plan"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeletePlanId(plan.id)}
+                          className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/15 transition-colors rounded-lg cursor-pointer"
+                          title="Reactivar Plan"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -556,21 +603,33 @@ export const PlanMonitoreoAnualPage = () => {
         </div>
       )}
 
-      {/* ── Modal de Confirmación para Eliminado Lógico ── */}
-      {deletePlanId && (
-        <ConfirmModal
-          title="¿Desea eliminar el Plan de Monitoreo?"
-          message={
-            <span>
-              Esta acción realizará un **borrado lógico** de este plan de monitoreo. Ya no estará disponible para visualizar en la plataforma UGEL.
-            </span>
-          }
-          confirmLabel={actionLoading ? 'Eliminando...' : 'Eliminar Plan'}
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => setDeletePlanId(null)}
-          danger
-        />
-      )}
+      {/* ── Modal de Confirmación para Desactivación / Reactivación ── */}
+      {deletePlanId && (() => {
+        const selectedPlan = planes.find(p => p.id === deletePlanId);
+        const isReactivating = selectedPlan?.estado === 'Inactivo';
+        return (
+          <ConfirmModal
+            title={isReactivating ? '¿Desea reactivar el Plan de Monitoreo?' : '¿Desea desactivar el Plan de Monitoreo?'}
+            message={
+              <span>
+                {isReactivating ? (
+                  <span>Esta acción cambiará el estado de este plan de monitoreo a **Activo** y estará disponible para todos los usuarios.</span>
+                ) : (
+                  <span>Esta acción cambiará el estado de este plan de monitoreo a **Inactivo**. Ya no estará activo pero seguirá visible para reactivación.</span>
+                )}
+              </span>
+            }
+            confirmLabel={
+              actionLoading 
+                ? (isReactivating ? 'Reactivando...' : 'Desactivando...') 
+                : (isReactivating ? 'Reactivar Plan' : 'Desactivar Plan')
+            }
+            onConfirm={handleDeleteConfirm}
+            onCancel={() => setDeletePlanId(null)}
+            danger={!isReactivating}
+          />
+        );
+      })()}
     </div>
   );
 };

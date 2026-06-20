@@ -85,17 +85,19 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
   }
 
   async delete(id: string): Promise<IMonitoringPlanResponse> {
-    const existing = await this.findById(id);
+    const existing = await this.prisma.planMonitoreo.findUnique({
+      where: { id },
+    });
     if (!existing) {
       throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
     }
 
+    const newEstado = existing.estado === 'Activo' ? 'Inactivo' : 'Activo';
+
     const plan = await this.prisma.planMonitoreo.update({
       where: { id },
       data: {
-        deleted: true,
-        deletedAt: new Date(),
-        estado: 'Inactivo',
+        estado: newEstado,
       },
     });
 

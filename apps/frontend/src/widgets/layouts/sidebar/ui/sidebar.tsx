@@ -90,7 +90,10 @@ export const Sidebar = () => {
               ? isJefeArea || user?.role === 'jefe_gestion'
                 ? 'Directores'
                 : 'Docentes'
-              : item.id === 'monitoreo' && user?.role === 'jefe_gestion'
+              : item.id === 'monitoreo' &&
+                (user?.role === 'jefe_gestion' ||
+                  user?.role === 'director_institucion' ||
+                  user?.role === 'director_ie')
                 ? 'Plan Monitoreo'
                 : item.label;
 

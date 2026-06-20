@@ -7,17 +7,22 @@ import { usePlanesMonitoreo } from '@features/planes-monitoreo/planes-monitoreo-
 import { TextField, SelectField } from '@shared/ui/form-controls';
 import { Card, CardContent } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
+import { useUser } from '@entities/model-user';
 
 const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const PlanMonitoreoAnualPage = () => {
+  const { user } = useUser();
+  const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  const defaultEntity = isDirector ? 'IE' : 'UGEL';
+
   // --- Estados de Vista ---
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // --- Estados de Filtro ---
   const [search, setSearch] = useState('');
   const [anioAcademico, setAnioAcademico] = useState('Todos');
-  const [tipoEntidad, setTipoEntidad] = useState('Todos');
+  const [tipoEntidad, setTipoEntidad] = useState(defaultEntity);
   const [estado, setEstado] = useState('Todos');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -28,7 +33,7 @@ export const PlanMonitoreoAnualPage = () => {
   // --- Estados de Formulario de Subida ---
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadYear, setUploadYear] = useState(new Date().getFullYear().toString());
-  const [uploadEntity, setUploadEntity] = useState<'UGEL' | 'IE'>('UGEL');
+  const [uploadEntity, setUploadEntity] = useState<'UGEL' | 'IE'>(defaultEntity);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [localUploadError, setLocalUploadError] = useState<string | null>(null);
@@ -486,6 +491,7 @@ export const PlanMonitoreoAnualPage = () => {
                   value={uploadEntity}
                   onChange={(v) => setUploadEntity(v as any)}
                   placeholder="Seleccionar tipo..."
+                  disabled={true}
                   options={[
                     { value: 'UGEL', label: 'UGEL' },
                     { value: 'IE', label: 'IE' },

@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { HealthModule } from './shared/health/health.module.js';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
+import { StorageModule } from './shared/storage/storage.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { TeachersModule } from './modules/teachers/teachers.module.js';
 import { InstitutionsModule } from './modules/institutions/institutions.module.js';
@@ -34,6 +35,7 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module.js';
       },
     ]),
     PrismaModule,
+    StorageModule,
     HealthModule,
     AuthModule,
     TeachersModule,

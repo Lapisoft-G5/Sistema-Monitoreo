@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Compass, PlusCircle, Search, Trash2, Eye, FileText, X, AlertCircle } from 'lucide-react';
+import { Compass, PlusCircle, Search, Trash2, Eye, FileText, X, AlertCircle, LayoutGrid, List } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -11,6 +11,9 @@ import { Badge } from '@shared/ui/badge';
 const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const PlanMonitoreoAnualPage = () => {
+  // --- Estados de Vista ---
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
   // --- Estados de Filtro ---
   const [search, setSearch] = useState('');
   const [anioAcademico, setAnioAcademico] = useState('Todos');
@@ -171,6 +174,7 @@ export const PlanMonitoreoAnualPage = () => {
             label="Año Académico"
             value={anioAcademico}
             onChange={setAnioAcademico}
+            placeholder="Seleccionar año..."
             options={[
               { value: 'Todos', label: 'Todos' },
               { value: '2023', label: '2023' },
@@ -183,6 +187,7 @@ export const PlanMonitoreoAnualPage = () => {
             label="Tipo de Entidad"
             value={tipoEntidad}
             onChange={setTipoEntidad}
+            placeholder="Seleccionar tipo..."
             options={[
               { value: 'Todos', label: 'Todos los tipos' },
               { value: 'UGEL', label: 'UGEL' },
@@ -193,6 +198,7 @@ export const PlanMonitoreoAnualPage = () => {
             label="Estado"
             value={estado}
             onChange={setEstado}
+            placeholder="Seleccionar estado..."
             options={[
               { value: 'Todos', label: 'Todos' },
               { value: 'Activo', label: 'Activo' },
@@ -220,55 +226,156 @@ export const PlanMonitoreoAnualPage = () => {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginatedPlanes.map((plan) => (
-              <Card
-                key={plan.id}
-                className="border border-border/80 bg-surface shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden flex"
+          {/* Barra de título de la sección y selector de vista */}
+          <div className="flex items-center justify-between mb-3.5">
+            <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
+              Documentos de Monitoreo
+            </span>
+            <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border/80 gap-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-surface text-primary shadow-xs'
+                    : 'text-text-muted hover:text-text'
+                }`}
+                title="Vista Cuadrícula"
               >
-                <CardContent className="p-4 w-full flex gap-4 items-start">
-                  {/* Vista Previa / Icono de PDF */}
-                  <div className="w-[95px] h-[115px] bg-muted/40 border border-border/80 rounded-xl flex flex-col items-center justify-center gap-1.5 shrink-0 select-none">
-                    <FileText className="w-9 h-9 text-destructive/80" />
-                    <span className="text-[9px] font-extrabold tracking-wider text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
-                      PDF
-                    </span>
-                  </div>
+                <LayoutGrid className="w-[15px] h-[15px]" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  viewMode === 'list'
+                    ? 'bg-surface text-primary shadow-xs'
+                    : 'text-text-muted hover:text-text'
+                }`}
+                title="Vista Lista"
+              >
+                <List className="w-[15px] h-[15px]" />
+              </button>
+            </div>
+          </div>
 
-                  {/* Metadata y Título */}
-                  <div className="flex-1 flex flex-col min-w-0 h-[115px]">
-                    <div className="flex items-center gap-2 mb-1.5 shrink-0">
-                      <span className="text-xs font-bold text-text-muted">{plan.anioAcademico}</span>
-                      <Badge
-                        variant={plan.tipoEntidad === 'UGEL' ? 'default' : 'secondary'}
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                          plan.tipoEntidad === 'UGEL'
-                            ? 'bg-blue-500/10 text-blue-600 border border-blue-500/25'
-                            : 'bg-muted/70 text-text-muted border border-border'
-                        }`}
-                      >
-                        {plan.tipoEntidad}
-                      </Badge>
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in-50 duration-200">
+              {paginatedPlanes.map((plan) => (
+                <Card
+                  key={plan.id}
+                  className="border border-border/80 bg-surface shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden flex"
+                >
+                  <CardContent className="p-4 w-full flex gap-4 items-start">
+                    {/* Vista Previa / Icono de PDF */}
+                    <div className="w-[95px] h-[115px] bg-muted/40 border border-border/80 rounded-xl flex flex-col items-center justify-center gap-1.5 shrink-0 select-none">
+                      <FileText className="w-9 h-9 text-destructive/80" />
+                      <span className="text-[9px] font-extrabold tracking-wider text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
+                        PDF
+                      </span>
                     </div>
 
-                    <h4
-                      className="text-sm font-bold text-text mb-1 leading-snug line-clamp-2 flex-1"
-                      title={plan.titulo}
-                    >
-                      {plan.titulo}
-                    </h4>
+                    {/* Metadata y Título */}
+                    <div className="flex-1 flex flex-col min-w-0 h-[115px]">
+                      <div className="flex items-center gap-2 mb-1.5 shrink-0">
+                        <span className="text-xs font-bold text-text-muted">{plan.anioAcademico}</span>
+                        <Badge
+                          variant={plan.tipoEntidad === 'UGEL' ? 'default' : 'secondary'}
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            plan.tipoEntidad === 'UGEL'
+                              ? 'bg-blue-500/10 text-blue-600 border border-blue-500/25'
+                              : 'bg-muted/70 text-text-muted border border-border'
+                          }`}
+                        >
+                          {plan.tipoEntidad}
+                        </Badge>
+                      </div>
 
-                    <span className="text-[11px] text-text-muted mb-2.5 shrink-0">
-                      Registrado: {formatDate(plan.createdAt)}
-                    </span>
+                      <h4
+                        className="text-sm font-bold text-text mb-1 leading-snug line-clamp-2 flex-1"
+                        title={plan.titulo}
+                      >
+                        {plan.titulo}
+                      </h4>
+
+                      <span className="text-[11px] text-text-muted mb-2.5 shrink-0">
+                        Registrado: {formatDate(plan.createdAt)}
+                      </span>
+
+                      {/* Acciones */}
+                      <div className="flex items-center gap-2 mt-auto shrink-0">
+                        <a
+                          href={`${getApiBaseUrl()}${plan.archivoUrl}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 text-xs font-bold px-3.5 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg h-8 transition-colors select-none"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          Ver
+                        </a>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeletePlanId(plan.id)}
+                          className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                          title="Eliminar Plan"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3.5 animate-in fade-in-50 duration-200">
+              {paginatedPlanes.map((plan) => (
+                <Card
+                  key={plan.id}
+                  className="border border-border/80 bg-surface shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden"
+                >
+                  <CardContent className="p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                      {/* Mini PDF Icon */}
+                      <div className="w-10 h-12 bg-muted/40 border border-border/80 rounded-xl flex flex-col items-center justify-center shrink-0 select-none">
+                        <FileText className="w-5 h-5 text-destructive/80" />
+                      </div>
+
+                      {/* Info */}
+                      <div className="min-w-0">
+                        <h4
+                          className="text-sm font-bold text-text truncate max-w-[280px] sm:max-w-[400px] md:max-w-[550px] lg:max-w-[700px] leading-snug"
+                          title={plan.titulo}
+                        >
+                          {plan.titulo}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-2.5 mt-1 text-[11px] text-text-muted">
+                          <span className="font-bold">{plan.anioAcademico}</span>
+                          <span className="w-1 h-1 rounded-full bg-border" />
+                          <Badge
+                            variant={plan.tipoEntidad === 'UGEL' ? 'default' : 'secondary'}
+                            className={`text-[9px] font-bold px-1.5 py-0 rounded ${
+                              plan.tipoEntidad === 'UGEL'
+                                ? 'bg-blue-500/10 text-blue-600 border border-blue-500/25'
+                                : 'bg-muted/70 text-text-muted border border-border'
+                            }`}
+                          >
+                            {plan.tipoEntidad}
+                          </Badge>
+                          <span className="w-1 h-1 rounded-full bg-border" />
+                          <span>Registrado: {formatDate(plan.createdAt)}</span>
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Acciones */}
-                    <div className="flex items-center gap-2 mt-auto shrink-0">
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                       <a
                         href={`${getApiBaseUrl()}${plan.archivoUrl}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center justify-center gap-1.5 text-xs font-bold px-3.5 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg h-8 transition-colors select-none"
+                        className="inline-flex items-center justify-center gap-1.5 text-xs font-bold px-4 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg h-8 transition-colors select-none"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         Ver
@@ -283,11 +390,11 @@ export const PlanMonitoreoAnualPage = () => {
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
           {/* ── Paginación ── */}
           <div className="flex items-center justify-between border-t border-border/80 pt-4 mt-2 shrink-0">
@@ -366,6 +473,7 @@ export const PlanMonitoreoAnualPage = () => {
                   label="Año Académico *"
                   value={uploadYear}
                   onChange={setUploadYear}
+                  placeholder="Seleccionar año..."
                   options={[
                     { value: '2023', label: '2023' },
                     { value: '2024', label: '2024' },
@@ -377,6 +485,7 @@ export const PlanMonitoreoAnualPage = () => {
                   label="Tipo de Entidad *"
                   value={uploadEntity}
                   onChange={(v) => setUploadEntity(v as any)}
+                  placeholder="Seleccionar tipo..."
                   options={[
                     { value: 'UGEL', label: 'UGEL' },
                     { value: 'IE', label: 'IE' },

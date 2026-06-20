@@ -9,7 +9,10 @@ import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 
 export const CalendarioPage = () => {
   const { user } = useUser();
-  const isEspecialista = user?.role === 'especialista';
+  const isEspecialista =
+    user?.role === 'especialista' ||
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
   const { cronogramas, reprogramaciones } = useCronogramas();
 
   // ── Estados de Navegación ──
@@ -65,6 +68,9 @@ export const CalendarioPage = () => {
   // Nombre del especialista logueado para filtro
   const specialistFilterName = useMemo(() => {
     if (!isEspecialista || !user) return '';
+    if (user.role === 'coordinador_pedagogico' || user.role === 'jefe_taller') {
+      return `${user.nombres} ${user.apellidos}`;
+    }
     const firstName = user.nombres.split(' ')[0].toLowerCase();
     
     if (firstName.startsWith('juan')) return 'Juan Pérez';

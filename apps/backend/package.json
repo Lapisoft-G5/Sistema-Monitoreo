@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "prisma generate && nest build",
-    "dev": "concurrently \"tsc -p tsconfig.build.json -w --preserveWatchOutput\" \"node --watch dist/main.js\"",
+    "dev": "nest start --watch",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

@@ -66,6 +66,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   coordinador_pedagogico: [
     'monitoreo',
     'monitoreo_plan',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
     'especialistas',
     'jefes_area',
     'reportes',
@@ -74,6 +76,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   jefe_taller: [
     'monitoreo',
     'monitoreo_plan',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
     'especialistas',
     'jefes_area',
     'reportes',

@@ -8,6 +8,7 @@ import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { TablePagination } from '@shared/ui/table-pagination';
+import { useUser } from '@entities/model-user';
 import {
   ModalidadEducativa,
   MODALIDAD_NIVEL_MAP,
@@ -234,6 +235,9 @@ const MOCK_CRONOGRAMAS: Cronograma[] = [
 const MODALIDADES = Object.values(ModalidadEducativa);
 
 export const CronogramaPage = () => {
+  const { user } = useUser();
+  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+
   // --- Estados de Datos ---
   const [cronogramas, setCronogramas] = useState<Cronograma[]>(() => {
     const saved = localStorage.getItem('sistema-monitoreo:cronogramas');
@@ -246,6 +250,7 @@ export const CronogramaPage = () => {
 
   // --- Estados de Filtro ---
   const [searchEsp, setSearchEsp] = useState('');
+  const [searchDocente, setSearchDocente] = useState('');
   const [filterInst, setFilterInst] = useState('Todos');
   const [filterTipo, setFilterTipo] = useState('Todos');
   const [filterEstado, setFilterEstado] = useState('Todos');
@@ -312,8 +317,8 @@ export const CronogramaPage = () => {
 
   // Resetear paginación síncronamente cuando cambian los filtros
   const filters = useMemo(
-    () => ({ searchEsp, filterInst, filterTipo, filterEstado }),
-    [searchEsp, filterInst, filterTipo, filterEstado]
+    () => ({ searchEsp, searchDocente, filterInst, filterTipo, filterEstado }),
+    [searchEsp, searchDocente, filterInst, filterTipo, filterEstado]
   );
   const [prevFilters, setPrevFilters] = useState(filters);
   if (JSON.stringify(filters) !== JSON.stringify(prevFilters)) {
@@ -365,19 +370,41 @@ export const CronogramaPage = () => {
   };
 
   // --- Lógica de Filtro ---
-  const filteredCronogramas = useMemo(() => {
+  const filteredBaseCronogramas = useMemo(() => {
+    if (!isDirector || !user) return cronogramas;
     return cronogramas.filter((item) => {
-      const matchSearch =
+      const isSameSchool =
+        user.institucionNombre &&
+        item.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
+
+      const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+      const isDirectedToMe =
+        item.tipo === 'DIRECTIVO' &&
+        (item.docenteDirectivo.toLowerCase().includes(userFullName) ||
+          userFullName.includes(item.docenteDirectivo.toLowerCase()) ||
+          item.docenteDirectivo.toLowerCase().includes(user.nombres.toLowerCase()));
+
+      return isSameSchool || isDirectedToMe;
+    });
+  }, [cronogramas, isDirector, user]);
+
+  const filteredCronogramas = useMemo(() => {
+    return filteredBaseCronogramas.filter((item) => {
+      const matchSearchEvaluador =
         searchEsp.trim() === '' ||
         item.especialista.toLowerCase().includes(searchEsp.toLowerCase());
 
-      const matchInst = filterInst === 'Todos' || item.institucion === filterInst;
+      const matchSearchDocente =
+        searchDocente.trim() === '' ||
+        item.docenteDirectivo.toLowerCase().includes(searchDocente.toLowerCase());
+
+      const matchInst = isDirector || filterInst === 'Todos' || item.institucion === filterInst;
       const matchTipo = filterTipo === 'Todos' || item.tipo === filterTipo;
       const matchEstado = filterEstado === 'Todos' || item.estado === filterEstado;
 
-      return matchSearch && matchInst && matchTipo && matchEstado;
+      return matchSearchEvaluador && matchSearchDocente && matchInst && matchTipo && matchEstado;
     });
-  }, [cronogramas, searchEsp, filterInst, filterTipo, filterEstado]);
+  }, [filteredBaseCronogramas, searchEsp, searchDocente, filterInst, filterTipo, filterEstado, isDirector]);
 
   // --- Instituciones únicas para filtro de tabla ---
   const uniqueInstituciones = useMemo(() => {
@@ -551,23 +578,44 @@ export const CronogramaPage = () => {
       {/* ── Barra de Filtros ── */}
       <Card className="border border-border bg-surface shadow-sm rounded-2xl p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <TextField
-            label="Especialista"
-            value={searchEsp}
-            onChange={setSearchEsp}
-            placeholder="Buscar especialista..."
-            adornment={<Search className="w-[18px] h-[18px] text-text-muted" />}
-          />
-          <SelectField
-            label="Institución"
-            value={filterInst}
-            onChange={setFilterInst}
-            placeholder="Seleccionar institución..."
-            options={[
-              { value: 'Todos', label: 'Todas las instituciones' },
-              ...uniqueInstituciones.map((inst) => ({ value: inst, label: inst })),
-            ]}
-          />
+          {isDirector ? (
+            <>
+              <TextField
+                label="Docente Evaluado"
+                value={searchDocente}
+                onChange={setSearchDocente}
+                placeholder="Buscar docente..."
+                adornment={<Search className="w-[18px] h-[18px] text-text-muted" />}
+              />
+              <TextField
+                label="Evaluador"
+                value={searchEsp}
+                onChange={setSearchEsp}
+                placeholder="Buscar evaluador..."
+                adornment={<Search className="w-[18px] h-[18px] text-text-muted" />}
+              />
+            </>
+          ) : (
+            <>
+              <TextField
+                label="Especialista"
+                value={searchEsp}
+                onChange={setSearchEsp}
+                placeholder="Buscar especialista..."
+                adornment={<Search className="w-[18px] h-[18px] text-text-muted" />}
+              />
+              <SelectField
+                label="Institución"
+                value={filterInst}
+                onChange={setFilterInst}
+                placeholder="Seleccionar institución..."
+                options={[
+                  { value: 'Todos', label: 'Todas las instituciones' },
+                  ...uniqueInstituciones.map((inst) => ({ value: inst, label: inst })),
+                ]}
+              />
+            </>
+          )}
           <SelectField
             label="Tipo de Monitoreo"
             value={filterTipo}
@@ -606,13 +654,15 @@ export const CronogramaPage = () => {
                   Fecha y Hora
                 </TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
-                  Especialista
+                  {isDirector ? 'Evaluador' : 'Especialista'}
                 </TableHead>
+                {!isDirector && (
+                  <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
+                    Institución
+                  </TableHead>
+                )}
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
-                  Institución
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
-                  Docente/Directivo
+                  {isDirector ? 'Evaluado' : 'Docente/Directivo'}
                 </TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
                   Tipo
@@ -641,7 +691,7 @@ export const CronogramaPage = () => {
                       </div>
                     </TableCell>
 
-                    {/* Especialista */}
+                    {/* Especialista / Evaluador */}
                     <TableCell className="py-2.5">
                       <div className="flex items-center gap-2.5">
                         <div
@@ -658,11 +708,13 @@ export const CronogramaPage = () => {
                     </TableCell>
 
                     {/* Institución */}
-                    <TableCell className="text-xs font-medium text-text truncate max-w-[140px]">
-                      {item.institucion}
-                    </TableCell>
+                    {!isDirector && (
+                      <TableCell className="text-xs font-medium text-text truncate max-w-[140px]">
+                        {item.institucion}
+                      </TableCell>
+                    )}
 
-                    {/* Docente / Directivo */}
+                    {/* Docente / Directivo / Evaluado */}
                     <TableCell className="text-xs text-text truncate max-w-[150px]">
                       {item.docenteDirectivo}
                     </TableCell>
@@ -698,24 +750,28 @@ export const CronogramaPage = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenEdit(item)}
-                          className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/10 transition-colors rounded-lg cursor-pointer"
-                          title="Editar cronograma"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleteCronogramaId(item.id)}
-                          className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
-                          title="Eliminar cronograma"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {(!isDirector || item.tipo === 'DOCENTE') && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(item)}
+                              className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/10 transition-colors rounded-lg cursor-pointer"
+                              title="Editar cronograma"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteCronogramaId(item.id)}
+                              className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                              title="Eliminar cronograma"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -724,7 +780,7 @@ export const CronogramaPage = () => {
 
               {paginatedCronogramas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-text-muted py-16">
+                  <TableCell colSpan={isDirector ? 7 : 8} className="text-center text-text-muted py-16">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Compass className="w-9 h-9 text-text-muted/55" strokeWidth={1.5} />
                       <span className="text-xs font-medium">
@@ -1013,7 +1069,7 @@ export const CronogramaPage = () => {
                       {viewCronograma.especialistaInitials}
                     </div>
                     <div>
-                      <div className="text-xs text-text-muted">Especialista Asignado</div>
+                      <div className="text-xs text-text-muted">{isDirector ? 'Evaluador' : 'Especialista Asignado'}</div>
                       <div className="text-sm font-bold text-text">{viewCronograma.especialista}</div>
                     </div>
                   </div>
@@ -1052,16 +1108,18 @@ export const CronogramaPage = () => {
 
                   <div className="border-t border-border/60 my-1" />
 
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] uppercase font-bold text-text-muted flex items-center gap-1">
-                      <BookOpen className="w-3 h-3 text-text-muted/80" /> Institución Educativa
-                    </span>
-                    <span className="text-xs font-semibold text-text">{viewCronograma.institucion}</span>
-                  </div>
+                  {!isDirector && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase font-bold text-text-muted flex items-center gap-1">
+                        <BookOpen className="w-3 h-3 text-text-muted/80" /> Institución Educativa
+                      </span>
+                      <span className="text-xs font-semibold text-text">{viewCronograma.institucion}</span>
+                    </div>
+                  )}
 
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[10px] uppercase font-bold text-text-muted flex items-center gap-1">
-                      <User className="w-3 h-3 text-text-muted/80" /> Docente / Directivo Monitoreado
+                      <User className="w-3 h-3 text-text-muted/80" /> {isDirector ? 'Evaluado' : 'Docente / Directivo Monitoreado'}
                     </span>
                     <span className="text-xs font-semibold text-text">{viewCronograma.docenteDirectivo}</span>
                   </div>

@@ -1,11 +1,36 @@
 import { createContext } from 'react';
 import type { Cronograma } from './model';
 import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
+import type { Docente } from '@entities/model-docentes';
+import type { ICreateVisitaRequest, IUpdateVisitaRequest } from '@sistema-monitoreo/shared-contracts';
+
+export interface EspecialistaLite {
+  id: string;
+  nombre: string;
+  initials: string;
+  modalidad: string;
+  nivelEducativo: string;
+  cargo: string;
+}
+
+export interface InstitucionLite {
+  id: string;
+  nombre: string;
+  modalidad: string;
+  nivelEducativo: string;
+}
 
 export interface CronogramaContextType {
   cronogramas: Cronograma[];
   setCronogramas: React.Dispatch<React.SetStateAction<Cronograma[]>>;
   reprogramaciones: Record<string, SolicitudReprogramacion>;
+  especialistas: EspecialistaLite[];
+  instituciones: InstitucionLite[];
+  docentes: Docente[];
+  isLoading: boolean;
+  createCronograma: (payload: ICreateVisitaRequest) => Promise<void>;
+  updateCronograma: (id: string, payload: IUpdateVisitaRequest) => Promise<void>;
+  refetch: () => Promise<void>;
   submitRescheduleRequest: (
     visitId: string,
     request: {
@@ -30,3 +55,4 @@ export interface CronogramaContextType {
 }
 
 export const CronogramaContext = createContext<CronogramaContextType | null>(null);
+

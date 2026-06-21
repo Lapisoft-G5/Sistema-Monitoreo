@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Cronograma } from './model';
 import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
-import { CronogramaContext } from './cronograma-context';
+import { CronogramaContext, type EspecialistaLite, type InstitucionLite } from './cronograma-context';
 import { cronogramasApi } from './api/cronogramas.api.js';
+import type { ICreateVisitaRequest, IUpdateVisitaRequest } from '@sistema-monitoreo/shared-contracts';
 import { institutionsApi } from '@shared/api/institutions.api';
 import { especialistasApi } from '@shared/api/especialistas.api';
 import { teachersApi } from '@shared/api/teachers.api';
@@ -22,9 +23,14 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useUser();
   const [cronogramas, setCronogramas] = useState<Cronograma[]>([]);
   const [reprogramaciones, setReprogramaciones] = useState<Record<string, SolicitudReprogramacion>>({});
+  const [especialistas, setEspecialistas] = useState<EspecialistaLite[]>([]);
+  const [instituciones, setInstituciones] = useState<InstitucionLite[]>([]);
+  const [docentes, setDocentes] = useState<Docente[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!isAuthenticated) return;
+    setIsLoading(true);
     try {
       const [espRes, instRes, docRes, cronoRes, solRes] = await Promise.all([
         especialistasApi.findAll(),
@@ -34,8 +40,8 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
         cronogramasApi.findAllSolicitudes()
       ]);
 
-      let loadedEsp: Array<{ id: string; nombre: string; initials: string; modalidad: string; nivelEducativo: string; cargo: string }> = [];
-      let loadedInst: Array<{ id: string; nombre: string; modalidad: string; nivelEducativo: string }> = [];
+      let loadedEsp: EspecialistaLite[] = [];
+      let loadedInst: InstitucionLite[] = [];
       let loadedDoc: Docente[] = [];
 
       if (espRes.ok && espRes.data) {
@@ -46,7 +52,10 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
           modalidad: e.modalidad || 'EBR',
           nivelEducativo: e.nivelEducativo || 'Primaria',
           cargo: e.cargo || 'Especialista'
-        })) as unknown as Array<{ id: string; nombre: string; initials: string; modalidad: string; nivelEducativo: string; cargo: string }>;
+        }));
+        setEspecialistas(loadedEsp);
+      } else {
+        setEspecialistas([]);
       }
       if (instRes.ok && instRes.data) {
         loadedInst = instRes.data.data.map(i => ({
@@ -54,10 +63,16 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
           nombre: i.nombre,
           modalidad: i.modalidad || 'EBR',
           nivelEducativo: i.nivelEducativo
-        })) as unknown as Array<{ id: string; nombre: string; modalidad: string; nivelEducativo: string }>;
+        }));
+        setInstituciones(loadedInst);
+      } else {
+        setInstituciones([]);
       }
       if (docRes.ok && docRes.data) {
         loadedDoc = docRes.data.map(d => mapApiDocenteToFrontend(d));
+        setDocentes(loadedDoc);
+      } else {
+        setDocentes([]);
       }
       if (cronoRes) {
         const mappedCrono = cronoRes.map(c => {
@@ -84,6 +99,8 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
           };
         });
         setCronogramas(mappedCrono);
+      } else {
+        setCronogramas([]);
       }
       if (solRes) {
         const solMap: Record<string, SolicitudReprogramacion> = {};
@@ -102,9 +119,13 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
           };
         });
         setReprogramaciones(solMap);
+      } else {
+        setReprogramaciones({});
       }
     } catch (err) {
       console.error('Error fetching data for CronogramaProvider', err);
+    } finally {
+      setIsLoading(false);
     }
   }, [isAuthenticated]);
 
@@ -113,6 +134,9 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
       const t = setTimeout(() => {
         setCronogramas([]);
         setReprogramaciones({});
+        setEspecialistas([]);
+        setInstituciones([]);
+        setDocentes([]);
       }, 0);
       return () => clearTimeout(t);
     }
@@ -145,6 +169,18 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
       })
       .catch(err => console.error(err));
   }, [isAuthenticated]);
+
+  const createCronograma = useCallback(async (payload: ICreateVisitaRequest) => {
+    await cronogramasApi.create(payload);
+    await fetchData();
+  }, [fetchData]);
+
+  const updateCronograma = useCallback(async (id: string, payload: IUpdateVisitaRequest) => {
+    await cronogramasApi.update(id, payload);
+    await fetchData();
+  }, [fetchData]);
+
+  const refetch = useCallback(() => fetchData(), [fetchData]);
 
   const submitRescheduleRequest = useCallback((
     visitId: string,
@@ -220,6 +256,13 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
         cronogramas,
         setCronogramas,
         reprogramaciones,
+        especialistas,
+        instituciones,
+        docentes,
+        isLoading,
+        createCronograma,
+        updateCronograma,
+        refetch,
         submitRescheduleRequest,
         approveRescheduleRequest,
         rejectRescheduleRequest,

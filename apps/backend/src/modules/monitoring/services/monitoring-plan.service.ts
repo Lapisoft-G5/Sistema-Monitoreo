@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type {
   IMonitoringPlanResponse,
   IPlanInstitucionCubierta,
@@ -35,10 +40,33 @@ export class MonitoringPlanService {
 
   async create(dto: CreatePlanDto, session: SessionUser): Promise<IMonitoringPlanResponse> {
     const { tipoEntidad, institucionId } = this.resolvePlanScope(session, dto);
+
+    // Validar si ya existe un plan activo para este año y entidad
+    const existing = await this.repository.findAll({
+      anioAcademico: dto.anioAcademico,
+      tipoEntidad,
+      estado: 'Activo',
+    });
+
+    const isDuplicate = existing.some((plan) => {
+      if (tipoEntidad === 'IE') {
+        return plan.autorId === session.id;
+      }
+      return true; // Para UGEL es global por año
+    });
+
+    if (isDuplicate) {
+      throw new ConflictException(
+        `Solo se puede subir 1 plan de monitoreo activo por año para ${
+          tipoEntidad === 'UGEL' ? 'la UGEL' : 'esta Institución Educativa'
+        }.`,
+      );
+    }
+
     return this.repository.create({
       titulo: dto.titulo,
       anioAcademico: dto.anioAcademico,
-      archivoUrl: dto.archivoUrl,
+      archivoUrl: dto.archivoUrl!,
       tipoEntidad,
       autorId: session.id,
       rolAutorAlCrear: this.toRolAutor(session.role),

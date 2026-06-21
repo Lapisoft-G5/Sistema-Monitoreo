@@ -36,7 +36,7 @@ describe('MonitoringPlanService', () => {
 
   beforeEach(async () => {
     const mockRepo: Partial<jest.Mocked<MonitoringPlanRepository>> = {
-      findAll: jest.fn<any>(),
+      findAll: jest.fn<any>().mockResolvedValue([]),
       findById: jest.fn<any>(),
       create: jest.fn<any>(),
       softDelete: jest.fn<any>(),

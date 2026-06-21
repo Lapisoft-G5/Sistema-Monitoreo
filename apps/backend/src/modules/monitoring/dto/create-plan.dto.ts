@@ -12,10 +12,10 @@ export class CreatePlanDto {
   @Min(2000)
   anioAcademico!: number;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(150)
-  archivoUrl!: string;
+  @MaxLength(255)
+  archivoUrl?: string;
 
   @IsOptional()
   @IsString()

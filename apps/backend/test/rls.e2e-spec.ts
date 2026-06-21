@@ -29,10 +29,12 @@ const ADMIN_URL = TEST_DB;
 let appPool: Pool;
 let adminPool: Pool;
 
-const MONITOR_USER_ID = 'a0c25551-a627-41b3-acdd-12bca61fe310'; // DNI 40000002, Ana Lucia (jefe_gestion + Especialista monitor del cronograma seeded)
-const OTHER_USER_ID = '4c6a5bcd-6074-4778-b61e-3b7695bd4a7f'; // DNI 40000004, especialista NO monitor
-const DIRECTOR_IE_USER_ID = '5d3cd3ad-e423-4b1d-9feb-d12b92920ca7'; // DNI 40000006, director_institucion
-const MONITOR_IE_ID = '10249f35-9517-4af7-8426-36d05ce3229c'; // institucion del cronograma seeded
+// IDs resueltos en beforeAll a partir de los DNIs del seed. Asi el test
+// sobrevive a `prisma migrate reset` (los UUIDs se regeneran cada vez).
+let MONITOR_USER_ID = '';
+let OTHER_USER_ID = '';
+let DIRECTOR_IE_USER_ID = '';
+let MONITOR_IE_ID = '';
 
 async function asRole(
   userId: string,
@@ -63,9 +65,30 @@ async function asRole(
 }
 
 describe('RLS Policies - Fase 3 (codes reales + aislamiento)', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     appPool = new Pool({ connectionString: APP_URL });
     adminPool = new Pool({ connectionString: ADMIN_URL });
+    // Resolver IDs via DNI del seed (DNI = id estable, UUID se regenera).
+    const u1 = await adminPool.query(
+      `SELECT u.id FROM usuarios u JOIN personas p ON p.id = u.persona_id
+       WHERE p.dni = '40000002'`,
+    );
+    const u2 = await adminPool.query(
+      `SELECT u.id FROM usuarios u JOIN personas p ON p.id = u.persona_id
+       WHERE p.dni = '40000004'`,
+    );
+    const u3 = await adminPool.query(
+      `SELECT u.id FROM usuarios u JOIN personas p ON p.id = u.persona_id
+       WHERE p.dni = '40000006'`,
+    );
+    // MONITOR_IE_ID = institucion del primer cronograma sembrado.
+    const ie = await adminPool.query(
+      `SELECT institucion_id FROM cronogramas ORDER BY fecha_programada ASC LIMIT 1`,
+    );
+    MONITOR_USER_ID = u1.rows[0].id;
+    OTHER_USER_ID = u2.rows[0].id;
+    DIRECTOR_IE_USER_ID = u3.rows[0].id;
+    MONITOR_IE_ID = ie.rows[0].institucion_id;
   });
 
   afterAll(async () => {
@@ -154,19 +177,34 @@ describe('RLS Policies - Fase 3 (codes reales + aislamiento)', () => {
   });
 
   describe('fichas_monitoreo - aislamiento', () => {
-    it('especialista monitor: ve sus fichas (0 porque el seed no crea fichas)', async () => {
-      // El seed crea un cronograma pero no una ficha. La ficha count es 0
-      // independientemente del RLS. Pero el RLS debe permitir 0 (no denegar).
+    // Conteos via admin para asserts relativas (el seed puede crear 0+ fichas).
+    let totalFichas = 0;
+    let fichasDeMonitor = 0;
+    beforeAll(async () => {
+      const all = await adminPool.query('SELECT count(*) FROM fichas_monitoreo');
+      totalFichas = parseInt(all.rows[0].count);
+      const mine = await adminPool.query(
+        `SELECT count(*) FROM fichas_monitoreo f
+         JOIN cronogramas c ON c.id = f.cronograma_id
+         JOIN especialistas e ON c.monitor_id = e.id
+         JOIN usuarios u ON u.persona_id = e.persona_id
+         WHERE u.id = $1`,
+        [MONITOR_USER_ID],
+      );
+      fichasDeMonitor = parseInt(mine.rows[0].count);
+    });
+
+    it('especialista monitor: ve solo SUS fichas', async () => {
       await asRole(MONITOR_USER_ID, 'especialista', null, async (client) => {
         const result = await client.query('SELECT count(*) FROM fichas_monitoreo');
-        expect(parseInt(result.rows[0].count)).toBe(0);
+        expect(parseInt(result.rows[0].count)).toBe(fichasDeMonitor);
       });
     });
 
-    it('jefe_gestion: ve todas las fichas (0 con seed actual)', async () => {
+    it('jefe_gestion: ve todas las fichas', async () => {
       await asRole(MONITOR_USER_ID, 'jefe_gestion', null, async (client) => {
         const result = await client.query('SELECT count(*) FROM fichas_monitoreo');
-        expect(parseInt(result.rows[0].count)).toBe(0);
+        expect(parseInt(result.rows[0].count)).toBe(totalFichas);
       });
     });
   });

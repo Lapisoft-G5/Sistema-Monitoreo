@@ -104,6 +104,7 @@ export class AuthTokenService {
 
     if (user.persona?.docente) {
       colegio_id = user.persona.docente.institucionId;
+      institucion_id = user.persona.docente.institucionId;
       colegio_nombre = user.persona.docente.institucion?.nombre;
       colegio_nivel = user.persona.docente.institucion?.nivelEducativo;
     }

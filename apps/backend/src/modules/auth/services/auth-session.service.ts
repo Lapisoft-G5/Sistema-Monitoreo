@@ -144,9 +144,13 @@ export class AuthSessionService {
     const isSessionActive = await this.sessionRepository.isSessionActive(payload.jti);
 
     if (!isSessionActive) {
+      const userExists = await this.userRepository.findUserById(payload.sub);
       await this.auditRepository.logAuthEvent({
-        userId: payload.sub,
+        userId: userExists ? payload.sub : undefined,
         eventType: 'REFRESH_TOKEN_FAILURE_INVALID_SESSION',
+        eventDetail: !userExists
+          ? `Intento de refresh con usuario inexistente (posible DB reset/usuario eliminado): ${payload.sub}`
+          : undefined,
         ...meta,
       });
       throw new UnauthorizedException('Sesión inválida o expirada');

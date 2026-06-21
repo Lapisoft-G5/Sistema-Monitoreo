@@ -20,6 +20,8 @@ import {
   MODALIDAD_NIVEL_MAP,
   type EstadoVisita,
   type ICreateVisitaRequest,
+  type IUpdateVisitaRequest,
+  type Modalidad,
 } from '@sistema-monitoreo/shared-contracts';
 
 // ── Tipos ──
@@ -492,22 +494,12 @@ export const CronogramaPage = () => {
       return;
     }
 
-    const payload = {
-      monitorId: matchedEsp.id,
-      institucionId: matchedInst.id,
-      evaluadoId: matchedDoc.id,
-      tipoMonitoreo: formTipo,
-      numeroVisita: parseInt(formVisita, 10),
-      fechaProgramada: formFechaHora.split('T')[0],
-      horaInicio: formFechaHora.split('T')[1] + (formFechaHora.split('T')[1].length === 5 ? ':00' : ''),
-      estado: formEstado as EstadoVisita,
-      modalidad: formModalidad,
-      nivelEducativo: formNivel,
-      detalles: formObservaciones.trim() || undefined
-    };
-
     if (editCronogramaId) {
-      const res = await cronogramasApi.update(editCronogramaId, payload);
+      const updatePayload: IUpdateVisitaRequest = {
+        detalles: formObservaciones.trim() || undefined,
+        estado: formEstado as EstadoVisita,
+      };
+      const res = await cronogramasApi.update(editCronogramaId, updatePayload);
       if (res.ok && res.data) {
         setCronogramas((prev) =>
           prev.map((c) =>
@@ -534,7 +526,19 @@ export const CronogramaPage = () => {
         setFormError('Error guardando en BD');
       }
     } else {
-      const res = await cronogramasApi.create(payload as ICreateVisitaRequest);
+      const createPayload: ICreateVisitaRequest = {
+        monitorId: matchedEsp.id,
+        institucionId: matchedInst.id,
+        evaluadoId: matchedDoc.id,
+        tipoMonitoreo: formTipo,
+        numeroVisita: parseInt(formVisita, 10),
+        fechaProgramada: formFechaHora.split('T')[0],
+        horaInicio: formFechaHora.split('T')[1] + (formFechaHora.split('T')[1].length === 5 ? ':00' : ''),
+        modalidad: formModalidad as Modalidad,
+        nivelEducativo: formNivel,
+        detalles: formObservaciones.trim() || undefined
+      };
+      const res = await cronogramasApi.create(createPayload);
       if (res.ok && res.data) {
         const c = res.data;
         const newCronograma: Cronograma = {

@@ -88,7 +88,10 @@ export const CalendarioSidebar = ({
   filteredVisits,
 }: CalendarioSidebarProps) => {
   const { user } = useUser();
-  const isEspecialista = user?.role === 'especialista';
+  const isEspecialista =
+    user?.role === 'especialista' ||
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
   const {
     cronogramas,
     setCronogramas,
@@ -164,8 +167,12 @@ export const CalendarioSidebar = ({
     }
 
     // Caso 2: Visita con plantilla de la UGEL (creada por el Jefe de Gestión)
-    // Solo el especialista asignado a la visita puede completarla
-    if (user.role === 'especialista') {
+    // El especialista o coordinador o jefe de taller asignado a la visita puede completarla
+    if (
+      user.role === 'especialista' ||
+      user.role === 'coordinador_pedagogico' ||
+      user.role === 'jefe_taller'
+    ) {
       const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
       const visitEspecialista = selectedVisit.especialista.toLowerCase();
       return (
@@ -485,10 +492,10 @@ export const CalendarioSidebar = ({
           <div className="space-y-2 pt-4 border-t border-border mt-6">
             {isEvaluadorAutorizado ? (
               <>
-                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO') && (
+                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO' || selectedVisit.estado === 'REPROGRAMADO') && (
                   <div className="flex flex-col gap-2.5">
                     {/* Advertencia si no es la fecha programada */}
-                    {selectedVisit.estado === 'PROGRAMADO' && !isFechaCoincidente && (
+                    {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'REPROGRAMADO') && !isFechaCoincidente && (
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                         <AlertTriangle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
                         <span>
@@ -500,18 +507,20 @@ export const CalendarioSidebar = ({
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        disabled={selectedVisit.estado === 'PROGRAMADO' && !isFechaCoincidente}
+                        disabled={(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'REPROGRAMADO') && !isFechaCoincidente}
                         onClick={() => setShowFichaModal(true)}
                         className="flex-1 justify-center border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors font-bold text-xs py-2.5 h-10 flex items-center gap-2 cursor-pointer"
                       >
                         <PlayCircle className="h-4.5 w-4.5" />
                         <span>
-                          {selectedVisit.estado === 'PROGRAMADO' ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}
+                          {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'REPROGRAMADO') ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}
                         </span>
                       </Button>
 
-                      {/* Reprogramar: solo para el Especialista (solicitar reprogramación) */}
-                      {user?.role === 'especialista' && (
+                      {/* Reprogramar: para el Especialista, Coordinador Pedagógico o Jefe de Taller */}
+                      {(user?.role === 'especialista' ||
+                        user?.role === 'coordinador_pedagogico' ||
+                        user?.role === 'jefe_taller') && (
                         <Button
                           variant="outline"
                           onClick={() => {
@@ -533,7 +542,7 @@ export const CalendarioSidebar = ({
               </>
             ) : (
               <>
-                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO') && (
+                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO' || selectedVisit.estado === 'REPROGRAMADO') && (
                   <div className="flex flex-col gap-2">
                     <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                       <Clock className="h-4.5 w-4.5 text-blue-500 mt-0.5 shrink-0" />
@@ -601,7 +610,7 @@ export const CalendarioSidebar = ({
               </div>
             )}
 
-            {selectedVisit.estado === 'REPROGRAMADO' && (
+            {selectedVisit.estado === 'REPROGRAMADO' && !isEvaluadorAutorizado && (
               <div className="flex flex-col gap-2">
                 <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl text-amber-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                   <AlertTriangle className="h-4.5 w-4.5 text-amber-500 mt-0.5 shrink-0" />
@@ -654,7 +663,6 @@ export const CalendarioSidebar = ({
               fechaOriginal: selectedVisit.fechaHora,
               fechaNueva: data.fechaNueva,
               motivo: data.motivo,
-              archivoNombre: data.archivoNombre,
             });
             setShowSolicitarReprogramarModal(false);
           }}

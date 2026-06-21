@@ -54,24 +54,9 @@ export const BandejaReprogramaciones = () => {
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
 
   const specialistFilterName = useMemo(() => {
-    if (!isEspecialista || !user) return '';
-    if (user.role === 'coordinador_pedagogico' || user.role === 'jefe_taller') {
-      return `${user.nombres} ${user.apellidos}`;
-    }
-    const firstName = user.nombres.split(' ')[0].toLowerCase();
-    
-    if (firstName.startsWith('juan')) return 'Juan Pérez';
-    if (firstName.startsWith('maría') || firstName.startsWith('maria')) return 'María García';
-    if (firstName.startsWith('ana')) return 'Ana Torres';
-    if (firstName.startsWith('pedro')) return 'Pedro Alvarado';
-    if (firstName.startsWith('rosa')) return 'Rosa Quispe';
-    if (firstName.startsWith('luis')) return 'Luis Mamani';
-    if (firstName.startsWith('sofía') || firstName.startsWith('sofia')) return 'Sofía Ramos';
-    if (firstName.startsWith('klisman')) return 'Klisman Condori';
-    if (firstName.startsWith('jean')) return 'Jean Carlos Choque';
-    
-    return 'Juan Pérez'; // fallback
-  }, [isEspecialista, user]);
+    if (!user) return '';
+    return `${user.nombres} ${user.apellidos}`;
+  }, [user]);
 
   // Obtener todas las solicitudes
   const allRequests = useMemo(() => {
@@ -107,34 +92,14 @@ export const BandejaReprogramaciones = () => {
             req.visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
           
           // And the requester must be CP or JT (not UGEL specialist)
-          const isCPorJT =
-            req.visit.especialista !== 'Juan Pérez' &&
-            req.visit.especialista !== 'María García' &&
-            req.visit.especialista !== 'Carlos Mendoza' &&
-            req.visit.especialista !== 'Ana Torres' &&
-            req.visit.especialista !== 'Pedro Alvarado' &&
-            req.visit.especialista !== 'Rosa Quispe' &&
-            req.visit.especialista !== 'Luis Mamani' &&
-            req.visit.especialista !== 'Sofía Ramos' &&
-            req.visit.especialista !== 'Klisman Condori' &&
-            req.visit.especialista !== 'Jean Carlos Choque';
+          const isCPorJT = req.visit.especialistaCargo !== 'Especialista';
 
           if (!isSameSchool || !isCPorJT) {
             return false;
           }
         } else {
           // Jefe de Gestión / Admin only see requests from Specialists (UGEL)
-          const isSpecialistEvaluator =
-            req.visit.especialista === 'Juan Pérez' ||
-            req.visit.especialista === 'María García' ||
-            req.visit.especialista === 'Carlos Mendoza' ||
-            req.visit.especialista === 'Ana Torres' ||
-            req.visit.especialista === 'Pedro Alvarado' ||
-            req.visit.especialista === 'Rosa Quispe' ||
-            req.visit.especialista === 'Luis Mamani' ||
-            req.visit.especialista === 'Sofía Ramos' ||
-            req.visit.especialista === 'Klisman Condori' ||
-            req.visit.especialista === 'Jean Carlos Choque';
+          const isSpecialistEvaluator = req.visit.especialistaCargo === 'Especialista';
 
           if (!isSpecialistEvaluator) {
             return false;
@@ -350,7 +315,6 @@ export const BandejaReprogramaciones = () => {
               fechaOriginal: selectedVisit.fechaHora,
               fechaNueva: data.fechaNueva,
               motivo: data.motivo,
-              archivoNombre: data.archivoNombre,
             });
             setShowSolicitarReprogramarModal(false);
           }}

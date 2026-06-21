@@ -8,6 +8,7 @@ import { especialistasApi } from '@shared/api/especialistas.api';
 import { teachersApi } from '@shared/api/teachers.api';
 import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 import type { Docente } from '@entities/model-docentes';
+import { useUser } from '@entities/model-user';
 
 function getInitials(name: string) {
   const parts = name.trim().split(' ');
@@ -18,10 +19,12 @@ function getInitials(name: string) {
 }
 
 export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated } = useUser();
   const [cronogramas, setCronogramas] = useState<Cronograma[]>([]);
   const [reprogramaciones, setReprogramaciones] = useState<Record<string, SolicitudReprogramacion>>({});
 
   const fetchData = useCallback(async () => {
+    if (!isAuthenticated) return;
     try {
       const [espRes, instRes, docRes, cronoRes, solRes] = await Promise.all([
         especialistasApi.findAll(),
@@ -31,7 +34,7 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
         cronogramasApi.findAllSolicitudes()
       ]);
 
-      let loadedEsp: Array<{ id: string; nombre: string; initials: string; modalidad: string; nivelEducativo: string }> = [];
+      let loadedEsp: Array<{ id: string; nombre: string; initials: string; modalidad: string; nivelEducativo: string; cargo: string }> = [];
       let loadedInst: Array<{ id: string; nombre: string; modalidad: string; nivelEducativo: string }> = [];
       let loadedDoc: Docente[] = [];
 
@@ -41,8 +44,9 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
           nombre: `${e.persona.nombres} ${e.persona.apellidos}`,
           initials: getInitials(`${e.persona.nombres} ${e.persona.apellidos}`),
           modalidad: e.modalidad || 'EBR',
-          nivelEducativo: e.nivelEducativo || 'Primaria'
-        })) as unknown as Array<{ id: string; nombre: string; initials: string; modalidad: string; nivelEducativo: string }>;
+          nivelEducativo: e.nivelEducativo || 'Primaria',
+          cargo: e.cargo || 'Especialista'
+        })) as unknown as Array<{ id: string; nombre: string; initials: string; modalidad: string; nivelEducativo: string; cargo: string }>;
       }
       if (instRes.ok && instRes.data) {
         loadedInst = instRes.data.data.map(i => ({
@@ -72,7 +76,11 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
             estado: c.estado as 'PROGRAMADO' | 'EN PROCESO' | 'COMPLETADO' | 'REPROGRAMADO' | 'CANCELADO',
             fechaEjecutada: undefined,
             modalidad: 'EBR',
-            nivel: 'Primaria'
+            nivel: 'Primaria',
+            especialistaCargo: esp ? esp.cargo : 'Especialista',
+            monitorId: c.monitorId,
+            evaluadoId: c.evaluadoId,
+            institucionId: c.institucionId,
           };
         });
         setCronogramas(mappedCrono);
@@ -85,7 +93,7 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
             fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
             fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
             motivo: s.justificacion,
-            archivoNombre: s.archivoSustentoUrl || 'oficio.pdf',
+            archivoNombre: s.archivoSustentoUrl && s.archivoSustentoUrl !== '' ? (s.archivoSustentoUrl.split('/').pop() || 'oficio.pdf') : '',
             estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
             fechaRegistro: s.createdAt,
             aprobador: s.resueltoPorId || undefined,
@@ -98,16 +106,24 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       console.error('Error fetching data for CronogramaProvider', err);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      const t = setTimeout(() => {
+        setCronogramas([]);
+        setReprogramaciones({});
+      }, 0);
+      return () => clearTimeout(t);
+    }
     const t = setTimeout(() => {
       fetchData();
     }, 0);
     return () => clearTimeout(t);
-  }, [fetchData]);
+  }, [isAuthenticated, fetchData]);
 
   const loadReprogramaciones = useCallback(() => {
+    if (!isAuthenticated) return;
     cronogramasApi.findAllSolicitudes()
       .then(solRes => {
         const solMap: Record<string, SolicitudReprogramacion> = {};
@@ -117,7 +133,7 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
             fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
             fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
             motivo: s.justificacion,
-            archivoNombre: s.archivoSustentoUrl || 'oficio.pdf',
+            archivoNombre: s.archivoSustentoUrl && s.archivoSustentoUrl !== '' ? (s.archivoSustentoUrl.split('/').pop() || 'oficio.pdf') : '',
             estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
             fechaRegistro: s.createdAt,
             aprobador: s.resueltoPorId || undefined,
@@ -128,7 +144,7 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
         setReprogramaciones(solMap);
       })
       .catch(err => console.error(err));
-  }, []);
+  }, [isAuthenticated]);
 
   const submitRescheduleRequest = useCallback((
     visitId: string,
@@ -136,16 +152,20 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
       fechaOriginal: string;
       fechaNueva: string;
       motivo: string;
-      archivoNombre: string;
+      archivoNombre?: string;
+      archivoBase64?: string;
     }
   ) => {
+    const [datePart, timePart] = request.fechaNueva.split('T');
+    const formattedTime = timePart ? (timePart + ':00').slice(0, 8) : '00:00:00';
     cronogramasApi
       .crearSolicitud({
         cronogramaId: visitId,
-        fechaPropuesta: new Date(request.fechaNueva).toISOString().slice(0, 10),
-        horaPropuesta: new Date(request.fechaNueva).toISOString().slice(11, 19),
+        fechaPropuesta: datePart,
+        horaPropuesta: formattedTime,
         justificacion: request.motivo,
         archivoSustentoNombre: request.archivoNombre,
+        archivoSustentoBase64: request.archivoBase64,
       })
       .then(() => loadReprogramaciones())
       .catch((err: unknown) => console.warn('[cronograma] No se pudo crear solicitud en backend:', err));

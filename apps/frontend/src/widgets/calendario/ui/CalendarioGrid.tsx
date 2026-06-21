@@ -195,7 +195,10 @@ export const CalendarioGrid = ({
   handleClearFilters,
 }: CalendarioGridProps) => {
   const { user } = useUser();
-  const isEspecialista = user?.role === 'especialista';
+  const isEspecialista =
+    user?.role === 'especialista' ||
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
   const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
 
   const year = currentDate.getFullYear();
@@ -255,9 +258,20 @@ export const CalendarioGrid = ({
   };
 
   const handleToday = () => {
-    setCurrentDate(new Date(2023, 9, 12, 12, 0, 0));
-    setSelectedDateStr('2023-10-12');
-    setSelectedVisitId('13');
+    const today = new Date();
+    setCurrentDate(today);
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+    setSelectedDateStr(todayStr);
+
+    const dayVisits = filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === todayStr);
+    if (dayVisits.length > 0) {
+      setSelectedVisitId(dayVisits[0].id);
+    } else {
+      setSelectedVisitId(null);
+    }
   };
 
   const handleSelectDayCell = (dateStr: string) => {
@@ -517,7 +531,7 @@ export const CalendarioGrid = ({
             onClick={handleToday}
             className="text-xs font-semibold hover:bg-slate-50 border-slate-200 text-slate-700 shadow-sm cursor-pointer"
           >
-            Hoy (Demo)
+            Hoy
           </Button>
           <div className="flex items-center border border-border rounded-lg bg-surface shadow-sm overflow-hidden">
             <button

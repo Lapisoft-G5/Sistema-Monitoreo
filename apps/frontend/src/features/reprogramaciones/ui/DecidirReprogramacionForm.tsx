@@ -329,7 +329,10 @@ export const DecidirReprogramacionForm = ({
               <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-600 text-xs font-medium leading-relaxed flex items-start gap-2.5 shadow-inner">
                 <AlertCircle className="h-5 w-5 text-slate-400 mt-0.5 shrink-0" />
                 <span>
-                  <strong>Solicitud en Revisión:</strong> Tu solicitud de cambio de fecha ha sido enviada con éxito. Actualmente se encuentra pendiente de revisión y firma digital por parte de la Jefatura de Gestión Pedagógica.
+                  <strong>Solicitud en Revisión:</strong> Tu solicitud de cambio de fecha ha sido enviada con éxito. Actualmente se encuentra pendiente de revisión y firma digital por parte{' '}
+                  {visit.especialistaCargo && visit.especialistaCargo !== 'Especialista'
+                    ? 'del Director de la Institución Educativa.'
+                    : 'de la Jefatura de Gestión Pedagógica.'}
                 </span>
               </div>
             )}

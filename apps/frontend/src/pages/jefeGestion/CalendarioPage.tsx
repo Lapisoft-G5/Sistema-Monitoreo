@@ -17,12 +17,18 @@ export const CalendarioPage = () => {
 
   // ── Estados de Navegación ──
   const [activeTab, setActiveTab] = useState<'CALENDARIO' | 'SOLICITUDES'>('CALENDARIO');
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2023, 9, 15, 12, 0, 0));
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [activeView, setActiveView] = useState<'MENSUAL' | 'SEMANAL' | 'DIARIO' | 'ANUAL' | 'LISTA'>('MENSUAL');
 
   // ── Selección activa de fecha y visita ──
-  const [selectedDateStr, setSelectedDateStr] = useState<string>('2023-10-12');
-  const [selectedVisitId, setSelectedVisitId] = useState<string | null>('13');
+  const [selectedDateStr, setSelectedDateStr] = useState<string>(() => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [showDetailsPanel, setShowDetailsPanel] = useState<boolean>(true);
 
   // ── Filtros del Calendario ──
@@ -34,6 +40,13 @@ export const CalendarioPage = () => {
   const [filterEstado, setFilterEstado] = useState('Todos');
 
   const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+
+  const showBandeja = useMemo(() => {
+    if (isDirector) {
+      return user?.institucionNivel === 'Secundaria';
+    }
+    return true;
+  }, [isDirector, user]);
 
   // Cascading Nivel Options
   const nivelesDisponibles = useMemo(() => {
@@ -68,22 +81,7 @@ export const CalendarioPage = () => {
   // Nombre del especialista logueado para filtro
   const specialistFilterName = useMemo(() => {
     if (!isEspecialista || !user) return '';
-    if (user.role === 'coordinador_pedagogico' || user.role === 'jefe_taller') {
-      return `${user.nombres} ${user.apellidos}`;
-    }
-    const firstName = user.nombres.split(' ')[0].toLowerCase();
-    
-    if (firstName.startsWith('juan')) return 'Juan Pérez';
-    if (firstName.startsWith('maría') || firstName.startsWith('maria')) return 'María García';
-    if (firstName.startsWith('ana')) return 'Ana Torres';
-    if (firstName.startsWith('pedro')) return 'Pedro Alvarado';
-    if (firstName.startsWith('rosa')) return 'Rosa Quispe';
-    if (firstName.startsWith('luis')) return 'Luis Mamani';
-    if (firstName.startsWith('sofía') || firstName.startsWith('sofia')) return 'Sofía Ramos';
-    if (firstName.startsWith('klisman')) return 'Klisman Condori';
-    if (firstName.startsWith('jean')) return 'Jean Carlos Choque';
-    
-    return 'Juan Pérez'; // fallback
+    return `${user.nombres} ${user.apellidos}`;
   }, [isEspecialista, user]);
 
   // Obtener lista única de especialistas
@@ -225,22 +223,24 @@ export const CalendarioPage = () => {
           <Calendar className="h-4 w-4" />
           <span>Calendario de Monitoreos</span>
         </button>
-        <button
-          onClick={() => setActiveTab('SOLICITUDES')}
-          className={`pb-3 font-bold text-sm border-b-2 transition-all flex items-center gap-2 relative cursor-pointer ${
-            activeTab === 'SOLICITUDES'
-              ? 'border-primary text-primary font-extrabold'
-              : 'border-transparent text-text-muted hover:text-text'
-          }`}
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>Bandeja de Reprogramaciones</span>
-          {pendingCount > 0 && (
-            <span className="absolute -top-1.5 -right-3.5 bg-amber-500 text-white font-extrabold text-[9px] h-4.5 min-w-4.5 px-1.5 rounded-full flex items-center justify-center border border-surface shadow-sm animate-pulse">
-              {pendingCount}
-            </span>
-          )}
-        </button>
+        {showBandeja && (
+          <button
+            onClick={() => setActiveTab('SOLICITUDES')}
+            className={`pb-3 font-bold text-sm border-b-2 transition-all flex items-center gap-2 relative cursor-pointer ${
+              activeTab === 'SOLICITUDES'
+                ? 'border-primary text-primary font-extrabold'
+                : 'border-transparent text-text-muted hover:text-text'
+            }`}
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Bandeja de Reprogramaciones</span>
+            {pendingCount > 0 && (
+              <span className="absolute -top-1.5 -right-3.5 bg-amber-500 text-white font-extrabold text-[9px] h-4.5 min-w-4.5 px-1.5 rounded-full flex items-center justify-center border border-surface shadow-sm animate-pulse">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {activeTab === 'CALENDARIO' ? (

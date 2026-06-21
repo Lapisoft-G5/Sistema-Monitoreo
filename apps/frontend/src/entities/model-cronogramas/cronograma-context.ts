@@ -12,7 +12,8 @@ export interface CronogramaContextType {
       fechaOriginal: string;
       fechaNueva: string;
       motivo: string;
-      archivoNombre: string;
+      archivoNombre?: string;
+      archivoBase64?: string;
     }
   ) => void;
   approveRescheduleRequest: (

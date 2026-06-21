@@ -138,16 +138,22 @@ export class SchedulingService {
       );
     }
 
-    if (!dto.archivoSustentoBase64) {
-      throw new BadRequestException('El archivo PDF de sustento es obligatorio.');
+    if (cronograma.nivelEducativo === 'Primaria' || cronograma.nivelEducativo === 'Inicial') {
+      throw new BadRequestException(
+        'No se permiten solicitudes de reprogramación para los niveles de Inicial o Primaria.',
+      );
     }
 
-    const buffer = Buffer.from(dto.archivoSustentoBase64, 'base64');
-    const stored = await this.storage.savePdf(
-      'reprogramaciones',
-      dto.archivoSustentoNombre ?? 'oficio.pdf',
-      buffer,
-    );
+    let archivoSustentoUrl = '';
+    if (dto.archivoSustentoBase64) {
+      const buffer = Buffer.from(dto.archivoSustentoBase64, 'base64');
+      const stored = await this.storage.savePdf(
+        'reprogramaciones',
+        dto.archivoSustentoNombre ?? 'oficio.pdf',
+        buffer,
+      );
+      archivoSustentoUrl = stored.url;
+    }
 
     const data: CreateSolicitudData = {
       cronogramaId: dto.cronogramaId,
@@ -158,7 +164,7 @@ export class SchedulingService {
       fechaPropuesta: new Date(dto.fechaPropuesta),
       horaPropuesta: dto.horaPropuesta,
       justificacion: dto.justificacion,
-      archivoSustentoUrl: stored.url,
+      archivoSustentoUrl,
     };
     return this.solicitudRepo.create(data);
   }
@@ -212,15 +218,21 @@ export class SchedulingService {
 
     // Si se aprobo, mutamos el cronograma en la misma operacion
     if (estado === 'APROBADO') {
-      // El trigger SQL exige esta bandera de sesion para aceptar el UPDATE
-      await this.prisma.$executeRawUnsafe(
-        `SELECT set_config('app.reprogramacion_apply', 'true', true)`,
-      );
-      await this.cronogramaRepo.update(solicitud.cronogramaId, {
-        fechaProgramada: new Date(solicitud.fechaPropuesta),
-        horaInicio: solicitud.horaPropuesta,
-        estado: 'REPROGRAMADO',
-      });
+      // El trigger SQL exige esta bandera de sesion para aceptar el UPDATE.
+      // Usamos una transaccion explicita para asegurar que corran en la misma conexion.
+      await this.prisma.$transaction([
+        this.prisma.$executeRawUnsafe(
+          `SELECT set_config('app.reprogramacion_apply', 'true', true)`,
+        ),
+        this.prisma.cronograma.update({
+          where: { id: solicitud.cronogramaId },
+          data: {
+            fechaProgramada: new Date(solicitud.fechaPropuesta),
+            horaInicio: solicitud.horaPropuesta,
+            estado: 'REPROGRAMADO',
+          },
+        }),
+      ]);
     }
     return resuelta;
   }

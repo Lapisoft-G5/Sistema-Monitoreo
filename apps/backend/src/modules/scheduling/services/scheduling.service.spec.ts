@@ -14,6 +14,7 @@ describe('SchedulingService - Reprogramaciones', () => {
   let cronogramaRepo: jest.Mocked<CronogramaRepository>;
   let solicitudRepo: jest.Mocked<SolicitudReprogramacionRepository>;
   let storage: any;
+  let prisma: any;
 
   const sesionEspecialista = { id: 'esp-1', role: 'especialista' };
   const sesionJefe = { id: 'jefe-1', role: 'jefe_gestion' };
@@ -65,7 +66,17 @@ describe('SchedulingService - Reprogramaciones', () => {
         { provide: STORAGE_SERVICE, useValue: mockStorage },
         {
           provide: PrismaService,
-          useValue: { $executeRawUnsafe: jest.fn<any>().mockResolvedValue(undefined) },
+          useValue: {
+            $executeRawUnsafe: jest.fn<any>().mockResolvedValue(undefined),
+            $transaction: jest.fn<any>().mockImplementation((arg: any) => {
+              if (Array.isArray(arg)) return Promise.all(arg);
+              if (typeof arg === 'function') return arg(this);
+              return Promise.resolve(arg);
+            }),
+            cronograma: {
+              update: jest.fn<any>().mockResolvedValue({}),
+            },
+          },
         },
       ],
     }).compile();
@@ -73,6 +84,7 @@ describe('SchedulingService - Reprogramaciones', () => {
     cronogramaRepo = moduleRef.get(CronogramaRepository);
     solicitudRepo = moduleRef.get(SolicitudReprogramacionRepository);
     storage = moduleRef.get(STORAGE_SERVICE);
+    prisma = moduleRef.get(PrismaService);
   });
 
   describe('crearVisita - candado operativo (EDU-0002)', () => {
@@ -118,21 +130,27 @@ describe('SchedulingService - Reprogramaciones', () => {
   });
 
   describe('crearSolicitud', () => {
-    it('rechaza si no hay PDF de sustento', async () => {
-      await expect(
-        service.crearSolicitud(
-          {
-            cronogramaId: 'vis-1',
-            fechaPropuesta: '2026-04-01',
-            horaPropuesta: '10:00:00',
-            justificacion: 'Huelga distrital',
-          } as any,
-          sesionEspecialista,
-        ),
-      ).rejects.toThrow(BadRequestException);
+    it('crea solicitud válida SIN PDF de sustento exitosamente', async () => {
+      cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Secundaria' });
+      solicitudRepo.findPendienteByCronograma.mockResolvedValue(null);
+      solicitudRepo.create.mockResolvedValue({ id: 'sol-new' } as any);
+      await service.crearSolicitud(
+        {
+          cronogramaId: 'vis-1',
+          fechaPropuesta: '2026-04-01',
+          horaPropuesta: '10:00:00',
+          justificacion: 'Huelga distrital sin PDF',
+        },
+        sesionEspecialista,
+      );
+      expect(storage.savePdf).not.toHaveBeenCalled();
+      expect(solicitudRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ archivoSustentoUrl: '' }),
+      );
     });
 
     it('rechaza si ya existe una solicitud PENDIENTE', async () => {
+      cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Secundaria' });
       solicitudRepo.findPendienteByCronograma.mockResolvedValue({ id: 'sol-pend' } as any);
       await expect(
         service.crearSolicitud(
@@ -141,15 +159,29 @@ describe('SchedulingService - Reprogramaciones', () => {
             fechaPropuesta: '2026-04-01',
             horaPropuesta: '10:00:00',
             justificacion: 'Huelga',
-            archivoSustentoBase64: Buffer.from('PDF').toString('base64'),
-            archivoSustentoNombre: 'oficio.pdf',
           } as any,
           sesionEspecialista,
         ),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('crea solicitud valida y guarda el PDF', async () => {
+    it('rechaza solicitud si es para nivel Inicial o Primaria', async () => {
+      cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Primaria' });
+      await expect(
+        service.crearSolicitud(
+          {
+            cronogramaId: 'vis-1',
+            fechaPropuesta: '2026-04-01',
+            horaPropuesta: '10:00:00',
+            justificacion: 'Huelga distrital nivel primaria',
+          },
+          sesionEspecialista,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('crea solicitud valida con PDF y lo guarda', async () => {
+      cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Secundaria' });
       solicitudRepo.findPendienteByCronograma.mockResolvedValue(null);
       solicitudRepo.create.mockResolvedValue({ id: 'sol-new' } as any);
       await service.crearSolicitud(
@@ -219,10 +251,13 @@ describe('SchedulingService - Reprogramaciones', () => {
       });
 
       const r = await service.aprobarSolicitud('sol-1', { comentario: 'Aprobado' }, sesionJefe);
-      expect(cronogramaRepo.update).toHaveBeenCalledWith('vis-1', {
-        fechaProgramada: new Date('2026-04-01'),
-        horaInicio: '10:00:00',
-        estado: 'REPROGRAMADO',
+      expect(prisma.cronograma.update).toHaveBeenCalledWith({
+        where: { id: 'vis-1' },
+        data: {
+          fechaProgramada: new Date('2026-04-01'),
+          horaInicio: '10:00:00',
+          estado: 'REPROGRAMADO',
+        },
       });
       expect(r.estado).toBe('APROBADO');
     });

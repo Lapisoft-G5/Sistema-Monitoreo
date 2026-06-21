@@ -50,6 +50,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       findAll: jest.fn<any>().mockResolvedValue([visitaBase]),
       findById: jest.fn<any>().mockResolvedValue(visitaBase),
       findPlanVigentePara: jest.fn<any>(),
+      countPendientesByMonitor: jest.fn<any>().mockResolvedValue(0),
       create: jest.fn<any>().mockResolvedValue(visitaBase),
       update: jest.fn<any>().mockResolvedValue({ ...visitaBase, estado: 'REPROGRAMADO' }),
       remove: jest.fn<any>(),
@@ -133,6 +134,52 @@ describe('SchedulingService - Reprogramaciones', () => {
         sesionEspecialista,
       );
       expect(r.id).toBe('vis-1');
+    });
+  });
+
+  describe('crearVisita - max 3 pendientes por especialista (EDU-0011)', () => {
+    it('rechaza si el especialista ya tiene 3 visitas activas', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(3);
+      await expect(
+        service.crearVisita(
+          {
+            monitorId: 'esp-1',
+            institucionId: 'ie-1',
+            evaluadoId: 'doc-1',
+            tipoMonitoreo: 'DOCENTE',
+            numeroVisita: 2,
+            fechaProgramada: '2026-04-01',
+            horaInicio: '10:00:00',
+            modalidad: 'EBR',
+            nivelEducativo: 'Primaria',
+          } as any,
+          sesionJefe,
+        ),
+      ).rejects.toThrow(/3 visitas pendientes/);
+      expect(cronogramaRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('permite crear cuando tiene menos de 3 pendientes', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(2);
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+      const r = await service.crearVisita(
+        {
+          monitorId: 'esp-1',
+          institucionId: 'ie-1',
+          evaluadoId: 'doc-1',
+          tipoMonitoreo: 'DOCENTE',
+          numeroVisita: 4,
+          fechaProgramada: '2026-05-01',
+          horaInicio: '10:00:00',
+          modalidad: 'EBR',
+          nivelEducativo: 'Primaria',
+        } as any,
+        sesionJefe,
+      );
+      expect(r.id).toBe('vis-1');
+      expect(cronogramaRepo.create).toHaveBeenCalledTimes(1);
     });
   });
 

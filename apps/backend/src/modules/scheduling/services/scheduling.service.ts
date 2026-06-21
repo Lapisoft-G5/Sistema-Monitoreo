@@ -77,6 +77,16 @@ export class SchedulingService {
       );
     }
 
+    // Regla de negocio: max 3 visitas activas por especialista (EDU-0011/0015).
+    // La BD tambien lo garantiza con el trigger trg_validar_max_tres_pendientes;
+    // aqui damos un mensaje claro al cliente antes de llegar al INSERT.
+    const pendientes = await this.cronogramaRepo.countPendientesByMonitor(dto.monitorId);
+    if (pendientes >= 3) {
+      throw new BadRequestException(
+        'El especialista ya tiene 3 visitas pendientes. Complete o cancele una antes de programar otra.',
+      );
+    }
+
     const data: CreateVisitaData = {
       monitorId: dto.monitorId,
       institucionId: dto.institucionId,

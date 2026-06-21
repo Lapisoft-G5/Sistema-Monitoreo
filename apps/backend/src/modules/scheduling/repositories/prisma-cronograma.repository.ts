@@ -93,6 +93,15 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
     return planIe?.id ?? planUgel.id;
   }
 
+  async countPendientesByMonitor(monitorId: string): Promise<number> {
+    return this.prisma.cronograma.count({
+      where: {
+        monitorId,
+        estado: { in: ['PROGRAMADO', 'EN_PROCESO', 'REPROGRAMADO'] },
+      },
+    });
+  }
+
   async create(data: CreateVisitaData): Promise<IVisita> {
     const row = await this.prisma.cronograma.create({
       data: {

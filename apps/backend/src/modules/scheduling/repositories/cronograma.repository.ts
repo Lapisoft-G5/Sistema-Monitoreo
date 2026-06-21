@@ -50,6 +50,7 @@ export abstract class CronogramaRepository {
   abstract findAll(filters?: any): Promise<IVisita[]>;
   abstract findById(id: string): Promise<IVisita | null>;
   abstract findPlanVigentePara(institucionId: string, anio: number): Promise<string | null>;
+  abstract countPendientesByMonitor(monitorId: string): Promise<number>;
   abstract create(data: CreateVisitaData): Promise<IVisita>;
   abstract update(id: string, data: UpdateVisitaData): Promise<IVisita>;
   abstract remove(id: string): Promise<void>;

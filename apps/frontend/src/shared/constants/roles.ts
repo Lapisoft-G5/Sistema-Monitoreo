@@ -45,7 +45,7 @@ export type MenuItem =
   | 'reportes'
   | 'configuracion';
 
-const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
+const BASE_PERMISSIONS: MenuItem[] = ['reportes'];
 
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   admin: [
@@ -70,25 +70,25 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'instituciones_docentes',
   ],
 
-  jefe_area: ['instituciones_padron', 'instituciones_docentes'],
+  jefe_area: [
+    'instituciones_padron',
+    'instituciones_docentes',
+    'monitoreo',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
+  ],
 
   coordinador_pedagogico: [
     'monitoreo',
-    'monitoreo_plan',
-    'monitoreo_cronograma',
     'monitoreo_calendario',
-    'especialistas',
-    'jefes_area',
+    'monitoreo_reportes',
     'reportes',
   ],
 
   jefe_taller: [
     'monitoreo',
-    'monitoreo_plan',
-    'monitoreo_cronograma',
     'monitoreo_calendario',
-    'especialistas',
-    'jefes_area',
+    'monitoreo_reportes',
     'reportes',
   ],
 
@@ -155,13 +155,13 @@ export const getDefaultLandingPage = (role: UserRole): string => {
     case 'jefe_gestion':
       return '/especialistas';
     case 'especialista':
-      return '/monitoreo/reportes';
+      return '/monitoreo/calendario';
     case 'director_institucion':
     case 'director_ie':
       return '/instituciones/docentes';
     case 'coordinador_pedagogico':
     case 'jefe_taller':
-      return '/monitoreo/plan';
+      return '/monitoreo/calendario';
     case 'docente':
       return '/reportes';
     default:

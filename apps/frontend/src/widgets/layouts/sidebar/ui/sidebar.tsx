@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user';
-import { ROLE_PERMISSIONS } from '@shared/constants/roles';
+import { ROLE_PERMISSIONS, ROLE_LABELS } from '@shared/constants/roles';
 import type { MenuItem } from '@shared/constants/roles';
-import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight, Compass, ClipboardList, BarChart3 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
 
@@ -48,7 +48,7 @@ export const Sidebar = () => {
               UGEL Lampa
             </span>
             <span className="text-text-muted text-[0.63rem] whitespace-nowrap">
-              Jefe de Gestión
+              {user ? ROLE_LABELS[user.role] : 'Jefe de Gestión'}
             </span>
           </div>
         )}
@@ -65,18 +65,44 @@ export const Sidebar = () => {
 
       {/* ── Navegación Dinámica ── */}
       <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
-        {SIDEBAR_CONFIG.filter((item) => {
-          const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
-          const isSecundary = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
-          if (
-            (item.id === 'instituciones_coordinadores' || item.id === 'instituciones_jefes_taller') &&
-            isDirector &&
-            !isSecundary
-          ) {
-            return false;
-          }
-          return has(item.id as string);
-        }).map((item) => {
+        {(user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller'
+          ? [
+              {
+                id: 'monitoreo',
+                label: 'Monitoreo',
+                icon: <Compass className="h-[18px] w-[18px]" />,
+                children: [
+                  { id: 'monitoreo_calendario', label: 'Calendario', path: '/monitoreo/calendario' },
+                ],
+              },
+              {
+                id: 'monitoreo_reportes',
+                label: 'Reportes',
+                icon: <ClipboardList className="h-[18px] w-[18px]" />,
+                path: '/monitoreo/reportes',
+                children: [],
+              },
+              {
+                id: 'reportes',
+                label: 'Mis Reportes',
+                icon: <BarChart3 className="h-[18px] w-[18px]" />,
+                path: '/reportes',
+                children: [],
+              },
+            ]
+          : SIDEBAR_CONFIG.filter((item) => {
+              const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+              const isSecundary = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
+              if (
+                (item.id === 'instituciones_coordinadores' || item.id === 'instituciones_jefes_taller') &&
+                isDirector &&
+                !isSecundary
+              ) {
+                return false;
+              }
+              return has(item.id as string);
+            })
+        ).map((item) => {
           const visibleChildren = item.children.filter((c) => has(c.id as string));
           const isOpen = openMenus.includes(item.id as string);
 
@@ -95,7 +121,9 @@ export const Sidebar = () => {
                   user?.role === 'director_institucion' ||
                   user?.role === 'director_ie')
                 ? 'Plan Monitoreo'
-                : item.label;
+                : item.id === 'reportes' && user?.role === 'docente'
+                  ? 'Mis Reportes'
+                  : item.label;
 
           const triggerClasses = `
             w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border-none

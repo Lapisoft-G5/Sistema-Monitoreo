@@ -69,13 +69,20 @@ describe('RLS Policies - Fase 3 (codes reales + aislamiento)', () => {
     appPool = new Pool({ connectionString: APP_URL });
     adminPool = new Pool({ connectionString: ADMIN_URL });
     // Resolver IDs via DNI del seed (DNI = id estable, UUID se regenera).
-    const u1 = await adminPool.query(
+    // MONITOR = Maria Elena (DNI 40000002) - jefe_gestion con Especialista (cargo Jefe de
+    //          Gestion). El seed usa `monitores[0]` (primer Especialista por createdAt) y
+    //          Maria Elena es la primera, asi que es la monitor de los 4 cronogramas seed.
+    // OTHER = Ana Lucia (DNI 40000004) - especialista (cargo Especialista), pero los
+    //          cronogramas del seed usan `monitores[1]` solo si la primera falla; Ana Lucia
+    //          solo es monitor de los cronogramas que el usuario creo al probar. Para el
+    //          test usamos Pedro Pablo (DNI 40000005) que NO es monitor de ninguno seed.
+    const uMonitor = await adminPool.query(
       `SELECT u.id FROM usuarios u JOIN personas p ON p.id = u.persona_id
        WHERE p.dni = '40000002'`,
     );
-    const u2 = await adminPool.query(
+    const uOther = await adminPool.query(
       `SELECT u.id FROM usuarios u JOIN personas p ON p.id = u.persona_id
-       WHERE p.dni = '40000004'`,
+       WHERE p.dni = '40000005'`,
     );
     const u3 = await adminPool.query(
       `SELECT u.id FROM usuarios u JOIN personas p ON p.id = u.persona_id
@@ -85,8 +92,8 @@ describe('RLS Policies - Fase 3 (codes reales + aislamiento)', () => {
     const ie = await adminPool.query(
       `SELECT institucion_id FROM cronogramas ORDER BY fecha_programada ASC LIMIT 1`,
     );
-    MONITOR_USER_ID = u1.rows[0].id;
-    OTHER_USER_ID = u2.rows[0].id;
+    MONITOR_USER_ID = uMonitor.rows[0].id;
+    OTHER_USER_ID = uOther.rows[0].id;
     DIRECTOR_IE_USER_ID = u3.rows[0].id;
     MONITOR_IE_ID = ie.rows[0].institucion_id;
   });

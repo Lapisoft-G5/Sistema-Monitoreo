@@ -43,10 +43,19 @@ const ROL_PERMISOS = {
   jefe_area: [
     'directores:write', 'instituciones:read', 'instituciones:write', 'docentes:read', 'docentes:write',
   ],
-  especialista: ['monitoreo:execute', 'reports:read'],
-  director_institucion: ['docentes:read', 'docentes:write', 'reports:read', 'monitoreo:execute'],
-  coordinador_pedagogico: ['docentes:read', 'reports:read', 'monitoreo:execute'],
-  jefe_taller: ['docentes:read', 'reports:read', 'monitoreo:execute'],
+  especialista: [
+    'monitoreo:execute', 'reports:read', 'especialistas:read', 'instituciones:read', 'docentes:read'
+  ],
+  director_institucion: [
+    'docentes:read', 'docentes:write', 'reports:read', 'monitoreo:execute',
+    'especialistas:read', 'instituciones:read'
+  ],
+  coordinador_pedagogico: [
+    'docentes:read', 'reports:read', 'monitoreo:execute', 'especialistas:read', 'instituciones:read'
+  ],
+  jefe_taller: [
+    'docentes:read', 'reports:read', 'monitoreo:execute', 'especialistas:read', 'instituciones:read'
+  ],
   docente: ['reports:own'],
   invitado: [],
 };

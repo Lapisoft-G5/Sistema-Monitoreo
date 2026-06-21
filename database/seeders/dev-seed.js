@@ -132,10 +132,35 @@ const MOCK_ROL_PERMISOS = {
     'docentes:read',
     'docentes:write',
   ],
-  especialista: ['monitoreo:execute', 'reports:read'],
-  director_institucion: ['docentes:read', 'docentes:write', 'reports:read', 'monitoreo:execute'],
-  coordinador_pedagogico: ['docentes:read', 'reports:read', 'monitoreo:execute'],
-  jefe_taller: ['docentes:read', 'reports:read', 'monitoreo:execute'],
+  especialista: [
+    'monitoreo:execute',
+    'reports:read',
+    'especialistas:read',
+    'instituciones:read',
+    'docentes:read',
+  ],
+  director_institucion: [
+    'docentes:read',
+    'docentes:write',
+    'reports:read',
+    'monitoreo:execute',
+    'especialistas:read',
+    'instituciones:read',
+  ],
+  coordinador_pedagogico: [
+    'docentes:read',
+    'reports:read',
+    'monitoreo:execute',
+    'especialistas:read',
+    'instituciones:read',
+  ],
+  jefe_taller: [
+    'docentes:read',
+    'reports:read',
+    'monitoreo:execute',
+    'especialistas:read',
+    'instituciones:read',
+  ],
   docente: ['reports:own'],
   invitado: [],
 };
@@ -660,9 +685,18 @@ async function main() {
   };
 
   for (const userData of MOCK_USERS) {
-    const roleId = roleMap[userData.role];
+    let finalRole = userData.role;
+    if (userData.cargoNombre === 'Coordinador Pedagógico') {
+      finalRole = 'coordinador_pedagogico';
+    } else if (userData.cargoNombre === 'Jefe de Taller') {
+      finalRole = 'jefe_taller';
+    } else if (userData.cargoNombre === 'Director') {
+      finalRole = 'director_institucion';
+    }
+
+    const roleId = roleMap[finalRole];
     if (!roleId) {
-      console.warn(`Role '${userData.role}' not found — skipping ${userData.dni}`);
+      console.warn(`Role '${finalRole}' not found — skipping ${userData.dni}`);
       continue;
     }
 
@@ -682,7 +716,7 @@ async function main() {
     const passwordHash = await bcrypt.hash(userData.dni, saltRounds);
     await prisma.usuario.upsert({
       where: { personaId: persona.id },
-      update: { rolId: roleId, isActive: true },
+      update: { rolId: roleId, passwordHash, isActive: true, isFirstLogin: true },
       create: {
         personaId: persona.id,
         rolId: roleId,
@@ -808,6 +842,31 @@ async function main() {
         console.warn(
           `Cargo '${cargoNombre}' no encontrado en cargoMap — skipping DocenteCargo de ${userData.dni}`,
         );
+      }
+
+      // Sincronizar Especialista si el cargo requiere que actúe como monitor/evaluador
+      const isMonitor = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(cargoNombre);
+      if (isMonitor) {
+        await prisma.especialista.upsert({
+          where: { personaId: persona.id },
+          update: {
+            cargo: cargoNombre,
+            nivelEducativo: userData.nivelEducativo || 'Secundaria',
+            condicionLaboral: userData.condicionLaboral || 'Nombrado',
+            cargaLaboral: userData.cargaLaboral ?? (cargoNombre === 'Coordinador Pedagógico' ? 40 : 30),
+            estado: 'Activo',
+            modalidad: userData.modalidad || 'EBR',
+          },
+          create: {
+            personaId: persona.id,
+            cargo: cargoNombre,
+            nivelEducativo: userData.nivelEducativo || 'Secundaria',
+            condicionLaboral: userData.condicionLaboral || 'Nombrado',
+            cargaLaboral: userData.cargaLaboral ?? (cargoNombre === 'Coordinador Pedagógico' ? 40 : 30),
+            estado: 'Activo',
+            modalidad: userData.modalidad || 'EBR',
+          },
+        });
       }
     }
   }

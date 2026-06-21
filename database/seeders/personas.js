@@ -73,7 +73,7 @@ const USERS = [
     nivelEducativo: 'Secundaria',
     especialidad: 'Ciencias Sociales',
     secciones: [{ grado: '5.', seccion: 'A' }, { grado: '5.', seccion: 'B' }],
-    condicionLaboral: 'Nombrado',
+    condicionLaboral: 'Designado',
   },
   {
     dni: '40000007',
@@ -85,7 +85,7 @@ const USERS = [
     institucionCodigoModular: '0200002',
     nivelEducativo: 'Primaria',
     secciones: [{ grado: '6.', seccion: 'A' }],
-    condicionLaboral: 'Nombrado',
+    condicionLaboral: 'Designado',
   },
   {
     dni: '40000008',
@@ -100,6 +100,7 @@ const USERS = [
     secciones: [{ grado: '3.', seccion: 'A' }, { grado: '3.', seccion: 'B' }],
     condicionLaboral: 'Nombrado',
     cargaLaboral: 30,
+    cargoNombre: 'Coordinador Pedagógico',
   },
   {
     dni: '40000009',
@@ -114,6 +115,7 @@ const USERS = [
     secciones: [{ grado: '4.', seccion: 'A' }],
     condicionLaboral: 'Contratado',
     cargaLaboral: 24,
+    cargoNombre: 'Jefe de Taller',
   },
   {
     dni: '40000010',
@@ -175,9 +177,18 @@ export async function seedPersonas(ctx) {
     validarEmail(u.email, ctxStr);
     validarEdadPlausible(new Date(u.fechaNacimiento), ctxStr);
 
-    const rolId = ctx.roleMap[u.role];
+    let finalRole = u.role;
+    if (u.cargoNombre === 'Coordinador Pedagógico') {
+      finalRole = 'coordinador_pedagogico';
+    } else if (u.cargoNombre === 'Jefe de Taller') {
+      finalRole = 'jefe_taller';
+    } else if (u.cargoNombre === 'Director') {
+      finalRole = 'director_institucion';
+    }
+
+    const rolId = ctx.roleMap[finalRole];
     if (!rolId) {
-      console.warn(`[personas] Rol '${u.role}' no existe, saltando ${u.dni}`);
+      console.warn(`[personas] Rol '${finalRole}' no existe, saltando ${u.dni}`);
       continue;
     }
 
@@ -199,7 +210,7 @@ export async function seedPersonas(ctx) {
     const passwordHash = await bcrypt.hash(u.dni, saltRounds);
     await prisma.usuario.upsert({
       where: { personaId: persona.id },
-      update: { rolId, isActive: true },
+      update: { rolId, passwordHash, isActive: true, isFirstLogin: true },
       create: {
         personaId: persona.id,
         rolId,
@@ -324,6 +335,31 @@ export async function seedPersonas(ctx) {
         }
       } else {
         console.warn(`[personas] Cargo '${cargoNombre}' no existe, saltando DocenteCargo de ${u.dni}`);
+      }
+
+      // Sincronizar Especialista si el cargo requiere que actúe como monitor/evaluador
+      const isMonitor = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(cargoNombre);
+      if (isMonitor) {
+        await prisma.especialista.upsert({
+          where: { personaId: persona.id },
+          update: {
+            cargo: cargoNombre,
+            nivelEducativo: u.nivelEducativo || 'Secundaria',
+            condicionLaboral: u.condicionLaboral || 'Nombrado',
+            cargaLaboral: u.cargaLaboral ?? (cargoNombre === 'Coordinador Pedagógico' ? 40 : 30),
+            estado: 'Activo',
+            modalidad: u.modalidad || 'EBR',
+          },
+          create: {
+            personaId: persona.id,
+            cargo: cargoNombre,
+            nivelEducativo: u.nivelEducativo || 'Secundaria',
+            condicionLaboral: u.condicionLaboral || 'Nombrado',
+            cargaLaboral: u.cargaLaboral ?? (cargoNombre === 'Coordinador Pedagógico' ? 40 : 30),
+            estado: 'Activo',
+            modalidad: u.modalidad || 'EBR',
+          },
+        });
       }
     }
   }

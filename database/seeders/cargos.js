@@ -8,6 +8,7 @@ import { prisma } from './_lib/prisma.js';
 const CARGOS = [
   'Director',
   'Subdirector',
+  'Coordinador Pedagógico',
   'Docente de Aula',
   'Docente de Educacion Fisica',
   'Auxiliar de Educacion',

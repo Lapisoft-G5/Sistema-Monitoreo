@@ -40,13 +40,24 @@ export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
       include: {
         docente: {
           include: {
-            institucion: true;
+            institucion: { include: { nivelEducativoRel: true } };
             docenteCargos: {
+              where: { fechaFin: null };
               include: { cargo: true };
+            };
+            docenteEspecialidades: { include: { especialidad: true } };
+          };
+        };
+        especialista: {
+          include: {
+            especialidades: { include: { especialidad: true } };
+            cargos: {
+              where: { fechaFin: null; esPrincipal: true };
+              orderBy: { fechaInicio: 'desc' };
+              take: 1;
             };
           };
         };
-        especialista: true;
       };
     };
   };
@@ -154,7 +165,12 @@ export class AuthTokenService {
   private computeUserPermissions(user: AuthUserWithRelations): string[] {
     const rolCodigo = user.rol.codigo as RoleCode;
 
-    const espCargo = (user.persona?.especialista?.cargo ?? null) as EspecialistaCargoEnum | null;
+    // Fase 2: el cargo del Especialista ahora vive en la tabla `especialista_cargos`.
+    // El `buildInclude()` ya hace `take: 1` con orderBy por fechaInicio desc
+    // y filtra por es_principal = true + fecha_fin IS NULL, asi que el primer
+    // elemento (si existe) es el cargo activo y principal.
+    const espCargoActual = user.persona?.especialista?.cargos?.[0]?.cargo ?? null;
+    const espCargo = (espCargoActual ?? null) as EspecialistaCargoEnum | null;
 
     const activeDocenteCargos: CargoNombre[] = (user.persona?.docente?.docenteCargos ?? [])
       .filter((dc) => dc.cargo?.nombre)

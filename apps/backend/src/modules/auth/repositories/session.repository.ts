@@ -13,4 +13,10 @@ export abstract class SessionRepository {
   abstract invalidateSession(sessionJti: string, reason: string): Promise<void>;
   abstract isSessionActive(sessionJti: string): Promise<boolean>;
   abstract hasActiveSession(userId: string): Promise<boolean>;
+  /**
+   * Invalida TODAS las sesiones activas de un usuario.
+   * Usado cuando cambian las capabilities del usuario (ej. cerrar un cargo).
+   * Devuelve la cantidad de sesiones invalidadas.
+   */
+  abstract invalidateAllUserSessions(userId: string, reason: string): Promise<number>;
 }

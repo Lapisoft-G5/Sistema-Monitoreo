@@ -30,7 +30,14 @@ export class PrismaUserRepository implements UserRepository {
             },
           },
           especialista: {
-            include: { especialidades: { include: { especialidad: true } } },
+            include: {
+              especialidades: { include: { especialidad: true } },
+              cargos: {
+                where: { fechaFin: null, esPrincipal: true },
+                orderBy: { fechaInicio: 'desc' },
+                take: 1,
+              },
+            },
           },
         },
       },

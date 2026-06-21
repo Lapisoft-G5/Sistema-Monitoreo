@@ -365,4 +365,83 @@ export async function seedPersonas(ctx) {
   }
 
   console.log(`[personas] ${USERS.length} usuarios listos.`);
+
+  // ── Backfill Fase 2: EspecialistaCargo + es_principal en DocenteCargo ──
+  // El migration SQL hace el backfill cuando se ejecuta sobre una BD vacia,
+  // pero el seeder corre DESPUES. Re-ejecutamos aqui para asegurar el sync
+  // con la data sembrada.
+
+  // EspecialistaCargo: un registro activo por Especialista, espejando
+  // `especialistas.cargo` con es_principal = true.
+  const especialistas = await prisma.especialista.findMany({
+    select: { id: true, cargo: true, createdAt: true },
+  });
+  for (const esp of especialistas) {
+    const existing = await prisma.especialistaCargo.findFirst({
+      where: { especialistaId: esp.id, fechaFin: null },
+    });
+    if (!existing) {
+      await prisma.especialistaCargo.create({
+        data: {
+          id: randomUUID(),
+          especialistaId: esp.id,
+          cargo: esp.cargo,
+          fechaInicio: esp.createdAt,
+          fechaFin: null,
+          esPrincipal: true,
+        },
+      });
+    } else {
+      await prisma.especialistaCargo.update({
+        where: { id: existing.id },
+        data: { cargo: esp.cargo, esPrincipal: true, fechaFin: null },
+      });
+    }
+  }
+
+  // DocenteCargo.es_principal: el cargo activo de mayor prioridad por docente.
+  const prioridad = {
+    'Director': 1,
+    'Subdirector': 2,
+    'Coordinador Pedagógico': 3,
+    'Jefe de Taller': 4,
+    'PIP': 5,
+    'Docente de Aula': 6,
+  };
+  const cargosAll = await prisma.cargo.findMany({ select: { id: true, nombre: true } });
+  const cargoIdByNombre = new Map(cargosAll.map((c) => [c.nombre, c.id]));
+
+  const docentesConCargos = await prisma.docente.findMany({
+    include: {
+      docenteCargos: {
+        where: { fechaFin: null },
+        include: { cargo: true },
+      },
+    },
+  });
+  for (const d of docentesConCargos) {
+    if (d.docenteCargos.length === 0) continue;
+    // Reset todos a false y marcar el de mayor prioridad
+    await prisma.docenteCargo.updateMany({
+      where: { docenteId: d.id },
+      data: { esPrincipal: false },
+    });
+    const sorted = d.docenteCargos
+      .slice()
+      .sort((a, b) => {
+        const pa = prioridad[a.cargo.nombre] ?? 99;
+        const pb = prioridad[b.cargo.nombre] ?? 99;
+        if (pa !== pb) return pa - pb;
+        return b.fechaInicio.getTime() - a.fechaInicio.getTime();
+      });
+    const principal = sorted[0];
+    await prisma.docenteCargo.update({
+      where: { id: principal.id },
+      data: { esPrincipal: true },
+    });
+  }
+
+  console.log(
+    `[personas] Backfill Fase 2: ${especialistas.length} EspecialistaCargo, ${docentesConCargos.length} docentes procesados.`,
+  );
 }

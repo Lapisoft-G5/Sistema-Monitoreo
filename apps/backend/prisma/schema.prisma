@@ -164,6 +164,9 @@ model LogAuditoria {
 model Especialista {
   id                String   @id @default(uuid()) @db.Uuid
   personaId         String   @unique @map("persona_id") @db.Uuid
+  /// Espejo del EspecialistaCargo activo con es_principal = true.
+  /// No escribir directamente: usar módulos/teachers/cargos (Fase 2).
+  /// El campo se mantiene para no romper consumidores legacy.
   cargo             String   @db.VarChar(50)
   nivelEducativo    String   @map("nivel_educativo") @db.VarChar(50)
   condicionLaboral  String   @map("condicion_laboral") @db.VarChar(50)
@@ -177,8 +180,33 @@ model Especialista {
   persona           Persona  @relation(fields: [personaId], references: [id])
   cronogramas       Cronograma[]
   especialidades    EspecialistaEspecialidad[]
+  cargos            EspecialistaCargo[]
 
   @@map("especialistas")
+}
+
+/// Historial de cargos del Especialista con marcas de tiempo.
+/// Fase 2: reemplaza el campo escalar `Especialista.cargo` como source of truth.
+/// Constraint: solo 1 cargo activo (fechaFin IS NULL) por Especialista,
+/// enforced via índice único parcial en la migración.
+model EspecialistaCargo {
+  id              String   @id @default(uuid()) @db.Uuid
+  especialistaId  String   @map("especialista_id") @db.Uuid
+  /// Valores: 'Especialista' | 'Jefe de Área' | 'Jefe de Gestión'
+  /// (o cualquier cargo Docente que el Especialista ejerza simultaneamente, ej. Director).
+  /// Tamaño 50 para coincidir con el campo espejo `Especialista.cargo`.
+  cargo           String   @db.VarChar(50)
+  fechaInicio     DateTime @default(now()) @map("fecha_inicio")
+  fechaFin        DateTime? @map("fecha_fin")
+  /// El cargo principal es el que se usa para auth (decide landing + capabilities).
+  /// Se calcula por prioridad si hubiera varios, pero el constraint de 1 activo
+  /// lo hace único. La app asegura que el único activo tenga esPrincipal = true.
+  esPrincipal     Boolean  @default(false) @map("es_principal")
+
+  especialista     Especialista @relation(fields: [especialistaId], references: [id], onDelete: Cascade)
+
+  @@index([especialistaId, fechaInicio])
+  @@map("especialista_cargos")
 }
 
 // ==========================================
@@ -291,11 +319,16 @@ model Cargo {
 }
 
 model DocenteCargo {
-  id          String    @id @default(uuid()) @db.Uuid
-  docenteId   String    @map("docente_id") @db.Uuid
-  cargoId     String    @map("cargo_id") @db.Uuid
-  fechaInicio DateTime  @default(now()) @map("fecha_inicio")
-  fechaFin    DateTime? @map("fecha_fin")
+  id           String    @id @default(uuid()) @db.Uuid
+  docenteId    String    @map("docente_id") @db.Uuid
+  cargoId      String    @map("cargo_id") @db.Uuid
+  fechaInicio  DateTime  @default(now()) @map("fecha_inicio")
+  fechaFin     DateTime? @map("fecha_fin")
+  /// Cargo principal del docente. Lo decide el service por prioridad
+  /// (Director > Subdirector > Coord. Ped. > Jefe de Taller > PIP > Docente de Aula).
+  /// Constraint: max 1 cargo activo (fechaFin IS NULL) con esPrincipal = true por docente
+  /// (índice único parcial en la migración).
+  esPrincipal  Boolean   @default(false) @map("es_principal")
 
   docente     Docente   @relation(fields: [docenteId], references: [id])
   cargo       Cargo     @relation(fields: [cargoId], references: [id])

@@ -169,6 +169,16 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
             data: { rolId: docenteRole.id },
           });
         }
+
+        // Eliminar el Especialista del director anterior si existe
+        const existingEsp = await this.prisma.especialista.findUnique({
+          where: { personaId: currentDirectorDocente.personaId },
+        });
+        if (existingEsp) {
+          await this.prisma.especialista.delete({
+            where: { personaId: currentDirectorDocente.personaId },
+          });
+        }
       }
 
       // Vinculamos al nuevo docente con la institución
@@ -194,6 +204,30 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
           docenteId: newDirectorDocente.id,
           cargoId: directorCargo.id,
           fechaInicio: now,
+        },
+      });
+
+      // Sincronizar Especialista del nuevo director
+      await this.prisma.especialista.upsert({
+        where: { personaId: newDirectorPersona.id },
+        update: {
+          cargo: 'Director',
+          nivelEducativo: newDirectorDocente.nivelEducativo,
+          condicionLaboral: newDirectorDocente.condicionLaboral || 'Nombrado',
+          cargaLaboral: newDirectorDocente.cargaLaboral ?? 40,
+          estado: 'Activo',
+          modalidad: newDirectorDocente.modalidad,
+          escalaMagisterial: newDirectorDocente.escalaMagisterial ?? null,
+        },
+        create: {
+          personaId: newDirectorPersona.id,
+          cargo: 'Director',
+          nivelEducativo: newDirectorDocente.nivelEducativo,
+          condicionLaboral: newDirectorDocente.condicionLaboral || 'Nombrado',
+          cargaLaboral: newDirectorDocente.cargaLaboral ?? 40,
+          estado: 'Activo',
+          modalidad: newDirectorDocente.modalidad,
+          escalaMagisterial: newDirectorDocente.escalaMagisterial ?? null,
         },
       });
 
@@ -233,6 +267,16 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
           await this.prisma.usuario.updateMany({
             where: { personaId: currentDirectorDocente.personaId },
             data: { rolId: docenteRole.id },
+          });
+        }
+
+        // Eliminar el Especialista del director anterior si existe
+        const existingEsp = await this.prisma.especialista.findUnique({
+          where: { personaId: currentDirectorDocente.personaId },
+        });
+        if (existingEsp) {
+          await this.prisma.especialista.delete({
+            where: { personaId: currentDirectorDocente.personaId },
           });
         }
       }

@@ -23,10 +23,11 @@ import type {
   CreateSolicitudReprogramacionDto,
   ResolverSolicitudDto,
 } from '../dto/solicitud-reprogramacion.dto.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 export interface SessionUser {
   id: string;
-  role: string;
+  role: RoleCode;
   institucionId?: string | null;
 }
 
@@ -240,19 +241,19 @@ export class SchedulingService {
   // ============== Helpers ==============
 
   private esAutoridad(session: SessionUser): boolean {
-    return ['jefe_gestion', 'director_institucion', 'director_ie'].includes(session.role);
+    return ['jefe_gestion', 'director_institucion'].includes(session.role);
   }
 
   private aplicarScopingVisitas(visitas: IVisita[], session?: SessionUser): IVisita[] {
     if (!session) return visitas;
-    if (session.role === 'jefe_gestion') return visitas;
-    if (session.role === 'director_institucion' || session.role === 'director_ie') {
+    if (session.role === RoleCode.JEFE_GESTION) return visitas;
+    if (session.role === RoleCode.DIRECTOR_INSTITUCION) {
       return visitas.filter((v) => v.institucionId === session.institucionId);
     }
     if (
-      session.role === 'especialista' ||
-      session.role === 'coordinador_pedagogico' ||
-      session.role === 'jefe_taller'
+      session.role === RoleCode.ESPECIALISTA ||
+      session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
+      session.role === RoleCode.JEFE_TALLER
     ) {
       // Especialista: solo lo que el monitor es el
       return visitas; // se filtra en repository con monitorId
@@ -262,8 +263,8 @@ export class SchedulingService {
 
   private validarAccesoVisita(visita: IVisita, session?: SessionUser): void {
     if (!session) return;
-    if (session.role === 'jefe_gestion') return;
-    if (session.role === 'director_institucion' || session.role === 'director_ie') {
+    if (session.role === RoleCode.JEFE_GESTION) return;
+    if (session.role === RoleCode.DIRECTOR_INSTITUCION) {
       if (visita.institucionId !== session.institucionId) {
         throw new ForbiddenException('No tiene acceso a esta visita (otra institucion).');
       }

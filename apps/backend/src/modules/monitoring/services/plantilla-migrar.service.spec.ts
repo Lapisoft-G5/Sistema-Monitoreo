@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PlantillaService } from './plantilla.service.js';
 import { PlantillaRepository } from '../repositories/plantilla.repository.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 describe('PlantillaService - ILA-0046 Versionado', () => {
   let service: PlantillaService;
@@ -61,7 +62,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       const result = await service.cambiarEstado(
         'plantilla-v1',
         { estado: 'Vigente' },
-        { id: 'admin', role: 'admin' },
+        { id: 'admin', role: 'admin' as RoleCode },
       );
 
       expect(result.estado).toBe('Vigente');
@@ -75,7 +76,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
         service.cambiarEstado(
           'plantilla-inexistente',
           { estado: 'Vigente' },
-          { id: 'admin', role: 'admin' },
+          { id: 'admin', role: 'admin' as RoleCode },
         ),
       ).rejects.toThrow(NotFoundException);
     });
@@ -88,7 +89,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
         service.cambiarEstado(
           'plantilla-v1',
           { estado: 'Vigente' },
-          { id: 'admin', role: 'admin' },
+          { id: 'admin', role: 'admin' as RoleCode },
         ),
       ).rejects.toThrow(BadRequestException);
     });
@@ -103,7 +104,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
         service.cambiarEstado(
           'plantilla-v1',
           { estado: 'Vigente' },
-          { id: 'admin', role: 'admin' },
+          { id: 'admin', role: 'admin' as RoleCode },
         ),
       ).rejects.toThrow(ConflictException);
     });
@@ -114,7 +115,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       const result = await service.cambiarEstado(
         'plantilla-v1',
         { estado: 'Vigente' },
-        { id: 'admin', role: 'admin' },
+        { id: 'admin', role: 'admin' as RoleCode },
       );
 
       expect(result).toBe(basePlantilla);
@@ -132,7 +133,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       const result = await service.update(
         'plantilla-v1',
         { descripcion: 'cambiada' },
-        { id: 'admin', role: 'admin' },
+        { id: 'admin', role: 'admin' as RoleCode },
       );
 
       expect(result.modo).toBe('VERSIONADO');
@@ -151,7 +152,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       const result = await service.update(
         'plantilla-v1',
         { descripcion: 'actualizada' },
-        { id: 'admin', role: 'admin' },
+        { id: 'admin', role: 'admin' as RoleCode },
       );
 
       expect(result.modo).toBe('IN_PLACE');
@@ -166,7 +167,7 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
         service.update(
           'plantilla-inexistente',
           { descripcion: 'x' },
-          { id: 'admin', role: 'admin' },
+          { id: 'admin', role: 'admin' as RoleCode },
         ),
       ).rejects.toThrow(NotFoundException);
     });

@@ -13,23 +13,24 @@ import {
   ReporteRepository,
   SessionScope,
 } from './reporte.repository.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 @Injectable()
 export class PrismaReporteRepository implements ReporteRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private buildScopeFilter(session: SessionScope): any {
-    if (session.role === 'jefe_gestion') {
+    if (session.role === RoleCode.JEFE_GESTION) {
       return {};
     }
-    if (session.role === 'director_institucion' || session.role === 'director_ie') {
+    if (session.role === RoleCode.DIRECTOR_INSTITUCION) {
       if (!session.institucionId) return { id: '__none__' };
       return { institucionId: session.institucionId };
     }
     if (
-      session.role === 'especialista' ||
-      session.role === 'coordinador_pedagogico' ||
-      session.role === 'jefe_taller'
+      session.role === RoleCode.ESPECIALISTA ||
+      session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
+      session.role === RoleCode.JEFE_TALLER
     ) {
       return { cronograma: { monitorId: session.id } };
     }

@@ -25,7 +25,7 @@ const createCopiedPlantilla = (plantilla: Plantilla, userId: string, userInstitu
   return {
     ...plantilla,
     id: 'pl-copia-' + Date.now(),
-    creadoPorRole: 'director_ie',
+    creadoPorRole: 'director_institucion',
     creadoPorId: userId,
     ieId: userInstitucion,
     estado: 'Borrador',
@@ -39,7 +39,7 @@ export const PlantillasCatalog = () => {
   const navigate = useNavigate();
   const { user } = useUser();
 
-  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+  const isDirector = user?.role === 'director_institucion';
 
   // Filtrado inicial de plantillas basado en visibilidad según el rol
   const visiblePlantillas = useMemo(() => {
@@ -49,7 +49,7 @@ export const PlantillasCatalog = () => {
         (p) =>
           !p.creadoPorRole ||
           p.creadoPorRole === 'jefe_gestion' ||
-          (p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion)
+          (p.creadoPorRole === 'director_institucion' && p.ieId === user?.institucion)
       );
     }
     // El jefe de gestión y otros ven solo las generales (UGEL)

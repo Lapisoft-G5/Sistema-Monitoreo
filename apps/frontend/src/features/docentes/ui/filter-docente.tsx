@@ -32,7 +32,7 @@ export const FilterDocentes = ({ docentes }: FilterDocentesProps) => {
     setSearchParams(newParams);
   };
 
-  const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  const isDirectorIe = user?.role === 'director_institucion';
   const currentNivel =
     isDirectorIe && user?.institucionNivel
       ? user.institucionNivel.toUpperCase()

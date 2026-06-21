@@ -2,11 +2,10 @@ export type UserRole =
   | 'director_ugel'
   | 'jefe_area'
   | 'jefe_gestion'
-  | 'coordinador_pedagogico' // 🚀 Agregado para solucionar el error de TypeScript
+  | 'coordinador_pedagogico'
   | 'jefe_taller'
   | 'especialista'
   | 'director_institucion'
-  | 'director_ie' // 🚀 Fallback alias para base de datos local
   | 'docente'
   | 'invitado'
   | 'admin';
@@ -14,12 +13,11 @@ export type UserRole =
 export const ROLE_LABELS: Record<UserRole, string> = {
   director_ugel: 'Director UGEL',
   jefe_area: 'Jefe de Área',
-  coordinador_pedagogico: 'Coordinador Pedagógico', // 🚀 Corregido la etiqueta
+  coordinador_pedagogico: 'Coordinador Pedagógico',
   jefe_taller: 'Jefe de Taller',
   jefe_gestion: 'Jefe de Gestión',
   especialista: 'Especialista',
   director_institucion: 'Director de Institución',
-  director_ie: 'Director de Institución',
   docente: 'Docente',
   invitado: 'Invitado',
   admin: 'Administrador del Sistema',
@@ -106,18 +104,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes',
   ],
 
-  director_ie: [
-    'monitoreo',
-    'monitoreo_plan_anual',
-    'monitoreo_cronograma',
-    'monitoreo_calendario',
-    'plantillas',
-    'instituciones_docentes',
-    'instituciones_coordinadores',
-    'instituciones_jefes_taller',
-    'reportes',
-  ],
-
   docente: [...BASE_PERMISSIONS],
 
   invitado: [
@@ -157,7 +143,6 @@ export const getDefaultLandingPage = (role: UserRole): string => {
     case 'especialista':
       return '/monitoreo/calendario';
     case 'director_institucion':
-    case 'director_ie':
       return '/instituciones/docentes';
     case 'coordinador_pedagogico':
     case 'jefe_taller':

@@ -91,7 +91,7 @@ export const Sidebar = () => {
               },
             ]
           : SIDEBAR_CONFIG.filter((item) => {
-              const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+              const isDirector = user?.role === 'director_institucion';
               const isSecundary = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
               if (
                 (item.id === 'instituciones_coordinadores' || item.id === 'instituciones_jefes_taller') &&
@@ -117,9 +117,7 @@ export const Sidebar = () => {
                 ? 'Directores'
                 : 'Docentes'
               : item.id === 'monitoreo' &&
-                (user?.role === 'jefe_gestion' ||
-                  user?.role === 'director_institucion' ||
-                  user?.role === 'director_ie')
+                (user?.role === 'jefe_gestion' || user?.role === 'director_institucion')
                 ? 'Plan Monitoreo'
                 : item.id === 'reportes' && user?.role === 'docente'
                   ? 'Mis Reportes'

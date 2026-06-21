@@ -6,7 +6,6 @@ export type UserRole =
   | 'jefe_taller'
   | 'especialista'
   | 'director_institucion'
-  | 'director_ie'
   | 'docente'
   | 'invitado'
   | 'admin';
@@ -20,7 +19,6 @@ export const USER_ROLES_LABELS: Record<UserRole, string> = {
   jefe_taller: 'Jefe de Taller',
   especialista: 'Especialista',
   director_institucion: 'Director de Institución',
-  director_ie: 'Director de Institución',
   docente: 'Docente',
   invitado: 'Invitado',
   admin: 'Administrador del Sistema',
@@ -28,5 +26,5 @@ export const USER_ROLES_LABELS: Record<UserRole, string> = {
 
 // 3. Agrupaciones lógicas de roles para facilitar la validación
 export const ADMIN_ROLES: UserRole[] = ['director_ugel', 'jefe_area'];
-export const INSTITUTION_ROLES: UserRole[] = ['director_institucion', 'director_ie', 'coordinador_pedagogico', 'jefe_taller', 'docente'];
+export const INSTITUTION_ROLES: UserRole[] = ['director_institucion', 'coordinador_pedagogico', 'jefe_taller', 'docente'];
 export const READ_ONLY_ROLES: UserRole[] = ['invitado'];

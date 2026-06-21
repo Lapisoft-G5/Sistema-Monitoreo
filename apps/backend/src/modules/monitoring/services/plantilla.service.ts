@@ -11,10 +11,11 @@ import { PlantillaRepository } from '../repositories/plantilla.repository.js';
 import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import type { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-plantilla.dto.js';
 import type { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 export interface SessionUser {
   id: string;
-  role: string;
+  role: RoleCode;
   institucionId?: string | null;
 }
 
@@ -121,7 +122,13 @@ export class PlantillaService {
     if (!institucionId) {
       throw new ForbiddenException('Director IE sin institucionId en sesion.');
     }
-    return this.repository.clone(id, session.id, 'director_ie', institucionId, descripcion);
+    return this.repository.clone(
+      id,
+      session.id,
+      'director_institucion',
+      institucionId,
+      descripcion,
+    );
   }
 
   private validarReglas(dto: CreatePlantillaDto): void {
@@ -142,16 +149,16 @@ export class PlantillaService {
   }
 
   private isDirector(session: SessionUser): boolean {
-    return session.role === 'director_institucion' || session.role === 'director_ie';
+    return session.role === RoleCode.DIRECTOR_INSTITUCION;
   }
 
   private resolveAutor(session: SessionUser): {
-    rolAutorAlCrear: 'jefe_gestion' | 'director_ie';
+    rolAutorAlCrear: 'jefe_gestion' | 'director_institucion';
     institucionId: string | null;
   } {
     if (this.isDirector(session)) {
       return {
-        rolAutorAlCrear: 'director_ie',
+        rolAutorAlCrear: 'director_institucion',
         institucionId: session.institucionId ?? null,
       };
     }

@@ -14,7 +14,7 @@ import { useUser } from '@entities/model-user';
 
 export const PlanMonitoreoAnualPage = () => {
   const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  const isDirector = user?.role === 'director_institucion';
   const defaultEntity = isDirector ? 'IE' : 'UGEL';
 
   // --- Estados de Vista ---

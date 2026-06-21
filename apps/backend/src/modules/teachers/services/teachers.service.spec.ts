@@ -179,7 +179,7 @@ describe('TeachersService', () => {
       ).rejects.toThrow(new ForbiddenException('No tiene permisos para realizar esta acción.'));
     });
 
-    it('should throw ForbiddenException if director_ie has no assigned school', async () => {
+    it('should throw ForbiddenException if director_institucion has no assigned school', async () => {
       await expect(
         service.getDocentes({ sub: 'x', role: directorIeRole, permissions: ['docentes:read'] }),
       ).rejects.toThrow(

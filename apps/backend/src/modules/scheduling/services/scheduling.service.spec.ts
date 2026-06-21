@@ -1,3 +1,4 @@
+import { RoleCode } from '../../../common/enums/role.enum.js';
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
@@ -16,9 +17,13 @@ describe('SchedulingService - Reprogramaciones', () => {
   let storage: any;
   let prisma: any;
 
-  const sesionEspecialista = { id: 'esp-1', role: 'especialista' };
-  const sesionJefe = { id: 'jefe-1', role: 'jefe_gestion' };
-  const sesionDirector = { id: 'dir-1', role: 'director_institucion', institucionId: 'ie-1' };
+  const sesionEspecialista = { id: 'esp-1', role: RoleCode.ESPECIALISTA };
+  const sesionJefe = { id: 'jefe-1', role: RoleCode.JEFE_GESTION };
+  const sesionDirector = {
+    id: 'dir-1',
+    role: RoleCode.DIRECTOR_INSTITUCION,
+    institucionId: 'ie-1',
+  };
 
   const visitaBase = {
     id: 'vis-1',

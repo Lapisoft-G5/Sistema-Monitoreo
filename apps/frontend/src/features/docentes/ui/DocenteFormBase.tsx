@@ -78,7 +78,7 @@ export const DocenteFormBase = ({
 }: Props) => {
   const { user } = useUser();
   console.log('User context in DocenteFormBase:', user);
-  const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  const isDirectorIe = user?.role === 'director_institucion';
 
   const [form, setForm] = useState<DocenteFormData>(() => {
     if (initialData) return initialData;

@@ -134,12 +134,12 @@ export const CalendarioSidebar = ({
   const activeTemplate = useMemo(() => {
     if (!selectedVisit) return null;
     const searchType = selectedVisit.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+    const isDirector = user?.role === 'director_institucion';
 
     const matchedTemplate = plantillas.find((p) => {
       if (p.tipoMonitoreo !== searchType || p.estado !== 'Vigente') return false;
       if (isDirector) {
-        return p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion;
+        return p.creadoPorRole === 'director_institucion' && p.ieId === user?.institucion;
       } else {
         return !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion';
       }
@@ -158,8 +158,8 @@ export const CalendarioSidebar = ({
     if (!selectedVisit || !user) return false;
 
     // Caso 1: Visita con plantilla de la I.E. (creada por un Director)
-    if (activeTemplate?.creadoPorRole === 'director_ie') {
-      const isDirector = user.role === 'director_ie' || user.role === 'director_institucion';
+    if (activeTemplate?.creadoPorRole === 'director_institucion') {
+      const isDirector = user.role === 'director_institucion';
       const isSameSchool =
         user.institucion === activeTemplate.ieId ||
         user.institucionNombre?.toLowerCase() === selectedVisit.institucion.toLowerCase();
@@ -547,7 +547,7 @@ export const CalendarioSidebar = ({
                     <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                       <Clock className="h-4.5 w-4.5 text-blue-500 mt-0.5 shrink-0" />
                       <span>
-                        {activeTemplate?.creadoPorRole === 'director_ie' ? (
+                        {activeTemplate?.creadoPorRole === 'director_institucion' ? (
                           <>
                             <strong>Visita de I.E.:</strong> Solo el Director correspondiente a la institución{' '}
                             <strong>{selectedVisit.institucion}</strong> tiene permisos para ejecutar esta ficha.

@@ -1,3 +1,4 @@
+import { RoleCode } from '../../../common/enums/role.enum.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { ConflictException, NotFoundException } from '@nestjs/common';
@@ -81,7 +82,7 @@ describe('InstitutionsService', () => {
 
     describe('Jefe de Área constraints', () => {
       it('should allow Jefe de Área with level Inicial to create EBR Inicial', async () => {
-        const user = { role: 'jefe_area', especialista_nivel: 'Inicial' } as any;
+        const user = { role: RoleCode.JEFE_AREA, especialista_nivel: 'Inicial' } as any;
         const initialDto = {
           ...dto,
           modalidad: 'EBR',
@@ -96,7 +97,7 @@ describe('InstitutionsService', () => {
       });
 
       it('should allow Jefe de Área with level Inicial to create EBE CEBE', async () => {
-        const user = { role: 'jefe_area', especialista_nivel: 'Inicial' } as any;
+        const user = { role: RoleCode.JEFE_AREA, especialista_nivel: 'Inicial' } as any;
         const ebeDto = { ...dto, modalidad: 'EBE', nivelEducativo: 'CEBE' } as CreateInstitucionDto;
         findByCodigoModularMock.mockResolvedValue(null);
         createMock.mockResolvedValue({ id: 'ie-uuid', ...ebeDto } as unknown as Institucion);
@@ -106,7 +107,7 @@ describe('InstitutionsService', () => {
       });
 
       it('should block Jefe de Área with level Inicial from creating EBR Primaria', async () => {
-        const user = { role: 'jefe_area', especialista_nivel: 'Inicial' } as any;
+        const user = { role: RoleCode.JEFE_AREA, especialista_nivel: 'Inicial' } as any;
         const invalidDto = {
           ...dto,
           modalidad: 'EBR',
@@ -119,7 +120,7 @@ describe('InstitutionsService', () => {
       });
 
       it('should allow Jefe de Área with level Primaria to create EBR Primaria', async () => {
-        const user = { role: 'jefe_area', especialista_nivel: 'Primaria' } as any;
+        const user = { role: RoleCode.JEFE_AREA, especialista_nivel: 'Primaria' } as any;
         const primDto = {
           ...dto,
           modalidad: 'EBR',
@@ -133,7 +134,7 @@ describe('InstitutionsService', () => {
       });
 
       it('should block Jefe de Área with level Primaria from creating EBR Secundaria', async () => {
-        const user = { role: 'jefe_area', especialista_nivel: 'Primaria' } as any;
+        const user = { role: RoleCode.JEFE_AREA, especialista_nivel: 'Primaria' } as any;
         const invalidDto = {
           ...dto,
           modalidad: 'EBR',
@@ -146,7 +147,7 @@ describe('InstitutionsService', () => {
       });
 
       it('should allow Jefe de Área with level Secundaria to create EBR Secundaria', async () => {
-        const user = { role: 'jefe_area', especialista_nivel: 'Secundaria' } as any;
+        const user = { role: RoleCode.JEFE_AREA, especialista_nivel: 'Secundaria' } as any;
         const secDto = {
           ...dto,
           modalidad: 'EBR',
@@ -160,7 +161,7 @@ describe('InstitutionsService', () => {
       });
 
       it('should allow Jefe de Área with level Secundaria to create CEPTRO', async () => {
-        const user = { role: 'jefe_area', especialista_nivel: 'Secundaria' } as any;
+        const user = { role: RoleCode.JEFE_AREA, especialista_nivel: 'Secundaria' } as any;
         const ceptroDto = {
           ...dto,
           modalidad: 'CEPTRO',
@@ -174,7 +175,7 @@ describe('InstitutionsService', () => {
       });
 
       it('should block Jefe de Área with level Secundaria from creating EBR Primaria', async () => {
-        const user = { role: 'jefe_area', especialista_nivel: 'Secundaria' } as any;
+        const user = { role: RoleCode.JEFE_AREA, especialista_nivel: 'Secundaria' } as any;
         const invalidDto = {
           ...dto,
           modalidad: 'EBR',
@@ -308,7 +309,11 @@ describe('InstitutionsService', () => {
       const query = new QueryInstitucionDto();
       query.limit = 5;
       query.offset = 0;
-      const user = { id: 'user-id', role: 'jefe_area', especialista_nivel: 'Inicial' } as any;
+      const user = {
+        id: 'user-id',
+        role: RoleCode.JEFE_AREA,
+        especialista_nivel: 'Inicial',
+      } as any;
 
       const mockList = [{ id: 'ie-1', nombre: 'IE 1' } as Institucion];
       findAllMock.mockResolvedValue({ data: mockList, total: 1 });

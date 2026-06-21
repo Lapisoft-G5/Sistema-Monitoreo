@@ -6,6 +6,7 @@ import type {
   TipoMonitoreo,
   EstadoFicha,
 } from '@sistema-monitoreo/shared-contracts';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 export interface QueryFichasCompletadas {
   anioAcademico?: number;
@@ -43,6 +44,6 @@ export abstract class ReporteRepository {
 
 export interface SessionScope {
   id: string;
-  role: string;
+  role: RoleCode;
   institucionId?: string | null;
 }

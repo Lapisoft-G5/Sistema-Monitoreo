@@ -22,7 +22,10 @@ export class PrismaUserRepository implements UserRepository {
           docente: {
             include: {
               institucion: { include: { nivelEducativoRel: true } },
-              docenteCargos: { include: { cargo: true } },
+              docenteCargos: {
+                where: { fechaFin: null },
+                include: { cargo: true },
+              },
               docenteEspecialidades: { include: { especialidad: true } },
             },
           },

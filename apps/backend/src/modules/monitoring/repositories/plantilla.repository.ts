@@ -9,7 +9,7 @@ import type { UpdatePlantillaDto } from '../dto/update-plantilla.dto.js';
 
 export interface CreatePlantillaData {
   autorId: string;
-  rolAutorAlCrear: 'jefe_gestion' | 'director_ie';
+  rolAutorAlCrear: 'jefe_gestion' | 'director_institucion';
   institucionId: string | null;
   data: CreatePlantillaDto;
 }
@@ -56,7 +56,7 @@ export abstract class PlantillaRepository {
   abstract clone(
     sourceId: string,
     nuevoAutorId: string,
-    rolAutorAlCrear: 'jefe_gestion' | 'director_ie',
+    rolAutorAlCrear: 'jefe_gestion' | 'director_institucion',
     institucionId: string | null,
     descripcion?: string,
   ): Promise<IPlantilla>;

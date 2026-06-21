@@ -104,7 +104,7 @@ export const ReportesPage = () => {
           visitEspecialista.includes(user.nombres.toLowerCase())
         );
       });
-    } else if (user?.role === 'director_institucion' || user?.role === 'director_ie') {
+    } else if (user?.role === 'director_institucion') {
       list = list.filter((v) => {
         const userSchool = (user.institucionNombre || '').toLowerCase();
         const visitSchool = v.institucion.toLowerCase();

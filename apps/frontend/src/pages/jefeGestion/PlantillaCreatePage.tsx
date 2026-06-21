@@ -11,7 +11,8 @@ export const PlantillaCreatePage = () => {
   const { user } = useUser();
 
   const handleSubmit = (data: PlantillaFormState) => {
-    const role: 'director_ie' | 'jefe_gestion' = user?.role === 'director_ie' || user?.role === 'director_institucion' ? 'director_ie' : 'jefe_gestion';
+    const role: 'director_institucion' | 'jefe_gestion' =
+      user?.role === 'director_institucion' ? 'director_institucion' : 'jefe_gestion';
     
     const newPlantilla = {
       id: 'pl-' + Date.now(),

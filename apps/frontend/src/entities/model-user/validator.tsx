@@ -18,7 +18,6 @@ export const userSchema = z.object({
     'jefe_taller',
     'especialista',
     'director_institucion',
-    'director_ie',
     'docente',
     'invitado',
   ]),

@@ -47,7 +47,7 @@ export const DocenteListPageBase = ({
       if (teachersRes.ok && teachersRes.data) {
         let mapped = teachersRes.data.map(mapApiDocenteToFrontend);
         if (filterCargoOut) {
-          const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
+          const isDirectorIe = user?.role === 'director_institucion';
           if (isDirectorIe) {
             mapped = mapped.filter((d) => d.cargo !== filterCargoOut);
           }

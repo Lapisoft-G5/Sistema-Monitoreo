@@ -9,6 +9,7 @@ import { Institucion } from '../entities/institucion.entity.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { EstadoInstitucion } from '../../../common/enums/estado.enum.js';
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 @Injectable()
 export class PrismaInstitutionsRepository implements InstitutionsRepository {
@@ -384,7 +385,7 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
       andConditions.push({ estado: { equals: estado } });
     }
 
-    if (user?.role === 'jefe_area') {
+    if (user?.role === RoleCode.JEFE_AREA) {
       const jefeNivel = user.especialista_nivel;
 
       if (jefeNivel === 'Inicial') {

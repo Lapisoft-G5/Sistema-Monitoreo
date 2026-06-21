@@ -4,6 +4,13 @@ import { prisma } from './_lib/prisma.js';
  * Auth: roles, permisos y la matriz rol-permiso.
  *
  * Se siembra ANTES de personas porque cada usuario referencia un rolId.
+ *
+ * Sprint 3 limpieza (Fase 1.4): permisos reducidos a 9, alineados con los
+ * que @RequirePermissions() valida realmente en backend y con el modelo
+ * capability-based (1.5). Los permisos `reports:own`, `jefes_area:write` y
+ * `directores:write` quedan eliminados: el primero lo absorbe `reports:read`
+ * + ScopeFilter; los otros dos se reintroducirán cuando se construyan los
+ * controllers que los usen.
  */
 
 const ROLES = [
@@ -25,39 +32,43 @@ const PERMISOS = [
   { codigo: 'instituciones:write', nombre: 'Gestionar Instituciones', descripcion: 'Permite crear, editar y dar de baja instituciones' },
   { codigo: 'docentes:read', nombre: 'Leer Docentes', descripcion: 'Permite listar y ver detalles de docentes' },
   { codigo: 'docentes:write', nombre: 'Gestionar Docentes', descripcion: 'Permite registrar, editar y dar de baja docentes' },
-  { codigo: 'dashboard:read', nombre: 'Ver Dashboard', descripcion: 'Permite visualizar el panel de control y estadísticas' },
-  { codigo: 'reports:read', nombre: 'Ver Reportes', descripcion: 'Permite visualizar reportes del sistema' },
-  { codigo: 'reports:own', nombre: 'Ver Reportes Propios', descripcion: 'Permite al docente visualizar sus propios reportes' },
-  { codigo: 'jefes_area:write', nombre: 'Gestionar Jefes de Área', descripcion: 'Permite crear, editar y dar de baja jefes de área' },
-  { codigo: 'directores:write', nombre: 'Gestionar Directores', descripcion: 'Permite registrar, editar y dar de baja directores de IE' },
   { codigo: 'monitoreo:execute', nombre: 'Realizar Monitoreo', descripcion: 'Permite ejecutar y registrar fichas de monitoreo' },
+  { codigo: 'reports:read', nombre: 'Ver Reportes', descripcion: 'Permite visualizar reportes del sistema. El ScopeFilter del service decide el ámbito (todo / scope / propio).' },
+  { codigo: 'dashboard:read', nombre: 'Ver Dashboard', descripcion: 'Permite visualizar el panel de control y estadísticas' },
 ];
 
 const ROL_PERMISOS = {
   director_ugel: ['dashboard:read', 'reports:read'],
   jefe_gestion: [
-    'especialistas:read', 'especialistas:write', 'jefes_area:write', 'monitoreo:execute',
-    'reports:read', 'directores:write', 'instituciones:read', 'instituciones:write',
+    'especialistas:read', 'especialistas:write',
+    'instituciones:read', 'instituciones:write',
     'docentes:read', 'docentes:write',
+    'monitoreo:execute', 'reports:read', 'dashboard:read',
   ],
   jefe_area: [
-    'directores:write', 'instituciones:read', 'instituciones:write', 'docentes:read', 'docentes:write',
+    'instituciones:read', 'instituciones:write',
+    'docentes:read', 'docentes:write',
+    'reports:read',
   ],
   especialista: [
-    'monitoreo:execute', 'reports:read', 'especialistas:read', 'instituciones:read', 'docentes:read'
+    'monitoreo:execute', 'reports:read',
+    'especialistas:read', 'instituciones:read', 'docentes:read',
   ],
   director_institucion: [
-    'docentes:read', 'docentes:write', 'reports:read', 'monitoreo:execute',
-    'especialistas:read', 'instituciones:read'
+    'docentes:read', 'docentes:write',
+    'monitoreo:execute', 'reports:read',
+    'especialistas:read', 'instituciones:read',
   ],
   coordinador_pedagogico: [
-    'docentes:read', 'reports:read', 'monitoreo:execute', 'especialistas:read', 'instituciones:read'
+    'monitoreo:execute', 'reports:read',
+    'docentes:read', 'especialistas:read', 'instituciones:read',
   ],
   jefe_taller: [
-    'docentes:read', 'reports:read', 'monitoreo:execute', 'especialistas:read', 'instituciones:read'
+    'monitoreo:execute', 'reports:read',
+    'docentes:read', 'especialistas:read', 'instituciones:read',
   ],
-  docente: ['reports:own'],
-  invitado: [],
+  docente: ['reports:read'],
+  invitado: ['dashboard:read'],
 };
 
 export async function seedAuth() {
@@ -75,12 +86,12 @@ export async function seedAuth() {
 
   const permisoMap = {};
   for (const p of PERMISOS) {
-    const perm = await prisma.permiso.upsert({
+    const dbPerm = await prisma.permiso.upsert({
       where: { codigo: p.codigo },
       update: { nombre: p.nombre, descripcion: p.descripcion },
       create: { codigo: p.codigo, nombre: p.nombre, descripcion: p.descripcion },
     });
-    permisoMap[p.codigo] = perm.id;
+    permisoMap[p.codigo] = dbPerm.id;
   }
 
   for (const [roleCode, permCodes] of Object.entries(ROL_PERMISOS)) {

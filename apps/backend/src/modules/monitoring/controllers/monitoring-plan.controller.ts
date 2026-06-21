@@ -33,6 +33,7 @@ import { RequirePermissions } from '../../auth/decorators/permissions.decorator.
 import { STORAGE_SERVICE } from '../../../shared/storage/storage.constants.js';
 import type { StorageService } from '../../../shared/storage/storage.constants.js';
 import { Inject } from '@nestjs/common';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 @Controller('planes-monitoreo')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -78,7 +79,7 @@ export class MonitoringPlanController {
   async findAll(@Query() query: QueryPlanDto, @Req() req: any): Promise<IMonitoringPlanResponse[]> {
     const session: SessionUser = this.toSession(req);
     const adjusted: QueryPlanDto = { ...query };
-    if (session.role === 'director_institucion' || session.role === 'director_ie') {
+    if (session.role === RoleCode.DIRECTOR_INSTITUCION) {
       adjusted.tipoEntidad = 'IE';
     }
     return this.service.findAll(adjusted, session);

@@ -1,3 +1,4 @@
+import { RoleCode } from '../../../common/enums/role.enum.js';
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { ConflictException, NotFoundException } from '@nestjs/common';
@@ -80,7 +81,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
       const result = await service.guardarRespuesta(
         'ficha-1',
         { desempenoId: 'd1', nivel: 3 },
-        { id: 'user-1', role: 'especialista' },
+        { id: 'user-1', role: RoleCode.ESPECIALISTA },
       );
 
       expect(result.respuestasDesempeno).toHaveLength(1);
@@ -106,7 +107,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         await service.guardarRespuesta(
           'ficha-1',
           { desempenoId: 'd1', nivel: 3 },
-          { id: 'user-1', role: 'especialista' },
+          { id: 'user-1', role: RoleCode.ESPECIALISTA },
         );
         fail('Debio lanzar ConflictException');
       } catch (err) {
@@ -134,7 +135,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         await service.guardarRespuesta(
           'ficha-1',
           { desempenoId: 'd1', nivel: 3 },
-          { id: 'user-1', role: 'especialista' },
+          { id: 'user-1', role: RoleCode.ESPECIALISTA },
         );
         fail('Debio lanzar ConflictException');
       } catch (err) {
@@ -159,7 +160,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
       try {
         await service.guardarRespuestaAspecto('ficha-1', 'aspecto-1', true, {
           id: 'user-1',
-          role: 'especialista',
+          role: RoleCode.ESPECIALISTA,
         });
         fail('Debio lanzar ConflictException');
       } catch (err) {
@@ -179,7 +180,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         service.guardarRespuesta(
           'ficha-x',
           { desempenoId: 'd1', nivel: 1 },
-          { id: 'user-1', role: 'especialista' },
+          { id: 'user-1', role: RoleCode.ESPECIALISTA },
         ),
       ).rejects.toThrow(NotFoundException);
     });

@@ -1,3 +1,4 @@
+import { RoleCode } from '../../../common/enums/role.enum.js';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
@@ -27,10 +28,10 @@ describe('MonitoringPlanService', () => {
     updatedAt: '2026-01-01T00:00:00Z',
   };
 
-  const sesionJefe: SessionUser = { id: 'user-1', role: 'jefe_gestion' };
+  const sesionJefe: SessionUser = { id: 'user-1', role: RoleCode.JEFE_GESTION };
   const sesionDirector: SessionUser = {
     id: 'user-2',
-    role: 'director_institucion',
+    role: RoleCode.DIRECTOR_INSTITUCION,
     institucionId: 'ie-1',
   };
 
@@ -98,7 +99,7 @@ describe('MonitoringPlanService', () => {
     it('Director IE sin institucionId en sesion falla con 403', async () => {
       const dto = { titulo: 'Plan', anioAcademico: 2026, archivoUrl: '/x.pdf' } as any;
       await expect(
-        service.create(dto, { id: 'user-2', role: 'director_institucion' }),
+        service.create(dto, { id: 'user-2', role: RoleCode.DIRECTOR_INSTITUCION }),
       ).rejects.toThrow(ForbiddenException);
     });
   });

@@ -1,3 +1,4 @@
+import { RoleCode } from '../../../common/enums/role.enum.js';
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import {
@@ -35,8 +36,12 @@ describe('PlantillaService - ILA-0046', () => {
     estado: 'Historico' as const,
   };
 
-  const sesionJefe = { id: 'user-jefe', role: 'jefe_gestion' };
-  const sesionDirector = { id: 'user-dir', role: 'director_institucion', institucionId: 'ie-1' };
+  const sesionJefe = { id: 'user-jefe', role: RoleCode.JEFE_GESTION };
+  const sesionDirector = {
+    id: 'user-dir',
+    role: RoleCode.DIRECTOR_INSTITUCION,
+    institucionId: 'ie-1',
+  };
 
   beforeEach(async () => {
     const mockRepo: Partial<jest.Mocked<PlantillaRepository>> = {
@@ -224,7 +229,7 @@ describe('PlantillaService - ILA-0046', () => {
     it('rechaza si Director IE no tiene institucionId', async () => {
       repo.findById.mockResolvedValue(plantillaVigente);
       await expect(
-        service.duplicar('plantilla-v1', { id: 'd1', role: 'director_institucion' }),
+        service.duplicar('plantilla-v1', { id: 'd1', role: RoleCode.DIRECTOR_INSTITUCION }),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -237,7 +242,7 @@ describe('PlantillaService - ILA-0046', () => {
       expect(repo.clone).toHaveBeenCalledWith(
         'plantilla-v1',
         'user-dir',
-        'director_ie',
+        'director_institucion',
         'ie-1',
         undefined,
       );

@@ -10,13 +10,14 @@ import { UpdateInstitucionDto } from '../dto/update-institucion.dto.js';
 import { QueryInstitucionDto } from '../dto/query-institucion.dto.js';
 import { Institucion } from '../entities/institucion.entity.js';
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 @Injectable()
 export class InstitutionsService {
   constructor(private readonly institutionsRepository: InstitutionsRepository) {}
 
   async create(dto: CreateInstitucionDto, user?: JwtPayload): Promise<Institucion> {
-    if (user?.role === 'jefe_area') {
+    if (user?.role === RoleCode.JEFE_AREA) {
       const jefeNivel = user.especialista_nivel;
       const targetMod = dto.modalidad || 'EBR';
       const targetNivel = dto.nivelEducativo;

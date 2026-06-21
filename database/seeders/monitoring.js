@@ -93,7 +93,7 @@ export async function seedMonitoring(ctx) {
         archivoUrl: '/uploads/planes/plan-ie-2026-seed.pdf',
         estado: 'Activo',
         autorId: directorIe.id,
-        rolAutorAlCrear: 'director_ie',
+        rolAutorAlCrear: 'director_institucion',
         institucionId: primeraIe.id,
         deleted: false,
       },

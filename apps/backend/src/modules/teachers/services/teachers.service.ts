@@ -42,7 +42,7 @@ export class TeachersService {
     }
 
     // 2. Si es Director de IE, validar tokens y que no sea otra institución
-    if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
       if (!userInstitucionId) {
         throw new ForbiddenException(
@@ -105,14 +105,14 @@ export class TeachersService {
     }
 
     // 5. Si es Director de IE, validar que no intente asignar Director
-    if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       if ((cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
         throw new ForbiddenException('El Director de I.E. no puede asignar el cargo de Director.');
       }
     }
 
     // 6. Si es Jefe de Área, validar que solo pueda registrar cargos Director o Coordinador Pedagógico
-    if ((currentUser.role as RoleCode) === RoleCode.JEFE_AREA) {
+    if (currentUser.role === RoleCode.JEFE_AREA) {
       if (
         (cargo.nombre as CargoNombre) !== CargoNombre.DIRECTOR &&
         (cargo.nombre as CargoNombre) !== CargoNombre.COORDINADOR_PEDAGOGICO
@@ -135,7 +135,7 @@ export class TeachersService {
 
     // 2. Definir filtros según rol
     const filter: DocenteFilter = {};
-    if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
       if (!userInstitucionId) {
         throw new ForbiddenException(
@@ -145,7 +145,7 @@ export class TeachersService {
       filter.institucionId = userInstitucionId;
     }
 
-    if ((currentUser.role as RoleCode) === RoleCode.JEFE_AREA) {
+    if (currentUser.role === RoleCode.JEFE_AREA) {
       if (currentUser.especialista_nivel) {
         filter.especialistaNivel = currentUser.especialista_nivel;
       }
@@ -176,7 +176,7 @@ export class TeachersService {
     }
 
     // 3. Si es Director de IE, validar pertenencia
-    if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
       if (!userInstitucionId) {
         throw new ForbiddenException(
@@ -233,14 +233,14 @@ export class TeachersService {
     }
 
     // 5. Si es Director de IE, validar que no intente asignar Director
-    if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       if ((cargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
         throw new ForbiddenException('El Director de I.E. no puede asignar el cargo de Director.');
       }
     }
 
     // 6. Si es Jefe de Área, validar que el cargo a asignar y el cargo actual sean de Director o Coordinador Pedagógico
-    if ((currentUser.role as RoleCode) === RoleCode.JEFE_AREA) {
+    if (currentUser.role === RoleCode.JEFE_AREA) {
       if (
         (cargo.nombre as CargoNombre) !== CargoNombre.DIRECTOR &&
         (cargo.nombre as CargoNombre) !== CargoNombre.COORDINADOR_PEDAGOGICO
@@ -309,7 +309,7 @@ export class TeachersService {
     }
 
     // 3. Si es Director de IE, validar pertenencia y no dejar dar de baja a Directores o Coordinadores Pedagógicos
-    if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
       if (!userInstitucionId) {
         throw new ForbiddenException(
@@ -331,7 +331,7 @@ export class TeachersService {
     }
 
     // 4. Si es Jefe de Área, validar que el docente a dar de baja sea Director o Coordinador Pedagógico
-    if ((currentUser.role as RoleCode) === RoleCode.JEFE_AREA) {
+    if (currentUser.role === RoleCode.JEFE_AREA) {
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
@@ -392,7 +392,7 @@ export class TeachersService {
     }
 
     // 3. Si es Director de IE, validar pertenencia
-    if ((currentUser.role as RoleCode) === RoleCode.DIRECTOR_INSTITUCION) {
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
       const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
       if (!userInstitucionId) {
         throw new ForbiddenException(
@@ -414,7 +414,7 @@ export class TeachersService {
     }
 
     // 4. Si es Jefe de Área, validar que sea Director o Coordinador Pedagógico
-    if ((currentUser.role as RoleCode) === RoleCode.JEFE_AREA) {
+    if (currentUser.role === RoleCode.JEFE_AREA) {
       const activeCargoObj = docente.docenteCargos?.[0];
       if (activeCargoObj) {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);

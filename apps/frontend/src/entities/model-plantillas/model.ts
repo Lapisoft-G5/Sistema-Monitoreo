@@ -45,7 +45,7 @@ export interface Plantilla {
   fechaCreacion: string;
   estado: 'Vigente' | 'Borrador' | 'Histórico';
   descripcion: string;
-  creadoPorRole?: 'jefe_gestion' | 'director_ie';
+  creadoPorRole?: 'jefe_gestion' | 'director_institucion';
   creadoPorId?: string;
   ieId?: string;
 }

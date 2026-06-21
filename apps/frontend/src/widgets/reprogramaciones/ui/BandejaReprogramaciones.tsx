@@ -84,7 +84,7 @@ export const BandejaReprogramaciones = () => {
 
       // 2. Deciders filter:
       if (!isEspecialista) {
-        const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+        const isDirector = user?.role === 'director_institucion';
         if (isDirector) {
           // Director only sees requests from their own school
           const isSameSchool =
@@ -151,7 +151,7 @@ export const BandejaReprogramaciones = () => {
           <p className="text-xs text-text-muted mt-1">
             {isEspecialista
               ? 'Revisa el estado de tus solicitudes enviadas o registra una nueva reprogramación para tus visitas a futuro.'
-              : user?.role === 'director_ie' || user?.role === 'director_institucion'
+              : user?.role === 'director_institucion'
                 ? 'Audita y aprueba o rechaza los cambios de fecha propuestos por los coordinadores pedagógicos y jefes de taller.'
                 : 'Audita y aprueba o rechaza los cambios de fecha propuestos por los especialistas de monitoreo.'}
           </p>

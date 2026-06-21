@@ -8,7 +8,6 @@ import { ChangePasswordDto } from '../dto/change-password.dto.js';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { AuthGuard } from '../guards/auth.guard.js';
-import { RolesGuard } from '../guards/roles.guard.js';
 import { AllowFirstLogin } from '../decorators/allow-first-login.decorator.js';
 import {
   ILoginResponse,
@@ -73,7 +72,7 @@ export class AuthController {
   }
 
   @Post('change-password')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
   async changePassword(
@@ -122,7 +121,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
   async logout(

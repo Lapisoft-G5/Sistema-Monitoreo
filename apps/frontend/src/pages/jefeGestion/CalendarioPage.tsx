@@ -39,7 +39,7 @@ export const CalendarioPage = () => {
   const [filterNroVisita, setFilterNroVisita] = useState('Todos');
   const [filterEstado, setFilterEstado] = useState('Todos');
 
-  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+  const isDirector = user?.role === 'director_institucion';
 
   const showBandeja = useMemo(() => {
     if (isDirector) {

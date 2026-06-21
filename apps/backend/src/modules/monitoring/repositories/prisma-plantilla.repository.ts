@@ -39,7 +39,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
       descripcion: plantilla.descripcion,
       estado: plantilla.estado as 'Borrador' | 'Vigente' | 'Historico',
       autorId: plantilla.autorId,
-      rolAutorAlCrear: plantilla.rolAutorAlCrear as 'jefe_gestion' | 'director_ie',
+      rolAutorAlCrear: plantilla.rolAutorAlCrear as 'jefe_gestion' | 'director_institucion',
       institucionId: plantilla.institucionId,
       niveles: plantilla.nivelesCalificacion.map((n) => ({
         id: n.id,
@@ -449,7 +449,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
         descripcion: creada.descripcion,
         estado: creada.estado as 'Borrador' | 'Vigente' | 'Historico',
         autorId: creada.autorId,
-        rolAutorAlCrear: creada.rolAutorAlCrear as 'jefe_gestion' | 'director_ie',
+        rolAutorAlCrear: creada.rolAutorAlCrear as 'jefe_gestion' | 'director_institucion',
         institucionId: creada.institucionId,
         niveles: creada.nivelesCalificacion.map((n) => ({
           id: n.id,
@@ -499,7 +499,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
   async clone(
     sourceId: string,
     nuevoAutorId: string,
-    rolAutorAlCrear: 'jefe_gestion' | 'director_ie',
+    rolAutorAlCrear: 'jefe_gestion' | 'director_institucion',
     institucionId: string | null,
     descripcion?: string,
   ): Promise<IPlantilla> {

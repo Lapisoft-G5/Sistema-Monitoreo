@@ -12,10 +12,11 @@ import type {
 import { MonitoringPlanRepository } from '../repositories/monitoring-plan.repository.js';
 import type { CreatePlanDto } from '../dto/create-plan.dto.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 export interface SessionUser {
   id: string;
-  role: string;
+  role: RoleCode;
   institucionId?: string | null;
 }
 
@@ -121,11 +122,11 @@ export class MonitoringPlanService {
   }
 
   private isDirector(session: SessionUser): boolean {
-    return session.role === 'director_institucion' || session.role === 'director_ie';
+    return session.role === RoleCode.DIRECTOR_INSTITUCION;
   }
 
-  private toRolAutor(role: string): 'jefe_gestion' | 'director_ie' {
-    if (this.isDirector({ id: '', role })) return 'director_ie';
+  private toRolAutor(role: RoleCode): 'jefe_gestion' | 'director_institucion' {
+    if (this.isDirector({ id: '', role })) return 'director_institucion';
     return 'jefe_gestion';
   }
 

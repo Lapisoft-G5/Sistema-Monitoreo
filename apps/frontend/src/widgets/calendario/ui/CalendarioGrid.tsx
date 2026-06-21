@@ -199,7 +199,7 @@ export const CalendarioGrid = ({
     user?.role === 'especialista' ||
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
-  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+  const isDirector = user?.role === 'director_institucion';
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();

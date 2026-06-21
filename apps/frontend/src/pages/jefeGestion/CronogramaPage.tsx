@@ -113,7 +113,6 @@ const formatTableDateTime = (isoString: string) => {
 export const CronogramaPage = () => {
   const { user } = useUser();
   const isDirector =
-    user?.role === 'director_ie' ||
     user?.role === 'director_institucion' ||
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';

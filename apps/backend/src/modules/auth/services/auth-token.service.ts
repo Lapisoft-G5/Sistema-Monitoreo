@@ -2,11 +2,17 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'node:crypto';
 import { Prisma } from '../../../generated/prisma/client.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
+import {
+  computeEffectivePermissions,
+  CargoNombre,
+  EspecialistaCargoEnum,
+} from '../../../shared/auth/capability-map.js';
 
 export interface JwtPayload {
   sub: string;
   dni: string;
-  role: string;
+  role: RoleCode;
   permissions?: string[];
   nombres: string;
   apellidos: string;
@@ -117,12 +123,12 @@ export class AuthTokenService {
       especialista_modalidad = user.persona.especialista.modalidad ?? undefined;
     }
 
-    const permissions = user.rol.rolPermisos?.map((rp) => rp.permiso.codigo) || [];
+    const permissions = this.computeUserPermissions(user);
 
     return {
       sub: user.id,
       dni: user.persona.dni,
-      role: user.rol.codigo,
+      role: user.rol.codigo as RoleCode,
       permissions,
       nombres: user.persona.nombres,
       apellidos: user.persona.apellidos,
@@ -134,5 +140,26 @@ export class AuthTokenService {
       especialista_modalidad,
       firstLogin: user.isFirstLogin,
     };
+  }
+
+  /**
+   * Calcula las capabilities efectivas del usuario:
+   *   BASE_CAPABILITIES ∪ ROL_CAPABILITIES[rol]
+   *   ∪ ESPECIALISTA_CARGO_CAPABILITIES[especialista.cargo] (si tiene)
+   *   ∪ ∪ DOCENTE_CARGO_CAPABILITIES[cargo] por cada cargo activo
+   *
+   * Reemplaza la lectura directa de `rol_permisos` por el modelo
+   * capability-based (Fase 1.6). El resultado es la UNION de las 3 fuentes.
+   */
+  private computeUserPermissions(user: AuthUserWithRelations): string[] {
+    const rolCodigo = user.rol.codigo as RoleCode;
+
+    const espCargo = (user.persona?.especialista?.cargo ?? null) as EspecialistaCargoEnum | null;
+
+    const activeDocenteCargos: CargoNombre[] = (user.persona?.docente?.docenteCargos ?? [])
+      .filter((dc) => dc.cargo?.nombre)
+      .map((dc) => dc.cargo.nombre as CargoNombre);
+
+    return computeEffectivePermissions(rolCodigo, espCargo, activeDocenteCargos);
   }
 }

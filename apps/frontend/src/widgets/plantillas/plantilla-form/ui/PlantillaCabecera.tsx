@@ -25,7 +25,7 @@ export const PlantillaCabecera = ({
   onChange,
 }: Props) => {
   const { user } = useUser();
-  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+  const isDirector = user?.role === 'director_institucion';
   const setNivel = (i: number, p: Partial<NivelCalificacion>) =>
     onChange({ niveles: niveles.map((n, idx) => (idx === i ? { ...n, ...p } : n)) });
 

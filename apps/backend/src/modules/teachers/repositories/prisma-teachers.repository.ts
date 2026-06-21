@@ -170,26 +170,74 @@ export class PrismaTeachersRepository implements TeachersRepository {
   }
 
   async updateDocenteEstado(id: string, estado: string): Promise<DocenteEntity> {
-    const docente = await this.prisma.docente.update({
-      where: { id },
-      data: { estado },
-      include: {
-        persona: true,
-        docenteCargos: {
-          include: { cargo: true },
-        },
-        docenteCursos: {
-          include: {
-            curso: true,
+    return this.prisma.$transaction(async (tx) => {
+      const docente = await tx.docente.update({
+        where: { id },
+        data: { estado },
+        include: {
+          persona: true,
+          docenteCargos: {
+            include: { cargo: true },
           },
+          docenteCursos: {
+            include: {
+              curso: true,
+            },
+          },
+          docenteEspecialidades: {
+            include: { especialidad: true },
+          },
+          docenteSecciones: true,
         },
-        docenteEspecialidades: {
-          include: { especialidad: true },
+      });
+
+      // Sincronizar estado del Especialista asociado si existe
+      const existingEsp = await tx.especialista.findUnique({
+        where: { personaId: docente.personaId },
+      });
+      if (existingEsp) {
+        await tx.especialista.update({
+          where: { id: existingEsp.id },
+          data: { estado },
+        });
+      }
+
+      // Sincronizar estado del usuario asociado
+      if (estado === (EstadoRegistro.INACTIVO as string) || estado === 'Inactivo') {
+        await tx.usuario.updateMany({
+          where: { personaId: docente.personaId },
+          data: { isActive: false },
+        });
+      } else if (estado === (EstadoRegistro.ACTIVO as string) || estado === 'Activo') {
+        await tx.usuario.updateMany({
+          where: { personaId: docente.personaId },
+          data: { isActive: true },
+        });
+      }
+
+      // Volver a cargar con include correcto para el mapeo
+      const fullDocente = await tx.docente.findUniqueOrThrow({
+        where: { id },
+        include: {
+          persona: true,
+          docenteCargos: {
+            include: { cargo: true },
+            orderBy: { fechaInicio: 'desc' },
+          },
+          docenteCursos: {
+            include: {
+              curso: true,
+            },
+          },
+          docenteEspecialidades: {
+            include: { especialidad: true },
+          },
+          docenteSecciones: true,
         },
-        docenteSecciones: true,
-      },
+      });
+
+      return this.mapDocente(fullDocente);
     });
-    return this.mapDocente(docente);
   }
 
   async createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteEntity> {
@@ -372,6 +420,37 @@ export class PrismaTeachersRepository implements TeachersRepository {
         });
       }
 
+      // Sincronizar Especialista si el cargo requiere que actúe como monitor/evaluador
+      const isMonitorCargo = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(
+        cargo?.nombre || '',
+      );
+      if (isMonitorCargo) {
+        await tx.especialista.upsert({
+          where: { personaId: personaId },
+          update: {
+            cargo: cargo!.nombre,
+            nivelEducativo: dto.nivelEducativo,
+            condicionLaboral: dto.condicionLaboral || 'Nombrado',
+            cargaLaboral:
+              dto.cargaLaboral ?? (cargo?.nombre === 'Coordinador Pedagógico' ? 40 : 30),
+            estado: EstadoRegistro.ACTIVO,
+            modalidad: docente.modalidad,
+            escalaMagisterial: dto.escalaMagisterial ?? null,
+          },
+          create: {
+            personaId: personaId,
+            cargo: cargo!.nombre,
+            nivelEducativo: dto.nivelEducativo,
+            condicionLaboral: dto.condicionLaboral || 'Nombrado',
+            cargaLaboral:
+              dto.cargaLaboral ?? (cargo?.nombre === 'Coordinador Pedagógico' ? 40 : 30),
+            estado: EstadoRegistro.ACTIVO,
+            modalidad: docente.modalidad,
+            escalaMagisterial: dto.escalaMagisterial ?? null,
+          },
+        });
+      }
+
       const fullDocente = await tx.docente.findUniqueOrThrow({
         where: { id: docente.id },
         include: {
@@ -451,7 +530,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
       });
 
       // B. Actualizar datos de Docente
-      await tx.docente.update({
+      const docente = await tx.docente.update({
         where: { id },
         data: {
           gradoAcademico: dto.gradoAcademico ?? null,
@@ -551,6 +630,50 @@ export class PrismaTeachersRepository implements TeachersRepository {
               data: { rolId: role.id },
             });
           }
+        }
+      }
+
+      // Sincronizar Especialista según el nuevo cargo asignado
+      const currentCargo = await tx.cargo.findUnique({
+        where: { id: dto.cargoId },
+      });
+      const isMonitor = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(
+        currentCargo?.nombre || '',
+      );
+      if (isMonitor) {
+        await tx.especialista.upsert({
+          where: { personaId: personaId },
+          update: {
+            cargo: currentCargo!.nombre,
+            nivelEducativo: dto.nivelEducativo,
+            condicionLaboral: dto.condicionLaboral || 'Nombrado',
+            cargaLaboral:
+              dto.cargaLaboral ?? (currentCargo?.nombre === 'Coordinador Pedagógico' ? 40 : 30),
+            estado: docente.estado ?? EstadoRegistro.ACTIVO,
+            modalidad: docente.modalidad ?? 'EBR',
+            escalaMagisterial: dto.escalaMagisterial ?? null,
+          },
+          create: {
+            personaId: personaId,
+            cargo: currentCargo!.nombre,
+            nivelEducativo: dto.nivelEducativo,
+            condicionLaboral: dto.condicionLaboral || 'Nombrado',
+            cargaLaboral:
+              dto.cargaLaboral ?? (currentCargo?.nombre === 'Coordinador Pedagógico' ? 40 : 30),
+            estado: docente.estado ?? EstadoRegistro.ACTIVO,
+            modalidad: docente.modalidad ?? 'EBR',
+            escalaMagisterial: dto.escalaMagisterial ?? null,
+          },
+        });
+      } else {
+        // Si ya no tiene cargo de monitor, eliminar el Especialista si existe
+        const existingEsp = await tx.especialista.findUnique({
+          where: { personaId: personaId },
+        });
+        if (existingEsp) {
+          await tx.especialista.delete({
+            where: { personaId: personaId },
+          });
         }
       }
 

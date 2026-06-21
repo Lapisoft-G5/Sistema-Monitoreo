@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Grid, List } from 'lucide-react';
 import { useCronogramas } from '@entities/model-cronogramas';
 import { usePlantillas } from '@entities/model-plantillas';
@@ -6,6 +7,7 @@ import { useFichasCompletadas } from '@entities/model-reportes';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ReportesStats, ReportesGrid } from '@widgets/reportes';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
+import { useUser } from '@entities/model-user';
 
 const getFichaState = (visitId: string) => {
   const saved = localStorage.getItem(`sistema-monitoreo:ficha-state:${visitId}`);
@@ -49,8 +51,12 @@ const getFichaState = (visitId: string) => {
 };
 
 export const ReportesPage = () => {
+  const location = useLocation();
+  const isMyReportsPath = location.pathname === '/reportes';
+
   const { cronogramas } = useCronogramas();
   const { plantillas } = usePlantillas();
+  const { user } = useUser();
   // Carga paralela desde el backend. Si falla, el componente sigue mostrando
   // los datos locales (localStorage) - el query solo agrega data del server.
   const { data: _fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
@@ -78,8 +84,35 @@ export const ReportesPage = () => {
 
   // ── Filtrado de Fichas Completadas ──
   const completedVisits = useMemo(() => {
-    return cronogramas.filter((c) => c.estado === 'COMPLETADO');
-  }, [cronogramas]);
+    let list = cronogramas.filter((c) => c.estado === 'COMPLETADO');
+    if (isMyReportsPath) {
+      const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
+      list = list.filter((v) => {
+        const visitDocente = v.docenteDirectivo.toLowerCase();
+        return (
+          userFullName.includes(visitDocente) ||
+          visitDocente.includes(userFullName)
+        );
+      });
+    } else if (user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller') {
+      const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+      list = list.filter((v) => {
+        const visitEspecialista = v.especialista.toLowerCase();
+        return (
+          userFullName.includes(visitEspecialista) ||
+          visitEspecialista.includes(userFullName) ||
+          visitEspecialista.includes(user.nombres.toLowerCase())
+        );
+      });
+    } else if (user?.role === 'director_institucion' || user?.role === 'director_ie') {
+      list = list.filter((v) => {
+        const userSchool = (user.institucionNombre || '').toLowerCase();
+        const visitSchool = v.institucion.toLowerCase();
+        return visitSchool.includes(userSchool) || userSchool.includes(visitSchool);
+      });
+    }
+    return list;
+  }, [cronogramas, user, isMyReportsPath]);
 
   const filteredVisits = useMemo(() => {
     return completedVisits.filter((visit) => {
@@ -151,8 +184,20 @@ export const ReportesPage = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <PageHeader
-            title="Fichas Completadas en Cuadrícula"
-            description="Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por los especialistas."
+            title={
+              isMyReportsPath
+                ? 'Mis Reportes de Monitoreo'
+                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller'
+                  ? 'Fichas de Monitoreo Completadas'
+                  : 'Fichas Completadas en Cuadrícula'
+            }
+            description={
+              isMyReportsPath
+                ? 'Bandeja para visualizar y descargar las fichas técnicas de los monitoreos realizados a su persona.'
+                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller'
+                  ? 'Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por usted.'
+                  : 'Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por los especialistas.'
+            }
           />
         </div>
 

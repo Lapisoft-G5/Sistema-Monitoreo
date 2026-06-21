@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Compass, PlusCircle, Search, Trash2, Eye, Pencil, X, AlertCircle, Calendar, User, BookOpen, Layers, FileText } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -179,6 +179,27 @@ export const CronogramaPage = () => {
 
     return list;
   }, [evaluadoresDeLaInstitucion, formEspecialista]);
+
+  // Auto-calcula el numero de visita en base a las visitas existentes del
+  // docente/directivo seleccionado. Solo aplica al crear; en edicion se
+  // respeta el valor original (los botones son read-only en cualquier caso).
+  // El setTimeout(0) cumple con react-hooks/set-state-in-effect (AGENTS.md §6).
+  useEffect(() => {
+    if (editCronogramaId) return;
+    if (!formDocente) return;
+    const matchedDoc = docentes.find(
+      (d) => `${d.nombres} ${d.apellidos}`.trim() === formDocente.trim(),
+    );
+    if (!matchedDoc) return;
+    const visitasExistentes = cronogramas.filter(
+      (c) => c.evaluadoId === matchedDoc.id && c.tipo === formTipo,
+    ).length;
+    const next = Math.min(visitasExistentes + 1, 4);
+    const t = setTimeout(() => {
+      setFormVisita(String(next).padStart(2, '0'));
+    }, 0);
+    return () => clearTimeout(t);
+  }, [formDocente, formTipo, editCronogramaId, docentes, cronogramas]);
 
   // ── Niveles filtrados por modalidad seleccionada ──
   const nivelesDisponibles = useMemo(() => {
@@ -903,7 +924,7 @@ export const CronogramaPage = () => {
                     />
                   </div>
 
-                  {/* Número de Visita - Botones numéricos */}
+                  {/* Número de Visita - read-only, auto-calculado */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-text-muted">Número de Visita *</label>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -911,17 +932,21 @@ export const CronogramaPage = () => {
                         <button
                           key={num}
                           type="button"
-                          onClick={() => setFormVisita(num)}
-                          className={`w-10 h-10 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border ${
+                          disabled
+                          aria-disabled
+                          className={`w-10 h-10 rounded-xl text-xs font-bold transition-all duration-200 border ${
                             formVisita === num
                               ? 'bg-primary text-white border-primary shadow-sm'
-                              : 'bg-surface text-text-muted border-border hover:bg-muted/60 hover:border-primary/40'
+                              : 'bg-surface text-text-muted border-border opacity-60'
                           }`}
                         >
                           {parseInt(num)}
                         </button>
                       ))}
                     </div>
+                    <span className="text-[10px] text-text-muted pl-1">
+                      Se asigna automaticamente segun las visitas previas del docente/directivo.
+                    </span>
                   </div>
                 </div>
 

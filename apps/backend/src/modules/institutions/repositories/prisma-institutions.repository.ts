@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
 import { InstitutionsRepository } from './institutions.repository.js';
 import { CreateInstitucionDto } from '../dto/create-institucion.dto.js';
 import { UpdateInstitucionDto } from '../dto/update-institucion.dto.js';
@@ -13,7 +14,19 @@ import { RoleCode } from '../../../common/enums/role.enum.js';
 
 @Injectable()
 export class PrismaInstitutionsRepository implements InstitutionsRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly scopeFilter: ScopeFilter,
+  ) {}
+
+  private toScopeContext(user: JwtPayload): ScopeContext {
+    return {
+      userId: user.sub,
+      role: user.role,
+      institucionId: user.institucion_id,
+      especialistaNivel: user.especialista_nivel,
+    };
+  }
 
   private readonly includeDocenteDirector = {
     docentes: {
@@ -385,52 +398,17 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
       andConditions.push({ estado: { equals: estado } });
     }
 
+    // Scope del rol: jefe_area ve solo IEs de su nivel. Otros roles ven todo.
     if (user?.role === RoleCode.JEFE_AREA) {
-      const jefeNivel = user.especialista_nivel;
+      andConditions.push(this.scopeFilter.forInstitucion(this.toScopeContext(user)));
+    }
 
-      if (jefeNivel === 'Inicial') {
-        andConditions.push({
-          OR: [
-            { modalidad: 'EBE' },
-            {
-              modalidad: 'EBR',
-              nivelEducativo: { equals: 'Inicial', mode: 'insensitive' },
-            },
-          ],
-        });
-      } else if (jefeNivel === 'Primaria') {
-        andConditions.push({
-          modalidad: 'EBR',
-          nivelEducativo: { equals: 'Primaria', mode: 'insensitive' },
-        });
-      } else if (jefeNivel === 'Secundaria') {
-        andConditions.push({
-          OR: [
-            { modalidad: 'EBA' },
-            { modalidad: 'CEPTRO' },
-            {
-              modalidad: 'EBR',
-              nivelEducativo: { equals: 'Secundaria', mode: 'insensitive' },
-            },
-          ],
-        });
-      }
-
-      // Filtros opcionales especificados en la consulta (UI)
-      if (nivelEducativo) {
-        andConditions.push({ nivelEducativo: { equals: nivelEducativo, mode: 'insensitive' } });
-      }
-      if (modalidad) {
-        andConditions.push({ modalidad: { equals: modalidad } });
-      }
-    } else {
-      // Otros roles (admin, jefe_gestion, etc.) sin restricciones
-      if (nivelEducativo) {
-        andConditions.push({ nivelEducativo: { contains: nivelEducativo, mode: 'insensitive' } });
-      }
-      if (modalidad) {
-        andConditions.push({ modalidad: { equals: modalidad } });
-      }
+    // Filtros opcionales de la UI (aplican a todos los roles).
+    if (nivelEducativo) {
+      andConditions.push({ nivelEducativo: { equals: nivelEducativo, mode: 'insensitive' } });
+    }
+    if (modalidad) {
+      andConditions.push({ modalidad: { equals: modalidad } });
     }
 
     if (andConditions.length > 0) {

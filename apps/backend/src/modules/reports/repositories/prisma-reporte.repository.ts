@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
 import type {
   IReporteFicha,
   IReporteResumenIE,
@@ -17,24 +18,18 @@ import { RoleCode } from '../../../common/enums/role.enum.js';
 
 @Injectable()
 export class PrismaReporteRepository implements ReporteRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly scopeFilter: ScopeFilter,
+  ) {}
 
-  private buildScopeFilter(session: SessionScope): any {
-    if (session.role === RoleCode.JEFE_GESTION) {
-      return {};
-    }
-    if (session.role === RoleCode.DIRECTOR_INSTITUCION) {
-      if (!session.institucionId) return { id: '__none__' };
-      return { institucionId: session.institucionId };
-    }
-    if (
-      session.role === RoleCode.ESPECIALISTA ||
-      session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
-      session.role === RoleCode.JEFE_TALLER
-    ) {
-      return { cronograma: { monitorId: session.id } };
-    }
-    return { id: '__none__' };
+  private toScopeContext(session: SessionScope): ScopeContext {
+    return {
+      userId: session.id,
+      role: session.role,
+      institucionId: session.institucionId,
+      especialistaNivel: session.especialistaNivel,
+    };
   }
 
   async findFichasCompletadas(
@@ -47,7 +42,7 @@ export class PrismaReporteRepository implements ReporteRepository {
 
     const where: any = {
       estado: 'FINALIZADO',
-      ...this.buildScopeFilter(session),
+      ...this.scopeFilter.forFicha(this.toScopeContext(session)),
     };
     if (filters.anioAcademico !== undefined) where.anioAcademico = filters.anioAcademico;
     if (filters.institucionId) where.institucionId = filters.institucionId;
@@ -120,7 +115,7 @@ export class PrismaReporteRepository implements ReporteRepository {
       estado: 'FINALIZADO',
       anioAcademico,
     };
-    const scopeFilter = this.buildScopeFilter(session);
+    const scopeFilter = this.scopeFilter.forFicha(this.toScopeContext(session));
     if (Object.keys(scopeFilter).length > 0) {
       Object.assign(whereBase, scopeFilter);
     }
@@ -209,10 +204,13 @@ export class PrismaReporteRepository implements ReporteRepository {
     });
     if (!f) return null;
 
-    // Validarスコoping
-    const scope = this.buildScopeFilter(session);
-    if (scope.institucionId && f.cronograma.institucionId !== scope.institucionId) return null;
-    if (scope.id === '__none__') return null;
+    // Validar scope: si la ficha no matchea el filtro del usuario, no tiene acceso.
+    const scope = this.scopeFilter.forFicha(this.toScopeContext(session));
+    const allowed = await this.prisma.fichaMonitoreo.findFirst({
+      where: { id: f.id, ...scope },
+      select: { id: true },
+    });
+    if (!allowed) return null;
 
     return {
       id: f.id,

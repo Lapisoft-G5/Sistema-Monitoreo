@@ -24,11 +24,13 @@ import type {
   ResolverSolicitudDto,
 } from '../dto/solicitud-reprogramacion.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
 
 export interface SessionUser {
   id: string;
   role: RoleCode;
   institucionId?: string | null;
+  especialistaNivel?: string | null;
 }
 
 @Injectable()
@@ -38,7 +40,17 @@ export class SchedulingService {
     private readonly solicitudRepo: SolicitudReprogramacionRepository,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly prisma: PrismaService,
+    private readonly scopeFilter: ScopeFilter,
   ) {}
+
+  private toScopeContext(session: SessionUser): ScopeContext {
+    return {
+      userId: session.id,
+      role: session.role,
+      institucionId: session.institucionId,
+      especialistaNivel: session.especialistaNivel,
+    };
+  }
 
   // ============== Cronogramas ==============
 
@@ -241,31 +253,35 @@ export class SchedulingService {
   // ============== Helpers ==============
 
   private esAutoridad(session: SessionUser): boolean {
-    return ['jefe_gestion', 'director_institucion'].includes(session.role);
+    // Equivale a "puede crear/editar cronogramas": ALL + INSTITUCION.
+    return (
+      this.scopeFilter.isAllScope(session.role) || this.scopeFilter.isInstitucionScope(session.role)
+    );
   }
 
   private aplicarScopingVisitas(visitas: IVisita[], session?: SessionUser): IVisita[] {
     if (!session) return visitas;
-    if (session.role === RoleCode.JEFE_GESTION) return visitas;
-    if (session.role === RoleCode.DIRECTOR_INSTITUCION) {
-      return visitas.filter((v) => v.institucionId === session.institucionId);
+    const ctx = this.toScopeContext(session);
+    if (this.scopeFilter.isAllScope(ctx.role)) return visitas;
+    if (this.scopeFilter.isInstitucionScope(ctx.role)) {
+      return ctx.institucionId ? visitas.filter((v) => v.institucionId === ctx.institucionId) : [];
     }
-    if (
-      session.role === RoleCode.ESPECIALISTA ||
-      session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
-      session.role === RoleCode.JEFE_TALLER
-    ) {
-      // Especialista: solo lo que el monitor es el
-      return visitas; // se filtra en repository con monitorId
+    if (this.scopeFilter.isMonitorScope(ctx.role)) {
+      // Especialista: se filtra en repository por monitorId.
+      return visitas;
     }
-    return visitas;
+    if (this.scopeFilter.isJefeAreaScope(ctx.role)) {
+      return visitas.filter((v) => v.nivelEducativo === ctx.especialistaNivel);
+    }
+    return [];
   }
 
   private validarAccesoVisita(visita: IVisita, session?: SessionUser): void {
     if (!session) return;
-    if (session.role === RoleCode.JEFE_GESTION) return;
-    if (session.role === RoleCode.DIRECTOR_INSTITUCION) {
-      if (visita.institucionId !== session.institucionId) {
+    const ctx = this.toScopeContext(session);
+    if (this.scopeFilter.isAllScope(ctx.role)) return;
+    if (this.scopeFilter.isInstitucionScope(ctx.role)) {
+      if (visita.institucionId !== ctx.institucionId) {
         throw new ForbiddenException('No tiene acceso a esta visita (otra institucion).');
       }
     }

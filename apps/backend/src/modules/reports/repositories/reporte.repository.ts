@@ -46,4 +46,5 @@ export interface SessionScope {
   id: string;
   role: RoleCode;
   institucionId?: string | null;
+  especialistaNivel?: string | null;
 }

@@ -1,11 +1,10 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { HealthModule } from './shared/health/health.module.js';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
-import { RlsMiddleware } from './shared/prisma/rls.middleware.js';
 import { StorageModule } from './shared/storage/storage.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { TeachersModule } from './modules/teachers/teachers.module.js';
@@ -58,8 +57,4 @@ import { ReportsModule } from './modules/reports/reports.module.js';
     },
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RlsMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}

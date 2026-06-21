@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -10,19 +11,23 @@ import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { JwtPayload } from '../services/auth-token.service.js';
 import { ALLOW_FIRST_LOGIN_KEY } from '../decorators/allow-first-login.decorator.js';
+import { SessionRepository } from '../repositories/session.repository.js';
+import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 
 interface AuthenticatedRequest extends Request {
   cookies: Record<string, string>;
   user?: JwtPayload & { jti: string };
 }
-import { SessionRepository } from '../repositories/session.repository.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  private readonly logger = new Logger(AuthGuard.name);
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
     private readonly sessionRepository: SessionRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -52,6 +57,25 @@ export class AuthGuard implements CanActivate {
             'Debe cambiar su contraseña temporal antes de acceder a otros recursos.',
           );
         }
+      }
+
+      // Fase 3: setear GUCs RLS inmediatamente despues de verificar la sesion.
+      // Los GUCs quedan en la conexion del pool hasta que se devuelva.
+      // Si la conexion no es superuser (caso `monitoreo_app`), las RLS policies
+      // se aplican a las queries del handler. Si es superuser (caso dev actual
+      // con `admin/admin`), las policies son BYPASSEADAS y esto es no-op.
+      try {
+        await this.prisma.$executeRawUnsafe(
+          `SELECT
+            set_config('app.user_id', $1, true),
+            set_config('app.user_rol', $2, true),
+            set_config('app.user_institucion_id', $3, true)`,
+          payload.sub,
+          payload.role,
+          payload.institucion_id ?? '',
+        );
+      } catch (err) {
+        this.logger.warn(`No se pudieron setear GUCs RLS: ${(err as Error).message}`);
       }
     } catch (err) {
       if (err instanceof ForbiddenException || err instanceof UnauthorizedException) {

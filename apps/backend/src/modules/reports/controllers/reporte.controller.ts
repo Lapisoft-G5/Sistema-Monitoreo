@@ -29,20 +29,20 @@ export class ReporteController {
   constructor(private readonly service: ReporteService) {}
 
   @Get('fichas-completadas')
-  @RequirePermissions('monitoreo:execute')
+  @RequirePermissions('reports:read')
   async fichasCompletadas(@Query() query: any, @Req() req: any): Promise<IPaginatedReportesFichas> {
     return this.service.listFichasCompletadas(query, this.toSession(req));
   }
 
   @Get('resumen-ie')
-  @RequirePermissions('monitoreo:execute')
+  @RequirePermissions('reports:read')
   async resumenIE(@Query('anio') anio: string, @Req() req: any): Promise<IReporteResumenIE[]> {
     const anioNumber = anio ? parseInt(anio, 10) : new Date().getFullYear();
     return this.service.resumenPorIE(anioNumber, this.toSession(req));
   }
 
   @Get('ficha/:id/export-html')
-  @RequirePermissions('monitoreo:execute')
+  @RequirePermissions('reports:read')
   @Header('Content-Type', 'text/html; charset=utf-8')
   async exportarFichaHTML(
     @Param('id', new ParseUUIDPipe()) id: string,

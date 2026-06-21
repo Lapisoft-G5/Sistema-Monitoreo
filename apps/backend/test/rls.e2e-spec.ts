@@ -81,10 +81,33 @@ describe('RLS Policies - Fase 3 (codes reales + aislamiento)', () => {
   });
 
   describe('cronogramas - aislamiento por especialista', () => {
-    it('especialista monitor: ve SU cronograma (1 fila)', async () => {
+    // Conteos via admin (bypass RLS) para asserts relativas. La BD puede tener
+    // mas cronogramas de los que el seed crea si el usuario ha estado probando.
+    let totalCronogramas = 0;
+    let cronogramasDeMonitor = 0;
+    let cronogramasDeMonitorIe = 0;
+    beforeAll(async () => {
+      const all = await adminPool.query('SELECT count(*) FROM cronogramas');
+      totalCronogramas = parseInt(all.rows[0].count);
+      const mine = await adminPool.query(
+        `SELECT count(*) FROM cronogramas c
+         JOIN especialistas e ON c.monitor_id = e.id
+         JOIN usuarios u ON u.persona_id = e.persona_id
+         WHERE u.id = $1`,
+        [MONITOR_USER_ID],
+      );
+      cronogramasDeMonitor = parseInt(mine.rows[0].count);
+      const mineIe = await adminPool.query(
+        `SELECT count(*) FROM cronogramas WHERE institucion_id = $1`,
+        [MONITOR_IE_ID],
+      );
+      cronogramasDeMonitorIe = parseInt(mineIe.rows[0].count);
+    });
+
+    it('especialista monitor: ve solo SUS cronogramas', async () => {
       await asRole(MONITOR_USER_ID, 'especialista', null, async (client) => {
         const result = await client.query('SELECT count(*) FROM cronogramas');
-        expect(parseInt(result.rows[0].count)).toBe(1);
+        expect(parseInt(result.rows[0].count)).toBe(cronogramasDeMonitor);
       });
     });
 
@@ -95,21 +118,21 @@ describe('RLS Policies - Fase 3 (codes reales + aislamiento)', () => {
       });
     });
 
-    it('jefe_gestion: ve TODO (1 fila)', async () => {
+    it('jefe_gestion: ve TODO', async () => {
       await asRole(MONITOR_USER_ID, 'jefe_gestion', null, async (client) => {
         const result = await client.query('SELECT count(*) FROM cronogramas');
-        expect(parseInt(result.rows[0].count)).toBe(1);
+        expect(parseInt(result.rows[0].count)).toBe(totalCronogramas);
       });
     });
 
-    it('director_institucion: ve solo cronogramas de su IE (1 fila)', async () => {
+    it('director_institucion: ve solo cronogramas de su IE', async () => {
       await asRole(DIRECTOR_IE_USER_ID, 'director_institucion', MONITOR_IE_ID, async (client) => {
         const result = await client.query('SELECT count(*) FROM cronogramas');
-        expect(parseInt(result.rows[0].count)).toBe(1);
+        expect(parseInt(result.rows[0].count)).toBe(cronogramasDeMonitorIe);
       });
     });
 
-    it('director_institucion de OTRA IE: NO ve el cronograma (0 filas)', async () => {
+    it('director_institucion de OTRA IE: NO ve cronogramas (0 filas)', async () => {
       // El director_ie 40000006 esta en la institucion del cronograma seeded.
       // Cualquier director_institucion con otro institucionId no debe verlo.
       await asRole(

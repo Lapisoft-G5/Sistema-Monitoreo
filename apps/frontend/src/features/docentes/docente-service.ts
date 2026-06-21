@@ -43,7 +43,9 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
     correo: apiDoc.persona.correo || '',
     celular: apiDoc.persona.telefono || '',
     nivelEducativo: (apiDoc.nivelEducativo?.toUpperCase() || 'PRIMARIA') as NivelEducativo,
-    condicion: (apiDoc.condicionLaboral || 'Nombrado') as Docente['condicion'],
+    condicion: (cargoName === 'Director' && (!apiDoc.condicionLaboral || apiDoc.condicionLaboral === 'Nombrado')
+      ? 'Designado'
+      : (apiDoc.condicionLaboral || 'Nombrado')) as Docente['condicion'],
     especialidad: apiDoc.cursoAsignado || 'General',
     cargaHoraria: 30,
     secciones:

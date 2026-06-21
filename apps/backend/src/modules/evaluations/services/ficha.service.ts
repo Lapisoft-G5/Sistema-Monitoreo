@@ -97,7 +97,7 @@ export class FichaService {
       }
     }
 
-    return this.repository.create({
+    const result = await this.repository.create({
       cronogramaId: dto.cronogramaId,
       plantillaId: plantilla.id,
       anioAcademico: cronograma.fechaProgramada.getFullYear(),
@@ -111,6 +111,13 @@ export class FichaService {
       },
       creadoPorId: session.id,
     });
+
+    await this.prisma.cronograma.update({
+      where: { id: dto.cronogramaId },
+      data: { estado: 'EN_PROCESO' },
+    });
+
+    return result;
   }
 
   async guardarRespuesta(
@@ -200,7 +207,7 @@ export class FichaService {
     const niveles = ficha.respuestasDesempeno.map((r) => r.nivel);
     const resultado = BaremoCalculatorService.calcularResultadoCompleto(niveles);
 
-    return this.repository.finalizar(
+    const result = await this.repository.finalizar(
       fichaId,
       resultado.puntajeTotal,
       resultado.promedio,
@@ -208,6 +215,13 @@ export class FichaService {
       session.id,
       dto.observaciones,
     );
+
+    await this.prisma.cronograma.update({
+      where: { id: ficha.cronogramaId },
+      data: { estado: 'COMPLETADO' },
+    });
+
+    return result;
   }
 
   async migrarPlantilla(

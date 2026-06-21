@@ -3,8 +3,12 @@ import { prisma } from './_lib/prisma.js';
 /**
  * Cargos: director, subdirector, docente de aula, auxiliar, etc.
  * Se siembra ANTES de personas (los docentes requieren docente_cargo).
+ *
+ * Esta lista incluye TODOS los cargos validos del enum `CargoNombre` (backend)
+ * para que el FK de `docente_cargos.cargo_id` siempre pueda satisfacerse cuando
+ * un controller registra un DocenteCargo. Tambien incluye cargos secundarios
+ * usados por las pantallas de registro historicas.
  */
-
 const CARGOS = [
   'Director',
   'Subdirector',
@@ -15,6 +19,7 @@ const CARGOS = [
   'Jefe de Taller',
   'Coordinador de TOE',
   'Psicologo',
+  'PIP',
 ];
 
 export async function seedCargos() {

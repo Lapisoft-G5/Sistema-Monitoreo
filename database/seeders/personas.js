@@ -159,6 +159,20 @@ const USERS = [
     condicionLaboral: 'Nombrado',
     cargaLaboral: 30,
   },
+  {
+    dni: '40000013',
+    firstName: 'Eduardo',
+    lastName: 'Coila Mamani',
+    email: 'eduardo.coila@ugel.gob.pe',
+    role: 'docente',
+    fechaNacimiento: '1987-08-12',
+    institucionCodigoModular: '0200001',
+    nivelEducativo: 'Primaria',
+    curso: 'Matematica',
+    secciones: [{ grado: '4.', seccion: 'A' }],
+    condicionLaboral: 'Nombrado',
+    cargaLaboral: 30,
+  },
 ];
 
 const ESPECIALISTA_CARGO_POR_ROL = {

@@ -55,7 +55,7 @@ async function main() {
   console.log('  especialista → DNI: 40000005  (Pedro Pablo Mamani Cruz)');
   console.log('  director_institucion → DNI: 40000006  (Rosa Maria Apaza Condori)');
   console.log('  director_institucion → DNI: 40000007  (Juan Carlos Choque Huaranca)');
-  console.log('  docente      → DNI: 40000008-40000012  (varios)');
+  console.log('  docente      → DNI: 40000008-40000013  (varios)');
 }
 
 main()

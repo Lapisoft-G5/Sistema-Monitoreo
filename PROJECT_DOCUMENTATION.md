@@ -355,7 +355,7 @@ Se definen como **interfaces abstractas** (ej. `UserRepository`) con implementac
 
 ### Modelos
 
-Definidos en el schema de Prisma (`schema.prisma`). 42 modelos que generan las tablas en PostgreSQL.
+Definidos en el schema de Prisma (`schema.prisma`). 44 modelos que generan las tablas en PostgreSQL.
 
 ### Middlewares
 
@@ -535,7 +535,7 @@ sequenceDiagram
 
 ### 5.7 Módulo de Monitoreo — Plantillas (`modules/monitoring/plantillas`)
 
-**¿Qué hace?** Gestiona las plantillas de evaluación con desempeños, aspectos, rúbricas y niveles de calificación.
+**¿Qué hace?** Gestiona las plantillas de evaluación con desempeños, aspectos, rúbricas, niveles de calificación, pregunta extra por desempeño y ejes/ítems configurables.
 
 **Reglas de negocio:**
 
@@ -543,13 +543,15 @@ sequenceDiagram
 2. **Estados:** `Borrador` → `Vigente` → `Historico`. No se puede retroceder.
 3. **Versionado:**
    - Si la plantilla está en `Borrador` y no tiene fichas asociadas → **actualización in-place** (modifica directamente).
-   - Si pasa a `Vigente` y luego se edita → se crea una **nueva versión** (clonando desempeños, aspectos, niveles y rúbricas). La anterior pasa a `Historico`.
+   - Si pasa a `Vigente` y luego se edita → se crea una **nueva versión** (clonando desempeños, aspectos, niveles, rúbricas, preguntaExtra y ejesItems). La anterior pasa a `Historico`.
    - La migración de fichas de una versión anterior a la nueva se maneja explícitamente en el endpoint `POST /fichas/:id/migrar-plantilla`.
 4. **Baremo:** `Vigente` (rangos discretos con gaps) o `Porcentual` (basado en porcentajes).
-5. **Restricción de eliminación:** Si la plantilla tiene fichas asociadas, no se puede eliminar (foreign key).
+5. **Pregunta extra por desempeño:** Cada desempeño puede tener un campo `preguntaExtra` opcional (texto) que se muestra como pregunta Sí/No en la ficha de evaluación.
+6. **Ejes e Items (solo DOCENTE):** Las plantillas de tipo DOCENTE pueden incluir ejes e ítems configurables (número + descripción). Se renderizan en la ficha con selector de nivel (I-IV) y subida de evidencia (PDF, DOC, JPG, PNG).
+7. **Restricción de eliminación:** Si la plantilla tiene fichas asociadas, no se puede eliminar (foreign key).
 
-**Datos que consume:** `PlantillaMonitoreo`, `DesempenoPlantilla`, `AspectoEvaluado`, `NivelCalificacion`, `RubricaNivel`, `FichaMonitoreo`
-**Datos que genera:** Versiones de plantillas, desempeños, aspectos, rúbricas, niveles
+**Datos que consume:** `PlantillaMonitoreo`, `DesempenoPlantilla`, `AspectoEvaluado`, `NivelCalificacion`, `RubricaNivel`, `EjeItemPlantilla`, `FichaMonitoreo`
+**Datos que genera:** Versiones de plantillas, desempeños, aspectos, rúbricas, niveles, ejes/ítems
 
 ### 5.8 Módulo de Scheduling — Cronogramas (`modules/scheduling`)
 
@@ -572,16 +574,18 @@ sequenceDiagram
 
 ### 5.9 Módulo de Evaluaciones — Fichas (`modules/evaluations`)
 
-**¿Qué hace?** Registra las fichas de monitoreo durante las visitas: contexto, respuestas de desempeño y aspectos.
+**¿Qué hace?** Registra las fichas de monitoreo durante las visitas: contexto, respuestas de desempeño, aspectos, pregunta extra, ejes/ítems, sugerencias y compromisos.
 
 **Reglas de negocio:**
 
 1. **Una ficha por visita:** Relación 1:1 entre `Cronograma` y `FichaMonitoreo`.
 2. **Flujo de creación:**
    - `POST /fichas` → Crea ficha en estado `BORRADOR` con puntaje 0 y promedio 1.0
-   - `PATCH /fichas/:id/respuestas-desempeno` → Guarda niveles de desempeño y observaciones opcionales específicas de cada rúbrica.
+   - `PATCH /fichas/:id/respuestas-desempeno` → Guarda niveles de desempeño y observaciones opcionales específicas de cada rúbrica, además de la respuesta Sí/No a `preguntaExtra` de cada desempeño.
    - `PATCH /fichas/:id/respuestas-aspecto/:aspectoId` → Marca aspectos evaluados (solo si la plantilla del monitoreo tiene aspectos definidos).
-   - `PATCH /fichas/:id/finalizar` → Calcula puntaje, promedio y nivel de logro, guarda las sugerencias y compromisos del directivo (si aplica) y cambia el estado a `FINALIZADO`.
+   - `PATCH /fichas/:id/respuestas-eje-item` → Guarda nivel (I-IV) para cada eje/item de plantilla DOCENTE.
+   - `POST /fichas/:id/eje-item/:ejeItemId/evidencia` → Sube archivo de evidencia (PDF, DOC, JPG, PNG) para un eje/item.
+   - `PATCH /fichas/:id/finalizar` → Calcula puntaje, promedio y nivel de logro, guarda sugerencias y compromisos, cambia el estado a `FINALIZADO`.
 3. **Cálculo de nivel de logro (BaremoCalculatorService):**
    - Promedio se calcula como promedio de todos los desempeños
    - Niveles con **gaps intencionales** para evitar ambigüedad:
@@ -590,25 +594,18 @@ sequenceDiagram
      - `LOGRO_ESPERADO`: promedio entre 2.6 y 3.4 (gap 3.5)
      - `LOGRO_DESTACADO`: promedio entre 3.6 y 4.0
    - Los gaps (1.5, 2.5, 3.5) no son alcanzables, forzando al evaluador a definir claramente el nivel
-4. **Ficha y Rúbrica de Monitoreo Directivo 2025 — Lógica de UI:**
+4. **Ficha de Monitoreo — Lógica de UI:**
    - **Sin checklist de aspectos:** La plantilla directiva no tiene sub-ítems ni indicadores individuales. El formulario oculta completamente el panel de verificación de aspectos cuando `activeFichaDesempeno.aspectos.length === 0`.
    - **Observaciones por Rúbrica:** Cada rúbrica tiene un textarea independiente para que el especialista registre evidencias o sustento de la calificación. Este campo se persiste en `FichaRespuestaDesempeno.observaciones`.
-   - **Sugerencias y Compromisos:** Al finalizar el llenado, el formulario muestra dos textareas separadas (en lugar de un campo genérico): uno para "Sugerencias" y otro para "Compromisos". Se detecta la plantilla directiva con `tipoMonitoreo.toUpperCase().includes('DIRECTIVO')` para soportar tanto el valor `'DIRECTIVO'` (API) como `'Monitoreo Directivo'` (mock). Estos campos se persisten en `FichaMonitoreo.sugerencias` y `FichaMonitoreo.compromisos`.
-   - **Panel de Calificación Final (solo lectura):** Al abrir una ficha directiva con estado `COMPLETADO`, el formulario muestra un panel resumen con:
-     - Tabla de cada rúbrica con su nivel asignado (badge con color del nivel) y puntaje numérico (I=1, II=2, III=3, IV=4).
-     - Puntaje total vs. máximo posible (nRúbricas × 4).
-     - Nivel de logro calculado con la escala baremo del PDF directivo (proporcional al número de rúbricas):
-       - **INICIO:** 0–25% del puntaje máximo.
-       - **EN PROCESO:** 26–50%.
-       - **LOGRADO:** 51–75%.
-       - **SATISFACTORIO:** 76–100%.
-     - Barra de progreso coloreada y porcentaje.
-     - Escala baremo visual con el nivel activo resaltado y los demás en opacidad reducida.
+   - **Pregunta Extra Sí/No:** Si un desempeño tiene `preguntaExtra` definido, se muestra un par de radios (Sí/No) debajo del selector de nivel. La respuesta se persiste en `FichaRespuestaDesempeno.preguntaExtraRespuesta`.
+   - **Ejes e Items (solo DOCENTE):** Sección separada con tabla de items, cada uno con selector de nivel (I-IV) y botón de subida de archivo. Los niveles se persisten en `FichaRespuestaEjeItem.nivel`, las evidencias como archivos en `uploads/`.
+   - **Sugerencias y Compromisos:** Al finalizar, el formulario muestra dos textareas separadas (Sugerencias y Compromisos) en grid 2-col, para ambos tipos de plantilla (DOCENTE y DIRECTIVO). Se persisten en `FichaMonitoreo.sugerencias` y `FichaMonitoreo.compromisos`.
+   - **CONSOLIDADO DE NIVELES DE LOGRO:** Al finalizar el llenado, se muestra una tabla con todos los desempeños (D1–R7), aspectos, nivel asignado y puntaje, más filas de TOTAL y NIVEL DE LOGRO. Visible para ambos tipos. El cálculo usa el baremo proporcional (25%–50%–75%–100%).
    - **Layout del modal con scroll interno:** El modal usa `max-h-[90vh] overflow-hidden` en el Card. Todo el contenido variable (cuerpo de rúbricas + comentarios + calificación) está envuelto en un único `div flex-1 overflow-y-auto`, asegurando que el header, la barra de información y el footer permanezcan fijos mientras el contenido hace scroll internamente.
 5. **Migración de plantilla:** Si la plantilla se versionó mientras la ficha estaba en borrador, se puede migrar a la nueva versión. Esto re-crea las respuestas de desempeño y aspecto con IDs de la nueva plantilla.
 
-**Datos que consume:** `FichaMonitoreo`, `FichaContexto`, `FichaRespuestaDesempeno`, `FichaRespuestaAspecto`, `PlantillaMonitoreo`, `DesempenoPlantilla`, `AspectoEvaluado`
-**Datos que genera:** Fichas completas con puntajes, promedios y niveles de logro, observaciones detalladas por rúbrica, sugerencias y compromisos acordados
+**Datos que consume:** `FichaMonitoreo`, `FichaContexto`, `FichaRespuestaDesempeno`, `FichaRespuestaAspecto`, `FichaRespuestaEjeItem`, `EjeItemPlantilla`, `PlantillaMonitoreo`, `DesempenoPlantilla`, `AspectoEvaluado`
+**Datos que genera:** Fichas completas con puntajes, promedios y niveles de logro, observaciones detalladas por rúbrica, sugerencias y compromisos, respuestas a pregunta extra, niveles de eje/item y evidencias subidas
 
 ### 5.10 Módulo de Reportes (`modules/reports`)
 
@@ -707,7 +704,7 @@ flowchart TD
 
 **PostgreSQL 17** con Prisma ORM como capa de abstracción.
 
-### Modelo de datos (42 modelos activos)
+### Modelo de datos (44 modelos activos)
 
 El schema completo está en `apps/backend/prisma/schema.prisma`. Las tablas se agrupan en dominios:
 
@@ -747,7 +744,7 @@ El schema completo está en `apps/backend/prisma/schema.prisma`. Las tablas se a
 | `especialistas` | Especialistas con cargo y condición laboral |
 | `especialista_especialidades` | Especialidades del especialista |
 
-#### 7.4 Monitoreo (8 tablas)
+#### 7.4 Monitoreo (9 tablas)
 
 | Tabla | Propósito |
 |-------|-----------|
@@ -755,20 +752,22 @@ El schema completo está en `apps/backend/prisma/schema.prisma`. Las tablas se a
 | `plan_cobertura_ie` | Cobertura M:N plan ↔ IE |
 | `plantillas_monitoreo` | Plantillas de evaluación con versionado |
 | `niveles_calificacion` | Niveles (I, II, III, IV) con rango y color |
-| `desempenos_plantilla` | Desempeños evaluables |
+| `desempenos_plantilla` | Desempeños evaluables. Contiene `pregunta_extra` (text) opcional para pregunta Sí/No por desempeño. |
 | `aspectos_evaluados` | Aspectos específicos de cada desempeño |
 | `rubrica_niveles` | Descripción del nivel por desempeño |
+| `ejes_items_plantilla` | Ejes e Items configurables por plantilla DOCENTE (numero, descripcion) |
 | `ficha_contexto` | Contexto de la visita (curso, estudiantes) |
 
-#### 7.5 Scheduling y evaluaciones (5 tablas)
+#### 7.5 Scheduling y evaluaciones (6 tablas)
 
 | Tabla | Propósito / Columnas Clave |
 |-------|----------------------------|
 | `cronogramas` | Visitas programadas |
 | `solicitudes_reprogramacion` | Solicitudes de cambio de fecha/hora |
-| `fichas_monitoreo` | Fichas de evaluación completadas. Contiene `sugerencias` (text) y `compromisos` (text) para plantillas directivas, además del campo global `observaciones`. |
+| `fichas_monitoreo` | Fichas de evaluación completadas. Contiene `sugerencias` (text), `compromisos` (text) y `observaciones` (text, legacy). |
 | `ficha_respuestas_desempeno` | Nivel asignado a cada desempeño. Contiene `observaciones` (text) específicas registradas para cada rúbrica. |
 | `ficha_respuestas_aspecto` | Aspectos marcados como cumplidos |
+| `fichas_respuesta_eje_item` | Nivel (I-IV) y evidencia (file URL) por cada Eje/Item de plantilla DOCENTE |
 
 ### Relaciones principales
 
@@ -786,12 +785,15 @@ especialistas 1:N→ cronogramas (como monitor)
 docentes 1:N→ cronogramas (como evaluado)
 planes_monitoreo M:N→ instituciones (via plan_cobertura_ie)
 plantillas_monitoreo 1:N→ desempenos_plantilla
+plantillas_monitoreo 1:N→ ejes_items_plantilla
 desempenos_plantilla 1:N→ aspectos_evaluados
 desempenos_plantilla M:N→ niveles_calificacion (via rubrica_niveles)
 cronogramas 1:1→ fichas_monitoreo
 cronogramas 1:N→ solicitudes_reprogramacion
 fichas_monitoreo 1:N→ ficha_respuestas_desempeno
 fichas_monitoreo 1:N→ ficha_respuestas_aspecto
+fichas_monitoreo 1:N→ fichas_respuesta_eje_item
+ejes_items_plantilla 1:N→ fichas_respuesta_eje_item
 ```
 
 ### Índices importantes
@@ -1274,7 +1276,7 @@ Existen datos históricos en Excel que deben migrarse al sistema. No hay un proc
 ├── apps/
 │   ├── backend/                       → Backend NestJS 11
 │   │   ├── prisma/
-│   │   │   ├── schema.prisma          → Modelo de datos (42 modelos)
+│   │   │   ├── schema.prisma          → Modelo de datos (44 modelos)
 │   │   │   └── migrations/            → 16 migraciones SQL
 │   │   └── src/
 │   │       ├── main.ts                → Bootstrap: pipes, filters, CORS, Swagger
@@ -1810,3 +1812,28 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado)
 - **Reportes:** Se requiere exportación a PDF (actualmente solo HTML)
 - **Migración:** Existen datos históricos en Excel que deben migrarse al sistema
 - **Infraestructura de despliegue y CI/CD** no definida — solo entorno de desarrollo local
+
+---
+
+## 18. Historial de Cambios Recientes
+
+### Junio 2026
+
+#### 1. Restricción de Creación de Cronogramas para Jefe de Área por Nivel Educativo
+- **Cambio en Backend:** Se modificó `crearVisita` en `scheduling.service.ts` para validar que, si el creador de la visita es un `Jefe de Área`, el nivel educativo de la visita y de la institución coincidan exactamente con su nivel educativo asignado (e.g., Secundaria).
+- **Pruebas unitarias:** Se agregaron y actualizaron las pruebas en `scheduling.service.spec.ts` para verificar la aplicación correcta de estas restricciones y la consistencia en el manejo de errores.
+- **Cambio en Frontend:** En `CronogramaPage.tsx`, se restringieron las opciones de selección de modalidad y nivel educativo para que el Jefe de Área solo pueda seleccionar su modalidad y nivel asignados (ej. EBR - Secundaria).
+
+#### 2. Corrección del Flujo de Primer Login / Cambio de Contraseña Temporal
+- **Problema:** En el inicio de sesión con contraseña temporal (`isFirstLogin: true`), la aplicación intentaba cargar todos los recursos del cronograma (especialistas, instituciones, docentes, etc.) en paralelo de forma inmediata. Al estar el acceso temporal restringido a las APIs por motivos de seguridad en el backend, estas peticiones fallaban con código `403 Forbidden`, provocando caídas de la interfaz (crashes) y un bucle de errores de red en la consola antes de poder mostrar el formulario de cambio de contraseña.
+- **Resolución:** Se actualizó `CronogramaProvider` (`context.tsx`) para verificar `user?.firstLogin`. Si el usuario tiene una contraseña temporal activa, no se disparan las consultas iniciales a la API. Las peticiones se reanudan una vez que el cambio de contraseña sea exitoso y se elimine el flag de primer login, permitiendo una experiencia fluida y sin errores de red colaterales.
+
+#### 3. Asignación de Permiso de Lectura de Especialistas para Jefe de Área
+- **Problema:** En la creación de cronogramas, el sistema requiere listar los especialistas para poder asignarlos. Dado que el rol `jefe_area` carecía del permiso `especialistas:read` en los seeders del sistema (`auth.js` y `dev-seed.js`) y en el mapeador estático de capacidades del backend (`capability-map.ts`), al intentar cargar la lista de especialistas para el formulario de programación de visitas, el backend respondía con un error `403 Forbidden`. Esto impedía por completo a los Jefes de Área poder ver y seleccionar especialistas al registrar visitas.
+- **Resolución:** 
+  1. Se agregó la capacidad `especialistas:read` al array de permisos del rol `jefe_area` en los seeders (`database/seeders/auth.js` y `database/seeders/dev-seed.js`) y se re-ejecutó el comando de base de datos `prisma db seed`.
+  2. Se modificó el mapa de capacidades estáticas del backend `capability-map.ts` para incluir `'especialistas:read'` en `ROL_CAPABILITIES[RoleCode.JEFE_AREA]` y `ESPECIALISTA_CARGO_CAPABILITIES[EspecialistaCargoEnum.JEFE_AREA]`.
+  3. Esto asegura que al iniciar sesión, el nuevo token JWT expedido al Jefe de Área contenga correctamente este permiso y se autoricen sus consultas a `/api/especialistas`.
+
+
+

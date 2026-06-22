@@ -72,8 +72,13 @@ Body:
     {
       "competencia": "Lee diversos tipos de textos",
       "capacidades": ["Obtiene info", "Infiere"],
-      "nivelesCalificacion": [{ "valor": 1, "literal": "C", "descripcion": "En inicio" }]
+      "nivelesCalificacion": [{ "valor": 1, "literal": "C", "descripcion": "En inicio" }],
+      "preguntaExtra": "¿El estudiante logró comprender el texto?"
     }
+  ],
+  "ejesItems": [
+    { "numero": 1, "descripcion": "Planificación Curricular" },
+    { "numero": 2, "descripcion": "Ejecución Pedagógica" }
   ],
   "comentariosAdicionales": "..."
 }
@@ -83,12 +88,13 @@ Body:
 Lista plantillas con su `estadoVersion` (VIGENTE / HISTORICO).
 
 ### `GET /plantillas/:id`
-Detalle completo con desempenos, aspectos y niveles.
+Detalle completo con desempenos, aspectos, niveles, preguntaExtra y ejesItems.
 
 ### `PATCH /plantillas/:id`
-Modifica una plantilla VIGENTE. Si cambia la estructura de desempenos
-o aspectos, la v1 pasa a HISTORICO y se crea una nueva VIGENTE (v2).
-La data de fichas en proceso se conserva apuntando a v1 (HISTORICO).
+Modifica una plantilla VIGENTE. Si cambia la estructura de desempenos,
+aspectos o ejesItems, la v1 pasa a HISTORICO y se crea una nueva
+VIGENTE (v2). La data de fichas en proceso se conserva apuntando a
+v1 (HISTORICO).
 
 ### `GET /plantillas/:id/borrador-ficha`
 Devuelve los desempenos y aspectos tal como se usan para una nueva
@@ -180,11 +186,16 @@ Detalle con todas las respuestas.
 Obtiene la ficha de una visita (o 404 si no existe).
 
 ### `PATCH /fichas/:id/respuestas-desempeno`
-Guarda la calificación de un desempeno.
+Guarda la calificación de un desempeño, observaciones por rúbrica y respuesta a pregunta extra (Sí/No).
 
 Body:
 ```json
-{ "desempenoId": "uuid", "nivelCalificacion": 3 }
+{
+  "desempenoId": "uuid",
+  "nivelCalificacion": 3,
+  "observaciones": "Evidencia registrada...",
+  "preguntaExtraRespuesta": "Si"
+}
 ```
 
 ### `PATCH /fichas/:id/respuestas-aspecto`
@@ -195,13 +206,29 @@ Body:
 { "aspectoId": "uuid", "marcado": true }
 ```
 
+### `PATCH /fichas/:id/respuestas-eje-item`
+Guarda el nivel (I-IV) para un eje/item de plantilla DOCENTE.
+
+Body:
+```json
+{ "ejeItemId": "uuid", "nivel": 2 }
+```
+
+### `POST /fichas/:id/eje-item/:ejeItemId/evidencia`
+Sube archivo de evidencia para un eje/item.
+
+FormData: `multipart/form-data` con campo `file` (PDF, DOC, JPG, PNG).
+
 ### `PATCH /fichas/:id/finalizar`
 Cierra la ficha. Recalcula baremo automáticamente (motor de baremo:
 suma ponderada de niveles + ajuste por checklist).
 
 Body:
 ```json
-{ "observaciones": "..." }
+{
+  "sugerencias": "Sugerencia del especialista...",
+  "compromisos": "Compromiso del docente..."
+}
 ```
 
 ### `POST /fichas/:id/migrar-plantilla` (ILA-0046)

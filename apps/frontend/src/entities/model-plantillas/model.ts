@@ -25,11 +25,19 @@ export interface RubricaNivel {
   descripcion: string;
 }
 
+// Un Eje/Item evaluado dentro de la plantilla (Solo Docente).
+export interface EjeItem {
+  id: string;
+  numero: number;
+  descripcion: string;
+}
+
 // Un desempeño de la plantilla.
 export interface Desempeno {
   id: string;
   nombre: string;
   descripcionCorta: string;
+  preguntaExtra?: string;
   aspectos: AspectoEvaluado[];
   rubrica: RubricaNivel[]; // una entrada por nivel (I-IV)
 }
@@ -42,6 +50,7 @@ export interface Plantilla {
   baremo: Baremo;
   niveles: NivelCalificacion[]; // los 4 niveles de la escala
   desempenos: Desempeno[];
+  ejesItems?: EjeItem[];
   fechaCreacion: string;
   estado: 'Vigente' | 'Borrador' | 'Historico';
   descripcion: string;

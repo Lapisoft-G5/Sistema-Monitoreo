@@ -4,14 +4,15 @@ import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { EditarPlantillaForm } from '@widgets/plantillas';
 import type { PlantillaFormState } from '@widgets/plantillas';
-import { usePlantillas } from '@entities/model-plantillas'; 
+import { usePlantillas } from '@entities/model-plantillas';
+import { NIVELES_ROMANOS } from '@entities/model-plantillas';
 
 export const PlantillaEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { plantillas, updatePlantilla } = usePlantillas();
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const plantilla = useMemo(() => plantillas.find((p) => p.id === id), [plantillas, id]);
 
   const initialData = useMemo<PlantillaFormState | null>(() => {
@@ -21,7 +22,19 @@ export const PlantillaEditPage = () => {
       anioAcademico: plantilla.anioAcademico,
       baremo: plantilla.baremo,
       niveles: plantilla.niveles,
-      desempenos: plantilla.desempenos,
+      desempenos: plantilla.desempenos.map((d) => ({
+        ...d,
+        preguntaExtra: d.preguntaExtra ?? '',
+        rubrica:
+          d.rubrica && d.rubrica.length > 0
+            ? d.rubrica
+            : NIVELES_ROMANOS.map((nivel) => ({ nivel, descripcion: '' })),
+      })),
+      ejeItems: (plantilla.ejesItems || []).map((item) => ({
+        id: item.id,
+        numero: item.numero,
+        descripcion: item.descripcion,
+      })),
     };
   }, [plantilla]);
 
@@ -38,6 +51,7 @@ export const PlantillaEditPage = () => {
       baremo: data.baremo,
       niveles: data.niveles,
       desempenos: data.desempenos,
+      ejesItems: data.ejeItems,
     });
     
     setIsSaving(false);

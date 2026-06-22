@@ -22,9 +22,10 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
           orderBy: { orden: 'asc' },
           include: {
             aspectos: { orderBy: { orden: 'asc' } },
-            rubrica: true,
+            rubrica: { include: { nivelCalificacion: true } },
           },
         },
+        ejesItems: { orderBy: { orden: 'asc' } },
       },
     });
     if (!plantilla) {
@@ -55,6 +56,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
         plantillaId: d.plantillaId,
         nombre: d.nombre,
         descripcionCorta: d.descripcionCorta,
+        preguntaExtra: d.preguntaExtra,
         orden: d.orden,
         aspectos: d.aspectos.map((a) => ({
           id: a.id,
@@ -66,18 +68,28 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
           id: r.id,
           desempenoId: r.desempenoId,
           nivelCalificacionId: r.nivelCalificacionId,
-          nivelRomano: d.rubrica.find((x) => x.id === r.id)
-            ? (d.rubrica.find((x) => x.id === r.id) as any).nivelRomano
-            : ('I' as any),
+          nivelRomano: r.nivelCalificacion.nivelRomano as 'I' | 'II' | 'III' | 'IV',
           descripcion: r.descripcion,
         })),
+      })),
+      ejesItems: plantilla.ejesItems.map((e) => ({
+        id: e.id,
+        plantillaId: e.plantillaId,
+        numero: e.numero,
+        descripcion: e.descripcion,
+        orden: e.orden,
       })),
       createdAt: plantilla.createdAt.toISOString(),
       updatedAt: plantilla.updatedAt.toISOString(),
     };
   }
 
-  private async syncArbol(plantillaId: string, niveles: any[], desempenos: any[]): Promise<void> {
+  private async syncArbol(
+    plantillaId: string,
+    niveles: any[],
+    desempenos: any[],
+    ejeItems?: any[],
+  ): Promise<void> {
     // Niveles: como son 4 fijos (I-IV), se hace upsert por nivel
     for (const n of niveles) {
       const existing = await this.prisma.nivelCalificacion.findFirst({
@@ -129,6 +141,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
             data: {
               nombre: d.nombre,
               descripcionCorta: d.descripcionCorta,
+              preguntaExtra: d.preguntaExtra,
               orden: d.orden,
             },
           })
@@ -138,6 +151,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
               plantillaId,
               nombre: d.nombre,
               descripcionCorta: d.descripcionCorta,
+              preguntaExtra: d.preguntaExtra,
               orden: d.orden,
             },
           });
@@ -193,6 +207,112 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
         });
       }
     }
+
+    if (ejeItems) {
+      const itemsActuales = await this.prisma.ejeItemPlantilla.findMany({
+        where: { plantillaId },
+      });
+      const numsActuales = new Set(itemsActuales.map((i) => i.numero));
+      const numsNuevos = new Set(ejeItems.map((i: any) => i.numero));
+
+      for (const actual of itemsActuales) {
+        if (!numsNuevos.has(actual.numero)) {
+          await this.prisma.ejeItemPlantilla.delete({ where: { id: actual.id } });
+        }
+      }
+
+      for (const item of ejeItems) {
+        if (numsActuales.has(item.numero)) {
+          const existing = itemsActuales.find((i) => i.numero === item.numero);
+          if (existing) {
+            await this.prisma.ejeItemPlantilla.update({
+              where: { id: existing.id },
+              data: { descripcion: item.descripcion, orden: item.orden ?? item.numero },
+            });
+          }
+        } else {
+          await this.prisma.ejeItemPlantilla.create({
+            data: {
+              id: randomUUID(),
+              plantillaId,
+              numero: item.numero,
+              descripcion: item.descripcion,
+              orden: item.orden ?? item.numero,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  private async syncArbolWithTx(
+    tx: any,
+    plantillaId: string,
+    niveles: any[],
+    desempenos: any[],
+    ejeItems?: any[],
+  ): Promise<void> {
+    for (const n of niveles) {
+      await tx.nivelCalificacion.create({
+        data: {
+          id: randomUUID(),
+          plantillaId,
+          nivelRomano: n.nivelRomano,
+          denominacion: n.denominacion,
+          rangoMin: n.rangoMin,
+          color: n.color,
+          orden: n.orden,
+        },
+      });
+    }
+
+    for (const d of desempenos) {
+      await tx.desempenoPlantilla.create({
+        data: {
+          id: d.id,
+          plantillaId,
+          nombre: d.nombre,
+          descripcionCorta: d.descripcionCorta,
+          preguntaExtra: d.preguntaExtra,
+          orden: d.orden,
+          aspectos: {
+            create: d.aspectos.map((a: any) => ({
+              id: a.id,
+              descripcion: a.descripcion,
+              orden: a.orden,
+            })),
+          },
+        },
+      });
+
+      for (const r of d.rubrica) {
+        const nivel = await tx.nivelCalificacion.findFirst({
+          where: { plantillaId, nivelRomano: r.nivelRomano },
+        });
+        if (!nivel) continue;
+        await tx.rubricaNivel.create({
+          data: {
+            desempenoId: d.id,
+            nivelCalificacionId: nivel.id,
+            descripcion: r.descripcion,
+          },
+        });
+      }
+    }
+
+    if (ejeItems) {
+      for (const item of ejeItems) {
+        await tx.ejeItemPlantilla.create({
+          data: {
+            id: randomUUID(),
+            plantillaId,
+            numero: item.numero,
+            descripcion: item.descripcion,
+            orden: item.orden ?? item.numero,
+          },
+        });
+      }
+    }
   }
 
   async findAll(filters?: any): Promise<IPlantilla[]> {
@@ -223,23 +343,42 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
   }
 
   async create(data: CreatePlantillaData): Promise<IPlantilla> {
-    const id = randomUUID();
-    await this.prisma.plantillaMonitoreo.create({
-      data: {
-        id,
+    // Calcular la siguiente versión disponible para (tipo, año)
+    const maxVersion = await this.prisma.plantillaMonitoreo.aggregate({
+      where: {
         tipoMonitoreo: data.data.tipoMonitoreo,
         anioAcademico: data.data.anioAcademico,
-        version: 1,
-        baremo: data.data.baremo,
-        descripcion: data.data.descripcion,
-        estado: 'Borrador',
-        autorId: data.autorId,
-        rolAutorAlCrear: data.rolAutorAlCrear,
-        institucionId: data.institucionId,
-        deleted: false,
       },
+      _max: { version: true },
     });
-    await this.syncArbol(id, data.data.niveles, data.data.desempenos);
+    const nextVersion = (maxVersion._max.version ?? 0) + 1;
+
+    const id = randomUUID();
+    // Usar transacción para que si algo falla, todo se revierta
+    await this.prisma.$transaction(async (tx) => {
+      await tx.plantillaMonitoreo.create({
+        data: {
+          id,
+          tipoMonitoreo: data.data.tipoMonitoreo,
+          anioAcademico: data.data.anioAcademico,
+          version: nextVersion,
+          baremo: data.data.baremo,
+          descripcion: data.data.descripcion,
+          estado: 'Borrador',
+          autorId: data.autorId,
+          rolAutorAlCrear: data.rolAutorAlCrear,
+          institucionId: data.institucionId,
+          deleted: false,
+        },
+      });
+      await this.syncArbolWithTx(
+        tx,
+        id,
+        data.data.niveles,
+        data.data.desempenos,
+        data.data.ejeItems,
+      );
+    });
     return this.buildPlantilla(id);
   }
 
@@ -253,7 +392,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
         data: updateData,
       });
     }
-    if (data.data.niveles || data.data.desempenos) {
+    if (data.data.niveles || data.data.desempenos || data.data.ejeItems) {
       const nivelesActuales = data.data.niveles
         ? data.data.niveles
         : (
@@ -270,7 +409,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
           }));
       const desempenosActuales = data.data.desempenos ? data.data.desempenos : [];
       if (data.data.desempenos) {
-        await this.syncArbol(plantillaId, nivelesActuales, desempenosActuales);
+        await this.syncArbol(plantillaId, nivelesActuales, desempenosActuales, data.data.ejeItems);
       } else {
         // Solo syncronizar niveles
         for (const n of nivelesActuales as any[]) {
@@ -288,6 +427,9 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
               },
             });
           }
+        }
+        if (data.data.ejeItems) {
+          await this.syncArbol(plantillaId, nivelesActuales, [], data.data.ejeItems);
         }
       }
     }
@@ -307,9 +449,10 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
           orderBy: { orden: 'asc' },
           include: {
             aspectos: { orderBy: { orden: 'asc' } },
-            rubrica: true,
+            rubrica: { include: { nivelCalificacion: true } },
           },
         },
+        ejesItems: { orderBy: { orden: 'asc' } },
       },
     });
     if (!original) {
@@ -373,9 +516,10 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
       const desempenosFinales = data.data.desempenos
         ? data.data.desempenos
         : original.desempenos.map((d) => ({
-            id: d.id, // preservamos el id del cliente
+            id: d.id,
             nombre: d.nombre,
             descripcionCorta: d.descripcionCorta,
+            preguntaExtra: d.preguntaExtra,
             orden: d.orden,
             aspectos: d.aspectos.map((a) => ({
               id: a.id,
@@ -400,6 +544,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
             plantillaId: nuevoId,
             nombre: d.nombre,
             descripcionCorta: d.descripcionCorta,
+            preguntaExtra: d.preguntaExtra,
             orden: d.orden,
             aspectos: {
               create: d.aspectos.map((a) => ({
@@ -425,7 +570,28 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
         });
       }
 
-      // 4. Devolver la nueva plantilla
+      // 5. Clonar ejes items
+      const ejeItemsFinales = data.data.ejeItems
+        ? data.data.ejeItems
+        : original.ejesItems.map((e) => ({
+            numero: e.numero,
+            descripcion: e.descripcion,
+            orden: e.orden,
+          }));
+
+      for (const item of ejeItemsFinales) {
+        await tx.ejeItemPlantilla.create({
+          data: {
+            id: randomUUID(),
+            plantillaId: nuevoId,
+            numero: item.numero,
+            descripcion: item.descripcion,
+            orden: item.orden ?? item.numero,
+          },
+        });
+      }
+
+      // Devolver la nueva plantilla
       const creada = await tx.plantillaMonitoreo.findUnique({
         where: { id: nuevoId },
         include: {
@@ -434,9 +600,10 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
             orderBy: { orden: 'asc' },
             include: {
               aspectos: { orderBy: { orden: 'asc' } },
-              rubrica: true,
+              rubrica: { include: { nivelCalificacion: true } },
             },
           },
+          ejesItems: { orderBy: { orden: 'asc' } },
         },
       });
       if (!creada) throw new NotFoundException('Error creando nueva version.');
@@ -465,6 +632,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
           plantillaId: dp.plantillaId,
           nombre: dp.nombre,
           descripcionCorta: dp.descripcionCorta,
+          preguntaExtra: dp.preguntaExtra,
           orden: dp.orden,
           aspectos: dp.aspectos.map((a) => ({
             id: a.id,
@@ -476,10 +644,18 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
             id: r.id,
             desempenoId: r.desempenoId,
             nivelCalificacionId: r.nivelCalificacionId,
-            nivelRomano: 'I' as any,
+            nivelRomano: r.nivelCalificacion.nivelRomano as 'I' | 'II' | 'III' | 'IV',
             descripcion: r.descripcion,
           })),
         })),
+        ejesItems:
+          creada.ejesItems?.map((e) => ({
+            id: e.id,
+            plantillaId: e.plantillaId,
+            numero: e.numero,
+            descripcion: e.descripcion,
+            orden: e.orden,
+          })) ?? [],
         createdAt: creada.createdAt.toISOString(),
         updatedAt: creada.updatedAt.toISOString(),
       };
@@ -511,9 +687,10 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
           orderBy: { orden: 'asc' },
           include: {
             aspectos: { orderBy: { orden: 'asc' } },
-            rubrica: true,
+            rubrica: { include: { nivelCalificacion: true } },
           },
         },
+        ejesItems: { orderBy: { orden: 'asc' } },
       },
     });
     if (!original) throw new NotFoundException(`Plantilla origen ${sourceId} no encontrada.`);
@@ -567,6 +744,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
           plantillaId: nuevoId,
           nombre: d.nombre,
           descripcionCorta: d.descripcionCorta,
+          preguntaExtra: d.preguntaExtra,
           orden: d.orden,
           aspectos: {
             create: d.aspectos.map((a) => ({
@@ -581,6 +759,18 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
               descripcion: r.descripcion,
             })),
           },
+        },
+      });
+    }
+
+    for (const e of original.ejesItems) {
+      await this.prisma.ejeItemPlantilla.create({
+        data: {
+          id: randomUUID(),
+          plantillaId: nuevoId,
+          numero: e.numero,
+          descripcion: e.descripcion,
+          orden: e.orden,
         },
       });
     }

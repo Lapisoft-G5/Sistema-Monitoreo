@@ -25,15 +25,45 @@ export interface CreatePlantillaInput {
   anioAcademico: number;
   baremo: 'Vigente' | 'Porcentual';
   descripcion?: string;
-  niveles: unknown[];
-  desempenos: unknown[];
+  niveles: {
+    nivelRomano: 'I' | 'II' | 'III' | 'IV';
+    denominacion: string;
+    rangoMin: number;
+    color: string;
+    orden: number;
+  }[];
+  desempenos: {
+    id: string;
+    nombre: string;
+    descripcionCorta?: string;
+    preguntaExtra?: string;
+    orden: number;
+    aspectos: { id: string; descripcion: string; orden: number }[];
+    rubrica: { nivelRomano: 'I' | 'II' | 'III' | 'IV'; descripcion: string }[];
+  }[];
+  ejeItems?: { numero: number; descripcion: string }[];
 }
 
 export interface UpdatePlantillaInput {
   baremo?: 'Vigente' | 'Porcentual';
   descripcion?: string;
-  niveles?: unknown[];
-  desempenos?: unknown[];
+  niveles?: {
+    nivelRomano: 'I' | 'II' | 'III' | 'IV';
+    denominacion: string;
+    rangoMin: number;
+    color: string;
+    orden: number;
+  }[];
+  desempenos?: {
+    id: string;
+    nombre: string;
+    descripcionCorta?: string;
+    preguntaExtra?: string;
+    orden: number;
+    aspectos: { id: string; descripcion: string; orden: number }[];
+    rubrica: { nivelRomano: 'I' | 'II' | 'III' | 'IV'; descripcion: string }[];
+  }[];
+  ejeItems?: { numero: number; descripcion: string }[];
 }
 
 export const plantillasApi = {

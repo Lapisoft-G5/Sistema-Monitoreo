@@ -27,6 +27,7 @@ describe('PlantillaService - ILA-0046', () => {
     institucionId: null,
     niveles: [],
     desempenos: [],
+    ejesItems: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -220,8 +221,10 @@ describe('PlantillaService - ILA-0046', () => {
   });
 
   describe('duplicar', () => {
-    it('rechaza si no es Director IE', async () => {
-      await expect(service.duplicar('plantilla-v1', sesionJefe)).rejects.toThrow(
+    it('rechaza si no es Director IE o Jefe de Gestion', async () => {
+      repo.findById.mockResolvedValue(plantillaVigente);
+      const sesionEspecialista = { id: 'user-esp', role: RoleCode.ESPECIALISTA };
+      await expect(service.duplicar('plantilla-v1', sesionEspecialista)).rejects.toThrow(
         ForbiddenException,
       );
     });

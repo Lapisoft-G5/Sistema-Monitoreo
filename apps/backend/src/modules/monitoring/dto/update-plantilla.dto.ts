@@ -12,7 +12,12 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { AspectoInput, DesempenoInput, NivelCalificacionInput } from './create-plantilla.dto.js';
+import {
+  AspectoInput,
+  DesempenoInput,
+  NivelCalificacionInput,
+  EjeItemInput,
+} from './create-plantilla.dto.js';
 
 export class UpdatePlantillaDto {
   @IsOptional()
@@ -36,6 +41,12 @@ export class UpdatePlantillaDto {
   @ValidateNested({ each: true })
   @Type(() => DesempenoInput)
   desempenos?: DesempenoInput[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EjeItemInput)
+  ejeItems?: EjeItemInput[];
 }
 
 export class PatchEstadoPlantillaDto {

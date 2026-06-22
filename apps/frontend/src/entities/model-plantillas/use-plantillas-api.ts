@@ -15,7 +15,8 @@ export const usePlantillasList = (filters?: { anioAcademico?: number; estado?: E
   useQuery({
     queryKey: ['plantillas', filters],
     queryFn: () => plantillasApi.findAll(filters),
-    staleTime: 60_000,
+    staleTime: 5_000,
+    refetchOnMount: true,
   });
 
 export const usePlantilla = (id: string | undefined) =>

@@ -474,6 +474,7 @@ model PlantillaMonitoreo {
   institucion       InstitucionEducativa?  @relation(fields: [institucionId], references: [id], onDelete: Restrict)
   nivelesCalificacion NivelCalificacion[]
   desempenos        DesempenoPlantilla[]
+  ejesItems         EjeItemPlantilla[]
   fichas            FichaMonitoreo[]
 
   @@unique([tipoMonitoreo, anioAcademico, version])
@@ -505,6 +506,7 @@ model DesempenoPlantilla {
   nombre            String   @db.VarChar(255)
   descripcionCorta  String?  @map("descripcion_corta") @db.Text
   orden             Int
+  preguntaExtra     String?  @map("pregunta_extra") @db.Text
 
   plantilla         PlantillaMonitoreo @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
   aspectos          AspectoEvaluado[]
@@ -539,6 +541,39 @@ model RubricaNivel {
 
   @@unique([desempenoId, nivelCalificacionId])
   @@map("rubrica_niveles")
+}
+
+// ==========================================
+// 7.5 EJES E ITEMS (Plantilla DOCENTE)
+// ==========================================
+
+model EjeItemPlantilla {
+  id                String   @id @default(uuid()) @db.Uuid
+  plantillaId       String   @map("plantilla_id") @db.Uuid
+  numero            Int
+  descripcion       String   @db.Text
+  orden             Int
+
+  plantilla         PlantillaMonitoreo @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  respuestas        FichaRespuestaEjeItem[]
+
+  @@index([plantillaId, orden])
+  @@map("ejes_items_plantilla")
+}
+
+model FichaRespuestaEjeItem {
+  id            String   @id @default(uuid()) @db.Uuid
+  fichaId       String   @map("ficha_id") @db.Uuid
+  ejeItemId     String   @map("eje_item_id") @db.Uuid
+  nivel         Int      @db.SmallInt
+  evidenciaUrl  String?  @map("evidencia_url") @db.Text
+
+  ficha         FichaMonitoreo  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  ejeItem       EjeItemPlantilla @relation(fields: [ejeItemId], references: [id], onDelete: Cascade)
+
+  @@unique([fichaId, ejeItemId])
+  @@index([ejeItemId])
+  @@map("fichas_respuesta_eje_item")
 }
 
 // ==========================================
@@ -633,6 +668,7 @@ model FichaMonitoreo {
   finalizadaPor       Usuario?            @relation("FichaFinalizador", fields: [finalizadaPorId], references: [id], onDelete: SetNull)
   respuestasDesempeno FichaRespuestaDesempeno[]
   respuestasAspecto   FichaRespuestaAspecto[]
+  respuestasEjeItem   FichaRespuestaEjeItem[]
 
   @@index([plantillaId])
   @@index([estado])

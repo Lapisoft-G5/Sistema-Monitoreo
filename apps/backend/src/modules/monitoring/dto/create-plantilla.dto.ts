@@ -76,6 +76,10 @@ export class DesempenoInput {
   @IsString()
   descripcionCorta?: string;
 
+  @IsOptional()
+  @IsString()
+  preguntaExtra?: string;
+
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -91,6 +95,23 @@ export class DesempenoInput {
   @ValidateNested({ each: true })
   @Type(() => RubricaNivelInput)
   rubrica!: RubricaNivelInput[];
+}
+
+export class EjeItemInput {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  numero!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  descripcion!: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  orden?: number;
 }
 
 export class CreatePlantillaDto {
@@ -122,4 +143,10 @@ export class CreatePlantillaDto {
   @ValidateNested({ each: true })
   @Type(() => DesempenoInput)
   desempenos!: DesempenoInput[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EjeItemInput)
+  ejeItems?: EjeItemInput[];
 }

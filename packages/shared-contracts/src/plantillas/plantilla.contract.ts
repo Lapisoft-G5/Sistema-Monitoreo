@@ -35,11 +35,20 @@ export interface IRubricaNivel {
   descripcion: string;
 }
 
+export interface IEjeItem {
+  id: string;
+  plantillaId: string;
+  numero: number;
+  descripcion: string;
+  orden: number;
+}
+
 export interface IDesempeno {
   id: string;
   plantillaId: string;
   nombre: string;
   descripcionCorta: string | null;
+  preguntaExtra: string | null;
   orden: number;
   aspectos: IAspecto[];
   rubrica: IRubricaNivel[];
@@ -58,6 +67,7 @@ export interface IPlantilla {
   institucionId: string | null;
   niveles: INivelCalificacion[];
   desempenos: IDesempeno[];
+  ejesItems: IEjeItem[];
   createdAt: string;
   updatedAt: string;
 }
@@ -72,6 +82,7 @@ export interface ICreatePlantillaRequest {
     id: string;
     nombre: string;
     descripcionCorta?: string;
+    preguntaExtra?: string;
     orden: number;
     aspectos: { id: string; descripcion: string; orden: number }[];
     rubrica: {
@@ -80,6 +91,7 @@ export interface ICreatePlantillaRequest {
       descripcion: string;
     }[];
   }[];
+  ejeItems?: { numero: number; descripcion: string }[];
 }
 
 export interface IUpdatePlantillaRequest {
@@ -90,6 +102,7 @@ export interface IUpdatePlantillaRequest {
     id: string;
     nombre: string;
     descripcionCorta?: string;
+    preguntaExtra?: string;
     orden: number;
     aspectos: { id: string; descripcion: string; orden: number }[];
     rubrica: {
@@ -98,6 +111,7 @@ export interface IUpdatePlantillaRequest {
       descripcion: string;
     }[];
   }[];
+  ejeItems?: { numero: number; descripcion: string }[];
 }
 
 export interface IUpdatePlantillaResponse {

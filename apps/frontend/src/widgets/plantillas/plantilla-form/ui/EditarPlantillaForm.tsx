@@ -3,6 +3,7 @@ import { FormButton } from '@shared/ui/form-controls';
 import { plantillaSchema } from '@entities/model-plantillas/validator';
 import { PlantillaCabecera } from './PlantillaCabecera';
 import { PlantillaDesempenos } from './PlantillaDesempenos';
+import { PlantillaEjesItems } from './PlantillaEjesItems';
 import type { PlantillaFormState } from './PlantillaForm';
 
 interface Props {
@@ -67,6 +68,11 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
         desempenos={form.desempenos}
         niveles={form.niveles}
         onChange={(desempenos) => patch({ desempenos })}
+      />
+
+      <PlantillaEjesItems
+        ejeItems={form.ejeItems}
+        onChange={(ejeItems) => patch({ ejeItems })}
       />
 
       <div className="flex justify-end gap-3">

@@ -18,6 +18,8 @@ export interface IReporteFicha {
   puntajeTotal: number;
   estado: EstadoFicha;
   fechaEjecucion: string;
+  modalidad: string;
+  nivel: string;
 }
 
 export interface IReporteResumenIE {

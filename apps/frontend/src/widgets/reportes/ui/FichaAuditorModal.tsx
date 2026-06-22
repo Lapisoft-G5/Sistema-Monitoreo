@@ -5,11 +5,11 @@ import {
   X,
   Check,
   Clock,
-  Download
+  Download,
+  FileText as FileTextIcon
 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
-import { Badge } from '@/shared/ui/badge';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 
@@ -22,6 +22,11 @@ interface FichaAuditorModalProps {
     checkedAspects: Record<string, boolean>;
     selectedLevels: Record<string, string>;
     generalComments: string;
+    sugerencias?: string;
+    compromisos?: string;
+    preguntaExtraAnswers?: Record<string, boolean>;
+    respuestasEjeItem?: Record<string, number>;
+    evidenciaUrls?: Record<string, string>;
   };
   downloadingId: string | null;
   onDownloadPDF: (visit: Cronograma, e: React.MouseEvent) => void;
@@ -156,48 +161,53 @@ export const FichaAuditorModal = ({
                   </p>
                 </div>
 
-                {/* Checklist (Read Only) */}
-                <div className="space-y-3">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                     Checklist de Aspectos Verificados
-                  </span>
-                  <div className="grid grid-cols-1 gap-2.5">
-                    {activeFichaDesempeno.aspectos.map((asp, idx) => {
-                      const isChecked = !!fichaState.checkedAspects[asp.id];
-                      return (
-                        <div
-                          key={asp.id}
-                          className={`border rounded-xl p-3.5 flex items-start gap-3.5 shadow-sm transition-all select-none ${
-                            isChecked
-                              ? 'border-emerald-200 bg-emerald-50/10'
-                              : 'border-slate-100 bg-slate-50/30'
-                          }`}
-                        >
-                          <span className={`h-4.5 w-4.5 rounded flex items-center justify-center border mt-0.5 shrink-0 transition-colors ${
-                            isChecked 
-                              ? 'bg-emerald-500 border-emerald-500 text-white' 
-                              : 'bg-slate-100 border-slate-200 text-transparent'
-                          }`}>
-                            <Check className="h-3 w-3 font-bold" strokeWidth={3} />
-                          </span>
-                          <div className="pt-0.5 leading-relaxed text-xs text-slate-700">
-                            <strong>Aspecto {idx + 1}:</strong> {asp.descripcion}
-                          </div>
-                        </div>
-                      );
-                    })}
+                {/* Aspectos (solo lectura) */}
+                {activeFichaDesempeno.aspectos && activeFichaDesempeno.aspectos.length > 0 && (
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                      Aspectos Considerados
+                    </span>
+                    <ul className="list-disc list-inside text-xs text-slate-700 space-y-1 bg-slate-50/50 border border-slate-100 rounded-xl p-3.5">
+                      {activeFichaDesempeno.aspectos.map((asp, idx) => (
+                        <li key={asp.id}>
+                          <strong>Aspecto {idx + 1}:</strong> {asp.descripcion}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
+                )}
+
+                {/* Pregunta Extra Sí/No */}
+                {activeFichaDesempeno.preguntaExtra && (
+                  <div className="space-y-2 p-4 border border-slate-200 rounded-xl bg-amber-50/30">
+                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block">
+                      Pregunta Extra
+                    </span>
+                    <p className="text-sm font-medium text-slate-700">{activeFichaDesempeno.preguntaExtra}</p>
+                    <div className="mt-1">
+                      <span className="text-xs font-bold">
+                        Respuesta:{' '}
+                        {fichaState.preguntaExtraAnswers?.[activeFichaDesempeno.id] === true ? (
+                          <span className="text-emerald-700">SÍ</span>
+                        ) : fichaState.preguntaExtraAnswers?.[activeFichaDesempeno.id] === false ? (
+                          <span className="text-red-600">NO</span>
+                        ) : (
+                          <span className="text-slate-400 italic">Sin responder</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Rúbrica seleccionada */}
                 <div className="space-y-3.5 pt-1">
                   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                    Rúbrica de Calificación (Evaluación Registrada)
+                    Descripción de Niveles (Evaluación Registrada)
                   </span>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {template.niveles.map((niv) => {
-                      const rubDetail = activeFichaDesempeno.rubrica.find((r) => r.nivel === niv.nivel);
+                      const rubDetail = activeFichaDesempeno.rubrica?.find((r) => r.nivel === niv.nivel);
                       const isSelected = fichaState.selectedLevels[activeFichaDesempeno.id] === niv.nivel;
                       
                       return (
@@ -218,27 +228,23 @@ export const FichaAuditorModal = ({
                             style={{ backgroundColor: niv.color }}
                           />
                           
-                          <div className="pl-2 flex items-center justify-between">
+                          <div className="pl-2 flex flex-col gap-1">
                             <span
                               className="text-xs font-black uppercase tracking-wider"
                               style={{ color: niv.color }}
                             >
                               Nivel {niv.nivel}
                             </span>
-                            <Badge
-                              style={{
-                                backgroundColor: niv.color + '15',
-                                color: niv.color,
-                                borderColor: niv.color + '20',
-                              }}
+                            <span
                               className="text-[10px] font-bold"
+                              style={{ color: niv.color }}
                             >
                               {niv.denominacion}
-                            </Badge>
+                            </span>
                           </div>
 
-                          <p className="pl-2 text-[11px] text-slate-600 font-medium leading-relaxed">
-                            {rubDetail ? rubDetail.descripcion : 'Sin descripción registrada.'}
+                          <p className="pl-2 text-[11px] text-slate-700 font-medium leading-relaxed">
+                            {rubDetail?.descripcion || 'Sin descripción registrada.'}
                           </p>
                           
                           {isSelected && (
@@ -258,16 +264,73 @@ export const FichaAuditorModal = ({
                 <span className="text-xs font-semibold">Seleccione un desempeño</span>
               </div>
             )}
+
+            {/* Ejes e Items (Solo Docente) */}
+            {template.ejesItems && template.ejesItems.length > 0 && (
+              <div className="space-y-3 pt-4 border-t border-slate-100 mt-4">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block flex items-center gap-1.5">
+                  <FileTextIcon className="h-3.5 w-3.5" />
+                  EJES E ITEMS
+                </span>
+                {template.ejesItems.map((item) => {
+                  const nivel = fichaState.respuestasEjeItem?.[item.id];
+                  return (
+                    <div key={item.id} className="border border-slate-200 rounded-xl p-3 space-y-1">
+                      <div className="flex items-start gap-2">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10 text-[10px] font-bold text-primary">
+                          {item.numero}
+                        </span>
+                        <span className="text-xs text-slate-700">{item.descripcion}</span>
+                      </div>
+                      <div className="flex items-center gap-4 pl-7">
+                        <span className="text-[9px] font-extrabold text-slate-400 uppercase">Nivel:</span>
+                        {nivel ? (() => {
+                          const levelRom = ['', 'I', 'II', 'III', 'IV'][nivel] || '';
+                          const levelConfig = template.niveles.find((n) => n.nivel === levelRom);
+                          const color = levelConfig?.color || '#3b82f6';
+                          return (
+                            <span
+                              className="px-2 py-0.5 rounded text-[10px] font-black text-white"
+                              style={{ backgroundColor: color }}
+                            >
+                              Nivel {levelRom}
+                            </span>
+                          );
+                        })() : (
+                          <span className="text-xs font-bold text-slate-400">—</span>
+                        )}
+                        {fichaState.evidenciaUrls?.[item.id] && (
+                          <a
+                            href={fichaState.evidenciaUrls[item.id]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-primary underline flex items-center gap-1"
+                          >
+                            <Download className="h-3 w-3" /> Ver evidencia
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Compromisos de mejora */}
-        <div className="p-5 border-t border-border bg-slate-50/50 space-y-2">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-            Observaciones y Compromisos Registrados
-          </span>
-          <div className="bg-surface border border-slate-200 rounded-xl p-4 text-xs text-slate-700 leading-relaxed shadow-inner max-h-24 overflow-y-auto">
-            {fichaState.generalComments || 'No se registraron observaciones o compromisos adicionales en este monitoreo.'}
+        {/* Sugerencias y Compromisos Registrados */}
+        <div className="p-5 border-t border-border bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Sugerencias</span>
+            <div className="bg-surface border border-slate-200 rounded-xl p-3 text-xs text-slate-700 leading-relaxed shadow-inner min-h-[3rem]">
+              {fichaState.sugerencias || <span className="text-slate-400 italic">Sin registrar</span>}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Compromisos</span>
+            <div className="bg-surface border border-slate-200 rounded-xl p-3 text-xs text-slate-700 leading-relaxed shadow-inner min-h-[3rem]">
+              {fichaState.compromisos || <span className="text-slate-400 italic">Sin registrar</span>}
+            </div>
           </div>
         </div>
 

@@ -57,10 +57,7 @@ export const ReportesPage = () => {
   const { cronogramas } = useCronogramas();
   const { plantillas } = usePlantillas();
   const { user } = useUser();
-  // Carga paralela desde el backend. Si falla, el componente sigue mostrando
-  // los datos locales (localStorage) - el query solo agrega data del server.
-  const { data: _fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
-  void _fichasCompletadasData; // disponible para futura UI - sprint 4
+  const { data: fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
 
   // ── Estados de Vista e Interacción ──
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
@@ -82,8 +79,35 @@ export const ReportesPage = () => {
     setFilterNivel('Todos');
   };
 
-  // ── Filtrado de Fichas Completadas ──
+  // ── Filtrado de Fichas Completadas (Backend con Fallback Local) ──
   const completedVisits = useMemo(() => {
+    if (fichasCompletadasData?.data && fichasCompletadasData.data.length > 0) {
+      return fichasCompletadasData.data.map((f) => ({
+        id: f.id, // Ficha ID
+        cronogramaId: f.cronogramaId,
+        fechaHora: f.fechaEjecucion,
+        especialista: f.especialistaNombre,
+        especialistaInitials: f.especialistaNombre
+          .split(' ')
+          .map((n) => n[0] || '')
+          .join('')
+          .toUpperCase(),
+        institucion: `${f.institucionNombre} - ${f.institucionCodigoModular}`,
+        docenteDirectivo: f.evaluadoNombre,
+        tipo: f.tipoMonitoreo,
+        nroVisita: '1',
+        estado: 'COMPLETADO' as const,
+        modalidad: f.modalidad,
+        nivel: f.nivel,
+        promedio: f.promedio,
+        puntajeTotal: f.puntajeTotal,
+        nivelLogro: f.nivelLogro,
+        monitorId: f.especialistaId,
+        institucionId: f.institucionId,
+        evaluadoId: f.evaluadoId,
+      }));
+    }
+
     let list = cronogramas.filter((c) => c.estado === 'COMPLETADO');
     if (isMyReportsPath) {
       const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
@@ -112,7 +136,7 @@ export const ReportesPage = () => {
       });
     }
     return list;
-  }, [cronogramas, user, isMyReportsPath]);
+  }, [fichasCompletadasData, cronogramas, user, isMyReportsPath]);
 
   const filteredVisits = useMemo(() => {
     return completedVisits.filter((visit) => {

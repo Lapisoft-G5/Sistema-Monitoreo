@@ -96,6 +96,8 @@ export class PrismaReporteRepository implements ReporteRepository {
       puntajeTotal: f.puntajeTotal,
       estado: f.estado as any,
       fechaEjecucion: f.createdAt.toISOString(),
+      modalidad: f.cronograma.modalidad,
+      nivel: f.cronograma.nivelEducativo,
     }));
 
     return {
@@ -229,6 +231,8 @@ export class PrismaReporteRepository implements ReporteRepository {
       puntajeTotal: f.puntajeTotal,
       estado: f.estado as any,
       fechaEjecucion: f.createdAt.toISOString(),
+      modalidad: f.cronograma.modalidad,
+      nivel: f.cronograma.nivelEducativo,
     };
   }
 }

@@ -10,6 +10,7 @@ import {
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
@@ -17,9 +18,26 @@ import { SelectField } from '@/shared/ui/form-controls';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { FichaAuditorModal } from './FichaAuditorModal';
+import { fichasApi } from '@/features/monitoreos/api/fichas.api';
+import { reportesApi } from '@/shared/api/reportes.api';
+
+interface IFichaRespuestaDesempenoConPreguntaExtra {
+  id: string;
+  fichaId: string;
+  desempenoId: string;
+  nivel: number;
+  observaciones: string | null;
+  preguntaExtraRespuesta?: boolean;
+}
+
+export interface BackendReportVisit extends Cronograma {
+  nivelLogro?: string;
+  promedio?: number;
+  puntajeTotal?: number;
+}
 
 interface ReportesGridProps {
-  filteredVisits: Cronograma[];
+  filteredVisits: BackendReportVisit[];
   viewMode: 'GRID' | 'TABLE';
   searchQuery: string;
   setSearchQuery: (q: string) => void;
@@ -111,28 +129,94 @@ export const ReportesGrid = ({
   plantillas,
 }: ReportesGridProps) => {
   // Modal details
-  const [selectedVisit, setSelectedVisit] = useState<Cronograma | null>(null);
+  const [selectedVisit, setSelectedVisit] = useState<BackendReportVisit | null>(null);
   const [showFichaModal, setShowFichaModal] = useState<boolean>(false);
 
   // PDF download mock triggers
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  const { data: backendFicha } = useQuery({
+    queryKey: ['ficha-completada', selectedVisit?.id],
+    queryFn: () => {
+      if (!selectedVisit) return null;
+      const hasBackendData = 'nivelLogro' in selectedVisit;
+      return hasBackendData
+        ? fichasApi.findById(selectedVisit.id)
+        : fichasApi.findByVisita(selectedVisit.id);
+    },
+    enabled: !!selectedVisit,
+  });
+
   const activeTemplate = useMemo(() => {
     if (!selectedVisit) return null;
+    const hasBackendData = 'nivelLogro' in selectedVisit;
+    if (hasBackendData && backendFicha) {
+      const match = plantillas.find((p) => p.id === backendFicha.plantillaId);
+      if (match) return match;
+    }
     const searchType = selectedVisit.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
     return plantillas.find((p) => p.tipoMonitoreo === searchType) || plantillas[0];
-  }, [selectedVisit, plantillas]);
+  }, [selectedVisit, backendFicha, plantillas]);
 
   const activeFichaState = useMemo(() => {
     if (!selectedVisit) return null;
-    return getFichaState(selectedVisit.id);
-  }, [selectedVisit]);
+    const hasBackendData = 'nivelLogro' in selectedVisit;
 
-  const handleDownloadPDF = (visit: Cronograma, e: React.MouseEvent) => {
+    if (hasBackendData && backendFicha) {
+      const checkedAspects: Record<string, boolean> = {};
+      (backendFicha.respuestasAspecto || []).forEach((ra) => {
+        checkedAspects[ra.aspectoId] = true;
+      });
+
+      const selectedLevels: Record<string, string> = {};
+      const numToRoman = ['', 'I', 'II', 'III', 'IV'];
+      (backendFicha.respuestasDesempeno || []).forEach((rd) => {
+        selectedLevels[rd.desempenoId] = numToRoman[rd.nivel] || 'I';
+      });
+
+      const preguntaExtraAnswers: Record<string, boolean> = {};
+      (backendFicha.respuestasDesempeno || []).forEach((rd) => {
+        const extraRes = (rd as IFichaRespuestaDesempenoConPreguntaExtra).preguntaExtraRespuesta;
+        if (extraRes !== null && extraRes !== undefined) {
+          preguntaExtraAnswers[rd.desempenoId] = extraRes;
+        }
+      });
+
+      const respuestasEjeItem: Record<string, number> = {};
+      const evidenciaUrls: Record<string, string> = {};
+      (backendFicha.respuestasEjeItem || []).forEach((re) => {
+        respuestasEjeItem[re.ejeItemId] = re.nivel;
+        if (re.evidenciaUrl) {
+          evidenciaUrls[re.ejeItemId] = re.evidenciaUrl;
+        }
+      });
+
+      return {
+        checkedAspects,
+        selectedLevels,
+        generalComments: backendFicha.observaciones || '',
+        sugerencias: backendFicha.sugerencias || '',
+        compromisos: backendFicha.compromisos || '',
+        preguntaExtraAnswers,
+        respuestasEjeItem,
+        evidenciaUrls,
+      };
+    }
+
+    return getFichaState(selectedVisit.id);
+  }, [selectedVisit, backendFicha]);
+
+  const handleDownloadPDF = (visit: BackendReportVisit, e: React.MouseEvent) => {
     e.stopPropagation();
+    const hasBackendData = 'nivelLogro' in visit;
+    if (hasBackendData) {
+      const exportUrl = reportesApi.fichaHTMLUrl(visit.id);
+      window.open(exportUrl, '_blank');
+      return;
+    }
+
     setDownloadingId(visit.id);
-    
     setTimeout(() => {
       setDownloadingId(null);
       setToastMessage(`Ficha de Monitoreo - ${visit.institucion.split(' - ')[0]} descargada con éxito en PDF.`);
@@ -231,15 +315,26 @@ export const ReportesGrid = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredVisits.map((visit) => {
                 const fichaState = getFichaState(visit.id);
-                const totalAspects = Object.keys(fichaState.checkedAspects).length;
-                const checkedCount = Object.values(fichaState.checkedAspects).filter(Boolean).length;
-                const levels = Object.values(fichaState.selectedLevels) as string[];
-                const mostFrequentLevel =
-                  levels.length > 0
-                    ? levels.reduce((a, b, _, arr) =>
-                        arr.filter((v) => v === a).length >= arr.filter((v) => v === b).length ? a : b
-                      )
-                    : 'III';
+                const hasBackendData = visit.nivelLogro !== undefined;
+                const totalAspects = hasBackendData ? 0 : Object.keys(fichaState.checkedAspects).length;
+                const checkedCount = hasBackendData ? 0 : Object.values(fichaState.checkedAspects).filter(Boolean).length;
+                
+                const levelLogroMap: Record<string, string> = {
+                  'INICIO': 'I',
+                  'EN_PROCESO': 'II',
+                  'LOGRO_ESPERADO': 'III',
+                  'LOGRO_DESTACADO': 'IV'
+                };
+                const mostFrequentLevel = hasBackendData
+                  ? (levelLogroMap[visit.nivelLogro || ''] || 'III')
+                  : (() => {
+                      const levels = Object.values(fichaState.selectedLevels) as string[];
+                      return levels.length > 0
+                        ? levels.reduce((a, b, _, arr) =>
+                            arr.filter((v) => v === a).length >= arr.filter((v) => v === b).length ? a : b
+                          )
+                        : 'III';
+                    })();
 
                 return (
                   <Card
@@ -289,16 +384,20 @@ export const ReportesGrid = ({
 
                       <div className="space-y-1.5 border-t border-slate-100 pt-3">
                         <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
-                          <span>Aspectos Cumplidos:</span>
+                          <span>{hasBackendData ? 'Promedio / Puntaje:' : 'Aspectos Cumplidos:'}</span>
                           <span className="text-slate-800">
-                            {checkedCount} / {totalAspects}
+                            {hasBackendData
+                              ? `Promedio ${(visit.promedio ?? 0).toFixed(2)} (${visit.puntajeTotal ?? 0} pts)`
+                              : `${checkedCount} / ${totalAspects}`}
                           </span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
                           <div
                             className="h-full bg-emerald-500 rounded-full"
                             style={{
-                              width: `${totalAspects > 0 ? (checkedCount / totalAspects) * 100 : 80}%`,
+                              width: `${hasBackendData
+                                ? ((visit.promedio ?? 0) / 4.0) * 100
+                                : totalAspects > 0 ? (checkedCount / totalAspects) * 100 : 80}%`,
                             }}
                           />
                         </div>
@@ -362,15 +461,26 @@ export const ReportesGrid = ({
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                     {filteredVisits.map((visit) => {
                       const fichaState = getFichaState(visit.id);
-                      const totalAspects = Object.keys(fichaState.checkedAspects).length;
-                      const checkedCount = Object.values(fichaState.checkedAspects).filter(Boolean).length;
-                      const levels = Object.values(fichaState.selectedLevels) as string[];
-                      const mostFrequentLevel =
-                        levels.length > 0
-                          ? levels.reduce((a, b, _, arr) =>
-                              arr.filter((v) => v === a).length >= arr.filter((v) => v === b).length ? a : b
-                            )
-                          : 'III';
+                      const hasBackendData = visit.nivelLogro !== undefined;
+                      const totalAspects = hasBackendData ? 0 : Object.keys(fichaState.checkedAspects).length;
+                      const checkedCount = hasBackendData ? 0 : Object.values(fichaState.checkedAspects).filter(Boolean).length;
+                      
+                      const levelLogroMap: Record<string, string> = {
+                        'INICIO': 'I',
+                        'EN_PROCESO': 'II',
+                        'LOGRO_ESPERADO': 'III',
+                        'LOGRO_DESTACADO': 'IV'
+                      };
+                      const mostFrequentLevel = hasBackendData
+                        ? (levelLogroMap[visit.nivelLogro || ''] || 'III')
+                        : (() => {
+                            const levels = Object.values(fichaState.selectedLevels) as string[];
+                            return levels.length > 0
+                              ? levels.reduce((a, b, _, arr) =>
+                                  arr.filter((v) => v === a).length >= arr.filter((v) => v === b).length ? a : b
+                                )
+                              : 'III';
+                          })();
 
                       return (
                         <tr
@@ -403,7 +513,9 @@ export const ReportesGrid = ({
                             {formatVisitDate(visit.fechaHora)}
                           </td>
                           <td className="py-3.5 px-4 font-bold text-slate-600">
-                            {checkedCount} / {totalAspects}
+                            {hasBackendData
+                              ? `Prom. ${(visit.promedio ?? 0).toFixed(2)}`
+                              : `${checkedCount} / ${totalAspects}`}
                           </td>
                           <td className="py-3.5 px-4">
                             <Badge

@@ -523,12 +523,12 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
       data: {
         id: nuevoId,
         tipoMonitoreo: original.tipoMonitoreo,
-        anioAcademico: original.anioAcademico,
+        anioAcademico: new Date().getFullYear(),
         version: 1,
         baremo: original.baremo,
         descripcion:
           descripcion ??
-          `Copia personalizada basada en ${original.tipoMonitoreo} ${original.anioAcademico} v${original.version}.`,
+          `Copia basada en ${original.tipoMonitoreo} ${original.anioAcademico} v${original.version}.`,
         estado: 'Borrador',
         autorId: nuevoAutorId,
         rolAutorAlCrear,

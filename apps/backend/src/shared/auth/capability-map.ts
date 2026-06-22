@@ -96,7 +96,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
 /** Permisos derivados del cargo ACTIVO del Especialista (campo Especialista.cargo). */
 export const ESPECIALISTA_CARGO_CAPABILITIES: Record<EspecialistaCargoEnum, readonly string[]> = {
   [EspecialistaCargoEnum.ESPECIALISTA]: ['monitoreo:execute'],
-  [EspecialistaCargoEnum.JEFE_AREA]: ['instituciones:write', 'docentes:write'],
+  [EspecialistaCargoEnum.JEFE_AREA]: ['monitoreo:execute', 'instituciones:write', 'docentes:write'],
   [EspecialistaCargoEnum.JEFE_GESTION]: [
     'especialistas:write',
     'instituciones:write',

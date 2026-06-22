@@ -22,6 +22,7 @@ export interface JwtPayload {
   colegio_nivel?: string;
   especialista_nivel?: string;
   especialista_modalidad?: string;
+  especialista_especialidades?: string[];
   firstLogin: boolean;
 }
 
@@ -128,10 +129,16 @@ export class AuthTokenService {
 
     let especialista_nivel: string | undefined;
     let especialista_modalidad: string | undefined;
+    let especialista_especialidades: string[] | undefined;
 
     if (user.persona?.especialista && user.rol.codigo === 'jefe_area') {
       especialista_nivel = user.persona.especialista.nivelEducativo;
       especialista_modalidad = user.persona.especialista.modalidad ?? undefined;
+      if (user.persona.especialista.especialidades) {
+        especialista_especialidades = user.persona.especialista.especialidades.map(
+          (e) => e.especialidad.nombre,
+        );
+      }
     }
 
     const permissions = this.computeUserPermissions(user);
@@ -149,6 +156,7 @@ export class AuthTokenService {
       colegio_nivel,
       especialista_nivel,
       especialista_modalidad,
+      especialista_especialidades,
       firstLogin: user.isFirstLogin,
     };
   }

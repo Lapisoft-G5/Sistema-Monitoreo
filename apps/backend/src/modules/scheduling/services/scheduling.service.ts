@@ -31,6 +31,7 @@ export interface SessionUser {
   role: RoleCode;
   institucionId?: string | null;
   especialistaNivel?: string | null;
+  especialistaEspecialidades?: string[] | null;
 }
 
 @Injectable()
@@ -49,13 +50,26 @@ export class SchedulingService {
       role: session.role,
       institucionId: session.institucionId,
       especialistaNivel: session.especialistaNivel,
+      especialistaEspecialidades: session.especialistaEspecialidades,
     };
   }
 
   // ============== Cronogramas ==============
 
-  async findAllVisitas(filters?: any, session?: SessionUser): Promise<IVisita[]> {
-    const data = await this.cronogramaRepo.findAll(filters);
+  async findAllVisitas(
+    filters?: Record<string, unknown>,
+    session?: SessionUser,
+  ): Promise<IVisita[]> {
+    const queryFilters: Record<string, unknown> = { ...filters };
+    if (session) {
+      const ctx = this.toScopeContext(session);
+      if (this.scopeFilter.isJefeAreaScope(ctx.role)) {
+        if (ctx.especialistaEspecialidades && ctx.especialistaEspecialidades.length > 0) {
+          queryFilters.monitorEspecialidades = ctx.especialistaEspecialidades;
+        }
+      }
+    }
+    const data = await this.cronogramaRepo.findAll(queryFilters);
     return this.aplicarScopingVisitas(data, session);
   }
 
@@ -197,11 +211,6 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    if (!this.esAutoridad(session)) {
-      throw new ForbiddenException(
-        'Solo Jefe de Gestion o Director IE pueden aprobar solicitudes de reprogramacion.',
-      );
-    }
     return this.resolverSolicitud(id, 'APROBADO', dto, session);
   }
 
@@ -210,11 +219,6 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    if (!this.esAutoridad(session)) {
-      throw new ForbiddenException(
-        'Solo Jefe de Gestion o Director IE pueden rechazar solicitudes de reprogramacion.',
-      );
-    }
     return this.resolverSolicitud(id, 'RECHAZADO', dto, session);
   }
 
@@ -226,6 +230,47 @@ export class SchedulingService {
   ): Promise<ISolicitudReprogramacion> {
     const solicitud = await this.solicitudRepo.findById(id);
     if (!solicitud) throw new NotFoundException(`Solicitud ${id} no encontrada.`);
+
+    const cronograma = await this.cronogramaRepo.findById(solicitud.cronogramaId);
+    if (!cronograma) throw new NotFoundException(`Cronograma asociado no encontrado.`);
+
+    const isAll = this.scopeFilter.isAllScope(session.role);
+    const isJefeArea = this.scopeFilter.isJefeAreaScope(session.role);
+
+    if (!isAll) {
+      if (isJefeArea) {
+        if (cronograma.nivelEducativo !== session.especialistaNivel) {
+          throw new ForbiddenException(
+            'El Jefe de Area solo puede resolver solicitudes de su propio nivel educativo.',
+          );
+        }
+
+        if (
+          cronograma.nivelEducativo === 'Secundaria' &&
+          session.especialistaEspecialidades &&
+          session.especialistaEspecialidades.length > 0
+        ) {
+          const monitorEspecialidades = await this.prisma.especialistaEspecialidad.findMany({
+            where: { especialistaId: cronograma.monitorId },
+            include: { especialidad: true },
+          });
+          const monitorEspecs = monitorEspecialidades.map((e) => e.especialidad.nombre);
+          const hasOverlap = session.especialistaEspecialidades.some((e) =>
+            monitorEspecs.includes(e),
+          );
+          if (!hasOverlap && monitorEspecs.length > 0) {
+            throw new ForbiddenException(
+              'El Jefe de Area solo puede resolver solicitudes de especialistas de su misma especialidad.',
+            );
+          }
+        }
+      } else {
+        throw new ForbiddenException(
+          'Solo Jefe de Gestion o Jefe de Area pueden resolver solicitudes de reprogramacion.',
+        );
+      }
+    }
+
     if (solicitud.estado !== 'PENDIENTE') {
       throw new BadRequestException(
         `La solicitud ya esta ${solicitud.estado}, no se puede ${estado.toLowerCase()}.`,

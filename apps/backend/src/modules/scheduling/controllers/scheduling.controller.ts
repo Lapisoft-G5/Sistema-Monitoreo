@@ -47,7 +47,7 @@ export class SchedulingController {
 
   @Get('cronogramas')
   @RequirePermissions('monitoreo:execute')
-  async listarVisitas(@Query() query: any, @Req() req: any): Promise<IVisita[]> {
+  async listarVisitas(@Query() query: Record<string, any>, @Req() req: any): Promise<IVisita[]> {
     return this.service.findAllVisitas(query, this.toSession(req));
   }
 
@@ -136,6 +136,8 @@ export class SchedulingController {
       id: req.user.sub,
       role: req.user.role,
       institucionId: req.user.institucion_id ?? null,
+      especialistaNivel: req.user.especialista_nivel ?? null,
+      especialistaEspecialidades: req.user.especialista_especialidades ?? null,
     };
   }
 }

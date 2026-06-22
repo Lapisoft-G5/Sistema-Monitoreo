@@ -116,7 +116,7 @@ export class PrismaFichaRepository implements FichaRepository {
         fichaContextoId: contextoId,
         anioAcademico: data.anioAcademico,
         puntajeTotal: 0,
-        promedio: 0,
+        promedio: 1,
         nivelLogro: 'INICIO',
         estado: 'BORRADOR',
         creadoPorId: data.creadoPorId,

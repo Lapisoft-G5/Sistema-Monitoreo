@@ -23,7 +23,7 @@ export class BaremoCalculatorService {
    * Calcula el promedio a partir de una lista de niveles (1-4).
    */
   static calcularPromedio(niveles: number[]): number {
-    if (niveles.length === 0) return 0;
+    if (niveles.length === 0) return 1.0;
     const suma = niveles.reduce((acc, n) => acc + n, 0);
     return Number((suma / niveles.length).toFixed(2));
   }
@@ -57,7 +57,7 @@ export class BaremoCalculatorService {
     nivelLogro: NivelLogro;
   } {
     if (niveles.length === 0) {
-      return { puntajeTotal: 0, promedio: 0, nivelLogro: 'INICIO' };
+      return { puntajeTotal: 0, promedio: 1, nivelLogro: 'INICIO' };
     }
     const puntajeTotal = niveles.reduce((acc, n) => acc + n, 0);
     const promedio = this.calcularPromedio(niveles);

@@ -60,6 +60,17 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
         if (filters.fechaDesde) where.fechaProgramada.gte = new Date(filters.fechaDesde);
         if (filters.fechaHasta) where.fechaProgramada.lte = new Date(filters.fechaHasta);
       }
+      if (filters.monitorEspecialidades && filters.monitorEspecialidades.length > 0) {
+        where.monitor = {
+          especialidades: {
+            some: {
+              especialidad: {
+                nombre: { in: filters.monitorEspecialidades },
+              },
+            },
+          },
+        };
+      }
     }
     const rows = await this.prisma.cronograma.findMany({
       where,

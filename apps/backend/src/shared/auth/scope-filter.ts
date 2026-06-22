@@ -20,6 +20,7 @@ export interface ScopeContext {
    * instituciones por nivel en `forInstitucion`.
    */
   especialistaNivel?: string | null;
+  especialistaEspecialidades?: string[] | null;
 }
 
 /**

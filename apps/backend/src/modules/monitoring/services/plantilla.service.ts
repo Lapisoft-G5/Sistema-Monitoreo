@@ -113,19 +113,28 @@ export class PlantillaService {
   }
 
   async duplicar(id: string, session: SessionUser, descripcion?: string): Promise<IPlantilla> {
-    if (!this.isDirector(session)) {
-      throw new ForbiddenException('Solo Directores IE pueden duplicar plantillas.');
-    }
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
-    const institucionId = session.institucionId ?? null;
-    if (!institucionId) {
-      throw new ForbiddenException('Director IE sin institucionId en sesion.');
+
+    let rolAutorAlCrear = 'jefe_gestion';
+    let institucionId = null;
+
+    if (this.isDirector(session)) {
+      rolAutorAlCrear = 'director_institucion';
+      institucionId = session.institucionId ?? null;
+      if (!institucionId) {
+        throw new ForbiddenException('Director IE sin institucionId en sesion.');
+      }
+    } else if (session.role !== RoleCode.JEFE_GESTION) {
+      throw new ForbiddenException(
+        'Solo Jefe de Gestion o Directores IE pueden duplicar plantillas.',
+      );
     }
+
     return this.repository.clone(
       id,
       session.id,
-      'director_institucion',
+      rolAutorAlCrear as 'jefe_gestion' | 'director_institucion',
       institucionId,
       descripcion,
     );

@@ -462,6 +462,12 @@ sequenceDiagram
 2. **Dirección por institución:** Un docente puede tener el cargo `Director`, lo que lo convierte en el director de la IE.
 3. **Password automática:** Al crear docente, se genera un hash bcrypt de su DNI como contraseña inicial.
 4. **DNI único:** Cada docente se vincula a una persona, y cada persona tiene DNI único.
+5. **Ciclo de vida de cargos especiales (Coordinador Pedagógico / Jefe de Taller):**
+   - Un Director de IE asigna el cargo `Coordinador Pedagógico` o `Jefe de Taller` a un docente, cambiando su rol en el sistema al correspondiente y otorgándole los permisos de monitoreo.
+   - Al **finalizar** el cargo (desactivación lógica del cargo), el sistema **revierte al docente a su rol de base** (`docente`), eliminando los permisos especiales de monitoreo. Esto significa que el docente volverá a aparecer en la tabla de docentes normales y dejará de figurar en las tablas de coordinadores o jefes de taller.
+   - Este flujo garantiza que los permisos siempre reflejan el estado real del cargo asignado, evitando que docentes con cargos finalizados conserven accesos indebidos.
+6. **Visibilidad de cargos por rol:** Los Directores de IE (nivel Secundaria) son los únicos que pueden asignar y finalizar los cargos de `Coordinador Pedagógico` y `Jefe de Taller`. El sidebar del sistema muestra opciones diferenciadas según el nivel del Director.
+7. **Invalidación de caché de tabla al finalizar cargo:** Al finalizar un cargo especial y revertir al docente, el frontend invalida la query de coordinadores/jefes de taller para que la tabla se actualice en tiempo real sin necesitar recargar la página.
 
 **Datos que consume:** `Persona`, `Docente`, `InstitucionEducativa`, `Cargo`, `Curso`, `Especialidad`
 **Datos que genera:** Docente con cargos, secciones, cursos, especialidades, usuario asociado
@@ -495,7 +501,10 @@ sequenceDiagram
 2. **Tres cargos válidos:** `Especialista`, `Jefe de Área`, `Jefe de Gestión`.
 3. **Condiciones laborales válidas:** `Encargado`, `Destacado`, `Designado` (para Especialista/Jefe de Área).
 4. **Carga laboral máxima:** Default 40 horas.
-5. **Especialidades M:N:** Un especialista puede tener múltiples especialidades.
+5. **Especialidades por nivel educativo:**
+   - **Secundaria:** El especialista de nivel Secundaria **debe** tener una especialidad principal obligatoria (campo `especialidad` en el formulario). Además puede registrar especialidades temporales adicionales (campo `especialidades extras`).
+   - **Primaria:** El especialista de nivel Primaria normalmente **no tiene especialidad** (`especialidad = null`). Sin embargo, de forma excepcional puede tomar cobertura en `PIP` o `Educación Física`. En ese caso se selecciona la especialidad correspondiente. Si no aplica, el campo queda en `null` (no se fuerza una selección).
+   - Esta distinción permite que el formulario de creación/edición adapte la obligatoriedad del campo según el nivel educativo seleccionado.
 
 **Datos que consume:** `Persona`, `Especialista`, `Especialidad`
 **Datos que genera:** Especialistas con cargos y especialidades
@@ -570,9 +579,9 @@ sequenceDiagram
 1. **Una ficha por visita:** Relación 1:1 entre `Cronograma` y `FichaMonitoreo`.
 2. **Flujo de creación:**
    - `POST /fichas` → Crea ficha en estado `BORRADOR` con puntaje 0 y promedio 1.0
-   - `PATCH /fichas/:id/respuestas-desempeno` → Guarda niveles de desempeño
-   - `PATCH /fichas/:id/respuestas-aspecto/:aspectoId` → Marca aspectos evaluados
-   - `PATCH /fichas/:id/finalizar` → Calcula puntaje, promedio y nivel de logro, cambia a `FINALIZADO`
+   - `PATCH /fichas/:id/respuestas-desempeno` → Guarda niveles de desempeño y observaciones opcionales específicas de cada rúbrica.
+   - `PATCH /fichas/:id/respuestas-aspecto/:aspectoId` → Marca aspectos evaluados (solo si la plantilla del monitoreo tiene aspectos definidos).
+   - `PATCH /fichas/:id/finalizar` → Calcula puntaje, promedio y nivel de logro, guarda las sugerencias y compromisos del directivo (si aplica) y cambia el estado a `FINALIZADO`.
 3. **Cálculo de nivel de logro (BaremoCalculatorService):**
    - Promedio se calcula como promedio de todos los desempeños
    - Niveles con **gaps intencionales** para evitar ambigüedad:
@@ -581,10 +590,25 @@ sequenceDiagram
      - `LOGRO_ESPERADO`: promedio entre 2.6 y 3.4 (gap 3.5)
      - `LOGRO_DESTACADO`: promedio entre 3.6 y 4.0
    - Los gaps (1.5, 2.5, 3.5) no son alcanzables, forzando al evaluador a definir claramente el nivel
-4. **Migración de plantilla:** Si la plantilla se versionó mientras la ficha estaba en borrador, se puede migrar a la nueva versión. Esto re-crea las respuestas de desempeño y aspecto con IDs de la nueva plantilla.
+4. **Ficha y Rúbrica de Monitoreo Directivo 2025 — Lógica de UI:**
+   - **Sin checklist de aspectos:** La plantilla directiva no tiene sub-ítems ni indicadores individuales. El formulario oculta completamente el panel de verificación de aspectos cuando `activeFichaDesempeno.aspectos.length === 0`.
+   - **Observaciones por Rúbrica:** Cada rúbrica tiene un textarea independiente para que el especialista registre evidencias o sustento de la calificación. Este campo se persiste en `FichaRespuestaDesempeno.observaciones`.
+   - **Sugerencias y Compromisos:** Al finalizar el llenado, el formulario muestra dos textareas separadas (en lugar de un campo genérico): uno para "Sugerencias" y otro para "Compromisos". Se detecta la plantilla directiva con `tipoMonitoreo.toUpperCase().includes('DIRECTIVO')` para soportar tanto el valor `'DIRECTIVO'` (API) como `'Monitoreo Directivo'` (mock). Estos campos se persisten en `FichaMonitoreo.sugerencias` y `FichaMonitoreo.compromisos`.
+   - **Panel de Calificación Final (solo lectura):** Al abrir una ficha directiva con estado `COMPLETADO`, el formulario muestra un panel resumen con:
+     - Tabla de cada rúbrica con su nivel asignado (badge con color del nivel) y puntaje numérico (I=1, II=2, III=3, IV=4).
+     - Puntaje total vs. máximo posible (nRúbricas × 4).
+     - Nivel de logro calculado con la escala baremo del PDF directivo (proporcional al número de rúbricas):
+       - **INICIO:** 0–25% del puntaje máximo.
+       - **EN PROCESO:** 26–50%.
+       - **LOGRADO:** 51–75%.
+       - **SATISFACTORIO:** 76–100%.
+     - Barra de progreso coloreada y porcentaje.
+     - Escala baremo visual con el nivel activo resaltado y los demás en opacidad reducida.
+   - **Layout del modal con scroll interno:** El modal usa `max-h-[90vh] overflow-hidden` en el Card. Todo el contenido variable (cuerpo de rúbricas + comentarios + calificación) está envuelto en un único `div flex-1 overflow-y-auto`, asegurando que el header, la barra de información y el footer permanezcan fijos mientras el contenido hace scroll internamente.
+5. **Migración de plantilla:** Si la plantilla se versionó mientras la ficha estaba en borrador, se puede migrar a la nueva versión. Esto re-crea las respuestas de desempeño y aspecto con IDs de la nueva plantilla.
 
 **Datos que consume:** `FichaMonitoreo`, `FichaContexto`, `FichaRespuestaDesempeno`, `FichaRespuestaAspecto`, `PlantillaMonitoreo`, `DesempenoPlantilla`, `AspectoEvaluado`
-**Datos que genera:** Fichas completas con puntajes, promedios y niveles de logro
+**Datos que genera:** Fichas completas con puntajes, promedios y niveles de logro, observaciones detalladas por rúbrica, sugerencias y compromisos acordados
 
 ### 5.10 Módulo de Reportes (`modules/reports`)
 
@@ -738,12 +762,12 @@ El schema completo está en `apps/backend/prisma/schema.prisma`. Las tablas se a
 
 #### 7.5 Scheduling y evaluaciones (5 tablas)
 
-| Tabla | Propósito |
-|-------|-----------|
+| Tabla | Propósito / Columnas Clave |
+|-------|----------------------------|
 | `cronogramas` | Visitas programadas |
 | `solicitudes_reprogramacion` | Solicitudes de cambio de fecha/hora |
-| `fichas_monitoreo` | Fichas de evaluación completadas |
-| `ficha_respuestas_desempeno` | Nivel asignado a cada desempeño |
+| `fichas_monitoreo` | Fichas de evaluación completadas. Contiene `sugerencias` (text) y `compromisos` (text) para plantillas directivas, además del campo global `observaciones`. |
+| `ficha_respuestas_desempeno` | Nivel asignado a cada desempeño. Contiene `observaciones` (text) específicas registradas para cada rúbrica. |
 | `ficha_respuestas_aspecto` | Aspectos marcados como cumplidos |
 
 ### Relaciones principales
@@ -1650,6 +1674,24 @@ Existen datos históricos en Excel que deben migrarse al sistema. No hay un proc
 - UX: el usuario recibe feedback inmediato en el frontend
 - Seguridad: el backend nunca confía en datos del cliente
 - Integridad: la BD es la última línea de defensa contra datos inconsistentes
+
+### 15.11 Detección flexible de tipo de plantilla en el frontend
+
+**Decisión:** Usar `tipoMonitoreo.toUpperCase().includes('DIRECTIVO')` en lugar de `=== 'DIRECTIVO'` para detectar plantillas directivas en el formulario `LlenarFichaForm`.
+
+**Razonamiento:**
+- El backend persiste el valor como `'DIRECTIVO'` (enum estricto en la BD).
+- El contexto local del frontend (`PlantillasProvider`/`localStorage`) puede contener el valor `'Monitoreo Directivo'` proveniente de los mocks de desarrollo.
+- La detección por `includes` cubre ambos formatos sin romper ninguno de los dos entornos (desarrollo con mocks vs. producción con API real).
+
+### 15.12 Baremo directivo con escala proporcional
+
+**Decisión:** El cálculo del nivel de logro para fichas de monitoreo directivo usa un baremo **proporcional al número de rúbricas** de la plantilla, no un rango de puntos absolutos.
+
+**Razonamiento:**
+- El PDF define la escala para una plantilla de 5 rúbricas (rango 5–20 pts). Si en el futuro se añaden o quitan rúbricas, los rangos absolutos quedarían desactualizados.
+- La escala porcentual (0–25% = INICIO, 26–50% = EN PROCESO, 51–75% = LOGRADO, 76–100% = SATISFACTORIO) es auto-ajustable a cualquier número de rúbricas.
+- La conversión roman → número (I=1, II=2, III=3, IV=4) se realiza en el cliente para calcular el puntaje total sin necesitar una llamada adicional al backend en modo lectura.
 
 ---
 

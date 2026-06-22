@@ -9,10 +9,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json', ...init?.headers },
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({ message: response.statusText }));
-    throw new Error(err.message || `HTTP ${response.status}`);
+    const errText = await response.text();
+    let errMessage = response.statusText;
+    try {
+      const errJson = JSON.parse(errText);
+      errMessage = errJson.message || errJson.code || errMessage;
+    } catch {
+      if (errText) errMessage = errText;
+    }
+    throw new Error(errMessage || `HTTP ${response.status}`);
   }
-  return response.json();
+  const text = await response.text();
+  if (!text) return null as unknown as T;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text as unknown as T;
+  }
 }
 
 export interface CreateFichaInput {

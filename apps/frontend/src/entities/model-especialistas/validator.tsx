@@ -26,7 +26,7 @@ export const especialistaSchema = z.object({
     message: 'Debe seleccionar una modalidad válida',
   }),
   nivelEducativo: z.string().min(1, 'Debe seleccionar un nivel educativo'),
-  especialidad: z.string().optional(),
+  especialidades: z.array(z.string()).optional(),
   activo: z.boolean().optional(),
   condicionLaboral: z.enum(['Encargado', 'Destacado', 'Designado'], {
     message: 'Debe seleccionar la condición laboral',

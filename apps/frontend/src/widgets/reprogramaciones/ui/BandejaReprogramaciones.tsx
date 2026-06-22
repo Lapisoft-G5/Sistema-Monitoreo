@@ -98,11 +98,22 @@ export const BandejaReprogramaciones = () => {
             return false;
           }
         } else {
-          // Jefe de Gestión / Admin only see requests from Specialists (UGEL)
+          // Jefe de Gestión / Admin / Jefe de Área only see requests from Specialists (UGEL)
           const isSpecialistEvaluator = req.visit.especialistaCargo === 'Especialista';
 
           if (!isSpecialistEvaluator) {
             return false;
+          }
+
+          // Filtro adicional para Jefe de Área: solo ver de su nivel/especialidad
+          if (user?.role === 'jefe_area') {
+            if (req.visit.nivel !== user.especialistaNivel) return false;
+            
+            if (req.visit.nivel === 'Secundaria' && user.especialistaEspecialidades && user.especialistaEspecialidades.length > 0) {
+               const monitorEspecs = req.visit.monitorEspecialidades || [];
+               const hasOverlap = user.especialistaEspecialidades.some((e: string) => monitorEspecs.includes(e));
+               if (!hasOverlap && monitorEspecs.length > 0) return false;
+            }
           }
         }
       }
@@ -123,12 +134,15 @@ export const BandejaReprogramaciones = () => {
     return reprogramaciones[selectedVisitId] || null;
   }, [reprogramaciones, selectedVisitId]);
 
+  const [futureVisits, setFutureVisits] = useState<Cronograma[]>([]);
+
   const handleNewRequestClick = () => {
-    const futureVisits = cronogramas.filter(
+    const visits = cronogramas.filter(
       (v) => v.especialista === specialistFilterName && v.estado === 'PROGRAMADO'
     );
-    if (futureVisits.length > 0) {
-      setSelectedVisitId(futureVisits[0].id);
+    if (visits.length > 0) {
+      setFutureVisits(visits);
+      setSelectedVisitId(visits[0].id);
       setShowSolicitarReprogramarModal(true);
     } else {
       alert('No tienes visitas programadas a futuro disponibles para reprogramar.');
@@ -310,9 +324,10 @@ export const BandejaReprogramaciones = () => {
           isOpen={showSolicitarReprogramarModal}
           onClose={() => setShowSolicitarReprogramarModal(false)}
           visit={selectedVisit}
+          availableVisits={futureVisits}
           onSubmit={(data) => {
-            submitRescheduleRequest(selectedVisit.id, {
-              fechaOriginal: selectedVisit.fechaHora,
+            submitRescheduleRequest(data.visitId, {
+              fechaOriginal: data.fechaOriginal,
               fechaNueva: data.fechaNueva,
               motivo: data.motivo,
             });

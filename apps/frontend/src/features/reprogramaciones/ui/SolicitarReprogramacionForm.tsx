@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X,
   RefreshCw
@@ -11,7 +11,10 @@ interface SolicitarReprogramacionFormProps {
   isOpen: boolean;
   onClose: () => void;
   visit: Cronograma;
+  availableVisits?: Cronograma[];
   onSubmit: (data: {
+    visitId: string;
+    fechaOriginal: string;
     fechaNueva: string;
     motivo: string;
   }) => void;
@@ -41,14 +44,27 @@ export const SolicitarReprogramacionForm = ({
   isOpen,
   onClose,
   visit,
+  availableVisits,
   onSubmit,
 }: SolicitarReprogramacionFormProps) => {
+  const [selectedVisitId, setSelectedVisitId] = useState<string>(visit?.id || '');
   const [reprogramarNuevaFecha, setReprogramarNuevaFecha] = useState<string>('');
   const [reprogramarMotivo, setReprogramarMotivo] = useState<string>('');
 
+  useEffect(() => {
+    if (visit && (!availableVisits || !availableVisits.find(v => v.id === selectedVisitId))) {
+      const t = setTimeout(() => setSelectedVisitId(visit.id), 0);
+      return () => clearTimeout(t);
+    }
+  }, [visit, availableVisits, selectedVisitId]);
+
+  const activeVisit = availableVisits?.find(v => v.id === selectedVisitId) || visit;
+
   const handleSendClick = () => {
-    if (!reprogramarNuevaFecha || !reprogramarMotivo) return;
+    if (!reprogramarNuevaFecha || !reprogramarMotivo || !activeVisit) return;
     onSubmit({
+      visitId: activeVisit.id,
+      fechaOriginal: activeVisit.fechaHora,
       fechaNueva: reprogramarNuevaFecha,
       motivo: reprogramarMotivo,
     });
@@ -57,7 +73,7 @@ export const SolicitarReprogramacionForm = ({
     setReprogramarMotivo('');
   };
 
-  if (!isOpen || !visit) return null;
+  if (!isOpen || !activeVisit) return null;
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
@@ -83,9 +99,27 @@ export const SolicitarReprogramacionForm = ({
 
         {/* Metadatos lectura */}
         <div className="space-y-2 text-xs border border-slate-100 bg-slate-50/50 rounded-xl p-3.5 text-slate-600">
-          <div>I.E. Destino: <strong className="text-slate-800">{visit.institucion}</strong></div>
-          <div>Especialista: <strong className="text-slate-800">{visit.especialista}</strong></div>
-          <div>Fecha Programada Actual: <strong className="text-slate-800 text-primary">{formatVisitDateLabel(visit.fechaHora)}</strong></div>
+          {availableVisits && availableVisits.length > 0 ? (
+            <div className="flex flex-col gap-1.5 pb-2 border-b border-slate-200/50 mb-2">
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Seleccionar Visita</label>
+              <select
+                value={selectedVisitId}
+                onChange={(e) => setSelectedVisitId(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-primary"
+              >
+                {availableVisits.map(v => (
+                  <option key={v.id} value={v.id}>
+                    {v.institucion} - {v.docenteDirectivo} ({formatVisitDateLabel(v.fechaHora)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>I.E. Destino: <strong className="text-slate-800">{activeVisit.institucion}</strong></div>
+          )}
+          {!availableVisits && <div>Especialista: <strong className="text-slate-800">{activeVisit.especialista}</strong></div>}
+          <div>Docente / Directivo: <strong className="text-slate-800">{activeVisit.docenteDirectivo}</strong></div>
+          <div>Fecha Programada Actual: <strong className="text-slate-800 text-primary">{formatVisitDateLabel(activeVisit.fechaHora)}</strong></div>
         </div>
 
         {/* Campos de Entrada */}

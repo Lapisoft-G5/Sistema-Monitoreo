@@ -15,7 +15,7 @@ export interface Especialista {
   cargaLaboral: number;
   estado: string; // 'Activo' | 'Inactivo'
   activo: boolean; // UI-friendly mapped flag (true if estado === 'Activo')
-  especialidad?: string | null;
+  especialidades?: string[] | null;
   escalaMagisterial?: number | null;
   fechaCreacion: string;
   rolCode?: string;

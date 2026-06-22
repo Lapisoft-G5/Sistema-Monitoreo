@@ -17,7 +17,8 @@ import { Button } from '@/shared/ui/button';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useCronogramas, type Cronograma } from '@/entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
-import { usePlantillas } from '@/entities/model-plantillas';
+import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
+import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
 import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
 import { FEATURES } from '@shared/config/features';
 import {
@@ -114,8 +115,42 @@ export const CalendarioSidebar = ({
     plantillaVigenteNombre: string;
   } | null>(null);
 
-  // Plantillas cargadas de la entidad
-  const { plantillas } = usePlantillas();
+  // Plantillas cargadas de la API
+  const { data: realPlantillas } = usePlantillasList();
+
+  const plantillas = useMemo(() => {
+    if (!realPlantillas) return [];
+    return realPlantillas.map((p: IPlantilla) => ({
+      id: p.id,
+      tipoMonitoreo: p.tipoMonitoreo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo',
+      anioAcademico: p.anioAcademico,
+      baremo: p.baremo,
+      descripcion: p.descripcion || '',
+      estado: p.estado,
+      fechaCreacion: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+      creadoPorRole: p.rolAutorAlCrear,
+      ieId: p.institucionId || undefined,
+      niveles: p.niveles.map(n => ({
+        nivel: n.nivelRomano,
+        denominacion: n.denominacion,
+        rangoMin: n.rangoMin,
+        color: n.color
+      })),
+      desempenos: p.desempenos.map(d => ({
+        id: d.id,
+        nombre: d.nombre,
+        descripcionCorta: d.descripcionCorta || '',
+        aspectos: d.aspectos.map(a => ({
+          id: a.id,
+          descripcion: a.descripcion
+        })),
+        rubrica: d.rubrica.map(r => ({
+          nivel: r.nivelRomano,
+          descripcion: r.descripcion
+        }))
+      }))
+    }));
+  }, [realPlantillas]);
 
   const selectedVisit = useMemo(() => {
     if (!selectedVisitId) return null;
@@ -256,12 +291,12 @@ export const CalendarioSidebar = ({
       if (!ficha) {
         ficha = await fichasApi.create({
           cronogramaId: visitId,
-          areaCurricular: undefined,
-          grado: undefined,
-          seccion: undefined,
-          cantidadEstudiantes: undefined,
-          cantidadEstudiantesNee: undefined,
-          cursoId: undefined,
+          areaCurricular: selectedVisit?.tipo === 'DOCENTE' ? 'Matematica' : undefined,
+          grado: selectedVisit?.tipo === 'DOCENTE' ? '5to' : undefined,
+          seccion: selectedVisit?.tipo === 'DOCENTE' ? 'A' : undefined,
+          cantidadEstudiantes: selectedVisit?.tipo === 'DOCENTE' ? 30 : undefined,
+          cantidadEstudiantesNee: selectedVisit?.tipo === 'DOCENTE' ? 2 : undefined,
+          cursoId: selectedVisit?.tipo === 'DOCENTE' ? '1f480ae6-cd7a-40f7-beac-108c05af771e' : undefined,
         });
       }
       // Guardar respuestas de desempeno (1-4)
@@ -308,7 +343,15 @@ export const CalendarioSidebar = ({
       const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
       let ficha = await fichasApi.findByVisita(visitId);
       if (!ficha) {
-        ficha = await fichasApi.create({ cronogramaId: visitId });
+        ficha = await fichasApi.create({
+          cronogramaId: visitId,
+          areaCurricular: selectedVisit?.tipo === 'DOCENTE' ? 'Matematica' : undefined,
+          grado: selectedVisit?.tipo === 'DOCENTE' ? '5to' : undefined,
+          seccion: selectedVisit?.tipo === 'DOCENTE' ? 'A' : undefined,
+          cantidadEstudiantes: selectedVisit?.tipo === 'DOCENTE' ? 30 : undefined,
+          cantidadEstudiantesNee: selectedVisit?.tipo === 'DOCENTE' ? 2 : undefined,
+          cursoId: selectedVisit?.tipo === 'DOCENTE' ? '1f480ae6-cd7a-40f7-beac-108c05af771e' : undefined,
+        });
       }
       for (const [desempenoId, nivelRoman] of Object.entries(data.selectedLevels)) {
         await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman));

@@ -5,7 +5,6 @@ import { useUser } from '@entities/model-user';
 import { useCronogramas } from '@entities/model-cronogramas';
 import { CalendarioGrid, CalendarioSidebar } from '@widgets/calendario';
 import { BandejaReprogramaciones } from '@widgets/reprogramaciones';
-import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 
 export const CalendarioPage = () => {
   const { user } = useUser();
@@ -48,11 +47,44 @@ export const CalendarioPage = () => {
     return true;
   }, [isDirector, user]);
 
+  // Nombre del especialista logueado para filtro
+  const specialistFilterName = useMemo(() => {
+    if (!isEspecialista || !user) return '';
+    return `${user.nombres} ${user.apellidos}`;
+  }, [isEspecialista, user]);
+
+  // Base visits for the user
+  const filterBaseVisits = useMemo(() => {
+    return cronogramas.filter((visit) => {
+      if (isEspecialista && specialistFilterName) {
+        return visit.especialista === specialistFilterName;
+      }
+      return true;
+    });
+  }, [cronogramas, isEspecialista, specialistFilterName]);
+
+  const modalidadesUnicas = useMemo(() => {
+    const list = new Set<string>();
+    filterBaseVisits.forEach((c) => {
+      if (c.modalidad) list.add(c.modalidad);
+    });
+    return Array.from(list);
+  }, [filterBaseVisits]);
+
   // Cascading Nivel Options
   const nivelesDisponibles = useMemo(() => {
-    if (filterModalidad === 'Todos') return [];
-    return MODALIDAD_NIVEL_MAP[filterModalidad as keyof typeof MODALIDAD_NIVEL_MAP] || [];
-  }, [filterModalidad]);
+    const list = new Set<string>();
+    if (filterModalidad === 'Todos') {
+      filterBaseVisits.forEach((c) => {
+        if (c.nivel) list.add(c.nivel);
+      });
+    } else {
+      filterBaseVisits.forEach((c) => {
+        if (c.modalidad === filterModalidad && c.nivel) list.add(c.nivel);
+      });
+    }
+    return Array.from(list);
+  }, [filterBaseVisits, filterModalidad]);
 
   const handleModalidadChange = (modalidad: string) => {
     setFilterModalidad(modalidad);
@@ -78,11 +110,7 @@ export const CalendarioPage = () => {
     setFilterEstado('Todos');
   };
 
-  // Nombre del especialista logueado para filtro
-  const specialistFilterName = useMemo(() => {
-    if (!isEspecialista || !user) return '';
-    return `${user.nombres} ${user.apellidos}`;
-  }, [isEspecialista, user]);
+
 
   // Obtener lista única de especialistas
   const listaEspecialistas = useMemo(() => {
@@ -126,6 +154,15 @@ export const CalendarioPage = () => {
 
         if (!isSameSchool && !isDirectedToMe) {
           return false;
+        }
+      }
+
+      if (user?.role === 'jefe_area') {
+        if (visit.nivel !== user.especialistaNivel) return false;
+        if (visit.nivel === 'Secundaria' && user.especialistaEspecialidades && user.especialistaEspecialidades.length > 0) {
+           const monitorEspecs = visit.monitorEspecialidades || [];
+           const hasOverlap = user.especialistaEspecialidades.some((e: string) => monitorEspecs.includes(e));
+           if (!hasOverlap && monitorEspecs.length > 0) return false;
         }
       }
 
@@ -272,6 +309,7 @@ export const CalendarioPage = () => {
               filterEstado={filterEstado}
               setFilterEstado={setFilterEstado}
               listaEspecialistas={listaEspecialistas}
+              modalidadesDisponibles={modalidadesUnicas}
               nivelesDisponibles={nivelesDisponibles}
               isAnyFilterActive={isAnyFilterActive}
               handleClearFilters={handleClearFilters}

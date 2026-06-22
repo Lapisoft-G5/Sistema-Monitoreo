@@ -11,6 +11,7 @@ export interface EspecialistaLite {
   modalidad: string;
   nivelEducativo: string;
   cargo: string;
+  especialidades?: string[];
 }
 
 export interface InstitucionLite {

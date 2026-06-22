@@ -28,6 +28,8 @@ export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea =
     fechaCreacion: apiJefe.createdAt
       ? new Date(apiJefe.createdAt).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
+    cargo: apiJefe.cargo || 'Jefe de Área',
+    especialidades: apiJefe.especialidades || [],
   };
 };
 

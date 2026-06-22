@@ -70,9 +70,10 @@ export const PlantillasProvider = ({ children }: { children: ReactNode }) => {
       prev.map((p) => {
         if (p.id !== id) return p;
         let nextEstado: Plantilla['estado'];
-        if (p.estado === 'Vigente') nextEstado = 'Histórico';
-        else if (p.estado === 'Histórico') nextEstado = 'Borrador';
-        else nextEstado = 'Vigente';
+        const isArchiving = p.estado === 'Historico';
+        if (isArchiving) nextEstado = 'Borrador';
+        else if (p.estado === 'Borrador') nextEstado = 'Vigente';
+        else nextEstado = 'Historico';
 
         return { ...p, estado: nextEstado };
       })

@@ -93,6 +93,9 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
                   Nivel a Cargo
                 </TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
+                  Especialidad
+                </TableHead>
+                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
                   Carga Horaria
                 </TableHead>
                 <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
@@ -122,6 +125,19 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
                     >
                       {doc.nivelEducativo}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {doc.especialidades && doc.especialidades.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {doc.especialidades.map((esp) => (
+                          <Badge key={esp} variant="outline" className="text-[0.6rem] py-0 px-1 bg-slate-50 border-slate-200">
+                            {esp}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-text-muted">-</span>
+                    )}
                   </TableCell>
                   <TableCell className="font-medium text-text text-xs">
                     {doc.cargaHoraria} hrs

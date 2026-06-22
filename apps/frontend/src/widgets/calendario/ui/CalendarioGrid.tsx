@@ -43,6 +43,7 @@ interface CalendarioGridProps {
   filterEstado: string;
   setFilterEstado: (s: string) => void;
   listaEspecialistas: string[];
+  modalidadesDisponibles: string[];
   nivelesDisponibles: string[];
   isAnyFilterActive: boolean;
   handleClearFilters: () => void;
@@ -55,7 +56,6 @@ const MONTH_NAMES = [
 
 const WEEK_DAYS = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
 
-const MODALIDADES = ['EBR', 'EBA', 'EBE', 'CEPTRO'];
 
 const formatVisitTime = (fechaHoraStr: string) => {
   try {
@@ -190,6 +190,7 @@ export const CalendarioGrid = ({
   filterEstado,
   setFilterEstado,
   listaEspecialistas,
+  modalidadesDisponibles,
   nivelesDisponibles,
   isAnyFilterActive,
   handleClearFilters,
@@ -469,7 +470,7 @@ export const CalendarioGrid = ({
                 placeholder="Seleccione modalidad"
                 options={[
                   { value: 'Todos', label: 'Todas las modalidades' },
-                  ...MODALIDADES.map((m) => ({ value: m, label: m })),
+                  ...modalidadesDisponibles.map((m) => ({ value: m, label: m })),
                 ]}
               />
 
@@ -477,7 +478,6 @@ export const CalendarioGrid = ({
                 label="Nivel Educativo"
                 value={filterNivel}
                 onChange={(val) => setFilterNivel(val)}
-                disabled={filterModalidad === 'Todos'}
                 placeholder="Seleccione nivel"
                 options={[
                   { value: 'Todos', label: 'Todos los niveles' },

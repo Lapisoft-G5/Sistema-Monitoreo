@@ -14,6 +14,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Inicial',
     observaciones: 'Revisión de carpetas pedagógicas y programación curricular del tercer trimestre.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '2',
@@ -28,6 +30,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Primaria',
     observaciones: 'Monitoreo al Plan de Convivencia Escolar y planes de tutoría institucional.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '3',
@@ -42,6 +46,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Secundaria',
     observaciones: 'Evaluación del avance en el área de Ciencia y Tecnología. Uso de laboratorios.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '4',
@@ -56,6 +62,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBA',
     nivel: 'Inicial-Intermedio',
     observaciones: 'Ajuste de cronograma por suspensión de actividades institucionales del CEBA.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '5',
@@ -70,6 +78,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Inicial',
     observaciones: 'Cruzado con capacitación nacional convocada por el MINEDU.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '6',
@@ -84,6 +94,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Primaria',
     observaciones: 'Revisión del portafolio del docente y sesión de aprendizaje interactiva de matemáticas.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '7',
@@ -98,6 +110,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBE',
     nivel: 'CEBE',
     observaciones: 'Monitoreo administrativo y revisión de protocolos de seguridad inclusiva.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '8',
@@ -112,6 +126,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Secundaria',
     observaciones: 'Acompañamiento en aula a docente de Ciencias Sociales sobre competencias ciudadanas.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '9',
@@ -126,6 +142,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Inicial',
     observaciones: 'Monitoreo de rutinas diarias y material lúdico utilizado en el nivel inicial.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '10',
@@ -140,6 +158,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBA',
     nivel: 'Avanzado',
     observaciones: 'Monitoreo al director sobre el avance de metas físicas del Plan Anual de Trabajo.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '11',
@@ -154,6 +174,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Primaria',
     observaciones: 'Reprogramado por huelga local. Nueva fecha establecida de mutuo acuerdo.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '12',
@@ -168,6 +190,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBE',
     nivel: 'PRITE',
     observaciones: 'Visita de monitoreo a la gestión de atención temprana infantil.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '13',
@@ -182,6 +206,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Primaria',
     observaciones: 'Revisión de planillas de evaluación del segundo trimestre. Traer formatos A-4 actualizados.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '14',
@@ -196,6 +222,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Primaria',
     observaciones: 'Supervisión de infraestructura escolar e inventario de material tecnológico.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '15',
@@ -210,6 +238,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Primaria',
     observaciones: 'Revisión del avance curricular en comprensión lectora.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '16',
@@ -224,6 +254,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Secundaria',
     observaciones: 'Evaluación del proyecto feria de ciencias local.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '17',
@@ -238,6 +270,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'CEPTRO',
     nivel: 'Corte y Ensamblaje',
     observaciones: 'Monitoreo técnico en el taller de soldadura e indumentaria de seguridad.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '18',
@@ -252,6 +286,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Inicial',
     observaciones: 'Acompañamiento a la dirección en el proceso de matrícula escolar del período complementario.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '19',
@@ -266,6 +302,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Inicial',
     observaciones: 'Monitoreo a futuro: Evaluación final de logros de aprendizaje y cierre del año escolar.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '20',
@@ -280,6 +318,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Primaria',
     observaciones: 'Monitoreo a futuro: Planificación curricular del próximo año y gestión de matrícula.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '21',
@@ -294,6 +334,8 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBR',
     nivel: 'Secundaria',
     observaciones: 'Monitoreo a futuro: Entrega de libretas de calificaciones y balances pedagógicos.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   },
   {
     id: '22',
@@ -308,5 +350,7 @@ export const MOCK_CRONOGRAMAS: Cronograma[] = [
     modalidad: 'EBA',
     nivel: 'Inicial-Intermedio',
     observaciones: 'Monitoreo a futuro: Visita de verificación de portafolios del cuarto bimestre.',
+    monitorId: 'mock',
+    institucionId: 'mock',
   }
 ];

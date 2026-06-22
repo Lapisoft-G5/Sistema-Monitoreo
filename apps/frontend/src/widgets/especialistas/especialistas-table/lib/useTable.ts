@@ -19,7 +19,7 @@ export const useEspecialistasTable = (especialistas: Especialista[]) => {
         e.nombres.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.apellidos.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.dni.includes(searchQuery) ||
-        (e.especialidad || '').toLowerCase().includes(searchQuery.toLowerCase());
+        (e.especialidades?.some((esp) => esp.toLowerCase().includes(searchQuery.toLowerCase())) || false);
 
       const matchNivel = !nivelFilter || e.nivelEducativo === nivelFilter;
 

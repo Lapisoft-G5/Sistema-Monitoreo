@@ -170,6 +170,20 @@ export const JefeAreaDetailPage = () => {
                   {jefe.cargaHoraria || 40} horas
                 </span>
               </div>
+              {jefe.especialidades && jefe.especialidades.length > 0 && (
+                <div>
+                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                    Especialidad
+                  </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {jefe.especialidades.map((esp) => (
+                      <Badge key={esp} variant="outline" className="text-xs bg-slate-50">
+                        {esp}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
                   Estado

@@ -249,20 +249,35 @@ export const CronogramaPage = () => {
 
   // --- Lógica de Filtro ---
   const filteredBaseCronogramas = useMemo(() => {
-    if (!isDirector || !user) return cronogramas;
+    if (!user) return cronogramas;
+    if (!isDirector && user.role !== 'jefe_area') return cronogramas;
+
     return cronogramas.filter((item) => {
-      const isSameSchool =
-        user.institucionNombre &&
-        item.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
+      if (isDirector) {
+        const isSameSchool =
+          user.institucionNombre &&
+          item.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
 
-      const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
-      const isDirectedToMe =
-        item.tipo === 'DIRECTIVO' &&
-        (item.docenteDirectivo.toLowerCase().includes(userFullName) ||
-          userFullName.includes(item.docenteDirectivo.toLowerCase()) ||
-          item.docenteDirectivo.toLowerCase().includes(user.nombres.toLowerCase()));
+        const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+        const isDirectedToMe =
+          item.tipo === 'DIRECTIVO' &&
+          (item.docenteDirectivo.toLowerCase().includes(userFullName) ||
+            userFullName.includes(item.docenteDirectivo.toLowerCase()) ||
+            item.docenteDirectivo.toLowerCase().includes(user.nombres.toLowerCase()));
 
-      return isSameSchool || isDirectedToMe;
+        if (!isSameSchool && !isDirectedToMe) return false;
+      }
+
+      if (user?.role === 'jefe_area') {
+        if (item.nivel !== user.especialistaNivel) return false;
+        if (item.nivel === 'Secundaria' && user.especialistaEspecialidades && user.especialistaEspecialidades.length > 0) {
+           const monitorEspecs = item.monitorEspecialidades || [];
+           const hasOverlap = user.especialistaEspecialidades.some((e: string) => monitorEspecs.includes(e));
+           if (!hasOverlap && monitorEspecs.length > 0) return false;
+        }
+      }
+
+      return true;
     });
   }, [cronogramas, isDirector, user]);
 

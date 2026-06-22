@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { User, Briefcase, Check } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { User, Briefcase, Check, Plus, X } from 'lucide-react';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistaSchema } from '@entities/model-especialistas/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
@@ -19,7 +19,7 @@ const INITIAL_FORM: EspecialistaFormData = {
   dni: '',
   correo: '',
   celular: '',
-  especialidad: '',
+  especialidades: [],
   nivelEducativo: 'Primaria',
   modalidad: 'EBR',
   cargo: 'Especialista',
@@ -48,6 +48,8 @@ export const EspecialistaFormBase = ({
     ...initialData,
   });
   const [submitted, setSubmitted] = useState(false);
+  const [newEspecialidad, setNewEspecialidad] = useState('');
+  const newEspRef = useRef<HTMLInputElement>(null);
 
   const set = <K extends keyof EspecialistaFormData>(key: K, value: EspecialistaFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -64,12 +66,27 @@ export const EspecialistaFormBase = ({
     });
   }
 
-  // Validación personalizada: especialidad es requerida si se selecciona nivel Secundaria
-  if (form.cargo === 'Especialista') {
-    if (form.nivelEducativo === 'Secundaria' && !form.especialidad?.trim()) {
-      errors.especialidad = 'La especialidad es requerida para el nivel Secundaria';
+  // Validación personalizada: especialidad requerida en Secundaria (al menos 1)
+  const isSecundaria = form.nivelEducativo === 'Secundaria';
+  const especialidades = form.especialidades || [];
+  if (form.cargo === 'Especialista' || form.cargo === 'Jefe de Área') {
+    if (isSecundaria && especialidades.length === 0) {
+      errors.especialidades = 'Al menos una especialidad es requerida para el nivel Secundaria';
     }
   }
+
+  const addEspecialidad = () => {
+    const val = newEspecialidad.trim();
+    if (!val) return;
+    if (especialidades.includes(val)) return;
+    set('especialidades', [...especialidades, val]);
+    setNewEspecialidad('');
+    newEspRef.current?.focus();
+  };
+
+  const removeEspecialidad = (esp: string) => {
+    set('especialidades', especialidades.filter((e) => e !== esp));
+  };
 
   const showError = (key: keyof EspecialistaFormData) => (submitted ? errors[key] : '');
 
@@ -166,7 +183,7 @@ export const EspecialistaFormBase = ({
               { value: 'Jefe de Área', label: 'Jefe de Área' },
               { value: 'Jefe de Gestión', label: 'Jefe de Gestión' },
             ]}
-            disabled={isJefeArea}
+            disabled={true}
             placeholder="Seleccione Cargo"
             error={showError('cargo')}
           />
@@ -196,7 +213,7 @@ export const EspecialistaFormBase = ({
                 ...prev,
                 modalidad: v as "EBR" | "EBA" | "EBE" | "CEPTRO",
                 nivelEducativo: levels[0] || '',
-                especialidad: '',
+                especialidades: [],
               }));
             }}
             options={[
@@ -216,7 +233,7 @@ export const EspecialistaFormBase = ({
               setForm((prev) => ({
                 ...prev,
                 nivelEducativo: v,
-                especialidad: v !== 'Secundaria' ? '' : prev.especialidad,
+                especialidades: v !== 'Secundaria' ? [] : prev.especialidades,
               }));
             }}
             options={availableNiveles.map((n) => ({ value: n, label: n }))}
@@ -244,19 +261,63 @@ export const EspecialistaFormBase = ({
             placeholder="Seleccione Escala Magisterial"
             error={showError('escalaMagisterial')}
           />
-          <TextField
-            label="Especialidad / Área Pedagógica"
-            required={form.cargo === 'Especialista' && form.nivelEducativo === 'Secundaria'}
-            value={form.especialidad || ''}
-            onChange={(v) => set('especialidad', v)}
-            placeholder={
-              form.nivelEducativo === 'Secundaria'
-                ? 'Ej. Matemática o Gestión Pedagógica'
-                : 'Solo disponible para el nivel Secundaria'
-            }
-            error={showError('especialidad')}
-            disabled={form.cargo !== 'Especialista' || form.nivelEducativo !== 'Secundaria'}
-          />
+          {/* Especialidades (multi-tag) — solo visible en Secundaria */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wide">
+              Especialidades / Áreas Pedagógicas
+              {isSecundaria && <span className="text-red-500 ml-0.5">*</span>}
+              {!isSecundaria && <span className="ml-1 text-text-muted font-normal normal-case">(solo Secundaria)</span>}
+            </label>
+            {/* Tags actuales */}
+            {especialidades.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-1">
+                {especialidades.map((esp) => (
+                  <span
+                    key={esp}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                  >
+                    {esp}
+                    {isSecundaria && (
+                      <button
+                        type="button"
+                        onClick={() => removeEspecialidad(esp)}
+                        className="hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Input para agregar */}
+            {isSecundaria && (
+              <div className="flex gap-2">
+                <input
+                  ref={newEspRef}
+                  type="text"
+                  value={newEspecialidad}
+                  onChange={(e) => setNewEspecialidad(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); addEspecialidad(); }
+                  }}
+                  placeholder="Ej. Matemática, CTA, Historia..."
+                  className="flex-1 text-sm bg-surface border border-border rounded-lg px-3 py-2 text-text placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={addEspecialidad}
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Agregar
+                </button>
+              </div>
+            )}
+            {submitted && errors.especialidades && (
+              <p className="text-xs text-red-500 mt-0.5">{errors.especialidades}</p>
+            )}
+          </div>
         </div>
 
         <div style={{ marginTop: 18 }}>

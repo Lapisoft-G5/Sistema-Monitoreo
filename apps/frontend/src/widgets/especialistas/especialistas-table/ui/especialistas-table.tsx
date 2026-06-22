@@ -138,7 +138,7 @@ export const EspecialistasTableWidget = ({
                     </div>
                   </TableCell>
                   <TableCell className="font-medium text-text text-xs">
-                    {doc.especialidad}
+                    {doc.especialidades?.join(', ') || 'No especificada'}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1 max-w-[200px]">

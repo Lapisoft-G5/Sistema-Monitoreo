@@ -190,12 +190,24 @@ export const EspecialistaDetailPage = () => {
                 )}
 
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
-                  Especialidad
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
+                  Especialidad(es)
                 </span>
-                <span className="text-sm font-semibold text-text">
-                  {especialista.especialidad || 'No especificada'}
-                </span>
+                {especialista.especialidades && especialista.especialidades.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {especialista.especialidades.map((esp) => (
+                      <Badge
+                        key={esp}
+                        variant="secondary"
+                        className="text-[0.65rem] px-2 py-0 uppercase font-bold"
+                      >
+                        {esp}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-sm font-semibold text-text">No especificadas</span>
+                )}
               </div>
 
               <div>

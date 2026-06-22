@@ -51,7 +51,8 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
           initials: getInitials(`${e.persona.nombres} ${e.persona.apellidos}`),
           modalidad: e.modalidad || 'EBR',
           nivelEducativo: e.nivelEducativo || 'Primaria',
-          cargo: e.cargo || 'Especialista'
+          cargo: e.cargo || 'Especialista',
+          especialidades: e.especialidades || [],
         }));
         setEspecialistas(loadedEsp);
       } else {
@@ -97,6 +98,7 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
             monitorId: c.monitorId,
             evaluadoId: c.evaluadoId,
             institucionId: c.institucionId,
+            monitorEspecialidades: esp?.especialidades,
           };
         });
         setCronogramas(mappedCrono);

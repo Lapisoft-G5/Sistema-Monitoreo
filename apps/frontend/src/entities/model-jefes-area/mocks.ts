@@ -12,7 +12,9 @@ export const MOCK_JEFES_AREA: JefeArea[] = [
     cargaHoraria: 40,
     nivelEducativo: 'Secundaria',
     activo: true,
-    fechaCreacion: '2024-01-15',
+    fechaCreacion: '2024-03-10',
+    cargo: 'Jefe de Área',
+    especialidades: ['Matemática'],
   },
   {
     id: 'ja-2',
@@ -26,6 +28,8 @@ export const MOCK_JEFES_AREA: JefeArea[] = [
     nivelEducativo: 'Primaria',
     activo: true,
     fechaCreacion: '2024-02-20',
+    cargo: 'Jefe de Área',
+    especialidades: [],
   },
   {
     id: 'ja-3',
@@ -38,6 +42,8 @@ export const MOCK_JEFES_AREA: JefeArea[] = [
     cargaHoraria: 40,
     nivelEducativo: 'Inicial',
     activo: false,
-    fechaCreacion: '2024-03-12',
+    fechaCreacion: '2024-03-01',
+    cargo: 'Jefe de Área',
+    especialidades: [],
   },
 ];

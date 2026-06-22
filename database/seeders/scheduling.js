@@ -269,7 +269,7 @@ export async function seedScheduling(ctx) {
         },
       });
       if (!yaExiste) {
-        await prisma.cronograma.create({
+        const cronogramaSec = await prisma.cronograma.create({
           data: {
             id: randomUUID(),
             monitorId: monitorSecundaria.id,
@@ -286,7 +286,23 @@ export async function seedScheduling(ctx) {
             nivelEducativo: 'Secundaria',
           },
         });
-        console.log('  + creado: DOCENTE EN_PROCESO del segundo monitor.');
+        
+        await prisma.solicitudReprogramacion.create({
+          data: {
+            id: randomUUID(),
+            cronogramaId: cronogramaSec.id,
+            solicitanteId: monitorSecundaria.persona.usuario.id,
+            solicitanteRolAlCrear: 'especialista',
+            fechaOriginal: new Date('2026-03-25'),
+            horaOriginal: '09:30:00',
+            fechaPropuesta: new Date('2026-04-05'),
+            horaPropuesta: '10:00:00',
+            justificacion: 'Choque de horarios con otra institucion',
+            archivoSustentoUrl: 'https://example.com/sustento.pdf',
+            estado: 'PENDIENTE',
+          }
+        });
+        console.log('  + creado: DOCENTE EN_PROCESO del segundo monitor con Solicitud de Reprogramacion PENDIENTE.');
       } else {
         console.log('  - ya existe: DOCENTE EN_PROCESO 2026-03-25');
       }

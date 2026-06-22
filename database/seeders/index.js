@@ -51,6 +51,8 @@ async function main() {
   console.log('  director_ugel→ DNI: 40000001  (Carlos Mendoza Quispe)');
   console.log('  jefe_gestion → DNI: 40000002  (Maria Elena Huaman Vargas)');
   console.log('  jefe_area    → DNI: 40000003  (Jose Luis Quispe Mamani)');
+  console.log('  jefe_area    → DNI: 41000000  (Juan Jefe CTA)');
+  console.log('  jefe_gestion → DNI: 41000001  (Super Jefe Gestion)');
   console.log('  especialista → DNI: 40000004  (Ana Lucia Ticona Coila)');
   console.log('  especialista → DNI: 40000005  (Pedro Pablo Mamani Cruz)');
   console.log('  director_institucion → DNI: 40000006  (Rosa Maria Apaza Condori)');

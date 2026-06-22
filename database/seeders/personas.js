@@ -60,7 +60,27 @@ const USERS = [
     role: 'especialista',
     fechaNacimiento: '1982-07-19',
     nivelEducativo: 'Secundaria',
-    especialidad: 'CTA',
+    especialidades: ['CTA', 'Ciencias Sociales'],
+  },
+  {
+    dni: '41000000',
+    firstName: 'Juan',
+    lastName: 'Jefe CTA',
+    email: 'juan.jefecta@ugel.gob.pe',
+    role: 'jefe_area',
+    fechaNacimiento: '1979-05-10',
+    nivelEducativo: 'Secundaria',
+    especialidades: ['CTA', 'Matematica'],
+  },
+  {
+    dni: '41000001',
+    firstName: 'Super',
+    lastName: 'Jefe Gestion',
+    email: 'super.gestion@ugel.gob.pe',
+    role: 'jefe_gestion',
+    fechaNacimiento: '1970-01-01',
+    nivelEducativo: 'Secundaria',
+    especialidad: 'Matematica',
   },
   {
     dni: '40000006',
@@ -259,8 +279,9 @@ export async function seedPersonas(ctx) {
         },
       });
 
-      if (u.especialidad) {
-        const esp = await prisma.especialidad.findFirst({ where: { nombre: u.especialidad, isActive: true } });
+      const especialidadesToSeed = u.especialidades || (u.especialidad ? [u.especialidad] : []);
+      for (const espNombre of especialidadesToSeed) {
+        const esp = await prisma.especialidad.findFirst({ where: { nombre: espNombre, isActive: true } });
         if (esp) {
           const espRow = await prisma.especialista.findUnique({ where: { personaId: persona.id } });
           if (espRow) {

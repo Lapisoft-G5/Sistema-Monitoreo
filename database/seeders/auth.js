@@ -48,7 +48,7 @@ const ROL_PERMISOS = {
   jefe_area: [
     'instituciones:read', 'instituciones:write',
     'docentes:read', 'docentes:write',
-    'reports:read',
+    'monitoreo:execute', 'reports:read',
   ],
   especialista: [
     'monitoreo:execute', 'reports:read',

@@ -425,6 +425,7 @@ model EspecialistaEspecialidad {
   id            String   @id @default(uuid()) @db.Uuid
   especialistaId String   @map("especialista_id") @db.Uuid
   especialidadId String   @map("especialidad_id") @db.Uuid
+  esPrincipal   Boolean  @default(false) @map("es_principal")
 
   especialista   Especialista @relation(fields: [especialistaId], references: [id], onDelete: Cascade)
   especialidad   Especialidad  @relation(fields: [especialidadId], references: [id], onDelete: Cascade)
@@ -620,6 +621,8 @@ model FichaMonitoreo {
   creadoPorId         String?  @map("creado_por_id") @db.Uuid
   finalizadaPorId     String?  @map("finalizada_por_id") @db.Uuid
   observaciones       String?  @db.Text
+  sugerencias         String?  @db.Text
+  compromisos         String?  @db.Text
   createdAt           DateTime @default(now()) @map("created_at")
   finalizadaAt        DateTime? @map("finalizada_at")
 
@@ -657,6 +660,7 @@ model FichaRespuestaDesempeno {
   fichaId      String   @map("ficha_id") @db.Uuid
   desempenoId  String   @map("desempeno_id") @db.Uuid
   nivel        Int      @db.SmallInt
+  observaciones String?  @db.Text
 
   ficha        FichaMonitoreo      @relation(fields: [fichaId], references: [id], onDelete: Cascade)
   desempeno    DesempenoPlantilla  @relation(fields: [desempenoId], references: [id], onDelete: Restrict)

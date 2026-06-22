@@ -183,6 +183,86 @@ describe('SchedulingService - Reprogramaciones', () => {
     });
   });
 
+  describe('crearVisita - restricciones Jefe de Área por nivel', () => {
+    const sesionJefeAreaPrimaria = {
+      id: 'jefe-primaria-1',
+      role: RoleCode.JEFE_AREA,
+      especialistaNivel: 'Primaria',
+    };
+
+    const sesionJefeAreaSecundaria = {
+      id: 'jefe-secundaria-1',
+      role: RoleCode.JEFE_AREA,
+      especialistaNivel: 'Secundaria',
+    };
+
+    it('permite a Jefe de Área Primaria crear visita para nivel Primaria', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(0);
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+
+      const r = await service.crearVisita(
+        {
+          monitorId: 'esp-1',
+          institucionId: 'ie-1',
+          evaluadoId: 'doc-1',
+          tipoMonitoreo: 'DOCENTE',
+          numeroVisita: 1,
+          fechaProgramada: '2026-03-15',
+          horaInicio: '09:00:00',
+          modalidad: 'EBR',
+          nivelEducativo: 'Primaria',
+        } as any,
+        sesionJefeAreaPrimaria,
+      );
+      expect(r.id).toBe('vis-1');
+    });
+
+    it('rechaza si Jefe de Área Primaria intenta crear visita para nivel Secundaria', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(0);
+
+      await expect(
+        service.crearVisita(
+          {
+            monitorId: 'esp-1',
+            institucionId: 'ie-1',
+            evaluadoId: 'doc-1',
+            tipoMonitoreo: 'DOCENTE',
+            numeroVisita: 1,
+            fechaProgramada: '2026-03-15',
+            horaInicio: '09:00:00',
+            modalidad: 'EBR',
+            nivelEducativo: 'Secundaria',
+          } as any,
+          sesionJefeAreaPrimaria,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('permite a Jefe de Área Secundaria crear visita para nivel Secundaria, EBA o CEPTRO', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(0);
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+
+      const r = await service.crearVisita(
+        {
+          monitorId: 'esp-1',
+          institucionId: 'ie-1',
+          evaluadoId: 'doc-1',
+          tipoMonitoreo: 'DOCENTE',
+          numeroVisita: 1,
+          fechaProgramada: '2026-03-15',
+          horaInicio: '09:00:00',
+          modalidad: 'CEPTRO',
+          nivelEducativo: 'Auxiliar Técnico',
+        } as any,
+        sesionJefeAreaSecundaria,
+      );
+      expect(r.id).toBe('vis-1');
+    });
+  });
+
   describe('crearSolicitud', () => {
     it('crea solicitud válida SIN PDF de sustento exitosamente', async () => {
       cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Secundaria' });
@@ -278,6 +358,7 @@ describe('SchedulingService - Reprogramaciones', () => {
     };
 
     it('rechaza si no es autoridad (Jefe Gestion / Director IE)', async () => {
+      solicitudRepo.findById.mockResolvedValue(solicitudPendiente);
       await expect(
         service.aprobarSolicitud('sol-1', { comentario: 'OK' } as any, sesionEspecialista),
       ).rejects.toThrow(ForbiddenException);

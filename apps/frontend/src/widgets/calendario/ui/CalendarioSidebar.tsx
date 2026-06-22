@@ -140,15 +140,21 @@ export const CalendarioSidebar = ({
         id: d.id,
         nombre: d.nombre,
         descripcionCorta: d.descripcionCorta || '',
-        aspectos: d.aspectos.map(a => ({
+        preguntaExtra: d.preguntaExtra || '',
+        aspectos: (d.aspectos || []).map(a => ({
           id: a.id,
           descripcion: a.descripcion
         })),
-        rubrica: d.rubrica.map(r => ({
+        rubrica: (d.rubrica || []).map(r => ({
           nivel: r.nivelRomano,
           descripcion: r.descripcion
         }))
-      }))
+      })),
+      ejesItems: (p.ejesItems || []).map((item) => ({
+        id: item.id,
+        numero: item.numero,
+        descripcion: item.descripcion,
+      })),
     }));
   }, [realPlantillas]);
 
@@ -265,6 +271,8 @@ export const CalendarioSidebar = ({
       sugerencias: 'Continuar fortaleciendo las competencias pedagógicas y de liderazgo directivo.',
       compromisos: 'El directivo se compromete a realizar un seguimiento mensual a las sugerencias brindadas.',
       rubricComments: {},
+      respuestasEjeItem: {},
+      evidenciaUrls: {},
     };
     if (!FEATURES.apiOnly) {
       localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
@@ -280,6 +288,9 @@ export const CalendarioSidebar = ({
       sugerencias?: string;
       compromisos?: string;
       rubricComments?: Record<string, string>;
+      preguntaExtraAnswers?: Record<string, boolean>;
+      respuestasEjeItem?: Record<string, number>;
+      evidenciaUrls?: Record<string, string>;
     }
   ) => {
     // Persistir localmente (UX inmediata)
@@ -315,6 +326,13 @@ export const CalendarioSidebar = ({
       for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
         await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
       }
+      // Guardar respuestas de eje item
+      if (data.respuestasEjeItem) {
+        for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
+          const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
+          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
+        }
+      }
     } catch (err: unknown) {
       const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string } } };
       if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
@@ -342,6 +360,9 @@ export const CalendarioSidebar = ({
       sugerencias?: string;
       compromisos?: string;
       rubricComments?: Record<string, string>;
+      preguntaExtraAnswers?: Record<string, boolean>;
+      respuestasEjeItem?: Record<string, number>;
+      evidenciaUrls?: Record<string, string>;
     }
   ) => {
     localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
@@ -369,6 +390,12 @@ export const CalendarioSidebar = ({
       }
       for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
         await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
+      }
+      if (data.respuestasEjeItem) {
+        for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
+          const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
+          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
+        }
       }
       await fichasApi.finalizar(ficha.id, data.generalComments, data.sugerencias, data.compromisos);
     } catch (err: unknown) {
@@ -659,6 +686,12 @@ export const CalendarioSidebar = ({
                               rubricComments[r.desempenoId] = r.observaciones;
                             }
                           }
+                          const respuestasEjeItem: Record<string, number> = {};
+                          const evidenciaUrls: Record<string, string> = {};
+                          for (const r of ficha.respuestasEjeItem || []) {
+                            respuestasEjeItem[r.ejeItemId] = r.nivel;
+                            if (r.evidenciaUrl) evidenciaUrls[r.ejeItemId] = r.evidenciaUrl;
+                          }
                           const mappedData = {
                             checkedAspects,
                             selectedLevels,
@@ -666,6 +699,8 @@ export const CalendarioSidebar = ({
                             sugerencias: ficha.sugerencias || '',
                             compromisos: ficha.compromisos || '',
                             rubricComments,
+                            respuestasEjeItem,
+                            evidenciaUrls,
                           };
                           localStorage.setItem(`sistema-monitoreo:ficha-state:${selectedVisit.id}`, JSON.stringify(mappedData));
                         } else {

@@ -81,6 +81,38 @@ export class SchedulingService {
   }
 
   async crearVisita(dto: CreateVisitaDto, session: SessionUser): Promise<IVisita> {
+    if (session.role === RoleCode.JEFE_AREA) {
+      const jefeNivel = session.especialistaNivel;
+      const targetMod = dto.modalidad || 'EBR';
+      const targetNivel = dto.nivelEducativo;
+
+      if (jefeNivel === 'Inicial') {
+        const isValid = (targetMod === 'EBR' && targetNivel === 'Inicial') || targetMod === 'EBE';
+        if (!isValid) {
+          throw new ForbiddenException(
+            'Un Jefe de Área de nivel Inicial solo puede registrar visitas de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
+          );
+        }
+      } else if (jefeNivel === 'Primaria') {
+        const isValid = targetMod === 'EBR' && targetNivel === 'Primaria';
+        if (!isValid) {
+          throw new ForbiddenException(
+            'Un Jefe de Área de nivel Primaria solo puede registrar visitas de nivel Primaria (EBR).',
+          );
+        }
+      } else if (jefeNivel === 'Secundaria') {
+        const isValid =
+          (targetMod === 'EBR' && targetNivel === 'Secundaria') ||
+          targetMod === 'EBA' ||
+          targetMod === 'CEPTRO';
+        if (!isValid) {
+          throw new ForbiddenException(
+            'Un Jefe de Área de nivel Secundaria solo puede registrar visitas de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
+          );
+        }
+      }
+    }
+
     // Candado operativo: debe existir un plan Activo que cubra la institucion
     const anio = new Date(dto.fechaProgramada).getFullYear();
     const planId = await this.cronogramaRepo.findPlanVigentePara(dto.institucionId, anio);

@@ -201,11 +201,32 @@ export const CronogramaPage = () => {
     return () => clearTimeout(t);
   }, [formDocente, formTipo, editCronogramaId, docentes, cronogramas]);
 
+  const allowedModalidades = useMemo(() => {
+    if (user?.role !== 'jefe_area' || !user?.especialistaNivel) {
+      return MODALIDADES;
+    }
+    const list = [];
+    if (user.especialistaNivel === 'Inicial') {
+      list.push('EBR', 'EBE');
+    } else if (user.especialistaNivel === 'Primaria') {
+      list.push('EBR');
+    } else if (user.especialistaNivel === 'Secundaria') {
+      list.push('EBR', 'EBA', 'CEPTRO');
+    }
+    return list;
+  }, [user]);
+
   // ── Niveles filtrados por modalidad seleccionada ──
   const nivelesDisponibles = useMemo(() => {
     if (!formModalidad) return [];
-    return MODALIDAD_NIVEL_MAP[formModalidad] || [];
-  }, [formModalidad]);
+    const allNiveles = MODALIDAD_NIVEL_MAP[formModalidad] || [];
+    if (user?.role === 'jefe_area' && user?.especialistaNivel) {
+      if (formModalidad === 'EBR') {
+        return allNiveles.filter((n) => n === user.especialistaNivel);
+      }
+    }
+    return allNiveles;
+  }, [formModalidad, user]);
 
   // ── Especialistas filtrados por modalidad + nivel ──
   const especialistasFiltrados = useMemo(() => {
@@ -756,7 +777,7 @@ export const CronogramaPage = () => {
                         value={formModalidad}
                         onChange={handleFormModalidadChange}
                         placeholder="Seleccionar modalidad..."
-                        options={MODALIDADES.map((m) => ({ value: m, label: m }))}
+                        options={allowedModalidades.map((m) => ({ value: m, label: m }))}
                       />
                       <SelectField
                         label="Nivel Educativo *"

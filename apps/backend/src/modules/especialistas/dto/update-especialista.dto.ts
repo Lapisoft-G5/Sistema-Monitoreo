@@ -14,7 +14,6 @@ import {
   CondicionLaboralEspecialista,
 } from '@sistema-monitoreo/shared-contracts';
 import { IsValidNivelForModalidad } from '../../../common/validators/modalidad-nivel.validator.js';
-import { IsValidEspecialidadForNivel } from '../../../common/validators/especialidad.validator.js';
 
 export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   @IsString()
@@ -51,8 +50,8 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   @IsValidNivelForModalidad('modalidad')
   nivelEducativo!: string;
 
-  @IsValidEspecialidadForNivel('nivelEducativo')
-  especialidad?: string;
+  @IsOptional()
+  especialidades?: string[];
 
   @IsString()
   @IsNotEmpty()

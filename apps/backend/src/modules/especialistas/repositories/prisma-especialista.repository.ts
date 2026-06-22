@@ -24,6 +24,9 @@ type EspecialistaWithRelations = Prisma.EspecialistaGetPayload<{
         };
       };
     };
+    especialidades: {
+      include: { especialidad: true };
+    };
   };
 }>;
 
@@ -35,11 +38,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     return {
       id: esp.id,
       personaId: esp.personaId,
-      especialidad:
-        (esp as any).especialidades
-          ?.map((e: any) => e.especialidad?.nombre)
-          .filter(Boolean)
-          .join(', ') ?? null,
+      especialidades:
+        (esp as any).especialidades?.map((e: any) => e.especialidad?.nombre).filter(Boolean) ??
+        null,
       nivelEducativo: esp.nivelEducativo,
       modalidad: esp.modalidad ?? null,
       estado: esp.estado,
@@ -86,6 +87,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
             },
           },
         },
+        especialidades: {
+          include: { especialidad: true },
+        },
       },
     });
 
@@ -104,6 +108,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
               },
             },
           },
+        },
+        especialidades: {
+          include: { especialidad: true },
         },
       },
     });
@@ -153,6 +160,38 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         },
       });
 
+      if (data.especialidades && data.especialidades.length > 0) {
+        const nivel = await tx.nivelEducativo.findFirst({
+          where: { nombre: data.nivelEducativo },
+        });
+
+        if (nivel) {
+          for (const espNombre of data.especialidades) {
+            const especialidadEntity = await tx.especialidad.upsert({
+              where: {
+                nombre_nivelEducativoId: {
+                  nombre: espNombre,
+                  nivelEducativoId: nivel.id,
+                },
+              },
+              update: {},
+              create: {
+                nombre: espNombre,
+                nivelEducativoId: nivel.id,
+                isActive: true,
+              },
+            });
+
+            await tx.especialistaEspecialidad.create({
+              data: {
+                especialistaId: especialista.id,
+                especialidadId: especialidadEntity.id,
+              },
+            });
+          }
+        }
+      }
+
       const fullEsp = await tx.especialista.findUniqueOrThrow({
         where: { id: especialista.id },
         include: {
@@ -164,6 +203,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
                 },
               },
             },
+          },
+          especialidades: {
+            include: { especialidad: true },
           },
         },
       });
@@ -220,6 +262,46 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         },
       });
 
+      if (data.especialidades !== undefined) {
+        await tx.especialistaEspecialidad.deleteMany({
+          where: { especialistaId: id },
+        });
+
+        if (data.especialidades && data.especialidades.length > 0) {
+          const currentNivel = data.nivelEducativo || esp.nivelEducativo;
+          const nivel = await tx.nivelEducativo.findFirst({
+            where: { nombre: currentNivel },
+          });
+
+          if (nivel) {
+            for (const espNombre of data.especialidades) {
+              if (!espNombre.trim()) continue;
+              const especialidadEntity = await tx.especialidad.upsert({
+                where: {
+                  nombre_nivelEducativoId: {
+                    nombre: espNombre,
+                    nivelEducativoId: nivel.id,
+                  },
+                },
+                update: {},
+                create: {
+                  nombre: espNombre,
+                  nivelEducativoId: nivel.id,
+                  isActive: true,
+                },
+              });
+
+              await tx.especialistaEspecialidad.create({
+                data: {
+                  especialistaId: id,
+                  especialidadId: especialidadEntity.id,
+                },
+              });
+            }
+          }
+        }
+      }
+
       const fullEsp = await tx.especialista.findUniqueOrThrow({
         where: { id },
         include: {
@@ -231,6 +313,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
                 },
               },
             },
+          },
+          especialidades: {
+            include: { especialidad: true },
           },
         },
       });
@@ -299,6 +384,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
               },
             },
           },
+          especialidades: {
+            include: { especialidad: true },
+          },
         },
       });
 
@@ -338,6 +426,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
                 },
               },
             },
+          },
+          especialidades: {
+            include: { especialidad: true },
           },
         },
       });

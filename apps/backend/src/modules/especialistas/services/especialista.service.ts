@@ -67,16 +67,14 @@ export class EspecialistaService {
       );
     }
 
-    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria
-    //   (esta lógica ya está cubierta por el validator IsValidEspecialidadForNivel
-    //    en el DTO, pero como doble-guarda la aplicamos aquí también)
+    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria (al menos una)
     if (
       (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA &&
       dto.nivelEducativo === 'Secundaria' &&
-      (!dto.especialidad || dto.especialidad.trim() === '')
+      (!dto.especialidades || dto.especialidades.length === 0)
     ) {
       throw new BadRequestException(
-        'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
+        'Para un Especialista de nivel Secundaria, al menos una especialidad es obligatoria.',
       );
     }
 
@@ -142,14 +140,14 @@ export class EspecialistaService {
       );
     }
 
-    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria
+    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria (al menos una)
     if (
       (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA &&
       dto.nivelEducativo === 'Secundaria' &&
-      (!dto.especialidad || dto.especialidad.trim() === '')
+      (!dto.especialidades || dto.especialidades.length === 0)
     ) {
       throw new BadRequestException(
-        'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
+        'Para un Especialista de nivel Secundaria, al menos una especialidad es obligatoria.',
       );
     }
 

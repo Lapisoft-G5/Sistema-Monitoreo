@@ -1,7 +1,7 @@
 export interface IEspecialistaResponse {
   id: string;
   personaId: string;
-  especialidad?: string | null;
+  especialidades?: string[] | null;
   nivelEducativo: string;
   modalidad?: string | null;
   estado: string;
@@ -44,7 +44,7 @@ export interface ICreateEspecialistaRequest {
   /** 'Especialista' | 'Jefe de Área' | 'Jefe de Gestión' */
   cargo: string;
   modalidad: string;
-  especialidad?: string;
+  especialidades?: string[];
   nivelEducativo: string;
   rolCode: string;
   condicionLaboral?: string;
@@ -60,7 +60,7 @@ export interface IUpdateEspecialistaRequest {
   /** 'Especialista' | 'Jefe de Área' | 'Jefe de Gestión' */
   cargo: string;
   modalidad: string;
-  especialidad?: string;
+  especialidades?: string[];
   nivelEducativo: string;
   estado: string;
   rolCode: string;

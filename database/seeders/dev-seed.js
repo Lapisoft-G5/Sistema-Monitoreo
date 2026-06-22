@@ -126,6 +126,7 @@ const MOCK_ROL_PERMISOS = {
     'docentes:write',
   ],
   jefe_area: [
+    'especialistas:read',
     'directores:write',
     'instituciones:read',
     'instituciones:write',

@@ -46,6 +46,7 @@ const ROL_PERMISOS = {
     'monitoreo:execute', 'reports:read', 'dashboard:read',
   ],
   jefe_area: [
+    'especialistas:read',
     'instituciones:read', 'instituciones:write',
     'docentes:read', 'docentes:write',
     'monitoreo:execute', 'reports:read',

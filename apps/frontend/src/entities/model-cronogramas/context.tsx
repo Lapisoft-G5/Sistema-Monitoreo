@@ -20,7 +20,7 @@ function getInitials(name: string) {
 }
 
 export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated } = useUser();
+  const { user, isAuthenticated } = useUser();
   const [cronogramas, setCronogramas] = useState<Cronograma[]>([]);
   const [reprogramaciones, setReprogramaciones] = useState<Record<string, SolicitudReprogramacion>>({});
   const [especialistas, setEspecialistas] = useState<EspecialistaLite[]>([]);
@@ -29,7 +29,7 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || user?.firstLogin) return;
     setIsLoading(true);
     try {
       const [espRes, instRes, docRes, cronoRes, solRes] = await Promise.all([
@@ -130,10 +130,10 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.firstLogin]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || user?.firstLogin) {
       const t = setTimeout(() => {
         setCronogramas([]);
         setReprogramaciones({});
@@ -147,10 +147,10 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
       fetchData();
     }, 0);
     return () => clearTimeout(t);
-  }, [isAuthenticated, fetchData]);
+  }, [isAuthenticated, user?.firstLogin, fetchData]);
 
   const loadReprogramaciones = useCallback(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || user?.firstLogin) return;
     cronogramasApi.findAllSolicitudes()
       .then(solRes => {
         const solMap: Record<string, SolicitudReprogramacion> = {};
@@ -171,7 +171,7 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
         setReprogramaciones(solMap);
       })
       .catch(err => console.error(err));
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.firstLogin]);
 
   const createCronograma = useCallback(async (payload: ICreateVisitaRequest) => {
     await cronogramasApi.create(payload);

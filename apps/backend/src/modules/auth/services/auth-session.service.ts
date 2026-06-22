@@ -49,39 +49,19 @@ export class AuthSessionService {
     }
 
     if (user.lockedUntil && user.lockedUntil > now) {
-      await this.auditRepository.logAuthEvent({
-        userId: user.id,
-        eventType: 'LOGIN_FAILURE_LOCKED',
-        ...meta,
-      });
-      throw new ForbiddenException({
-        message: 'Cuenta bloqueada temporalmente. Intente más tarde.',
-        lockedUntil: user.lockedUntil.toISOString(),
-      });
+      // Bloqueo de cuenta desactivado temporalmente
+      await this.userRepository.resetFailedAttempts(user.id);
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
-      if (user.lockedUntil && user.lockedUntil <= now) {
-        await this.userRepository.resetFailedAttempts(user.id);
-      }
-      const updatedAttempts = await this.userRepository.incrementFailedAttempts(user.id, now);
-      if (updatedAttempts >= 3) {
-        const lockUntil = new Date(now.getTime() + 15 * 60 * 1000);
-        await this.userRepository.lockAccount(user.id, lockUntil);
-        await this.auditRepository.logAuthEvent({
-          userId: user.id,
-          eventType: 'ACCOUNT_LOCKED',
-          ...meta,
-        });
-      } else {
-        await this.auditRepository.logAuthEvent({
-          userId: user.id,
-          eventType: 'LOGIN_FAILURE_PASSWORD',
-          ...meta,
-        });
-      }
+      // Intentos fallidos desactivados temporalmente — no bloquear cuenta
+      await this.auditRepository.logAuthEvent({
+        userId: user.id,
+        eventType: 'LOGIN_FAILURE_PASSWORD',
+        ...meta,
+      });
       throw new UnauthorizedException('Credenciales inválidas');
     }
 

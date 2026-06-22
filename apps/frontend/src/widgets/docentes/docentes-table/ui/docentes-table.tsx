@@ -35,11 +35,59 @@ export const DocentesTableWidget = ({
   const navigate = useNavigate();
   const [deletingDoc, setDeletingDoc] = useState<Docente | null>(null);
   const [restoringDoc, setRestoringDoc] = useState<Docente | null>(null);
+  const [finalizingDoc, setFinalizingDoc] = useState<Docente | null>(null);
 
   const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } = useDocentesTable(
     docentes,
     targetCargo,
   );
+
+  const confirmFinalizeCargo = async () => {
+    if (!finalizingDoc) return;
+    const targetCargoObj = finalizingDoc.cargosList?.find((c) => c.nombre === targetCargo && c.fechaFin === null) ||
+                           finalizingDoc.cargosList?.find((c) => c.nombre === targetCargo);
+    if (!targetCargoObj) return;
+
+    try {
+      const res = await teachersApi.finalizeCargo(finalizingDoc.id, targetCargoObj.id);
+      if (res.ok) {
+        const index = MOCK_DOCENTES.findIndex((d) => d.id === finalizingDoc.id);
+        const nowStr = new Date().toISOString().split('T')[0];
+        
+        if (index !== -1) {
+          const updatedCargos = MOCK_DOCENTES[index].cargosList?.map((c) =>
+            c.id === targetCargoObj.id ? { ...c, fechaFin: nowStr, esPrincipal: false } : c
+          );
+          MOCK_DOCENTES[index].cargosList = updatedCargos;
+          MOCK_DOCENTES[index].cargo = 'Docente de Aula';
+        }
+
+        setDocentes((prev) =>
+          prev.map((d) => {
+            if (d.id === finalizingDoc.id) {
+              const updatedCargos = d.cargosList?.map((c) =>
+                c.id === targetCargoObj.id ? { ...c, fechaFin: nowStr, esPrincipal: false } : c
+              );
+              return {
+                ...d,
+                cargo: 'Docente de Aula',
+                cargosList: updatedCargos,
+              };
+            }
+            return d;
+          }),
+        );
+      } else {
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al finalizar el cargo.';
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error('Connection error when finalizing cargo:', err);
+    } finally {
+      setFinalizingDoc(null);
+    }
+  };
 
   const confirmDelete = async () => {
     if (!deletingDoc) return;
@@ -156,33 +204,70 @@ export const DocentesTableWidget = ({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      className={
-                        doc.activo
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                    {(() => {
+                      const targetCargoObj = doc.cargosList?.find((c) => c.nombre === targetCargo && c.fechaFin === null) ||
+                                             doc.cargosList?.find((c) => c.nombre === targetCargo);
+                      const isCargoFinalized = targetCargoObj ? targetCargoObj.fechaFin !== null : false;
+                      if (isCargoFinalized) {
+                        return (
+                          <Badge className="bg-slate-100 text-slate-600 border-slate-200">
+                            Cargo Finalizado
+                          </Badge>
+                        );
                       }
-                    >
-                      {doc.activo ? 'Activo' : 'Inactivo'}
-                    </Badge>
+                      return (
+                        <Badge
+                          className={
+                            doc.activo
+                              ? 'bg-green-50 text-green-700 border-green-200'
+                              : 'bg-slate-100 text-slate-600 border-slate-200'
+                          }
+                        >
+                          {doc.activo ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-right pr-5">
-                    <FastActions
-                      onView={() => onView(doc)}
-                      onEdit={
-                        doc.activo
-                          ? () => {
-                              onEdit?.(doc);
-                              navigate(`${routePrefix}/${doc.id}/editar`);
-                            }
-                          : undefined
-                      }
-                      onDelete={doc.activo ? () => setDeletingDoc(doc) : undefined}
-                      onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
-                      viewTitle="Ver ficha"
-                      restoreTitle="Reactivar docente"
-                      deleteTitle="Desactivar docente"
-                    />
+                    {(() => {
+                      const targetCargoObj = doc.cargosList?.find((c) => c.nombre === targetCargo && c.fechaFin === null) ||
+                                             doc.cargosList?.find((c) => c.nombre === targetCargo);
+                      const isCargoFinalized = targetCargoObj ? targetCargoObj.fechaFin !== null : false;
+                      const isMonitorCargo = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(targetCargo);
+
+                      return (
+                        <FastActions
+                          onView={() => onView(doc)}
+                          onEdit={
+                            doc.activo && !isCargoFinalized
+                              ? () => {
+                                  onEdit?.(doc);
+                                  navigate(`${routePrefix}/${doc.id}/editar`);
+                                }
+                              : undefined
+                          }
+                          onDelete={
+                            !isMonitorCargo && doc.activo
+                              ? () => setDeletingDoc(doc)
+                              : undefined
+                          }
+                          onRestore={
+                            !isMonitorCargo && !doc.activo
+                              ? () => setRestoringDoc(doc)
+                              : undefined
+                          }
+                          onFinalize={
+                            isMonitorCargo && !isCargoFinalized
+                              ? () => setFinalizingDoc(doc)
+                              : undefined
+                          }
+                          viewTitle="Ver ficha"
+                          restoreTitle="Reactivar docente"
+                          deleteTitle="Desactivar docente"
+                          finalizeTitle={`Finalizar Cargo de ${targetCargo}`}
+                        />
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
               ))}
@@ -228,6 +313,18 @@ export const DocentesTableWidget = ({
           cancelLabel="Cancelar"
           onConfirm={confirmRestore}
           onCancel={() => setRestoringDoc(null)}
+        />
+      )}
+
+      {finalizingDoc && (
+        <ConfirmModal
+          danger
+          title="¿Finalizar Designación de Cargo?"
+          message={`Esta acción finalizará la designación de ${targetCargo} para ${finalizingDoc.apellidos}, ${finalizingDoc.nombres}. El usuario retornará al rol de Docente regular y se cancelarán sus monitoreos pendientes.`}
+          confirmLabel="Finalizar Cargo"
+          cancelLabel="Cancelar"
+          onConfirm={confirmFinalizeCargo}
+          onCancel={() => setFinalizingDoc(null)}
         />
       )}
     </div>

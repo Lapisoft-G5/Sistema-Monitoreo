@@ -155,6 +155,13 @@ export class TeachersService {
     return this.teachersRepository.findDocentes(filter);
   }
 
+  async findPersonaByDni(dni: string, currentUser: CurrentUser): Promise<any> {
+    if (!currentUser.permissions?.includes('docentes:read')) {
+      throw new ForbiddenException('No tiene permisos para realizar esta acción.');
+    }
+    return this.teachersRepository.findPersonaByDni(dni);
+  }
+
   async getCargos(): Promise<any[]> {
     return this.catalogsRepository.findCargos();
   }
@@ -249,7 +256,10 @@ export class TeachersService {
           'El Jefe de Área solo puede asignar el cargo de Director o Coordinador Pedagógico.',
         );
       }
-      const activeCargoObj = docente.docenteCargos?.[0];
+      const activeCargoObj =
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null && dc.esPrincipal) ||
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null) ||
+        null;
       if (activeCargoObj) {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
@@ -276,7 +286,10 @@ export class TeachersService {
     }
 
     // 8. Actualizar docente llamando al repositorio
-    const activeCargo = docente.docenteCargos?.[0] || null;
+    const activeCargo =
+      docente.docenteCargos?.find((dc) => dc.fechaFin === null && dc.esPrincipal) ||
+      docente.docenteCargos?.find((dc) => dc.fechaFin === null) ||
+      null;
     return this.teachersRepository.updateDocenteWithTransaction(
       id,
       dto,
@@ -321,7 +334,10 @@ export class TeachersService {
           'No tiene permisos para dar de baja a un docente de otra institución educativa.',
         );
       }
-      const activeCargoObj = docente.docenteCargos?.[0];
+      const activeCargoObj =
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null && dc.esPrincipal) ||
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null) ||
+        null;
       if (activeCargoObj) {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (currentCargo && (currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
@@ -332,7 +348,10 @@ export class TeachersService {
 
     // 4. Si es Jefe de Área, validar que el docente a dar de baja sea Director o Coordinador Pedagógico
     if (currentUser.role === RoleCode.JEFE_AREA) {
-      const activeCargoObj = docente.docenteCargos?.[0];
+      const activeCargoObj =
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null && dc.esPrincipal) ||
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null) ||
+        null;
       if (activeCargoObj) {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (
@@ -404,7 +423,10 @@ export class TeachersService {
           'No tiene permisos para dar de alta a un docente de otra institución educativa.',
         );
       }
-      const activeCargoObj = docente.docenteCargos?.[0];
+      const activeCargoObj =
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null && dc.esPrincipal) ||
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null) ||
+        null;
       if (activeCargoObj) {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (currentCargo && (currentCargo.nombre as CargoNombre) === CargoNombre.DIRECTOR) {
@@ -415,7 +437,10 @@ export class TeachersService {
 
     // 4. Si es Jefe de Área, validar que sea Director o Coordinador Pedagógico
     if (currentUser.role === RoleCode.JEFE_AREA) {
-      const activeCargoObj = docente.docenteCargos?.[0];
+      const activeCargoObj =
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null && dc.esPrincipal) ||
+        docente.docenteCargos?.find((dc) => dc.fechaFin === null) ||
+        null;
       if (activeCargoObj) {
         const currentCargo = await this.catalogsRepository.findCargoById(activeCargoObj.cargoId);
         if (

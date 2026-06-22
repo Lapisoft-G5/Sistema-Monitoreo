@@ -62,6 +62,7 @@ export interface IDocenteResponse {
     cargoId: string;
     fechaInicio: Date | string;
     fechaFin: Date | string | null;
+    esPrincipal: boolean;
     cargo: {
       id: string;
       nombre: string;

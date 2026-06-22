@@ -30,4 +30,11 @@ export interface Docente {
   activo: boolean;
   fechaCreacion: string;
   cargo: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
+  cargosList?: Array<{
+    id: string;
+    nombre: string;
+    fechaInicio: string;
+    fechaFin: string | null;
+    esPrincipal: boolean;
+  }>;
 }

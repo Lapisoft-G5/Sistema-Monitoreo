@@ -4,6 +4,7 @@ import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CargoCompatibilityService } from '../../../shared/auth/cargo-compatibility.service.js';
 import { SessionRepository } from '../../auth/repositories/session.repository.js';
 import { CargoNombre, resolvePrincipalCargo } from '../../../shared/auth/capability-map.js';
+import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 
 /**
  * Servicio de gestion de cargos del docente.
@@ -140,18 +141,33 @@ export class DocentesCargosService {
 
     const fin = fechaFin ?? new Date();
     await this.prisma.$transaction(async (tx) => {
+      // Fetch docente with persona, usuario, and especialista to perform operations
+      const docente = await tx.docente.findUniqueOrThrow({
+        where: { id: docenteId },
+        include: {
+          persona: {
+            include: {
+              usuario: true,
+              especialista: true,
+            },
+          },
+        },
+      });
+
       // 1. Cerrar el cargo.
       await tx.docenteCargo.update({
         where: { id: docenteCargoId },
         data: { fechaFin: fin },
       });
 
+      // Fetch active remaining docente cargos
+      const restantes = await tx.docenteCargo.findMany({
+        where: { docenteId, fechaFin: null },
+        include: { cargo: true },
+      });
+
       // 2. Si era principal, promover al siguiente activo de mayor prioridad.
       if (dc.esPrincipal) {
-        const restantes = await tx.docenteCargo.findMany({
-          where: { docenteId, fechaFin: null },
-          include: { cargo: true },
-        });
         const nombres = restantes
           .filter((r) => r.cargo?.nombre)
           .map((r) => r.cargo.nombre as CargoNombre);
@@ -163,6 +179,101 @@ export class DocentesCargosService {
             await tx.docenteCargo.update({
               where: { id: target.id },
               data: { esPrincipal: true },
+            });
+          }
+        }
+      }
+
+      // 3. Sincronizar el rol de usuario y el Especialista según los cargos restantes
+      const monitorCargos = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'];
+      if (monitorCargos.includes(dc.cargo.nombre)) {
+        const remainingMonitors = restantes
+          .filter((r) => r.cargo?.nombre && monitorCargos.includes(r.cargo.nombre))
+          .map((r) => r.cargo.nombre);
+
+        if (remainingMonitors.length === 0) {
+          // Si ya no quedan cargos de monitor activos, volver a rol 'docente'
+          if (docente.persona?.usuario) {
+            const docenteRole = await tx.role.findFirst({
+              where: { codigo: 'docente' },
+            });
+            if (docenteRole) {
+              await tx.usuario.update({
+                where: { id: docente.persona.usuario.id },
+                data: { rolId: docenteRole.id },
+              });
+            }
+          }
+
+          // Desactivar el especialista asociado
+          if (docente.persona?.especialista) {
+            await tx.especialista.update({
+              where: { id: docente.persona.especialista.id },
+              data: { estado: EstadoRegistro.INACTIVO },
+            });
+
+            // Cancelar visitas (Cronogramas) pendientes
+            const pendingVisits = await tx.cronograma.findMany({
+              where: {
+                monitorId: docente.persona.especialista.id,
+                estado: {
+                  in: ['PROGRAMADO', 'EN_PROCESO', 'REPROGRAMADO'],
+                },
+              },
+            });
+
+            for (const visit of pendingVisits) {
+              const currentDetails = visit.detalles ? `${visit.detalles}\n` : '';
+              await tx.cronograma.update({
+                where: { id: visit.id },
+                data: {
+                  estado: 'CANCELADO',
+                  detalles: `${currentDetails}Visita cancelada automáticamente por finalización del cargo de monitor.`,
+                },
+              });
+            }
+          }
+        } else {
+          // Aún quedan otros cargos de monitor activos.
+          // Actualizar el rol del usuario al rol de mayor prioridad restante
+          let targetRole = 'docente';
+          if (remainingMonitors.includes('Director')) {
+            targetRole = 'director_institucion';
+          } else if (remainingMonitors.includes('Coordinador Pedagógico')) {
+            targetRole = 'coordinador_pedagogico';
+          } else if (remainingMonitors.includes('Jefe de Taller')) {
+            targetRole = 'jefe_taller';
+          }
+
+          if (docente.persona?.usuario) {
+            const role = await tx.role.findFirst({
+              where: { codigo: targetRole },
+            });
+            if (role) {
+              await tx.usuario.update({
+                where: { id: docente.persona.usuario.id },
+                data: { rolId: role.id },
+              });
+            }
+          }
+
+          // Sincronizar el cargo del especialista
+          if (docente.persona?.especialista) {
+            let highestCargo = '';
+            if (remainingMonitors.includes('Director')) {
+              highestCargo = 'Director';
+            } else if (remainingMonitors.includes('Coordinador Pedagógico')) {
+              highestCargo = 'Coordinador Pedagógico';
+            } else if (remainingMonitors.includes('Jefe de Taller')) {
+              highestCargo = 'Jefe de Taller';
+            }
+
+            await tx.especialista.update({
+              where: { id: docente.persona.especialista.id },
+              data: {
+                cargo: highestCargo,
+                estado: EstadoRegistro.ACTIVO,
+              },
             });
           }
         }

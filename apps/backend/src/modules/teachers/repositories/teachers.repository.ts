@@ -28,6 +28,7 @@ export interface DocenteEntity {
     cargoId: string;
     fechaInicio: Date;
     fechaFin: Date | null;
+    esPrincipal: boolean;
     cargo: {
       id: string;
       nombre: string;
@@ -48,6 +49,7 @@ export interface DocenteFilter {
 export abstract class TeachersRepository {
   abstract findDocenteById(id: string): Promise<DocenteEntity | null>;
   abstract findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]>;
+  abstract findPersonaByDni(dni: string): Promise<any>;
   abstract updateDocenteEstado(id: string, estado: string): Promise<DocenteEntity>;
   abstract createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteEntity>;
   abstract updateDocenteWithTransaction(

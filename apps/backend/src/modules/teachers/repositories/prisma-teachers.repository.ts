@@ -62,6 +62,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
         cargoId: dc.cargoId,
         fechaInicio: dc.fechaInicio,
         fechaFin: dc.fechaFin,
+        esPrincipal: dc.esPrincipal,
         cargo: {
           id: dc.cargo.id,
           nombre: dc.cargo.nombre,
@@ -82,7 +83,6 @@ export class PrismaTeachersRepository implements TeachersRepository {
       include: {
         persona: true,
         docenteCargos: {
-          where: { fechaFin: null },
           include: { cargo: true },
         },
         docenteCursos: {
@@ -98,6 +98,40 @@ export class PrismaTeachersRepository implements TeachersRepository {
     });
     if (!docente) return null;
     return this.mapDocente(docente);
+  }
+
+  async findPersonaByDni(dni: string): Promise<any> {
+    const persona = await this.prisma.persona.findUnique({
+      where: { dni },
+      include: {
+        docente: {
+          include: {
+            docenteCargos: {
+              include: { cargo: true },
+            },
+          },
+        },
+      },
+    });
+    if (!persona) return null;
+    return {
+      id: persona.id,
+      dni: persona.dni,
+      nombres: persona.nombres,
+      apellidos: persona.apellidos,
+      correo: persona.correo,
+      telefono: persona.telefono,
+      docente: persona.docente
+        ? {
+            id: persona.docente.id,
+            institucionId: persona.docente.institucionId,
+            nivelEducativo: persona.docente.nivelEducativo,
+            condicionLaboral: persona.docente.condicionLaboral,
+            escalaMagisterial: persona.docente.escalaMagisterial,
+            cargo: persona.docente.docenteCargos?.[0]?.cargo?.nombre || null,
+          }
+        : null,
+    };
   }
 
   async findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]> {
@@ -148,9 +182,6 @@ export class PrismaTeachersRepository implements TeachersRepository {
       include: {
         persona: true,
         docenteCargos: {
-          where: {
-            fechaFin: null,
-          },
           include: {
             cargo: true,
           },
@@ -282,12 +313,10 @@ export class PrismaTeachersRepository implements TeachersRepository {
       });
 
       let personaId: string;
+      let docente: { id: string; modalidad: string | null } | null = null;
 
       if (existingPersona) {
-        // Si la persona existe y ya tiene un registro de docente, lanzar conflicto
-        if (existingPersona.docente) {
-          throw new ConflictException('El docente con este DNI ya se encuentra registrado.');
-        }
+        personaId = existingPersona.id;
 
         // Si la persona existe pero no es docente, actualizar sus datos si cambiaron
         await tx.persona.update({
@@ -299,7 +328,50 @@ export class PrismaTeachersRepository implements TeachersRepository {
             telefono: dto.telefono !== undefined ? dto.telefono || null : existingPersona.telefono,
           },
         });
-        personaId = existingPersona.id;
+
+        if (existingPersona.docente) {
+          // Si la persona ya tiene un registro de docente, pero se le está asignando como Director
+          if (cargo && cargo.nombre === 'Director') {
+            docente = await tx.docente.update({
+              where: { id: existingPersona.docente.id },
+              data: {
+                institucionId: dto.institucionId,
+                nivelEducativo: dto.nivelEducativo,
+                condicionLaboral: dto.condicionLaboral ?? null,
+                escalaMagisterial: dto.escalaMagisterial ?? null,
+                estado: EstadoRegistro.ACTIVO,
+              },
+            });
+
+            // Finalizar todos los cargos activos anteriores
+            await tx.docenteCargo.updateMany({
+              where: {
+                docenteId: docente.id,
+                fechaFin: null,
+              },
+              data: {
+                fechaFin: new Date(),
+                esPrincipal: false,
+              },
+            });
+          } else {
+            // Si no es Director, lanzar conflicto (comportamiento original)
+            throw new ConflictException('El docente con este DNI ya se encuentra registrado.');
+          }
+        } else {
+          // Si existe persona pero no es docente, crear el registro de docente
+          docente = await tx.docente.create({
+            data: {
+              personaId: personaId,
+              institucionId: dto.institucionId,
+              gradoAcademico: dto.gradoAcademico ?? null,
+              nivelEducativo: dto.nivelEducativo,
+              condicionLaboral: dto.condicionLaboral ?? null,
+              escalaMagisterial: dto.escalaMagisterial ?? null,
+              estado: EstadoRegistro.ACTIVO,
+            },
+          });
+        }
       } else {
         // Validar si el correo ya está registrado en otra persona (si se proporciona)
         if (dto.correo) {
@@ -324,20 +396,20 @@ export class PrismaTeachersRepository implements TeachersRepository {
           },
         });
         personaId = newPersona.id;
-      }
 
-      // Crear el registro de docente enlazado a la persona
-      const docente = await tx.docente.create({
-        data: {
-          personaId: personaId,
-          institucionId: dto.institucionId,
-          gradoAcademico: dto.gradoAcademico ?? null,
-          nivelEducativo: dto.nivelEducativo,
-          condicionLaboral: dto.condicionLaboral ?? null,
-          escalaMagisterial: dto.escalaMagisterial ?? null,
-          estado: EstadoRegistro.ACTIVO,
-        },
-      });
+        // Crear el registro de docente enlazado a la persona
+        docente = await tx.docente.create({
+          data: {
+            personaId: personaId,
+            institucionId: dto.institucionId,
+            gradoAcademico: dto.gradoAcademico ?? null,
+            nivelEducativo: dto.nivelEducativo,
+            condicionLaboral: dto.condicionLaboral ?? null,
+            escalaMagisterial: dto.escalaMagisterial ?? null,
+            estado: EstadoRegistro.ACTIVO,
+          },
+        });
+      }
 
       // Registrar curso asignado si se proporciona
       if (dto.cursoAsignado) {
@@ -372,6 +444,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
           docenteId: docente.id,
           cargoId: dto.cargoId,
           fechaInicio: new Date(),
+          esPrincipal: true,
         },
       });
 
@@ -417,6 +490,11 @@ export class PrismaTeachersRepository implements TeachersRepository {
             isActive: true,
             isFirstLogin: true,
           },
+        });
+      } else {
+        await tx.usuario.update({
+          where: { id: existingUser.id },
+          data: { rolId: role.id },
         });
       }
 

@@ -18,8 +18,21 @@ export const useDocentesTable = (
 
   const filtered = useMemo(() => {
     return docentes.filter((d) => {
-      // 🚀 Filtrado estricto por el cargo objetivo
-      if (d.cargo !== targetCargo) return false;
+      // 🚀 Filtrado por el cargo objetivo (activo o finalizado en cargosList)
+      let hasCargo: boolean;
+      if (targetCargo === 'Docente de Aula') {
+        const hasActiveMonitor = d.cargosList?.some(
+          (c) => c.fechaFin === null && ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(c.nombre)
+        );
+        if (hasActiveMonitor !== undefined) {
+          hasCargo = !hasActiveMonitor;
+        } else {
+          hasCargo = d.cargo === 'Docente de Aula';
+        }
+      } else {
+        hasCargo = d.cargosList?.some((c) => c.nombre === targetCargo) ?? (d.cargo === targetCargo);
+      }
+      if (!hasCargo) return false;
 
       const matchSearch =
         !searchQuery ||

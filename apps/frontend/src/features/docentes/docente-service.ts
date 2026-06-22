@@ -33,7 +33,17 @@ const toTitleCase = (str: string): string => {
 };
 
 export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
-  const cargoName = apiDoc.docenteCargos?.[0]?.cargo?.nombre || 'Docente de Aula';
+  const cargosList = apiDoc.docenteCargos?.map((dc) => ({
+    id: dc.id,
+    nombre: dc.cargo?.nombre || 'Docente de Aula',
+    fechaInicio: dc.fechaInicio ? new Date(dc.fechaInicio).toISOString().split('T')[0] : '',
+    fechaFin: dc.fechaFin ? new Date(dc.fechaFin).toISOString().split('T')[0] : null,
+    esPrincipal: dc.esPrincipal || false,
+  })) || [];
+
+  const activeCargo = cargosList.find((c) => c.fechaFin === null && c.esPrincipal) ||
+                      cargosList.find((c) => c.fechaFin === null);
+  const cargoName = activeCargo?.nombre || 'Docente de Aula';
 
   return {
     id: apiDoc.id,
@@ -63,6 +73,7 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
       ? new Date(apiDoc.createdAt).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
     cargo: cargoName as Docente['cargo'],
+    cargosList,
   };
 };
 

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Briefcase, Check } from 'lucide-react';
 import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import { directorSchema } from '@entities/model-docentes/validator';
 import { SectionCard, TextField, SelectField, FormButton, twoCols } from '@shared/ui/form-controls';
+import { teachersApi } from '@shared/api/teachers.api';
 
 const INITIAL: DirectorFormData = {
   nombres: '',
@@ -41,6 +42,59 @@ export const DirectorFormBase = ({
     ...initialData,
   }));
   const [submitted, setSubmitted] = useState(false);
+
+  const [searchingDni, setSearchingDni] = useState(false);
+  const [isDniLocked, setIsDniLocked] = useState(false);
+  const [dniMessage, setDniMessage] = useState('');
+
+  useEffect(() => {
+    if (form.dni.length === 8) {
+      const searchDni = async () => {
+        setTimeout(() => {
+          setSearchingDni(true);
+          setDniMessage('');
+        }, 0);
+        try {
+          const res = await teachersApi.findByDni(form.dni);
+          if (res.ok && res.data) {
+            const persona = res.data as { nombres?: string; apellidos?: string; correo?: string; telefono?: string };
+            setTimeout(() => {
+              setForm((prev) => ({
+                ...prev,
+                nombres: persona.nombres || '',
+                apellidos: persona.apellidos || '',
+                correo: persona.correo || '',
+                celular: persona.telefono || prev.celular,
+              }));
+              setIsDniLocked(true);
+              setDniMessage('Persona encontrada en el sistema. Datos personales autocompletados.');
+            }, 0);
+          } else {
+            setTimeout(() => {
+              setIsDniLocked(false);
+              setDniMessage('');
+            }, 0);
+          }
+        } catch (err) {
+          console.error('Error searching DNI:', err);
+          setTimeout(() => {
+            setIsDniLocked(false);
+            setDniMessage('');
+          }, 0);
+        } finally {
+          setTimeout(() => {
+            setSearchingDni(false);
+          }, 0);
+        }
+      };
+      searchDni();
+    } else {
+      setTimeout(() => {
+        setIsDniLocked(false);
+        setDniMessage('');
+      }, 0);
+    }
+  }, [form.dni]);
 
   const set = <K extends keyof DirectorFormData>(key: K, value: DirectorFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -84,6 +138,7 @@ export const DirectorFormBase = ({
             onChange={(v) => set('nombres', v)}
             placeholder="Ej. Juan Carlos"
             error={showError('nombres')}
+            disabled={isDniLocked}
           />
           <TextField
             label="Apellidos"
@@ -92,22 +147,32 @@ export const DirectorFormBase = ({
             onChange={(v) => set('apellidos', v)}
             placeholder="Ej. Pérez García"
             error={showError('apellidos')}
+            disabled={isDniLocked}
           />
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
-          <TextField
-            label="DNI / Documento de Identidad"
-            required
-            value={form.dni}
-            onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
-            placeholder="8 dígitos"
-            error={showError('dni')}
-            adornment={
-              dniOk ? (
-                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-              ) : undefined
-            }
-          />
+          <div className="flex flex-col gap-1 w-full">
+            <TextField
+              label="DNI / Documento de Identidad"
+              required
+              value={form.dni}
+              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
+              placeholder="8 dígitos"
+              error={showError('dni')}
+              adornment={
+                searchingDni ? (
+                  <div className="animate-spin rounded-full h-[18px] w-[18px] border-b-2 border-primary"></div>
+                ) : dniOk ? (
+                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+                ) : undefined
+              }
+            />
+            {dniMessage && (
+              <span className={`text-[0.72rem] mt-0.5 font-semibold ${isDniLocked ? 'text-emerald-500' : 'text-blue-500'}`}>
+                {dniMessage}
+              </span>
+            )}
+          </div>
           <TextField
             label="Número de Celular"
             required
@@ -130,6 +195,7 @@ export const DirectorFormBase = ({
             onChange={(v) => set('correo', v)}
             placeholder="usuario@ugel.gob.pe"
             error={showError('correo')}
+            disabled={isDniLocked}
           />
         </div>
       </SectionCard>

@@ -126,4 +126,48 @@ export const teachersApi = {
       return { ok: false, error: err };
     }
   },
+
+  findByDni: async (
+    dni: string,
+  ): Promise<{ ok: boolean; data?: unknown; error?: unknown }> => {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/docentes/buscar/${dni}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        return { ok: false, error: errJson };
+      }
+      const data = await response.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
+
+  finalizeCargo: async (
+    docenteId: string,
+    docenteCargoId: string,
+  ): Promise<{ ok: boolean; data?: unknown; error?: unknown }> => {
+    try {
+      const response = await fetch(
+        `${getApiBaseUrl()}/api/docentes/${docenteId}/cargos/${docenteCargoId}/fin`,
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        },
+      );
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        return { ok: false, error: errJson };
+      }
+      const data = await response.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
 };

@@ -262,6 +262,9 @@ export const CalendarioSidebar = ({
       selectedLevels: levels,
       generalComments:
         'El monitoreo se desarrolló conforme a los compromisos de gestión. Se observa una adecuada planificación didáctica, alta concentración de alumnos en tareas significativas y un clima de aula respetuoso y participativo. Se recomienda continuar con las jornadas de reflexión interna.',
+      sugerencias: 'Continuar fortaleciendo las competencias pedagógicas y de liderazgo directivo.',
+      compromisos: 'El directivo se compromete a realizar un seguimiento mensual a las sugerencias brindadas.',
+      rubricComments: {},
     };
     if (!FEATURES.apiOnly) {
       localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
@@ -274,6 +277,9 @@ export const CalendarioSidebar = ({
       checkedAspects: Record<string, boolean>;
       selectedLevels: Record<string, string>;
       generalComments: string;
+      sugerencias?: string;
+      compromisos?: string;
+      rubricComments?: Record<string, string>;
     }
   ) => {
     // Persistir localmente (UX inmediata)
@@ -302,7 +308,8 @@ export const CalendarioSidebar = ({
       // Guardar respuestas de desempeno (1-4)
       const desempenoMap = data.selectedLevels;
       for (const [desempenoId, nivelRoman] of Object.entries(desempenoMap)) {
-        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman));
+        const obs = data.rubricComments?.[desempenoId];
+        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman), obs);
       }
       // Guardar respuestas de aspecto
       for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
@@ -332,6 +339,9 @@ export const CalendarioSidebar = ({
       checkedAspects: Record<string, boolean>;
       selectedLevels: Record<string, string>;
       generalComments: string;
+      sugerencias?: string;
+      compromisos?: string;
+      rubricComments?: Record<string, string>;
     }
   ) => {
     localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
@@ -354,12 +364,13 @@ export const CalendarioSidebar = ({
         });
       }
       for (const [desempenoId, nivelRoman] of Object.entries(data.selectedLevels)) {
-        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman));
+        const obs = data.rubricComments?.[desempenoId];
+        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman), obs);
       }
       for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
         await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
       }
-      await fichasApi.finalizar(ficha.id, data.generalComments);
+      await fichasApi.finalizar(ficha.id, data.generalComments, data.sugerencias, data.compromisos);
     } catch (err: unknown) {
       const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string } } };
       if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
@@ -628,10 +639,42 @@ export const CalendarioSidebar = ({
 
                 <Button
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
                     const saved = localStorage.getItem(`sistema-monitoreo:ficha-state:${selectedVisit.id}`);
                     if (!saved) {
-                      simulateFichaLlena(selectedVisit.id);
+                      try {
+                        const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+                        const ficha = await fichasApi.findByVisita(selectedVisit.id);
+                        if (ficha) {
+                          const checkedAspects: Record<string, boolean> = {};
+                          for (const r of ficha.respuestasAspecto) {
+                            checkedAspects[r.aspectoId] = r.marcado;
+                          }
+                          const selectedLevels: Record<string, string> = {};
+                          const rubricComments: Record<string, string> = {};
+                          const romanMap = ['I', 'II', 'III', 'IV'];
+                          for (const r of ficha.respuestasDesempeno) {
+                            selectedLevels[r.desempenoId] = romanMap[r.nivel - 1] || 'I';
+                            if (r.observaciones) {
+                              rubricComments[r.desempenoId] = r.observaciones;
+                            }
+                          }
+                          const mappedData = {
+                            checkedAspects,
+                            selectedLevels,
+                            generalComments: ficha.observaciones || '',
+                            sugerencias: ficha.sugerencias || '',
+                            compromisos: ficha.compromisos || '',
+                            rubricComments,
+                          };
+                          localStorage.setItem(`sistema-monitoreo:ficha-state:${selectedVisit.id}`, JSON.stringify(mappedData));
+                        } else {
+                          simulateFichaLlena(selectedVisit.id);
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        simulateFichaLlena(selectedVisit.id);
+                      }
                     }
                     setShowFichaModal(true);
                   }}

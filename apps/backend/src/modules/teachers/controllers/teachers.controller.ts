@@ -54,6 +54,13 @@ export class TeachersController {
     return this.teachersService.getCargos();
   }
 
+  @Get('buscar/:dni')
+  @RequirePermissions('docentes:read')
+  @HttpCode(HttpStatus.OK)
+  async findByDni(@Param('dni') dni: string, @Req() req: AuthenticatedRequest): Promise<any> {
+    return this.teachersService.findPersonaByDni(dni, req.user);
+  }
+
   @Put(':id')
   @RequirePermissions('docentes:write')
   @HttpCode(HttpStatus.OK)

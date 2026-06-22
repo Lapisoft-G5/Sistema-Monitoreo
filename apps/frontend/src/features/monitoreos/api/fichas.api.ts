@@ -67,6 +67,22 @@ export const fichasApi = {
       body: JSON.stringify({ marcado }),
     }),
 
+  saveRespuestaEjeItem: (fichaId: string, ejeItemId: string, nivel: number, evidenciaUrl?: string) =>
+    request<IFichaMonitoreo>(`/api/fichas/${fichaId}/respuestas-eje-item`, {
+      method: 'PATCH',
+      body: JSON.stringify({ ejeItemId, nivel, evidenciaUrl }),
+    }),
+
+  subirEvidenciaEjeItem: (fichaId: string, ejeItemId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request<{ evidenciaUrl: string }>(`/api/fichas/${fichaId}/eje-item/${ejeItemId}/evidencia`, {
+      method: 'POST',
+      body: formData,
+      headers: {},
+    });
+  },
+
   finalizar: (fichaId: string, observaciones?: string, sugerencias?: string, compromisos?: string) =>
     request<IFichaMonitoreo>(`/api/fichas/${fichaId}/finalizar`, {
       method: 'PATCH',

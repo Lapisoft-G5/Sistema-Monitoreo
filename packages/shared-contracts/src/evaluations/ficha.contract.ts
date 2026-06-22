@@ -31,6 +31,14 @@ export interface IFichaRespuestaAspecto {
   marcado: boolean;
 }
 
+export interface IFichaRespuestaEjeItem {
+  id: string;
+  fichaId: string;
+  ejeItemId: string;
+  nivel: number;
+  evidenciaUrl: string | null;
+}
+
 export interface IFichaMonitoreo {
   id: string;
   cronogramaId: string;
@@ -45,6 +53,7 @@ export interface IFichaMonitoreo {
   contexto: IFichaContexto;
   respuestasDesempeno: IFichaRespuestaDesempeno[];
   respuestasAspecto: IFichaRespuestaAspecto[];
+  respuestasEjeItem: IFichaRespuestaEjeItem[];
   creadoPorId: string | null;
   finalizadaPorId: string | null;
   observaciones: string | null;

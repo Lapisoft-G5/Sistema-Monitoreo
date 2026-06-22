@@ -7,11 +7,10 @@ import {
   CheckCircle2,
   Clock,
   Trophy,
-  TrendingUp
+  Upload
 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
-import { Badge } from '@/shared/ui/badge';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 
@@ -29,6 +28,9 @@ interface LlenarFichaFormProps {
       sugerencias?: string;
       compromisos?: string;
       rubricComments?: Record<string, string>;
+      preguntaExtraAnswers?: Record<string, boolean>;
+      respuestasEjeItem?: Record<string, number>;
+      evidenciaUrls?: Record<string, string>;
     }
   ) => void;
   onFinalize: (
@@ -40,6 +42,9 @@ interface LlenarFichaFormProps {
       sugerencias?: string;
       compromisos?: string;
       rubricComments?: Record<string, string>;
+      preguntaExtraAnswers?: Record<string, boolean>;
+      respuestasEjeItem?: Record<string, number>;
+      evidenciaUrls?: Record<string, string>;
     }
   ) => void;
 }
@@ -91,7 +96,10 @@ export const LlenarFichaForm = ({
   const [sugerencias, setSugerencias] = useState('');
   const [compromisos, setCompromisos] = useState('');
   const [rubricComments, setRubricComments] = useState<Record<string, string>>({});
+  const [preguntaExtraAnswers, setPreguntaExtraAnswers] = useState<Record<string, boolean>>({});
   const [fichaSelectedDesempenoId, setFichaSelectedDesempenoId] = useState<string>('');
+  const [respuestasEjeItem, setRespuestasEjeItem] = useState<Record<string, number>>({});
+  const [evidenciaUrls, setEvidenciaUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen && visit) {
@@ -106,6 +114,9 @@ export const LlenarFichaForm = ({
             setSugerencias(parsed.sugerencias || '');
             setCompromisos(parsed.compromisos || '');
             setRubricComments(parsed.rubricComments || {});
+            setPreguntaExtraAnswers(parsed.preguntaExtraAnswers || {});
+            setRespuestasEjeItem(parsed.respuestasEjeItem || {});
+            setEvidenciaUrls(parsed.evidenciaUrls || {});
           }, 0);
         } catch {
           setTimeout(() => {
@@ -115,6 +126,9 @@ export const LlenarFichaForm = ({
             setSugerencias('');
             setCompromisos('');
             setRubricComments({});
+            setPreguntaExtraAnswers({});
+            setRespuestasEjeItem({});
+            setEvidenciaUrls({});
           }, 0);
         }
       } else {
@@ -125,6 +139,9 @@ export const LlenarFichaForm = ({
             setSugerencias('');
             setCompromisos('');
             setRubricComments({});
+            setPreguntaExtraAnswers({});
+            setRespuestasEjeItem({});
+            setEvidenciaUrls({});
           }, 0);
       }
 
@@ -142,6 +159,7 @@ export const LlenarFichaForm = ({
   if (!isOpen || !visit || !template) return null;
 
   const isCompleted = visit.estado === 'COMPLETADO';
+  const isDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
 
   const handleSaveClick = () => {
     onSave(visit.id, {
@@ -151,6 +169,9 @@ export const LlenarFichaForm = ({
       sugerencias,
       compromisos,
       rubricComments,
+      preguntaExtraAnswers,
+      respuestasEjeItem,
+      evidenciaUrls,
     });
   };
 
@@ -172,13 +193,16 @@ export const LlenarFichaForm = ({
       sugerencias,
       compromisos,
       rubricComments,
+      preguntaExtraAnswers,
+      respuestasEjeItem,
+      evidenciaUrls,
     });
   };
 
-  // Calificación consolidada para plantillas DIRECTIVO
+  // Calificación consolidada
   const romanToNum = (r: string) => ({ I: 1, II: 2, III: 3, IV: 4 }[r] ?? 0);
 
-  const calcularCalificacionDirectivo = () => {
+  const calcularCalificacion = () => {
     const numDesempenos = template.desempenos.length;
     const puntajeMax = numDesempenos * 4;
     const puntajeMin = numDesempenos * 1;
@@ -188,9 +212,6 @@ export const LlenarFichaForm = ({
     );
     const porcentaje = puntajeMax > 0 ? Math.round((puntajeTotal / puntajeMax) * 100) : 0;
 
-    // Baremo según el PDF: proporcional al número de rúbricas
-    // Con 5 rúbricas: 5-8 Inicio | 9-13 En Proceso | 14-17 Logrado | 18-20 Satisfactorio
-    // Generalizado: 0-25% Inicio | 26-50% En Proceso | 51-75% Logrado | 76-100% Satisfactorio
     let nivel: string;
     let nivelColor: string;
     let nivelBg: string;
@@ -215,8 +236,7 @@ export const LlenarFichaForm = ({
     return { puntajeTotal, puntajeMax, porcentaje, nivel, nivelColor, nivelBg };
   };
 
-  const isDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
-  const calificacion = isCompleted && isDirectivo ? calcularCalificacionDirectivo() : null;
+  const calificacion = isCompleted ? calcularCalificacion() : null;
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-200">
@@ -307,55 +327,29 @@ export const LlenarFichaForm = ({
                   </p>
                 </div>
 
-                {activeFichaDesempeno.aspectos && activeFichaDesempeno.aspectos.length > 0 && (
+                {!isDirectivo && activeFichaDesempeno.aspectos && activeFichaDesempeno.aspectos.length > 0 && (
                   <div className="space-y-3">
                     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                      Aspectos a Evaluar / Checklist de Verificación
+                      Aspectos a Considerar
                     </span>
-                    <div className="grid grid-cols-1 gap-2.5">
-                      {activeFichaDesempeno.aspectos.map((asp, idx) => {
-                        const isChecked = !!checkedAspects[asp.id];
-                        return (
-                          <label
-                            key={asp.id}
-                            className={`border rounded-xl p-3.5 flex items-start gap-3.5 shadow-sm transition-all select-none ${
-                              isCompleted ? 'cursor-default' : 'cursor-pointer'
-                            } ${
-                              isChecked
-                                ? 'border-emerald-200 bg-emerald-50/20'
-                                : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              disabled={isCompleted}
-                              onChange={(e) => {
-                                setCheckedAspects((prev) => ({
-                                  ...prev,
-                                  [asp.id]: e.target.checked,
-                                }));
-                              }}
-                              className="h-4.5 w-4.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mt-0.5 shrink-0"
-                            />
-                            <div className="pt-0.5 leading-relaxed text-xs text-slate-700">
-                              <strong>Aspecto {idx + 1}:</strong> {asp.descripcion}
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
+                    <ul className="list-disc list-inside text-xs text-slate-700 space-y-1 bg-slate-50/50 border border-slate-100 rounded-xl p-3.5">
+                      {activeFichaDesempeno.aspectos.map((asp, idx) => (
+                        <li key={asp.id}>
+                          <strong>Aspecto {idx + 1}:</strong> {asp.descripcion}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 
                 <div className="space-y-3.5 pt-1">
                   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                    Rubrica de Calificación (Haz clic en un nivel para seleccionar)
+                    Descripción de Niveles (Haz clic en un nivel para seleccionar)
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {template.niveles.map((niv) => {
-                      const rubDetail = activeFichaDesempeno.rubrica.find((r) => r.nivel === niv.nivel);
+                      const rubDetail = activeFichaDesempeno.rubrica?.find((r) => r.nivel === niv.nivel);
                       const isSelected = selectedLevels[activeFichaDesempeno.id] === niv.nivel;
                       return (
                         <div
@@ -385,33 +379,72 @@ export const LlenarFichaForm = ({
                             style={{ backgroundColor: niv.color }}
                           />
 
-                          <div className="pl-2 flex items-center justify-between">
+                          <div className="pl-2 flex flex-col gap-1">
                             <span
                               className="text-xs font-black uppercase tracking-wider"
                               style={{ color: niv.color }}
                             >
                               Nivel {niv.nivel}
                             </span>
-                            <Badge
-                              style={{
-                                backgroundColor: niv.color + '15',
-                                color: niv.color,
-                                borderColor: niv.color + '20',
-                              }}
+                            <span
                               className="text-[10px] font-bold"
+                              style={{ color: niv.color }}
                             >
                               {niv.denominacion}
-                            </Badge>
+                            </span>
                           </div>
 
-                          <p className="pl-2 text-[11px] text-slate-600 font-medium leading-relaxed">
-                            {rubDetail ? rubDetail.descripcion : 'Sin descripción registrada.'}
+                          <p className="pl-2 text-[11px] text-slate-700 font-medium leading-relaxed">
+                            {rubDetail?.descripcion || 'Sin descripción registrada.'}
                           </p>
                         </div>
                       );
                     })}
                   </div>
                 </div>
+
+                {activeFichaDesempeno.preguntaExtra && (
+                  <div className="space-y-2 mt-4 p-4 border border-slate-200 rounded-xl bg-amber-50/30">
+                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block">
+                      Pregunta Extra
+                    </span>
+                    <p className="text-sm font-medium text-slate-700">{activeFichaDesempeno.preguntaExtra}</p>
+                    <div className="flex gap-4 mt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`pregunta-${activeFichaDesempeno.id}`}
+                          checked={preguntaExtraAnswers[activeFichaDesempeno.id] === true}
+                          onChange={() =>
+                            setPreguntaExtraAnswers((prev) => ({
+                              ...prev,
+                              [activeFichaDesempeno.id]: true,
+                            }))
+                          }
+                          disabled={isCompleted}
+                          className="accent-emerald-600"
+                        />
+                        <span className="text-xs font-bold text-emerald-700">SÍ</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`pregunta-${activeFichaDesempeno.id}`}
+                          checked={preguntaExtraAnswers[activeFichaDesempeno.id] === false}
+                          onChange={() =>
+                            setPreguntaExtraAnswers((prev) => ({
+                              ...prev,
+                              [activeFichaDesempeno.id]: false,
+                            }))
+                          }
+                          disabled={isCompleted}
+                          className="accent-red-600"
+                        />
+                        <span className="text-xs font-bold text-red-600">NO</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2 mt-4">
                   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
@@ -440,160 +473,211 @@ export const LlenarFichaForm = ({
           </div>
         </div>
 
-        {/* Comentarios Generales */}
-        {template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO') ? (
-          <div className="p-5 border-t border-border bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                Sugerencias
-              </span>
-              <textarea
-                value={sugerencias}
-                onChange={(e) => setSugerencias(e.target.value)}
-                disabled={isCompleted}
-                placeholder="Escriba aquí las sugerencias generales para el directivo..."
-                className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
-              />
-            </div>
-            <div className="space-y-2">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                Compromisos
-              </span>
-              <textarea
-                value={compromisos}
-                onChange={(e) => setCompromisos(e.target.value)}
-                disabled={isCompleted}
-                placeholder="Escriba aquí los compromisos acordados con el directivo..."
-                className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="p-5 border-t border-border bg-slate-50/50 space-y-2">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-              Observaciones y Compromisos de Mejora Generales
+        {/* Ejes e Items (Solo Docente) */}
+        {template.ejesItems && template.ejesItems.length > 0 && (
+          <div className="border-t border-border pt-6 mt-6 px-5 space-y-4">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              EJES E ITEMS
             </span>
-            <textarea
-              value={generalComments}
-              onChange={(e) => setGeneralComments(e.target.value)}
-              disabled={isCompleted}
-              placeholder="Escriba aquí los compromisos acordados con el evaluado, fortalezas observadas y puntos clave de mejora formativa..."
-              className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-20 resize-none leading-relaxed"
-            />
+            
+            {template.ejesItems.map((item) => (
+              <div key={item.id} className="border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-bold text-primary">
+                    {item.numero}
+                  </span>
+                  <p className="text-sm text-slate-700 font-medium">{item.descripcion}</p>
+                </div>
+                
+                <div className="flex items-center gap-4 pl-9">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0">
+                    NIVEL DE LOGRO:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {['I', 'II', 'III', 'IV'].map((nivel) => {
+                      const numVal = romanToNum(nivel);
+                      const levelConfig = template.niveles.find((n) => n.nivel === nivel);
+                      const color = levelConfig?.color || '#3b82f6';
+                      const isSelected = respuestasEjeItem[item.id] === numVal;
+
+                      return (
+                        <button
+                          key={nivel}
+                          type="button"
+                          onClick={() => {
+                            if (!isCompleted) {
+                              setRespuestasEjeItem((prev) => ({ ...prev, [item.id]: numVal }));
+                            }
+                          }}
+                          disabled={isCompleted}
+                          className={`px-3.5 py-1 rounded-lg text-xs font-black transition-all border cursor-pointer select-none flex items-center justify-center min-w-[42px] ${
+                            isCompleted ? 'opacity-70 cursor-not-allowed' : ''
+                          }`}
+                          style={{
+                            backgroundColor: isSelected ? color : `${color}08`,
+                            borderColor: isSelected ? color : `${color}30`,
+                            color: isSelected ? '#ffffff' : color,
+                            boxShadow: isSelected ? `0 2px 6px ${color}30` : undefined,
+                          }}
+                        >
+                          {nivel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                <div className="pl-9">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
+                    EVIDENCIAS
+                  </span>
+                  {evidenciaUrls[item.id] ? (
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={evidenciaUrls[item.id]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary font-semibold underline"
+                      >
+                        Ver evidencia
+                      </a>
+                      {!isCompleted && (
+                        <button
+                          onClick={() => {
+                            setEvidenciaUrls((prev) => {
+                              const next = { ...prev };
+                              delete next[item.id];
+                              return next;
+                            });
+                          }}
+                          className="text-xs text-destructive font-semibold cursor-pointer"
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
+                  ) : !isCompleted ? (
+                    <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-slate-300 text-xs text-slate-500 cursor-pointer hover:border-primary hover:text-primary transition-colors">
+                      <Upload className="h-4 w-4" />
+                      Subir archivo
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+                            const ficha = await fichasApi.findByVisita(visit.id);
+                            if (ficha) {
+                              const result = await fichasApi.subirEvidenciaEjeItem(ficha.id, item.id, file);
+                              setEvidenciaUrls((prev) => ({ ...prev, [item.id]: result.evidenciaUrl }));
+                            }
+                          } catch (err) {
+                            console.error('Error uploading evidence:', err);
+                          }
+                        }}
+                      />
+                    </label>
+                  ) : null}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Panel de Calificación Final — solo visible al ver ficha DIRECTIVO completada */}
+        {/* Sugerencias y Compromisos */}
+        <div className="p-5 border-t border-border bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+              Sugerencias
+            </span>
+            <textarea
+              value={sugerencias}
+              onChange={(e) => setSugerencias(e.target.value)}
+              disabled={isCompleted}
+              placeholder="Escriba aquí las sugerencias..."
+              className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
+            />
+          </div>
+          <div className="space-y-2">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+              Compromisos
+            </span>
+            <textarea
+              value={compromisos}
+              onChange={(e) => setCompromisos(e.target.value)}
+              disabled={isCompleted}
+              placeholder="Escriba aquí los compromisos..."
+              className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
+            />
+          </div>
+        </div>
+
+        {/* CONSOLIDADO DE NIVELES DE LOGRO */}
         {calificacion && (
           <div className="p-5 border-t border-border" style={{ backgroundColor: calificacion.nivelBg + 'cc' }}>
             <div className="flex items-center gap-2 mb-4">
               <Trophy className="h-4.5 w-4.5" style={{ color: calificacion.nivelColor }} />
               <span className="text-[11px] font-extrabold uppercase tracking-widest" style={{ color: calificacion.nivelColor }}>
-                Calificación Final del Monitoreo Directivo
+                CONSOLIDADO DE NIVELES DE LOGRO
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Tabla de puntajes por rúbrica */}
-              <div className="md:col-span-2 bg-white/80 rounded-xl border border-white shadow-sm overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="text-left p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px]">Rúbrica</th>
-                      <th className="text-center p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px] w-20">Nivel</th>
-                      <th className="text-center p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px] w-16">Puntaje</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {template.desempenos.map((des, idx) => {
-                      const nivel = selectedLevels[des.id];
-                      const pts = romanToNum(nivel || '');
-                      const nivelObj = template.niveles.find((n) => n.nivel === nivel);
-                      return (
-                        <tr key={des.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                          <td className="p-3 text-slate-700 font-medium leading-snug">
-                            <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-slate-100 text-slate-500 text-[9px] font-black mr-1.5">{idx + 1}</span>
-                            {des.nombre}
-                          </td>
-                          <td className="p-3 text-center">
-                            {nivel ? (
-                              <span
-                                className="inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold"
-                                style={{ backgroundColor: (nivelObj?.color ?? '#94a3b8') + '20', color: nivelObj?.color ?? '#94a3b8' }}
-                              >
-                                Nivel {nivel}
-                              </span>
-                            ) : (
-                              <span className="text-slate-300 italic text-[10px]">—</span>
-                            )}
-                          </td>
-                          <td className="p-3 text-center font-black text-slate-700">
-                            {pts > 0 ? pts : '—'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    <tr className="border-t-2 border-slate-200" style={{ backgroundColor: calificacion.nivelBg }}>
-                      <td className="p-3 font-extrabold text-slate-700 text-xs">PUNTAJE TOTAL</td>
-                      <td className="p-3 text-center">
-                        <span className="text-[10px] font-bold text-slate-500">
-                          Máx. {calificacion.puntajeMax} pts
-                        </span>
-                      </td>
-                      <td className="p-3 text-center font-extrabold text-base" style={{ color: calificacion.nivelColor }}>
-                        {calificacion.puntajeTotal}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Panel de nivel de logro */}
-              <div className="flex flex-col gap-3">
-                {/* Resultado */}
-                <div
-                  className="rounded-xl p-4 flex flex-col items-center justify-center gap-1 text-center shadow-sm border"
-                  style={{ backgroundColor: calificacion.nivelColor + '12', borderColor: calificacion.nivelColor + '40' }}
-                >
-                  <TrendingUp className="h-6 w-6 mb-1" style={{ color: calificacion.nivelColor }} />
-                  <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Nivel de Logro</span>
-                  <span className="text-xl font-black tracking-tight" style={{ color: calificacion.nivelColor }}>
-                    {calificacion.nivel}
-                  </span>
-                  <span className="text-2xl font-black" style={{ color: calificacion.nivelColor }}>
-                    {calificacion.puntajeTotal}
-                    <span className="text-sm font-bold text-slate-400"> / {calificacion.puntajeMax}</span>
-                  </span>
-                  <div className="w-full bg-slate-100 rounded-full h-2 mt-1">
-                    <div
-                      className="h-2 rounded-full transition-all duration-700"
-                      style={{ width: `${calificacion.porcentaje}%`, backgroundColor: calificacion.nivelColor }}
-                    />
-                  </div>
-                  <span className="text-xs font-bold" style={{ color: calificacion.nivelColor }}>{calificacion.porcentaje}%</span>
-                </div>
-
-                {/* Escala de baremo */}
-                <div className="bg-white/80 rounded-xl border border-white p-3 shadow-sm space-y-1.5">
-                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">Escala Baremo</span>
-                  {[
-                    { label: 'SATISFACTORIO', range: '76–100%', color: '#6366f1' },
-                    { label: 'LOGRADO', range: '51–75%', color: '#10b981' },
-                    { label: 'EN PROCESO', range: '26–50%', color: '#f59e0b' },
-                    { label: 'INICIO', range: '0–25%', color: '#ef4444' },
-                  ].map((row) => (
-                    <div key={row.label} className={`flex items-center gap-2 p-1.5 rounded-lg transition-all ${
-                      calificacion.nivel === row.label ? 'ring-1' : 'opacity-50'
-                    }`} style={{ backgroundColor: row.color + '10' }}>
-                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: row.color }} />
-                      <div>
-                        <div className="text-[10px] font-extrabold" style={{ color: row.color }}>{row.label}</div>
-                        <div className="text-[9px] text-slate-400 font-semibold">{row.range}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="bg-white/80 rounded-xl border border-white shadow-sm overflow-hidden">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="text-left p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px]">N°</th>
+                    <th className="text-left p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px]">ASPECTOS (Desempeños)</th>
+                    <th className="text-center p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px] w-20">NIVEL</th>
+                    <th className="text-center p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px] w-16">PUNTAJE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {template.desempenos.map((des, idx) => {
+                    const nivel = selectedLevels[des.id];
+                    const pts = romanToNum(nivel || '');
+                    const nivelObj = template.niveles.find((n) => n.nivel === nivel);
+                    const label = idx < 5 ? `D${idx + 1}` : `R${idx + 1}`;
+                    return (
+                      <tr key={des.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                        <td className="p-3 text-slate-400 font-bold text-center w-8">{label}</td>
+                        <td className="p-3 text-slate-700 font-medium leading-snug">{des.nombre}</td>
+                        <td className="p-3 text-center">
+                          {nivel ? (
+                            <span
+                              className="inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+                              style={{ backgroundColor: (nivelObj?.color ?? '#94a3b8') + '20', color: nivelObj?.color ?? '#94a3b8' }}
+                            >
+                              Nivel {nivel}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 italic text-[10px]">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center font-black text-slate-700">
+                          {pts > 0 ? pts : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="border-t-2 border-slate-200" style={{ backgroundColor: calificacion.nivelBg }}>
+                    <td colSpan={3} className="p-3 font-extrabold text-slate-700 text-xs text-right">TOTAL</td>
+                    <td className="p-3 text-center font-extrabold text-base" style={{ color: calificacion.nivelColor }}>
+                      {calificacion.puntajeTotal} / {calificacion.puntajeMax}
+                    </td>
+                  </tr>
+                  <tr style={{ backgroundColor: calificacion.nivelColor + '15' }}>
+                    <td colSpan={3} className="p-3 font-extrabold text-slate-700 text-xs text-right">NIVEL DE LOGRO</td>
+                    <td className="p-3 text-center font-extrabold text-sm" style={{ color: calificacion.nivelColor }}>
+                      {calificacion.nivel} ({calificacion.porcentaje}%)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         )}

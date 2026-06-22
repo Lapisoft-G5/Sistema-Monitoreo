@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unused-vars */
+/// <reference types="multer" />
 import {
   BadRequestException,
   Body,
@@ -12,12 +13,20 @@ import {
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   HttpStatus,
   ForbiddenException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
 import { FichaService, type SessionUser } from '../services/ficha.service.js';
-import { CreateFichaDto, SaveRespuestaDesempenoDto, FinalizarFichaDto } from '../dto/ficha.dto.js';
+import {
+  CreateFichaDto,
+  SaveRespuestaDesempenoDto,
+  SaveRespuestaEjeItemDto,
+  FinalizarFichaDto,
+} from '../dto/ficha.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
@@ -81,6 +90,30 @@ export class FichaController {
     @Req() req: any,
   ): Promise<IFichaMonitoreo> {
     return this.service.finalizar(id, dto, this.toSession(req));
+  }
+
+  @Patch(':id/respuestas-eje-item')
+  @RequirePermissions('monitoreo:execute')
+  async guardarRespuestaEjeItem(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: SaveRespuestaEjeItemDto,
+    @Req() req: any,
+  ): Promise<IFichaMonitoreo> {
+    return this.service.guardarRespuestaEjeItem(id, dto, this.toSession(req));
+  }
+
+  @Post(':id/eje-item/:ejeItemId/evidencia')
+  @RequirePermissions('monitoreo:execute')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  async subirEvidencia(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('ejeItemId', new ParseUUIDPipe()) ejeItemId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ): Promise<{ evidenciaUrl: string }> {
+    const url = await this.service.subirEvidencia(id, ejeItemId, file, this.toSession(req));
+    return { evidenciaUrl: url };
   }
 
   @Post(':id/migrar-plantilla')

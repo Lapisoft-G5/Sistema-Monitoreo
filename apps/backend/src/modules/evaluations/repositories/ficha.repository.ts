@@ -4,6 +4,7 @@ import type {
   IFichaContexto,
   IFichaRespuestaDesempeno,
   IFichaRespuestaAspecto,
+  IFichaRespuestaEjeItem,
   NivelLogro,
   EstadoFicha,
 } from '@sistema-monitoreo/shared-contracts';
@@ -21,6 +22,13 @@ export interface SaveRespuestaData {
   desempenoId: string;
   nivel: number;
   observaciones?: string;
+}
+
+export interface SaveRespuestaEjeItemData {
+  fichaId: string;
+  ejeItemId: string;
+  nivel: number;
+  evidenciaUrl?: string | null;
 }
 
 export interface SaveRespuestaAspectoData {
@@ -43,6 +51,7 @@ export abstract class FichaRepository {
   abstract create(data: CreateFichaData): Promise<IFichaMonitoreo>;
   abstract saveRespuestaDesempeno(data: SaveRespuestaData): Promise<IFichaRespuestaDesempeno>;
   abstract saveRespuestaAspecto(data: SaveRespuestaAspectoData): Promise<IFichaRespuestaAspecto>;
+  abstract saveRespuestaEjeItem(data: SaveRespuestaEjeItemData): Promise<IFichaRespuestaEjeItem>;
   abstract finalizar(
     fichaId: string,
     puntajeTotal: number,

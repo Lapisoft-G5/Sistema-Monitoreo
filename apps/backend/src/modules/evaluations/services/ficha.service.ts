@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/// <reference types="multer" />
 import {
   BadRequestException,
   ConflictException,
@@ -12,6 +13,7 @@ import { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
 import type {
   CreateFichaDto,
   SaveRespuestaDesempenoDto,
+  SaveRespuestaEjeItemDto,
   FinalizarFichaDto,
 } from '../dto/ficha.dto.js';
 
@@ -301,6 +303,64 @@ export class FichaService {
     });
 
     return this.repository.findById(fichaId) as Promise<IFichaMonitoreo>;
+  }
+
+  async guardarRespuestaEjeItem(
+    fichaId: string,
+    dto: SaveRespuestaEjeItemDto,
+    session: SessionUser,
+  ): Promise<IFichaMonitoreo> {
+    const ficha = await this.repository.findById(fichaId);
+    if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
+    if (ficha.estado !== 'BORRADOR') {
+      throw new BadRequestException(
+        `Solo se pueden modificar fichas en BORRADOR. Estado actual: ${ficha.estado}.`,
+      );
+    }
+    await this.ensurePlantillaVigente(ficha);
+    await this.repository.saveRespuestaEjeItem({
+      fichaId,
+      ejeItemId: dto.ejeItemId,
+      nivel: dto.nivel,
+      evidenciaUrl: dto.evidenciaUrl ?? null,
+    });
+    return this.repository.findById(fichaId) as Promise<IFichaMonitoreo>;
+  }
+
+  async subirEvidencia(
+    fichaId: string,
+    ejeItemId: string,
+    file: Express.Multer.File,
+    session: SessionUser,
+  ): Promise<string> {
+    const ficha = await this.repository.findById(fichaId);
+    if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
+    if (ficha.estado !== 'BORRADOR') {
+      throw new BadRequestException(
+        `Solo se pueden modificar fichas en BORRADOR. Estado actual: ${ficha.estado}.`,
+      );
+    }
+    await this.ensurePlantillaVigente(ficha);
+
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const uploadsDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    const ext = path.extname(file.originalname) || '.bin';
+    const filename = `${fichaId}_${ejeItemId}_${Date.now()}${ext}`;
+    const filepath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filepath, file.buffer);
+
+    const url = `/uploads/${filename}`;
+    await this.repository.saveRespuestaEjeItem({
+      fichaId,
+      ejeItemId,
+      nivel: 1,
+      evidenciaUrl: url,
+    });
+    return url;
   }
 
   // ============== Motor de baremo (expuesto para tests y reuso) ==============

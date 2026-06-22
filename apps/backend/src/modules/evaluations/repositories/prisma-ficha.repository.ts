@@ -7,6 +7,7 @@ import type {
   IFichaContexto,
   IFichaRespuestaDesempeno,
   IFichaRespuestaAspecto,
+  IFichaRespuestaEjeItem,
   NivelLogro,
 } from '@sistema-monitoreo/shared-contracts';
 import {
@@ -14,6 +15,7 @@ import {
   CreateFichaData,
   SaveRespuestaData,
   SaveRespuestaAspectoData,
+  SaveRespuestaEjeItemData,
 } from './ficha.repository.js';
 
 @Injectable()
@@ -39,6 +41,7 @@ export class PrismaFichaRepository implements FichaRepository {
         fichaContexto: true,
         respuestasDesempeno: true,
         respuestasAspecto: true,
+        respuestasEjeItem: true,
         plantilla: { select: { id: true, version: true, estado: true } },
       },
     });
@@ -70,6 +73,13 @@ export class PrismaFichaRepository implements FichaRepository {
         fichaId: r.fichaId,
         aspectoId: r.aspectoId,
         marcado: r.marcado,
+      })),
+      respuestasEjeItem: ficha.respuestasEjeItem.map((r) => ({
+        id: r.id,
+        fichaId: r.fichaId,
+        ejeItemId: r.ejeItemId,
+        nivel: r.nivel,
+        evidenciaUrl: r.evidenciaUrl,
       })),
       creadoPorId: ficha.creadoPorId,
       finalizadaPorId: ficha.finalizadaPorId,
@@ -195,6 +205,44 @@ export class PrismaFichaRepository implements FichaRepository {
       fichaId: created.fichaId,
       aspectoId: created.aspectoId,
       marcado: created.marcado,
+    };
+  }
+
+  async saveRespuestaEjeItem(data: SaveRespuestaEjeItemData): Promise<IFichaRespuestaEjeItem> {
+    const existing = await this.prisma.fichaRespuestaEjeItem.findFirst({
+      where: { fichaId: data.fichaId, ejeItemId: data.ejeItemId },
+    });
+    if (existing) {
+      const updated = await this.prisma.fichaRespuestaEjeItem.update({
+        where: { id: existing.id },
+        data: {
+          nivel: data.nivel,
+          evidenciaUrl: data.evidenciaUrl !== undefined ? data.evidenciaUrl : undefined,
+        },
+      });
+      return {
+        id: updated.id,
+        fichaId: updated.fichaId,
+        ejeItemId: updated.ejeItemId,
+        nivel: updated.nivel,
+        evidenciaUrl: updated.evidenciaUrl,
+      };
+    }
+    const created = await this.prisma.fichaRespuestaEjeItem.create({
+      data: {
+        id: randomUUID(),
+        fichaId: data.fichaId,
+        ejeItemId: data.ejeItemId,
+        nivel: data.nivel,
+        evidenciaUrl: data.evidenciaUrl ?? null,
+      },
+    });
+    return {
+      id: created.id,
+      fichaId: created.fichaId,
+      ejeItemId: created.ejeItemId,
+      nivel: created.nivel,
+      evidenciaUrl: created.evidenciaUrl,
     };
   }
 

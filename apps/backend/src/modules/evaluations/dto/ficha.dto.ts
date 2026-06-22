@@ -51,6 +51,21 @@ export class SaveRespuestaDesempenoDto {
   observaciones?: string;
 }
 
+export class SaveRespuestaEjeItemDto {
+  @IsUUID()
+  ejeItemId!: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(4)
+  nivel!: number;
+
+  @IsOptional()
+  @IsString()
+  evidenciaUrl?: string;
+}
+
 export class SaveRespuestasAspectoBatchDto {
   @IsUUID()
   fichaId!: string;

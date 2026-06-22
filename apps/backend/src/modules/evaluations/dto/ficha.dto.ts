@@ -45,6 +45,10 @@ export class SaveRespuestaDesempenoDto {
   @Min(1)
   @Max(4)
   nivel!: number;
+
+  @IsOptional()
+  @IsString()
+  observaciones?: string;
 }
 
 export class SaveRespuestasAspectoBatchDto {
@@ -62,4 +66,12 @@ export class FinalizarFichaDto {
   @IsOptional()
   @IsString()
   observaciones?: string;
+
+  @IsOptional()
+  @IsString()
+  sugerencias?: string;
+
+  @IsOptional()
+  @IsString()
+  compromisos?: string;
 }

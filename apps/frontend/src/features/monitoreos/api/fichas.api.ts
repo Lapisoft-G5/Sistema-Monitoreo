@@ -55,10 +55,10 @@ export const fichasApi = {
       body: JSON.stringify(data),
     }),
 
-  saveRespuestaDesempeno: (fichaId: string, desempenoId: string, nivel: number) =>
+  saveRespuestaDesempeno: (fichaId: string, desempenoId: string, nivel: number, observaciones?: string) =>
     request<IFichaMonitoreo>(`/api/fichas/${fichaId}/respuestas-desempeno`, {
       method: 'PATCH',
-      body: JSON.stringify({ desempenoId, nivel }),
+      body: JSON.stringify({ desempenoId, nivel, observaciones }),
     }),
 
   saveRespuestaAspecto: (fichaId: string, aspectoId: string, marcado: boolean) =>
@@ -67,10 +67,10 @@ export const fichasApi = {
       body: JSON.stringify({ marcado }),
     }),
 
-  finalizar: (fichaId: string, observaciones?: string) =>
+  finalizar: (fichaId: string, observaciones?: string, sugerencias?: string, compromisos?: string) =>
     request<IFichaMonitoreo>(`/api/fichas/${fichaId}/finalizar`, {
       method: 'PATCH',
-      body: JSON.stringify({ observaciones }),
+      body: JSON.stringify({ observaciones, sugerencias, compromisos }),
     }),
 
   migrarPlantilla: (fichaId: string, plantillaId: string) =>

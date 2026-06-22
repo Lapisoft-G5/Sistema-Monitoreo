@@ -21,6 +21,7 @@ export interface IFichaRespuestaDesempeno {
   fichaId: string;
   desempenoId: string;
   nivel: number;
+  observaciones: string | null;
 }
 
 export interface IFichaRespuestaAspecto {
@@ -47,6 +48,8 @@ export interface IFichaMonitoreo {
   creadoPorId: string | null;
   finalizadaPorId: string | null;
   observaciones: string | null;
+  sugerencias: string | null;
+  compromisos: string | null;
   requiereMigracion: boolean;
   plantillaHistoricaId: string | null;
   createdAt: string;

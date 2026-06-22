@@ -20,6 +20,7 @@ export interface SaveRespuestaData {
   fichaId: string;
   desempenoId: string;
   nivel: number;
+  observaciones?: string;
 }
 
 export interface SaveRespuestaAspectoData {
@@ -32,6 +33,8 @@ export interface FinalizarFichaData {
   fichaId: string;
   finalizadoPorId: string;
   observaciones?: string;
+  sugerencias?: string;
+  compromisos?: string;
 }
 
 export abstract class FichaRepository {
@@ -47,6 +50,8 @@ export abstract class FichaRepository {
     nivelLogro: NivelLogro,
     finalizadaPorId: string,
     observaciones?: string,
+    sugerencias?: string,
+    compromisos?: string,
   ): Promise<IFichaMonitoreo>;
   abstract plantillaEstaHistorica(plantillaId: string): Promise<boolean>;
 }

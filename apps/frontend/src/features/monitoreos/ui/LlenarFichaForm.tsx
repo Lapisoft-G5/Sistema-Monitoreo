@@ -5,7 +5,9 @@ import {
   X,
   Check,
   CheckCircle2,
-  Clock
+  Clock,
+  Trophy,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
@@ -24,6 +26,9 @@ interface LlenarFichaFormProps {
       checkedAspects: Record<string, boolean>;
       selectedLevels: Record<string, string>;
       generalComments: string;
+      sugerencias?: string;
+      compromisos?: string;
+      rubricComments?: Record<string, string>;
     }
   ) => void;
   onFinalize: (
@@ -32,6 +37,9 @@ interface LlenarFichaFormProps {
       checkedAspects: Record<string, boolean>;
       selectedLevels: Record<string, string>;
       generalComments: string;
+      sugerencias?: string;
+      compromisos?: string;
+      rubricComments?: Record<string, string>;
     }
   ) => void;
 }
@@ -80,6 +88,9 @@ export const LlenarFichaForm = ({
   const [checkedAspects, setCheckedAspects] = useState<Record<string, boolean>>({});
   const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({});
   const [generalComments, setGeneralComments] = useState('');
+  const [sugerencias, setSugerencias] = useState('');
+  const [compromisos, setCompromisos] = useState('');
+  const [rubricComments, setRubricComments] = useState<Record<string, string>>({});
   const [fichaSelectedDesempenoId, setFichaSelectedDesempenoId] = useState<string>('');
 
   useEffect(() => {
@@ -92,12 +103,18 @@ export const LlenarFichaForm = ({
             setCheckedAspects(parsed.checkedAspects || {});
             setSelectedLevels(parsed.selectedLevels || {});
             setGeneralComments(parsed.generalComments || '');
+            setSugerencias(parsed.sugerencias || '');
+            setCompromisos(parsed.compromisos || '');
+            setRubricComments(parsed.rubricComments || {});
           }, 0);
         } catch {
           setTimeout(() => {
             setCheckedAspects({});
             setSelectedLevels({});
             setGeneralComments('');
+            setSugerencias('');
+            setCompromisos('');
+            setRubricComments({});
           }, 0);
         }
       } else {
@@ -105,6 +122,9 @@ export const LlenarFichaForm = ({
             setCheckedAspects({});
             setSelectedLevels({});
             setGeneralComments('');
+            setSugerencias('');
+            setCompromisos('');
+            setRubricComments({});
           }, 0);
       }
 
@@ -124,7 +144,14 @@ export const LlenarFichaForm = ({
   const isCompleted = visit.estado === 'COMPLETADO';
 
   const handleSaveClick = () => {
-    onSave(visit.id, { checkedAspects, selectedLevels, generalComments });
+    onSave(visit.id, {
+      checkedAspects,
+      selectedLevels,
+      generalComments,
+      sugerencias,
+      compromisos,
+      rubricComments,
+    });
   };
 
   const handleFinalizeClick = () => {
@@ -138,8 +165,58 @@ export const LlenarFichaForm = ({
       );
       return;
     }
-    onFinalize(visit.id, { checkedAspects, selectedLevels, generalComments });
+    onFinalize(visit.id, {
+      checkedAspects,
+      selectedLevels,
+      generalComments,
+      sugerencias,
+      compromisos,
+      rubricComments,
+    });
   };
+
+  // Calificación consolidada para plantillas DIRECTIVO
+  const romanToNum = (r: string) => ({ I: 1, II: 2, III: 3, IV: 4 }[r] ?? 0);
+
+  const calcularCalificacionDirectivo = () => {
+    const numDesempenos = template.desempenos.length;
+    const puntajeMax = numDesempenos * 4;
+    const puntajeMin = numDesempenos * 1;
+    const puntajeTotal = template.desempenos.reduce(
+      (acc, d) => acc + romanToNum(selectedLevels[d.id] || ''),
+      0
+    );
+    const porcentaje = puntajeMax > 0 ? Math.round((puntajeTotal / puntajeMax) * 100) : 0;
+
+    // Baremo según el PDF: proporcional al número de rúbricas
+    // Con 5 rúbricas: 5-8 Inicio | 9-13 En Proceso | 14-17 Logrado | 18-20 Satisfactorio
+    // Generalizado: 0-25% Inicio | 26-50% En Proceso | 51-75% Logrado | 76-100% Satisfactorio
+    let nivel: string;
+    let nivelColor: string;
+    let nivelBg: string;
+    if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.25)) {
+      nivel = 'INICIO';
+      nivelColor = '#ef4444';
+      nivelBg = '#fef2f2';
+    } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.50)) {
+      nivel = 'EN PROCESO';
+      nivelColor = '#f59e0b';
+      nivelBg = '#fffbeb';
+    } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.75)) {
+      nivel = 'LOGRADO';
+      nivelColor = '#10b981';
+      nivelBg = '#ecfdf5';
+    } else {
+      nivel = 'SATISFACTORIO';
+      nivelColor = '#6366f1';
+      nivelBg = '#eef2ff';
+    }
+
+    return { puntajeTotal, puntajeMax, porcentaje, nivel, nivelColor, nivelBg };
+  };
+
+  const isDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+  const calificacion = isCompleted && isDirectivo ? calcularCalificacionDirectivo() : null;
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-200">
@@ -170,7 +247,9 @@ export const LlenarFichaForm = ({
           <div>Fecha Programada: <span className="text-slate-800">{formatVisitDate(visit.fechaHora)} - {formatVisitTime(visit.fechaHora)}</span></div>
         </div>
 
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        {/* Contenedor con scroll interno — engloba cuerpo + comentarios + calificación */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex flex-col md:flex-row min-h-[300px]">
           {/* Sidebar: Desempeños */}
           <div className="w-full md:w-80 border-r border-border p-4 overflow-y-auto space-y-2 bg-slate-50/50">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">
@@ -228,44 +307,46 @@ export const LlenarFichaForm = ({
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                    Aspectos a Evaluar / Checklist de Verificación
-                  </span>
-                  <div className="grid grid-cols-1 gap-2.5">
-                    {activeFichaDesempeno.aspectos.map((asp, idx) => {
-                      const isChecked = !!checkedAspects[asp.id];
-                      return (
-                        <label
-                          key={asp.id}
-                          className={`border rounded-xl p-3.5 flex items-start gap-3.5 shadow-sm transition-all select-none ${
-                            isCompleted ? 'cursor-default' : 'cursor-pointer'
-                          } ${
-                            isChecked
-                              ? 'border-emerald-200 bg-emerald-50/20'
-                              : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            disabled={isCompleted}
-                            onChange={(e) => {
-                              setCheckedAspects((prev) => ({
-                                ...prev,
-                                [asp.id]: e.target.checked,
-                              }));
-                            }}
-                            className="h-4.5 w-4.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mt-0.5 shrink-0"
-                          />
-                          <div className="pt-0.5 leading-relaxed text-xs text-slate-700">
-                            <strong>Aspecto {idx + 1}:</strong> {asp.descripcion}
-                          </div>
-                        </label>
-                      );
-                    })}
+                {activeFichaDesempeno.aspectos && activeFichaDesempeno.aspectos.length > 0 && (
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                      Aspectos a Evaluar / Checklist de Verificación
+                    </span>
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {activeFichaDesempeno.aspectos.map((asp, idx) => {
+                        const isChecked = !!checkedAspects[asp.id];
+                        return (
+                          <label
+                            key={asp.id}
+                            className={`border rounded-xl p-3.5 flex items-start gap-3.5 shadow-sm transition-all select-none ${
+                              isCompleted ? 'cursor-default' : 'cursor-pointer'
+                            } ${
+                              isChecked
+                                ? 'border-emerald-200 bg-emerald-50/20'
+                                : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              disabled={isCompleted}
+                              onChange={(e) => {
+                                setCheckedAspects((prev) => ({
+                                  ...prev,
+                                  [asp.id]: e.target.checked,
+                                }));
+                              }}
+                              className="h-4.5 w-4.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mt-0.5 shrink-0"
+                            />
+                            <div className="pt-0.5 leading-relaxed text-xs text-slate-700">
+                              <strong>Aspecto {idx + 1}:</strong> {asp.descripcion}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="space-y-3.5 pt-1">
                   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
@@ -331,6 +412,24 @@ export const LlenarFichaForm = ({
                     })}
                   </div>
                 </div>
+
+                <div className="space-y-2 mt-4">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                    Observaciones para esta Rúbrica
+                  </span>
+                  <textarea
+                    value={rubricComments[activeFichaDesempeno.id] || ''}
+                    onChange={(e) => {
+                      setRubricComments((prev) => ({
+                        ...prev,
+                        [activeFichaDesempeno.id]: e.target.value,
+                      }));
+                    }}
+                    disabled={isCompleted}
+                    placeholder="Escriba observaciones o evidencias encontradas para esta rúbrica específica..."
+                    className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
+                  />
+                </div>
               </div>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-300">
@@ -342,18 +441,164 @@ export const LlenarFichaForm = ({
         </div>
 
         {/* Comentarios Generales */}
-        <div className="p-5 border-t border-border bg-slate-50/50 space-y-2">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-            Observaciones y Compromisos de Mejora Generales
-          </span>
-          <textarea
-            value={generalComments}
-            onChange={(e) => setGeneralComments(e.target.value)}
-            disabled={isCompleted}
-            placeholder="Escriba aquí los compromisos acordados con el evaluado, fortalezas observadas y puntos clave de mejora formativa..."
-            className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-20 resize-none leading-relaxed"
-          />
-        </div>
+        {template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO') ? (
+          <div className="p-5 border-t border-border bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                Sugerencias
+              </span>
+              <textarea
+                value={sugerencias}
+                onChange={(e) => setSugerencias(e.target.value)}
+                disabled={isCompleted}
+                placeholder="Escriba aquí las sugerencias generales para el directivo..."
+                className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
+              />
+            </div>
+            <div className="space-y-2">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                Compromisos
+              </span>
+              <textarea
+                value={compromisos}
+                onChange={(e) => setCompromisos(e.target.value)}
+                disabled={isCompleted}
+                placeholder="Escriba aquí los compromisos acordados con el directivo..."
+                className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="p-5 border-t border-border bg-slate-50/50 space-y-2">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+              Observaciones y Compromisos de Mejora Generales
+            </span>
+            <textarea
+              value={generalComments}
+              onChange={(e) => setGeneralComments(e.target.value)}
+              disabled={isCompleted}
+              placeholder="Escriba aquí los compromisos acordados con el evaluado, fortalezas observadas y puntos clave de mejora formativa..."
+              className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-20 resize-none leading-relaxed"
+            />
+          </div>
+        )}
+
+        {/* Panel de Calificación Final — solo visible al ver ficha DIRECTIVO completada */}
+        {calificacion && (
+          <div className="p-5 border-t border-border" style={{ backgroundColor: calificacion.nivelBg + 'cc' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="h-4.5 w-4.5" style={{ color: calificacion.nivelColor }} />
+              <span className="text-[11px] font-extrabold uppercase tracking-widest" style={{ color: calificacion.nivelColor }}>
+                Calificación Final del Monitoreo Directivo
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Tabla de puntajes por rúbrica */}
+              <div className="md:col-span-2 bg-white/80 rounded-xl border border-white shadow-sm overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      <th className="text-left p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px]">Rúbrica</th>
+                      <th className="text-center p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px] w-20">Nivel</th>
+                      <th className="text-center p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px] w-16">Puntaje</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {template.desempenos.map((des, idx) => {
+                      const nivel = selectedLevels[des.id];
+                      const pts = romanToNum(nivel || '');
+                      const nivelObj = template.niveles.find((n) => n.nivel === nivel);
+                      return (
+                        <tr key={des.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                          <td className="p-3 text-slate-700 font-medium leading-snug">
+                            <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-slate-100 text-slate-500 text-[9px] font-black mr-1.5">{idx + 1}</span>
+                            {des.nombre}
+                          </td>
+                          <td className="p-3 text-center">
+                            {nivel ? (
+                              <span
+                                className="inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+                                style={{ backgroundColor: (nivelObj?.color ?? '#94a3b8') + '20', color: nivelObj?.color ?? '#94a3b8' }}
+                              >
+                                Nivel {nivel}
+                              </span>
+                            ) : (
+                              <span className="text-slate-300 italic text-[10px]">—</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-center font-black text-slate-700">
+                            {pts > 0 ? pts : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="border-t-2 border-slate-200" style={{ backgroundColor: calificacion.nivelBg }}>
+                      <td className="p-3 font-extrabold text-slate-700 text-xs">PUNTAJE TOTAL</td>
+                      <td className="p-3 text-center">
+                        <span className="text-[10px] font-bold text-slate-500">
+                          Máx. {calificacion.puntajeMax} pts
+                        </span>
+                      </td>
+                      <td className="p-3 text-center font-extrabold text-base" style={{ color: calificacion.nivelColor }}>
+                        {calificacion.puntajeTotal}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Panel de nivel de logro */}
+              <div className="flex flex-col gap-3">
+                {/* Resultado */}
+                <div
+                  className="rounded-xl p-4 flex flex-col items-center justify-center gap-1 text-center shadow-sm border"
+                  style={{ backgroundColor: calificacion.nivelColor + '12', borderColor: calificacion.nivelColor + '40' }}
+                >
+                  <TrendingUp className="h-6 w-6 mb-1" style={{ color: calificacion.nivelColor }} />
+                  <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Nivel de Logro</span>
+                  <span className="text-xl font-black tracking-tight" style={{ color: calificacion.nivelColor }}>
+                    {calificacion.nivel}
+                  </span>
+                  <span className="text-2xl font-black" style={{ color: calificacion.nivelColor }}>
+                    {calificacion.puntajeTotal}
+                    <span className="text-sm font-bold text-slate-400"> / {calificacion.puntajeMax}</span>
+                  </span>
+                  <div className="w-full bg-slate-100 rounded-full h-2 mt-1">
+                    <div
+                      className="h-2 rounded-full transition-all duration-700"
+                      style={{ width: `${calificacion.porcentaje}%`, backgroundColor: calificacion.nivelColor }}
+                    />
+                  </div>
+                  <span className="text-xs font-bold" style={{ color: calificacion.nivelColor }}>{calificacion.porcentaje}%</span>
+                </div>
+
+                {/* Escala de baremo */}
+                <div className="bg-white/80 rounded-xl border border-white p-3 shadow-sm space-y-1.5">
+                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">Escala Baremo</span>
+                  {[
+                    { label: 'SATISFACTORIO', range: '76–100%', color: '#6366f1' },
+                    { label: 'LOGRADO', range: '51–75%', color: '#10b981' },
+                    { label: 'EN PROCESO', range: '26–50%', color: '#f59e0b' },
+                    { label: 'INICIO', range: '0–25%', color: '#ef4444' },
+                  ].map((row) => (
+                    <div key={row.label} className={`flex items-center gap-2 p-1.5 rounded-lg transition-all ${
+                      calificacion.nivel === row.label ? 'ring-1' : 'opacity-50'
+                    }`} style={{ backgroundColor: row.color + '10' }}>
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: row.color }} />
+                      <div>
+                        <div className="text-[10px] font-extrabold" style={{ color: row.color }}>{row.label}</div>
+                        <div className="text-[9px] text-slate-400 font-semibold">{row.range}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        </div> {/* fin scroll interno */}
 
         {/* Pie del Modal */}
         <div className="p-4 border-t border-border bg-slate-50 flex justify-between items-center">

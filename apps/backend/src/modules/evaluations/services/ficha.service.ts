@@ -137,6 +137,7 @@ export class FichaService {
       fichaId,
       desempenoId: dto.desempenoId,
       nivel: dto.nivel,
+      observaciones: dto.observaciones,
     });
     return this.repository.findById(fichaId) as Promise<IFichaMonitoreo>;
   }
@@ -214,6 +215,8 @@ export class FichaService {
       resultado.nivelLogro,
       session.id,
       dto.observaciones,
+      dto.sugerencias,
+      dto.compromisos,
     );
 
     await this.prisma.cronograma.update({

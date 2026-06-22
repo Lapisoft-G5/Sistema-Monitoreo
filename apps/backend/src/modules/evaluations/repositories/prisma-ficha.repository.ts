@@ -63,6 +63,7 @@ export class PrismaFichaRepository implements FichaRepository {
         fichaId: r.fichaId,
         desempenoId: r.desempenoId,
         nivel: r.nivel,
+        observaciones: r.observaciones,
       })),
       respuestasAspecto: ficha.respuestasAspecto.map((r) => ({
         id: r.id,
@@ -73,6 +74,8 @@ export class PrismaFichaRepository implements FichaRepository {
       creadoPorId: ficha.creadoPorId,
       finalizadaPorId: ficha.finalizadaPorId,
       observaciones: ficha.observaciones,
+      sugerencias: (ficha as any).sugerencias || null,
+      compromisos: (ficha as any).compromisos || null,
       requiereMigracion,
       plantillaHistoricaId: requiereMigracion ? ficha.plantillaId : null,
       createdAt: ficha.createdAt.toISOString(),
@@ -132,13 +135,17 @@ export class PrismaFichaRepository implements FichaRepository {
     if (existing) {
       const updated = await this.prisma.fichaRespuestaDesempeno.update({
         where: { id: existing.id },
-        data: { nivel: data.nivel },
+        data: {
+          nivel: data.nivel,
+          observaciones: data.observaciones !== undefined ? data.observaciones : undefined,
+        },
       });
       return {
         id: updated.id,
         fichaId: updated.fichaId,
         desempenoId: updated.desempenoId,
         nivel: updated.nivel,
+        observaciones: updated.observaciones,
       };
     }
     const created = await this.prisma.fichaRespuestaDesempeno.create({
@@ -147,6 +154,7 @@ export class PrismaFichaRepository implements FichaRepository {
         fichaId: data.fichaId,
         desempenoId: data.desempenoId,
         nivel: data.nivel,
+        observaciones: data.observaciones ?? null,
       },
     });
     return {
@@ -154,6 +162,7 @@ export class PrismaFichaRepository implements FichaRepository {
       fichaId: created.fichaId,
       desempenoId: created.desempenoId,
       nivel: created.nivel,
+      observaciones: created.observaciones,
     };
   }
 
@@ -196,6 +205,8 @@ export class PrismaFichaRepository implements FichaRepository {
     nivelLogro: NivelLogro,
     finalizadaPorId: string,
     observaciones?: string,
+    sugerencias?: string,
+    compromisos?: string,
   ): Promise<IFichaMonitoreo> {
     await this.prisma.fichaMonitoreo.update({
       where: { id: fichaId },
@@ -207,6 +218,8 @@ export class PrismaFichaRepository implements FichaRepository {
         finalizadaPorId,
         finalizadaAt: new Date(),
         observaciones,
+        sugerencias,
+        compromisos,
       },
     });
     return this.buildFicha(fichaId);

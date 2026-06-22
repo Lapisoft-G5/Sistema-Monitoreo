@@ -138,7 +138,14 @@ export const EspecialistasTableWidget = ({
                     </div>
                   </TableCell>
                   <TableCell className="font-medium text-text text-xs">
-                    {doc.especialidades?.join(', ') || 'No especificada'}
+                    <div>
+                      <span className="font-semibold text-text">{doc.especialidad || 'No especificada'}</span>
+                      {doc.nivelEducativo === 'Secundaria' && doc.especialidadesExtras && doc.especialidadesExtras.length > 0 && (
+                        <span className="text-text-muted text-[0.7rem] block">
+                          Temporales: {doc.especialidadesExtras.join(', ')}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1 max-w-[200px]">

@@ -16,6 +16,8 @@ export interface Especialista {
   estado: string; // 'Activo' | 'Inactivo'
   activo: boolean; // UI-friendly mapped flag (true if estado === 'Activo')
   especialidades?: string[] | null;
+  especialidad?: string | null;
+  especialidadesExtras?: string[] | null;
   escalaMagisterial?: number | null;
   fechaCreacion: string;
   rolCode?: string;

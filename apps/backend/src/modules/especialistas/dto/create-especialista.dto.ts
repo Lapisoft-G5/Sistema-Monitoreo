@@ -59,6 +59,13 @@ export class CreateEspecialistaDto implements ICreateEspecialistaRequest {
   especialidades?: string[];
 
   @IsString()
+  @IsOptional()
+  especialidad?: string;
+
+  @IsOptional()
+  especialidadesExtras?: string[];
+
+  @IsString()
   @IsNotEmpty()
   rolCode!: string;
 

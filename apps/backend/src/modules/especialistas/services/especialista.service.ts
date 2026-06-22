@@ -67,15 +67,31 @@ export class EspecialistaService {
       );
     }
 
-    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria (al menos una)
-    if (
-      (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA &&
-      dto.nivelEducativo === 'Secundaria' &&
-      (!dto.especialidades || dto.especialidades.length === 0)
-    ) {
-      throw new BadRequestException(
-        'Para un Especialista de nivel Secundaria, al menos una especialidad es obligatoria.',
-      );
+    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria
+    const isEsp = (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA;
+    if (isEsp && dto.nivelEducativo === 'Secundaria') {
+      const mainSp = dto.especialidad?.trim();
+      const hasLegacySp = dto.especialidades && dto.especialidades.length > 0;
+      if (!mainSp && !hasLegacySp) {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
+        );
+      }
+    }
+
+    // ── Regla 5: Especialista → especialidad en Primaria (PIP o Educación Física si se define)
+    if (isEsp && dto.nivelEducativo === 'Primaria') {
+      const mainSp = dto.especialidad?.trim();
+      const legacySp =
+        dto.especialidades && dto.especialidades.length > 0
+          ? dto.especialidades[0]?.trim()
+          : undefined;
+      const sp = mainSp || legacySp;
+      if (sp && sp !== 'PIP' && sp !== 'Educación Física' && sp !== 'Educacion Fisica') {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Primaria, la especialidad debe ser PIP o Educación Física si se define.',
+        );
+      }
     }
 
     const existingPersona = await this.catalogsRepository.findPersonaByDni(dto.dni);
@@ -140,15 +156,31 @@ export class EspecialistaService {
       );
     }
 
-    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria (al menos una)
-    if (
-      (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA &&
-      dto.nivelEducativo === 'Secundaria' &&
-      (!dto.especialidades || dto.especialidades.length === 0)
-    ) {
-      throw new BadRequestException(
-        'Para un Especialista de nivel Secundaria, al menos una especialidad es obligatoria.',
-      );
+    // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria
+    const isEspUpdate = (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA;
+    if (isEspUpdate && dto.nivelEducativo === 'Secundaria') {
+      const mainSp = dto.especialidad?.trim();
+      const hasLegacySp = dto.especialidades && dto.especialidades.length > 0;
+      if (!mainSp && !hasLegacySp) {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
+        );
+      }
+    }
+
+    // ── Regla 5: Especialista → especialidad en Primaria (PIP o Educación Física si se define)
+    if (isEspUpdate && dto.nivelEducativo === 'Primaria') {
+      const mainSp = dto.especialidad?.trim();
+      const legacySp =
+        dto.especialidades && dto.especialidades.length > 0
+          ? dto.especialidades[0]?.trim()
+          : undefined;
+      const sp = mainSp || legacySp;
+      if (sp && sp !== 'PIP' && sp !== 'Educación Física' && sp !== 'Educacion Fisica') {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Primaria, la especialidad debe ser PIP o Educación Física si se define.',
+        );
+      }
     }
 
     // Para Jefe de Gestión normalizar condicion

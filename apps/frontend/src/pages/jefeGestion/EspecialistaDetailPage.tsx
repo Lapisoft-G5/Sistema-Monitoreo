@@ -191,11 +191,27 @@ export const EspecialistaDetailPage = () => {
 
               <div>
                 <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
-                  Especialidad(es)
+                  Especialidad Principal
                 </span>
-                {especialista.especialidades && especialista.especialidades.length > 0 ? (
+                {especialista.especialidad ? (
+                  <Badge
+                    variant="default"
+                    className="text-xs px-2.5 py-0.5 uppercase font-bold bg-primary/10 text-primary border border-primary/20"
+                  >
+                    {especialista.especialidad}
+                  </Badge>
+                ) : (
+                  <span className="text-sm font-semibold text-text">No especificada</span>
+                )}
+              </div>
+
+              {especialista.nivelEducativo === 'Secundaria' && especialista.especialidadesExtras && especialista.especialidadesExtras.length > 0 && (
+                <div>
+                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
+                    Especialidades Extras / Temporales
+                  </span>
                   <div className="flex flex-wrap gap-1">
-                    {especialista.especialidades.map((esp) => (
+                    {especialista.especialidadesExtras.map((esp) => (
                       <Badge
                         key={esp}
                         variant="secondary"
@@ -205,10 +221,8 @@ export const EspecialistaDetailPage = () => {
                       </Badge>
                     ))}
                   </div>
-                ) : (
-                  <span className="text-sm font-semibold text-text">No especificadas</span>
-                )}
-              </div>
+                </div>
+              )}
 
               <div>
                 <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">

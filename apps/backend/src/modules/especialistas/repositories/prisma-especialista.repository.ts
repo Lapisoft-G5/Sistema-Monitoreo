@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
@@ -35,12 +35,16 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private mapEspecialista(esp: EspecialistaWithRelations): IEspecialistaResponse {
+    const especialidadesList = esp.especialidades || [];
+    const mainRelation = especialidadesList.find((e: any) => e.esPrincipal);
+    const extraRelations = especialidadesList.filter((e: any) => !e.esPrincipal);
+
     return {
       id: esp.id,
       personaId: esp.personaId,
-      especialidades:
-        (esp as any).especialidades?.map((e: any) => e.especialidad?.nombre).filter(Boolean) ??
-        null,
+      especialidades: especialidadesList.map((e: any) => e.especialidad?.nombre).filter(Boolean),
+      especialidad: mainRelation?.especialidad?.nombre || null,
+      especialidadesExtras: extraRelations.map((e: any) => e.especialidad?.nombre).filter(Boolean),
       nivelEducativo: esp.nivelEducativo,
       modalidad: esp.modalidad ?? null,
       estado: esp.estado,
@@ -160,23 +164,58 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         },
       });
 
-      if (data.especialidades && data.especialidades.length > 0) {
+      const specialtiesToCreate: { nombre: string; esPrincipal: boolean }[] = [];
+
+      if (data.especialidad) {
+        specialtiesToCreate.push({ nombre: data.especialidad.trim(), esPrincipal: true });
+      }
+
+      if (data.especialidadesExtras && data.especialidadesExtras.length > 0) {
+        for (const extra of data.especialidadesExtras) {
+          const trimmed = extra.trim();
+          if (
+            trimmed &&
+            !specialtiesToCreate.some((s) => s.nombre.toLowerCase() === trimmed.toLowerCase())
+          ) {
+            specialtiesToCreate.push({ nombre: trimmed, esPrincipal: false });
+          }
+        }
+      }
+
+      // Legacy fallback
+      if (
+        specialtiesToCreate.length === 0 &&
+        data.especialidades &&
+        data.especialidades.length > 0
+      ) {
+        data.especialidades.forEach((espNombre, idx) => {
+          const trimmed = espNombre.trim();
+          if (
+            trimmed &&
+            !specialtiesToCreate.some((s) => s.nombre.toLowerCase() === trimmed.toLowerCase())
+          ) {
+            specialtiesToCreate.push({ nombre: trimmed, esPrincipal: idx === 0 });
+          }
+        });
+      }
+
+      if (specialtiesToCreate.length > 0) {
         const nivel = await tx.nivelEducativo.findFirst({
           where: { nombre: data.nivelEducativo },
         });
 
         if (nivel) {
-          for (const espNombre of data.especialidades) {
+          for (const item of specialtiesToCreate) {
             const especialidadEntity = await tx.especialidad.upsert({
               where: {
                 nombre_nivelEducativoId: {
-                  nombre: espNombre,
+                  nombre: item.nombre,
                   nivelEducativoId: nivel.id,
                 },
               },
               update: {},
               create: {
-                nombre: espNombre,
+                nombre: item.nombre,
                 nivelEducativoId: nivel.id,
                 isActive: true,
               },
@@ -186,6 +225,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
               data: {
                 especialistaId: especialista.id,
                 especialidadId: especialidadEntity.id,
+                esPrincipal: item.esPrincipal,
               },
             });
           }
@@ -221,6 +261,11 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
   ): Promise<IEspecialistaResponse> {
     const esp = await this.prisma.especialista.findUnique({
       where: { id },
+      include: {
+        especialidades: {
+          include: { especialidad: true },
+        },
+      },
     });
     if (!esp) {
       throw new NotFoundException(`Especialista con ID ${id} no encontrado.`);
@@ -262,30 +307,87 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         },
       });
 
-      if (data.especialidades !== undefined) {
+      if (
+        data.especialidad !== undefined ||
+        data.especialidadesExtras !== undefined ||
+        data.especialidades !== undefined
+      ) {
         await tx.especialistaEspecialidad.deleteMany({
           where: { especialistaId: id },
         });
 
-        if (data.especialidades && data.especialidades.length > 0) {
+        const specialtiesToCreate: { nombre: string; esPrincipal: boolean }[] = [];
+
+        let mainSpecialty = data.especialidad;
+        if (mainSpecialty === undefined) {
+          // If not provided in update, check if there was a previous main specialty in esp
+          const prevMain = esp.especialidades.find((e: any) => e.esPrincipal);
+          mainSpecialty = prevMain?.especialidad?.nombre;
+        }
+
+        if (mainSpecialty) {
+          specialtiesToCreate.push({ nombre: mainSpecialty.trim(), esPrincipal: true });
+        }
+
+        let extraSpecialties = data.especialidadesExtras;
+        if (extraSpecialties === undefined) {
+          if (data.especialidades) {
+            extraSpecialties = data.especialidades.filter(
+              (e: string) => e.trim() && e.trim() !== mainSpecialty,
+            );
+          } else {
+            const prevExtras = esp.especialidades.filter((e: any) => !e.esPrincipal);
+            extraSpecialties = prevExtras.map((e: any) => e.especialidad.nombre);
+          }
+        }
+
+        if (extraSpecialties && extraSpecialties.length > 0) {
+          for (const extra of extraSpecialties) {
+            const trimmed = extra.trim();
+            if (
+              trimmed &&
+              !specialtiesToCreate.some((s) => s.nombre.toLowerCase() === trimmed.toLowerCase())
+            ) {
+              specialtiesToCreate.push({ nombre: trimmed, esPrincipal: false });
+            }
+          }
+        }
+
+        // Legacy fallback
+        if (
+          specialtiesToCreate.length === 0 &&
+          data.especialidades &&
+          data.especialidades.length > 0
+        ) {
+          data.especialidades.forEach((espNombre, idx) => {
+            const trimmed = espNombre.trim();
+            if (
+              trimmed &&
+              !specialtiesToCreate.some((s) => s.nombre.toLowerCase() === trimmed.toLowerCase())
+            ) {
+              specialtiesToCreate.push({ nombre: trimmed, esPrincipal: idx === 0 });
+            }
+          });
+        }
+
+        if (specialtiesToCreate.length > 0) {
           const currentNivel = data.nivelEducativo || esp.nivelEducativo;
           const nivel = await tx.nivelEducativo.findFirst({
             where: { nombre: currentNivel },
           });
 
           if (nivel) {
-            for (const espNombre of data.especialidades) {
-              if (!espNombre.trim()) continue;
+            for (const item of specialtiesToCreate) {
               const especialidadEntity = await tx.especialidad.upsert({
                 where: {
                   nombre_nivelEducativoId: {
-                    nombre: espNombre,
+                    nombre: item.nombre,
                     nivelEducativoId: nivel.id,
                   },
                 },
                 update: {},
                 create: {
-                  nombre: espNombre,
+                  nombre: item.nombre,
                   nivelEducativoId: nivel.id,
                   isActive: true,
                 },
@@ -295,6 +397,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
                 data: {
                   especialistaId: id,
                   especialidadId: especialidadEntity.id,
+                  esPrincipal: item.esPrincipal,
                 },
               });
             }

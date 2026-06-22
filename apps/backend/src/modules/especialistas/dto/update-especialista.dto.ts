@@ -54,6 +54,13 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   especialidades?: string[];
 
   @IsString()
+  @IsOptional()
+  especialidad?: string;
+
+  @IsOptional()
+  especialidadesExtras?: string[];
+
+  @IsString()
   @IsNotEmpty()
   estado!: string;
 

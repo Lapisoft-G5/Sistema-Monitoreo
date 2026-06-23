@@ -1835,5 +1835,15 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado)
   2. Se modificó el mapa de capacidades estáticas del backend `capability-map.ts` para incluir `'especialistas:read'` en `ROL_CAPABILITIES[RoleCode.JEFE_AREA]` y `ESPECIALISTA_CARGO_CAPABILITIES[EspecialistaCargoEnum.JEFE_AREA]`.
   3. Esto asegura que al iniciar sesión, el nuevo token JWT expedido al Jefe de Área contenga correctamente este permiso y se autoricen sus consultas a `/api/especialistas`.
 
+#### 4. Habilitación de Reportes y Visualización de Fichas de Monitoreo para Jefe de Área
+- **Cambio en Permisos (Frontend):** Se otorgó el permiso `'reportes'` al rol `jefe_area` en [roles.ts](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/shared/constants/roles.ts), permitiéndoles visualizar el acceso de "Reportes" en la barra lateral e ingresar a la ruta `/reportes`.
+- **Cambio en el Scope del Backend:** Se configuró el filtro de alcance `forFicha` en [scope-filter.ts](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/backend/src/shared/auth/scope-filter.ts) para que el rol `jefe_area` solo tenga acceso a las fichas de monitoreo que fueron creadas por él mismo (`creadoPorId: ctx.userId`). Se agregaron las pruebas unitarias correspondientes en [scope-filter.spec.ts](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/backend/src/shared/auth/scope-filter.spec.ts) para validar el comportamiento del alcance.
+- **Cambio en Vista de Reportes (Frontend):** 
+  - Se modificó [ReportesPage.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/pages/jefeGestion/ReportesPage.tsx) para resolver correctamente el flag `isEvaluatedView`, asegurando que tanto `especialista` como `jefe_area` visualicen la interfaz en calidad de evaluadores.
+  - Se reemplazó el antiguo componente `FichaAuditorModal` por el formulario completo `LlenarFichaForm` en [ReportesGrid.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/widgets/reportes/ui/ReportesGrid.tsx) para mostrar el detalle de ejecución en modo de solo lectura.
+- **Corrección de visualización ("Ver Ficha"):**
+  - **Problema:** El hook de compatibilidad `usePlantillas()` lee desde el contexto/localStorage local, el cual no está hidratado en la página de reportes, haciendo que `activeTemplate` fuera `undefined` y previniendo el montaje del modal al presionar "Ver Ficha".
+  - **Resolución:** Se modificó [ReportesGrid.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/widgets/reportes/ui/ReportesGrid.tsx) para obtener las plantillas directamente de la API mediante `usePlantillasList()` (Query TanStack) y mapearlas al modelo que requiere la interfaz, solventando por completo la inoperatividad del botón.
+
 
 

@@ -1850,5 +1850,11 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado)
 - **Cambio en las Políticas de RLS (Base de Datos):** Se aplicaron nuevas políticas de seguridad a nivel de fila (`fichas_role_isolation` y `cronogramas_role_isolation` en la migración `20260623180200_add_docente_to_rls_policies`) para permitir que los usuarios con rol `docente` puedan consultar (SELECT) los cronogramas donde figuran como el docente evaluado, y las fichas de monitoreo en estado `FINALIZADO` correspondientes a sus evaluaciones.
 
 
-
-
+#### 6. Rediseño del Panel de Control de Reportes para el Docente Evaluado y Filtro por Año
+- **Rediseño de Métricas (KPIs) para Docente:** Se modificó [ReportesStats.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/widgets/reportes/ui/ReportesStats.tsx) para aceptar la prop `isEvaluatedView`. Cuando es verdadera (docente evaluado), oculta los KPI de cobertura genéricos (cobertura total de IEs) y muestra en su lugar métricas relevantes a su propio desempeño: "Monitoreos Recibidos", "Mi Rendimiento" (% de nivel satisfactorio), "Mi Promedio General" (calculado a partir de sus fichas completadas) y "Mi Nivel de Logro" (el nivel más reciente alcanzado).
+- **Adaptación del Filtro y Reemplazo de Tipo de Ficha por Año:**
+  - Se removió el filtro "Tipo de Ficha" (ya que para el docente es redundante y para otros roles se prioriza el filtro cronológico) y se integró un nuevo filtro por **Año (Año de ejecución)** en [ReportesPage.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/pages/jefeGestion/ReportesPage.tsx) y [ReportesGrid.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/widgets/reportes/ui/ReportesGrid.tsx).
+  - Los años disponibles se calculan de manera dinámica (usando `useMemo`) evaluando las fechas de ejecución reales en las fichas completadas/cronogramas devueltos.
+- **Correcciones de UI y Tipo:**
+  - Se ocultó el campo redundante de "Evaluado" en la tarjeta de visita cuando `isEvaluatedView` es verdadero (el docente evaluado sabe que es él mismo) y se resaltó la línea del especialista evaluador.
+  - Se corrigieron los problemas de tipado TypeScript de `promedio` y `nivelLogro` en `ReportesPage.tsx` al definir estrictamente el tipo de retorno de `completedVisits` como `BackendReportVisit[]`.

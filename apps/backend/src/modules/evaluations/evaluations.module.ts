@@ -5,12 +5,14 @@ import { FichaRepository } from './repositories/ficha.repository.js';
 import { PrismaFichaRepository } from './repositories/prisma-ficha.repository.js';
 import { PrismaModule } from '../../shared/prisma/prisma.module.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { ScopeFilter } from '../../shared/auth/scope-filter.js';
 
 @Module({
   imports: [PrismaModule, AuthModule],
   controllers: [FichaController],
   providers: [
     FichaService,
+    ScopeFilter,
     {
       provide: FichaRepository,
       useClass: PrismaFichaRepository,

@@ -3,6 +3,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,6 +11,8 @@ import type { IFichaMonitoreo, NivelLogro } from '@sistema-monitoreo/shared-cont
 import { FichaRepository } from '../repositories/ficha.repository.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
+import { ScopeFilter } from '../../../shared/auth/scope-filter.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 import type {
   CreateFichaDto,
   SaveRespuestaDesempenoDto,
@@ -28,6 +31,7 @@ export class FichaService {
   constructor(
     private readonly repository: FichaRepository,
     private readonly prisma: PrismaService,
+    private readonly scopeFilter: ScopeFilter,
   ) {}
 
   async findByVisitaId(
@@ -40,6 +44,19 @@ export class FichaService {
   async findById(id: string, session: SessionUser): Promise<IFichaMonitoreo> {
     const f = await this.repository.findById(id);
     if (!f) throw new NotFoundException(`Ficha ${id} no encontrada.`);
+
+    // Validar scope: el usuario solo puede ver fichas dentro de su alcance.
+    const scope = this.scopeFilter.forFicha({
+      userId: session.id,
+      role: session.role as RoleCode,
+      institucionId: session.institucionId ?? null,
+    });
+    const allowed = await this.prisma.fichaMonitoreo.findFirst({
+      where: { id: f.id, ...scope },
+      select: { id: true },
+    });
+    if (!allowed) throw new ForbiddenException('No tiene acceso a esta ficha.');
+
     return f;
   }
 

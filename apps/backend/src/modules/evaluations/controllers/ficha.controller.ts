@@ -44,7 +44,7 @@ export class FichaController {
   }
 
   @Get('visita/:cronogramaId')
-  @RequirePermissions('monitoreo:execute')
+  @RequirePermissions('monitoreo:read')
   async porVisita(
     @Param('cronogramaId', new ParseUUIDPipe()) cronogramaId: string,
     @Req() req: any,
@@ -53,7 +53,7 @@ export class FichaController {
   }
 
   @Get(':id')
-  @RequirePermissions('monitoreo:execute')
+  @RequirePermissions('monitoreo:read')
   async porId(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: any,

@@ -18,6 +18,9 @@ describe('capability-map', () => {
     it('contiene reports:read para que toda persona vea sus propios reportes', () => {
       expect(BASE_CAPABILITIES).toContain('reports:read');
     });
+    it('contiene monitoreo:read para que todo usuario autenticado pueda leer sus propias fichas', () => {
+      expect(BASE_CAPABILITIES).toContain('monitoreo:read');
+    });
   });
 
   describe('computeEffectivePermissions', () => {
@@ -26,9 +29,10 @@ describe('capability-map', () => {
       expect(new Set(perms)).toEqual(new Set([...BASE_CAPABILITIES, 'dashboard:read']));
     });
 
-    it('un docente sin cargos activos solo ve reports:read', () => {
+    it('un docente sin cargos activos ve reports:read y monitoreo:read', () => {
       const perms = computeEffectivePermissions(RoleCode.DOCENTE, null, []);
-      expect(perms).toEqual(['reports:read']);
+      expect(perms).toEqual(expect.arrayContaining(['reports:read', 'monitoreo:read']));
+      expect(perms).toHaveLength(2);
     });
 
     it('un docente con cargo Director tiene acceso a instituciones:write y docentes:write', () => {

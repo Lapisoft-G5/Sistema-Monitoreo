@@ -43,7 +43,7 @@ export type EspecialistaCargoEnum =
   (typeof EspecialistaCargoEnum)[keyof typeof EspecialistaCargoEnum];
 
 /** Permisos base que toda persona tiene, independientemente de rol o cargo. */
-export const BASE_CAPABILITIES: readonly string[] = ['reports:read'] as const;
+export const BASE_CAPABILITIES: readonly string[] = ['reports:read', 'monitoreo:read'] as const;
 
 /** Permisos derivados del ROL (identidad de autenticación del Usuario). */
 export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {

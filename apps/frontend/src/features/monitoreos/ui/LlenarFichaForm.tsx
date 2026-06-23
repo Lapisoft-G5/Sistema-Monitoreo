@@ -7,7 +7,9 @@ import {
   CheckCircle2,
   Clock,
   Trophy,
-  Upload
+  Upload,
+  Eye,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
@@ -19,7 +21,7 @@ interface LlenarFichaFormProps {
   onClose: () => void;
   visit: Cronograma;
   template: Plantilla;
-  onSave: (
+  onSave?: (
     visitId: string,
     data: {
       checkedAspects: Record<string, boolean>;
@@ -33,7 +35,7 @@ interface LlenarFichaFormProps {
       evidenciaUrls?: Record<string, string>;
     }
   ) => void;
-  onFinalize: (
+  onFinalize?: (
     visitId: string,
     data: {
       checkedAspects: Record<string, boolean>;
@@ -47,6 +49,17 @@ interface LlenarFichaFormProps {
       evidenciaUrls?: Record<string, string>;
     }
   ) => void;
+  initialState?: {
+    checkedAspects: Record<string, boolean>;
+    selectedLevels: Record<string, string>;
+    generalComments: string;
+    sugerencias?: string;
+    compromisos?: string;
+    rubricComments?: Record<string, string>;
+    preguntaExtraAnswers?: Record<string, boolean>;
+    respuestasEjeItem?: Record<string, number>;
+    evidenciaUrls?: Record<string, string>;
+  };
 }
 
 const formatVisitTime = (fechaHoraStr: string) => {
@@ -89,6 +102,7 @@ export const LlenarFichaForm = ({
   template,
   onSave,
   onFinalize,
+  initialState,
 }: LlenarFichaFormProps) => {
   const [checkedAspects, setCheckedAspects] = useState<Record<string, boolean>>({});
   const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({});
@@ -103,22 +117,48 @@ export const LlenarFichaForm = ({
 
   useEffect(() => {
     if (isOpen && visit) {
-      const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
-      if (savedState) {
-        try {
-          const parsed = JSON.parse(savedState);
-          setTimeout(() => {
-            setCheckedAspects(parsed.checkedAspects || {});
-            setSelectedLevels(parsed.selectedLevels || {});
-            setGeneralComments(parsed.generalComments || '');
-            setSugerencias(parsed.sugerencias || '');
-            setCompromisos(parsed.compromisos || '');
-            setRubricComments(parsed.rubricComments || {});
-            setPreguntaExtraAnswers(parsed.preguntaExtraAnswers || {});
-            setRespuestasEjeItem(parsed.respuestasEjeItem || {});
-            setEvidenciaUrls(parsed.evidenciaUrls || {});
-          }, 0);
-        } catch {
+      if (initialState) {
+        setTimeout(() => {
+          setCheckedAspects(initialState.checkedAspects || {});
+          setSelectedLevels(initialState.selectedLevels || {});
+          setGeneralComments(initialState.generalComments || '');
+          setSugerencias(initialState.sugerencias || '');
+          setCompromisos(initialState.compromisos || '');
+          setRubricComments(initialState.rubricComments || {});
+          setPreguntaExtraAnswers(initialState.preguntaExtraAnswers || {});
+          setRespuestasEjeItem(initialState.respuestasEjeItem || {});
+          setEvidenciaUrls(initialState.evidenciaUrls || {});
+        }, 0);
+      } else {
+        const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
+        if (savedState) {
+          try {
+            const parsed = JSON.parse(savedState);
+            setTimeout(() => {
+              setCheckedAspects(parsed.checkedAspects || {});
+              setSelectedLevels(parsed.selectedLevels || {});
+              setGeneralComments(parsed.generalComments || '');
+              setSugerencias(parsed.sugerencias || '');
+              setCompromisos(parsed.compromisos || '');
+              setRubricComments(parsed.rubricComments || {});
+              setPreguntaExtraAnswers(parsed.preguntaExtraAnswers || {});
+              setRespuestasEjeItem(parsed.respuestasEjeItem || {});
+              setEvidenciaUrls(parsed.evidenciaUrls || {});
+            }, 0);
+          } catch {
+            setTimeout(() => {
+              setCheckedAspects({});
+              setSelectedLevels({});
+              setGeneralComments('');
+              setSugerencias('');
+              setCompromisos('');
+              setRubricComments({});
+              setPreguntaExtraAnswers({});
+              setRespuestasEjeItem({});
+              setEvidenciaUrls({});
+            }, 0);
+          }
+        } else {
           setTimeout(() => {
             setCheckedAspects({});
             setSelectedLevels({});
@@ -131,25 +171,13 @@ export const LlenarFichaForm = ({
             setEvidenciaUrls({});
           }, 0);
         }
-      } else {
-        setTimeout(() => {
-            setCheckedAspects({});
-            setSelectedLevels({});
-            setGeneralComments('');
-            setSugerencias('');
-            setCompromisos('');
-            setRubricComments({});
-            setPreguntaExtraAnswers({});
-            setRespuestasEjeItem({});
-            setEvidenciaUrls({});
-          }, 0);
       }
 
       if (template && template.desempenos.length > 0) {
         setTimeout(() => setFichaSelectedDesempenoId(template.desempenos[0].id), 0);
       }
     }
-  }, [isOpen, visit, template]);
+  }, [isOpen, visit, template, initialState]);
 
   const activeFichaDesempeno = useMemo(() => {
     if (!template) return null;
@@ -162,7 +190,7 @@ export const LlenarFichaForm = ({
   const isDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
 
   const handleSaveClick = () => {
-    onSave(visit.id, {
+    onSave?.(visit.id, {
       checkedAspects,
       selectedLevels,
       generalComments,
@@ -186,7 +214,7 @@ export const LlenarFichaForm = ({
       );
       return;
     }
-    onFinalize(visit.id, {
+    onFinalize?.(visit.id, {
       checkedAspects,
       selectedLevels,
       generalComments,
@@ -215,22 +243,43 @@ export const LlenarFichaForm = ({
     let nivel: string;
     let nivelColor: string;
     let nivelBg: string;
-    if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.25)) {
-      nivel = 'INICIO';
-      nivelColor = '#ef4444';
-      nivelBg = '#fef2f2';
-    } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.50)) {
-      nivel = 'EN PROCESO';
-      nivelColor = '#f59e0b';
-      nivelBg = '#fffbeb';
-    } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.75)) {
-      nivel = 'LOGRADO';
-      nivelColor = '#10b981';
-      nivelBg = '#ecfdf5';
+
+    if (numDesempenos === 5) {
+      if (puntajeTotal >= 5 && puntajeTotal <= 7) {
+        nivel = 'INICIO';
+        nivelColor = '#ef4444';
+        nivelBg = '#fef2f2';
+      } else if (puntajeTotal >= 8 && puntajeTotal <= 12) {
+        nivel = 'EN PROCESO';
+        nivelColor = '#f59e0b';
+        nivelBg = '#fffbeb';
+      } else if (puntajeTotal >= 13 && puntajeTotal <= 17) {
+        nivel = 'LOGRO ESPERADO';
+        nivelColor = '#10b981';
+        nivelBg = '#ecfdf5';
+      } else {
+        nivel = 'LOGRO DESTACADO';
+        nivelColor = '#6366f1';
+        nivelBg = '#eef2ff';
+      }
     } else {
-      nivel = 'SATISFACTORIO';
-      nivelColor = '#6366f1';
-      nivelBg = '#eef2ff';
+      if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.25)) {
+        nivel = 'INICIO';
+        nivelColor = '#ef4444';
+        nivelBg = '#fef2f2';
+      } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.50)) {
+        nivel = 'EN PROCESO';
+        nivelColor = '#f59e0b';
+        nivelBg = '#fffbeb';
+      } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.75)) {
+        nivel = 'LOGRO ESPERADO';
+        nivelColor = '#10b981';
+        nivelBg = '#ecfdf5';
+      } else {
+        nivel = 'LOGRO DESTACADO';
+        nivelColor = '#6366f1';
+        nivelBg = '#eef2ff';
+      }
     }
 
     return { puntajeTotal, puntajeMax, porcentaje, nivel, nivelColor, nivelBg };
@@ -473,7 +522,6 @@ export const LlenarFichaForm = ({
           </div>
         </div>
 
-        {/* Ejes e Items (Solo Docente) */}
         {template.ejesItems && template.ejesItems.length > 0 && (
           <div className="border-t border-border pt-6 mt-6 px-5 space-y-4">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block flex items-center gap-1.5">
@@ -482,106 +530,170 @@ export const LlenarFichaForm = ({
             </span>
             
             {template.ejesItems.map((item) => (
-              <div key={item.id} className="border border-slate-200 rounded-xl p-4 space-y-3">
+              <div key={item.id} className="bg-slate-50/30 border border-slate-200/60 rounded-2xl p-5 space-y-4 hover:border-slate-300 hover:bg-slate-50/50 transition-all duration-200">
                 <div className="flex items-start gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-bold text-primary">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs font-black text-primary border border-primary/20 shadow-inner">
                     {item.numero}
                   </span>
-                  <p className="text-sm text-slate-700 font-medium">{item.descripcion}</p>
+                  <p className="text-sm text-slate-800 font-semibold leading-relaxed">{item.descripcion}</p>
                 </div>
                 
-                <div className="flex items-center gap-4 pl-9">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0">
-                    NIVEL DE LOGRO:
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {['I', 'II', 'III', 'IV'].map((nivel) => {
-                      const numVal = romanToNum(nivel);
-                      const levelConfig = template.niveles.find((n) => n.nivel === nivel);
-                      const color = levelConfig?.color || '#3b82f6';
-                      const isSelected = respuestasEjeItem[item.id] === numVal;
-
-                      return (
-                        <button
-                          key={nivel}
-                          type="button"
-                          onClick={() => {
-                            if (!isCompleted) {
-                              setRespuestasEjeItem((prev) => ({ ...prev, [item.id]: numVal }));
-                            }
-                          }}
-                          disabled={isCompleted}
-                          className={`px-3.5 py-1 rounded-lg text-xs font-black transition-all border cursor-pointer select-none flex items-center justify-center min-w-[42px] ${
-                            isCompleted ? 'opacity-70 cursor-not-allowed' : ''
-                          }`}
-                          style={{
-                            backgroundColor: isSelected ? color : `${color}08`,
-                            borderColor: isSelected ? color : `${color}30`,
-                            color: isSelected ? '#ffffff' : color,
-                            boxShadow: isSelected ? `0 2px 6px ${color}30` : undefined,
-                          }}
-                        >
-                          {nivel}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                
-                <div className="pl-9">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
-                    EVIDENCIAS
-                  </span>
-                  {evidenciaUrls[item.id] ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pl-10">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                      Nivel de Logro
+                    </span>
                     <div className="flex items-center gap-2">
-                      <a
-                        href={evidenciaUrls[item.id]}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary font-semibold underline"
-                      >
-                        Ver evidencia
-                      </a>
-                      {!isCompleted && (
-                        <button
-                          onClick={() => {
-                            setEvidenciaUrls((prev) => {
-                              const next = { ...prev };
-                              delete next[item.id];
-                              return next;
-                            });
-                          }}
-                          className="text-xs text-destructive font-semibold cursor-pointer"
-                        >
-                          Eliminar
-                        </button>
-                      )}
+                      {['I', 'II', 'III', 'IV'].map((nivel) => {
+                        const numVal = romanToNum(nivel);
+                        const levelConfig = template.niveles.find((n) => n.nivel === nivel);
+                        const color = levelConfig?.color || '#3b82f6';
+                        const isSelected = respuestasEjeItem[item.id] === numVal;
+
+                        return (
+                          <button
+                            key={nivel}
+                            type="button"
+                            onClick={() => {
+                              if (!isCompleted) {
+                                setRespuestasEjeItem((prev) => ({ ...prev, [item.id]: numVal }));
+                              }
+                            }}
+                            disabled={isCompleted}
+                            className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all border cursor-pointer select-none flex items-center justify-center min-w-[45px] h-8 ${
+                              isCompleted ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.03] active:scale-[0.98]'
+                            }`}
+                            style={{
+                              backgroundColor: isSelected ? color : `${color}08`,
+                              borderColor: isSelected ? color : `${color}30`,
+                              color: isSelected ? '#ffffff' : color,
+                              boxShadow: isSelected ? `0 4px 10px ${color}35` : undefined,
+                            }}
+                          >
+                            {nivel}
+                          </button>
+                        );
+                      })}
                     </div>
-                  ) : !isCompleted ? (
-                    <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-slate-300 text-xs text-slate-500 cursor-pointer hover:border-primary hover:text-primary transition-colors">
-                      <Upload className="h-4 w-4" />
-                      Subir archivo
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
-                            const ficha = await fichasApi.findByVisita(visit.id);
-                            if (ficha) {
-                              const result = await fichasApi.subirEvidenciaEjeItem(ficha.id, item.id, file);
-                              setEvidenciaUrls((prev) => ({ ...prev, [item.id]: result.evidenciaUrl }));
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                      Evidencias
+                    </span>
+                    {evidenciaUrls[item.id] ? (
+                      <div className="flex items-center gap-3 p-2 bg-white border border-slate-200 rounded-xl shadow-xs">
+                        <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10 text-primary">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black text-slate-700 truncate">
+                            Evidencia Cargada
+                          </p>
+                          <p className="text-[9px] text-slate-400 font-bold truncate">
+                            {evidenciaUrls[item.id].split('/').pop() || 'evidencia.bin'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <a
+                            href={
+                              evidenciaUrls[item.id]?.startsWith('http')
+                                ? evidenciaUrls[item.id]
+                                : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${evidenciaUrls[item.id]}`
                             }
-                          } catch (err) {
-                            console.error('Error uploading evidence:', err);
-                          }
-                        }}
-                      />
-                    </label>
-                  ) : null}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[10px] font-extrabold text-slate-600 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all shadow-sm cursor-pointer"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Ver
+                          </a>
+                          {!isCompleted && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEvidenciaUrls((prev) => {
+                                  const next = { ...prev };
+                                  delete next[item.id];
+                                  localStorage.setItem(
+                                    `sistema-monitoreo:ficha-state:${visit.id}`,
+                                    JSON.stringify({
+                                      checkedAspects,
+                                      selectedLevels,
+                                      generalComments,
+                                      sugerencias,
+                                      compromisos,
+                                      rubricComments,
+                                      preguntaExtraAnswers,
+                                      respuestasEjeItem,
+                                      evidenciaUrls: next,
+                                    })
+                                  );
+                                  return next;
+                                });
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-red-100 text-[10px] font-extrabold text-red-600 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Eliminar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : !isCompleted ? (
+                      <label className="inline-flex items-center justify-center gap-2 w-full max-w-[240px] h-[36px] rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-bold cursor-pointer hover:border-primary hover:text-primary hover:bg-primary/3 transition-all duration-150">
+                        <Upload className="h-4 w-4" />
+                        Subir archivo de sustento
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+                              let ficha = await fichasApi.findByVisita(visit.id);
+                              if (!ficha) {
+                                ficha = await fichasApi.create({
+                                  cronogramaId: visit.id,
+                                  areaCurricular: visit.tipo === 'DOCENTE' ? 'Matematica' : undefined,
+                                  grado: visit.tipo === 'DOCENTE' ? '5to' : undefined,
+                                  seccion: visit.tipo === 'DOCENTE' ? 'A' : undefined,
+                                  cantidadEstudiantes: visit.tipo === 'DOCENTE' ? 30 : undefined,
+                                  cantidadEstudiantesNee: visit.tipo === 'DOCENTE' ? 2 : undefined,
+                                  cursoId: visit.tipo === 'DOCENTE' ? '1f480ae6-cd7a-40f7-beac-108c05af771e' : undefined,
+                                });
+                              }
+                              const result = await fichasApi.subirEvidenciaEjeItem(ficha.id, item.id, file);
+                              setEvidenciaUrls((prev) => {
+                                const next = { ...prev, [item.id]: result.evidenciaUrl };
+                                localStorage.setItem(
+                                  `sistema-monitoreo:ficha-state:${visit.id}`,
+                                  JSON.stringify({
+                                    checkedAspects,
+                                    selectedLevels,
+                                    generalComments,
+                                    sugerencias,
+                                    compromisos,
+                                    rubricComments,
+                                    preguntaExtraAnswers,
+                                    respuestasEjeItem,
+                                    evidenciaUrls: next,
+                                  })
+                                );
+                                return next;
+                              });
+                            } catch (err) {
+                              console.error('Error uploading evidence:', err);
+                            }
+                          }}
+                        />
+                      </label>
+                    ) : (
+                      <span className="text-[11px] text-slate-300 italic block pt-1">— Sin evidencias cargadas</span>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -641,15 +753,14 @@ export const LlenarFichaForm = ({
                     const nivel = selectedLevels[des.id];
                     const pts = romanToNum(nivel || '');
                     const nivelObj = template.niveles.find((n) => n.nivel === nivel);
-                    const label = idx < 5 ? `D${idx + 1}` : `R${idx + 1}`;
                     return (
                       <tr key={des.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                        <td className="p-3 text-slate-400 font-bold text-center w-8">{label}</td>
+                        <td className="p-3 text-slate-400 font-bold text-center w-8">D{idx + 1}</td>
                         <td className="p-3 text-slate-700 font-medium leading-snug">{des.nombre}</td>
                         <td className="p-3 text-center">
                           {nivel ? (
                             <span
-                              className="inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+                              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black"
                               style={{ backgroundColor: (nivelObj?.color ?? '#94a3b8') + '20', color: nivelObj?.color ?? '#94a3b8' }}
                             >
                               Nivel {nivel}
@@ -664,15 +775,45 @@ export const LlenarFichaForm = ({
                       </tr>
                     );
                   })}
-                  <tr className="border-t-2 border-slate-200" style={{ backgroundColor: calificacion.nivelBg }}>
-                    <td colSpan={3} className="p-3 font-extrabold text-slate-700 text-xs text-right">TOTAL</td>
-                    <td className="p-3 text-center font-extrabold text-base" style={{ color: calificacion.nivelColor }}>
+                  {template.ejesItems && template.ejesItems.map((item, idx) => {
+                    const numVal = respuestasEjeItem[item.id];
+                    const nivel = numVal ? ['I', 'II', 'III', 'IV'][numVal - 1] : null;
+                    const nivelObj = nivel ? template.niveles.find((n) => n.nivel === nivel) : null;
+                    return (
+                      <tr key={item.id} className={(template.desempenos.length + idx) % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                        <td className="p-3 text-slate-400 font-bold text-center w-8">R{item.numero}</td>
+                        <td className="p-3 text-slate-700 font-medium leading-snug">{item.descripcion}</td>
+                        <td className="p-3 text-center">
+                          {nivel ? (
+                            <span
+                              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black"
+                              style={{ backgroundColor: (nivelObj?.color ?? '#94a3b8') + '20', color: nivelObj?.color ?? '#94a3b8' }}
+                            >
+                              Nivel {nivel}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 italic text-[10px]">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center font-black text-slate-700">
+                          {numVal > 0 ? numVal : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="border-t border-slate-200 bg-slate-50/50">
+                    <td colSpan={3} className="p-3 font-bold text-slate-500 text-[11px] text-right uppercase tracking-wider">
+                      TOTAL (Desempeños D1-D5)
+                    </td>
+                    <td className="p-3 text-center font-black text-base" style={{ color: calificacion.nivelColor }}>
                       {calificacion.puntajeTotal} / {calificacion.puntajeMax}
                     </td>
                   </tr>
-                  <tr style={{ backgroundColor: calificacion.nivelColor + '15' }}>
-                    <td colSpan={3} className="p-3 font-extrabold text-slate-700 text-xs text-right">NIVEL DE LOGRO</td>
-                    <td className="p-3 text-center font-extrabold text-sm" style={{ color: calificacion.nivelColor }}>
+                  <tr style={{ backgroundColor: calificacion.nivelColor + '10' }}>
+                    <td colSpan={3} className="p-3 font-black text-slate-700 text-xs text-right uppercase tracking-wider">
+                      NIVEL DE LOGRO ALCANZADO
+                    </td>
+                    <td className="p-3 text-center font-black text-sm" style={{ color: calificacion.nivelColor }}>
                       {calificacion.nivel} ({calificacion.porcentaje}%)
                     </td>
                   </tr>

@@ -77,7 +77,34 @@ export class FichaService {
       if (!dto.seccion) missing.push('seccion');
       if (dto.cantidadEstudiantes === undefined) missing.push('cantidadEstudiantes');
       if (dto.cantidadEstudiantesNee === undefined) missing.push('cantidadEstudiantesNee');
-      if (!dto.cursoId) missing.push('cursoId');
+
+      let validCursoId = dto.cursoId;
+      if (validCursoId) {
+        const exists = await this.prisma.curso.findUnique({ where: { id: validCursoId } });
+        if (!exists) {
+          validCursoId = undefined;
+        }
+      }
+
+      if (!validCursoId) {
+        // Buscar un curso asociado a este docente
+        const docenteCurso = await this.prisma.docenteCurso.findFirst({
+          where: { docenteId: cronograma.evaluadoId },
+        });
+        if (docenteCurso) {
+          validCursoId = docenteCurso.cursoId;
+        } else {
+          // Fallback al primer curso del sistema
+          const fallbackCurso = await this.prisma.curso.findFirst();
+          if (fallbackCurso) {
+            validCursoId = fallbackCurso.id;
+          }
+        }
+      }
+
+      if (!validCursoId) missing.push('cursoId');
+      else dto.cursoId = validCursoId;
+
       if (missing.length > 0) {
         throw new BadRequestException(
           `Contexto obligatorio para monitoreo DOCENTE. Faltan: ${missing.join(', ')}.`,
@@ -354,10 +381,14 @@ export class FichaService {
     fs.writeFileSync(filepath, file.buffer);
 
     const url = `/uploads/${filename}`;
+    const existing = await this.prisma.fichaRespuestaEjeItem.findFirst({
+      where: { fichaId, ejeItemId },
+    });
+    const nivel = existing ? existing.nivel : 1;
     await this.repository.saveRespuestaEjeItem({
       fichaId,
       ejeItemId,
-      nivel: 1,
+      nivel,
       evidenciaUrl: url,
     });
     return url;

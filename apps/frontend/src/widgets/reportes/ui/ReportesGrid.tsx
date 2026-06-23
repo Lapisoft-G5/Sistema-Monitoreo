@@ -17,7 +17,7 @@ import { Badge } from '@/shared/ui/badge';
 import { SelectField } from '@/shared/ui/form-controls';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
+import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
 import { LlenarFichaForm } from '@/features/monitoreos';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
 import { reportesApi } from '@/shared/api/reportes.api';
@@ -150,60 +150,55 @@ export const ReportesGrid = ({
     enabled: !!selectedVisit,
   });
 
-  const { data: realPlantillas } = usePlantillasList();
+  // Carga la plantilla específica de la ficha por ID (funciona con monitoreo:read,
+  // disponible para todos los roles incluyendo docente).
+  const { data: fichaPlantilla } = usePlantilla(backendFicha?.plantillaId);
 
-  const allPlantillas = useMemo(() => {
-    if (!realPlantillas || realPlantillas.length === 0) {
-      return plantillas;
-    }
-    return realPlantillas.map((p: IPlantilla) => ({
-      id: p.id,
-      tipoMonitoreo: p.tipoMonitoreo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo',
-      anioAcademico: p.anioAcademico,
-      baremo: p.baremo,
-      descripcion: p.descripcion || '',
-      estado: p.estado,
-      fechaCreacion: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
-      creadoPorRole: p.rolAutorAlCrear,
-      ieId: p.institucionId || undefined,
-      niveles: p.niveles.map(n => ({
-        nivel: n.nivelRomano,
-        denominacion: n.denominacion,
-        rangoMin: n.rangoMin,
-        color: n.color
+  const mapIPlantillaToPlantilla = (p: IPlantilla): Plantilla => ({
+    id: p.id,
+    tipoMonitoreo: p.tipoMonitoreo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo',
+    anioAcademico: p.anioAcademico,
+    baremo: p.baremo,
+    descripcion: p.descripcion || '',
+    estado: p.estado,
+    fechaCreacion: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+    creadoPorRole: p.rolAutorAlCrear,
+    ieId: p.institucionId || undefined,
+    niveles: p.niveles.map(n => ({
+      nivel: n.nivelRomano,
+      denominacion: n.denominacion,
+      rangoMin: n.rangoMin,
+      color: n.color
+    })),
+    desempenos: p.desempenos.map(d => ({
+      id: d.id,
+      nombre: d.nombre,
+      descripcionCorta: d.descripcionCorta || '',
+      preguntaExtra: d.preguntaExtra || '',
+      aspectos: (d.aspectos || []).map(a => ({
+        id: a.id,
+        descripcion: a.descripcion
       })),
-      desempenos: p.desempenos.map(d => ({
-        id: d.id,
-        nombre: d.nombre,
-        descripcionCorta: d.descripcionCorta || '',
-        preguntaExtra: d.preguntaExtra || '',
-        aspectos: (d.aspectos || []).map(a => ({
-          id: a.id,
-          descripcion: a.descripcion
-        })),
-        rubrica: (d.rubrica || []).map(r => ({
-          nivel: r.nivelRomano,
-          descripcion: r.descripcion
-        }))
-      })),
-      ejesItems: (p.ejesItems || []).map((item) => ({
-        id: item.id,
-        numero: item.numero,
-        descripcion: item.descripcion,
-      })),
-    }));
-  }, [realPlantillas, plantillas]);
+      rubrica: (d.rubrica || []).map(r => ({
+        nivel: r.nivelRomano,
+        descripcion: r.descripcion
+      }))
+    })),
+    ejesItems: (p.ejesItems || []).map((item) => ({
+      id: item.id,
+      numero: item.numero,
+      descripcion: item.descripcion,
+    })),
+  });
 
   const activeTemplate = useMemo(() => {
     if (!selectedVisit) return null;
-    const hasBackendData = 'nivelLogro' in selectedVisit;
-    if (hasBackendData && backendFicha) {
-      const match = allPlantillas.find((p) => p.id === backendFicha.plantillaId);
-      if (match) return match;
-    }
+    // Prioridad 1: plantilla cargada por ID (docente y cualquier rol con monitoreo:read)
+    if (fichaPlantilla) return mapIPlantillaToPlantilla(fichaPlantilla);
+    // Prioridad 2: plantillas de prop (especialista con lista completa ya mapeada)
     const searchType = selectedVisit.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    return allPlantillas.find((p) => p.tipoMonitoreo === searchType) || allPlantillas[0];
-  }, [selectedVisit, backendFicha, allPlantillas]);
+    return plantillas.find((p) => p.tipoMonitoreo === searchType) || plantillas[0] || null;
+  }, [fichaPlantilla, selectedVisit, plantillas]);
 
   const activeFichaState = useMemo(() => {
     if (!selectedVisit) return null;

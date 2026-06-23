@@ -44,7 +44,7 @@ export class PlantillaController {
   }
 
   @Get(':id')
-  @RequirePermissions('monitoreo:execute')
+  @RequirePermissions('monitoreo:read')
   async findById(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: any,

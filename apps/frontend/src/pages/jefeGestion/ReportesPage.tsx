@@ -53,10 +53,16 @@ const getFichaState = (visitId: string) => {
 export const ReportesPage = () => {
   const location = useLocation();
   const isMyReportsPath = location.pathname === '/reportes';
+  const { user } = useUser();
+  const isEvaluatedView =
+    isMyReportsPath &&
+    (user?.role === 'docente' ||
+      user?.role === 'director_institucion' ||
+      user?.role === 'coordinador_pedagogico' ||
+      user?.role === 'jefe_taller');
 
   const { cronogramas } = useCronogramas();
   const { plantillas } = usePlantillas();
-  const { user } = useUser();
   const { data: fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
 
   // ── Estados de Vista e Interacción ──
@@ -109,7 +115,7 @@ export const ReportesPage = () => {
     }
 
     let list = cronogramas.filter((c) => c.estado === 'COMPLETADO');
-    if (isMyReportsPath) {
+    if (isEvaluatedView) {
       const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
       list = list.filter((v) => {
         const visitDocente = v.docenteDirectivo.toLowerCase();
@@ -118,7 +124,12 @@ export const ReportesPage = () => {
           visitDocente.includes(userFullName)
         );
       });
-    } else if (user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller') {
+    } else if (
+      user?.role === 'especialista' ||
+      user?.role === 'jefe_area' ||
+      user?.role === 'coordinador_pedagogico' ||
+      user?.role === 'jefe_taller'
+    ) {
       const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
       list = list.filter((v) => {
         const visitEspecialista = v.especialista.toLowerCase();
@@ -136,7 +147,7 @@ export const ReportesPage = () => {
       });
     }
     return list;
-  }, [fichasCompletadasData, cronogramas, user, isMyReportsPath]);
+  }, [fichasCompletadasData, cronogramas, user, isEvaluatedView]);
 
   const filteredVisits = useMemo(() => {
     return completedVisits.filter((visit) => {

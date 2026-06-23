@@ -118,11 +118,7 @@ export class ScopeFilter {
       return { creadoPorId: ctx.userId };
     }
     if (this.isJefeAreaScope(ctx.role)) {
-      return {
-        cronograma: {
-          institucion: { nivelEducativo: ctx.especialistaNivel ?? '__none__' },
-        },
-      };
+      return { creadoPorId: ctx.userId };
     }
     // docente: ve solo fichas donde es el evaluado (docenteId == userId)
     return { id: '__none__' };

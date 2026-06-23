@@ -103,6 +103,12 @@ describe('ScopeFilter', () => {
         filter.forFicha(ctx({ role: RoleCode.COORDINADOR_PEDAGOGICO, institucionId: 'ie-x' })),
       ).toEqual({ cronograma: { institucionId: 'ie-x' } });
     });
+
+    it('JEFE_AREA: filter por creadoPorId', () => {
+      expect(filter.forFicha(ctx({ role: RoleCode.JEFE_AREA, userId: 'jefe-7' }))).toEqual({
+        creadoPorId: 'jefe-7',
+      });
+    });
   });
 
   // ── forInstitucion ──────────────────────────────────────────────────

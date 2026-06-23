@@ -98,7 +98,18 @@ export class ScopeFilter {
       // el filter a la tabla de instituciones.
       return { institucion: { nivelEducativo: ctx.especialistaNivel ?? '__none__' } };
     }
-    // docente, invitado (en este caso): no aplica
+    if (this.isOwnScope(ctx.role)) {
+      return {
+        evaluado: {
+          persona: {
+            usuario: {
+              id: ctx.userId,
+            },
+          },
+        },
+      };
+    }
+    // invitado, etc.
     return { id: '__none__' };
   }
 
@@ -120,7 +131,19 @@ export class ScopeFilter {
     if (this.isJefeAreaScope(ctx.role)) {
       return { creadoPorId: ctx.userId };
     }
-    // docente: ve solo fichas donde es el evaluado (docenteId == userId)
+    if (this.isOwnScope(ctx.role)) {
+      return {
+        cronograma: {
+          evaluado: {
+            persona: {
+              usuario: {
+                id: ctx.userId,
+              },
+            },
+          },
+        },
+      };
+    }
     return { id: '__none__' };
   }
 

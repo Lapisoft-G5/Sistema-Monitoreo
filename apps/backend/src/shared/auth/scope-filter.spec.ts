@@ -82,9 +82,15 @@ describe('ScopeFilter', () => {
       ).toEqual({ institucion: { nivelEducativo: 'Primaria' } });
     });
 
-    it('DOCENTE: filtro sentinela', () => {
-      expect(filter.forCronograma(ctx({ role: RoleCode.DOCENTE }))).toEqual({
-        id: '__none__',
+    it('DOCENTE: filter por evaluado.persona.usuario.id', () => {
+      expect(filter.forCronograma(ctx({ role: RoleCode.DOCENTE, userId: 'user-doc' }))).toEqual({
+        evaluado: {
+          persona: {
+            usuario: {
+              id: 'user-doc',
+            },
+          },
+        },
       });
     });
   });
@@ -107,6 +113,20 @@ describe('ScopeFilter', () => {
     it('JEFE_AREA: filter por creadoPorId', () => {
       expect(filter.forFicha(ctx({ role: RoleCode.JEFE_AREA, userId: 'jefe-7' }))).toEqual({
         creadoPorId: 'jefe-7',
+      });
+    });
+
+    it('DOCENTE: filter por cronograma.evaluado.persona.usuario.id', () => {
+      expect(filter.forFicha(ctx({ role: RoleCode.DOCENTE, userId: 'user-doc' }))).toEqual({
+        cronograma: {
+          evaluado: {
+            persona: {
+              usuario: {
+                id: 'user-doc',
+              },
+            },
+          },
+        },
       });
     });
   });

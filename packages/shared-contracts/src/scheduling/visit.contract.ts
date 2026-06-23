@@ -69,6 +69,8 @@ export interface ISolicitudReprogramacion {
   archivoSustentoUrl: string;
   estado: EstadoSolicitudReprogramacion;
   resueltoPorId: string | null;
+  resueltoPorNombre?: string | null;
+  resueltoPorRol?: string | null;
   comentarioResolucion: string | null;
   fechaResolucion: string | null;
   createdAt: string;

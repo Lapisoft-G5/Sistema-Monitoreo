@@ -116,7 +116,9 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
             archivoNombre: s.archivoSustentoUrl && s.archivoSustentoUrl !== '' ? (s.archivoSustentoUrl.split('/').pop() || 'oficio.pdf') : '',
             estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
             fechaRegistro: s.createdAt,
-            aprobador: s.resueltoPorId || undefined,
+            aprobador: s.resueltoPorNombre
+              ? `${s.resueltoPorRol || ''} ${s.resueltoPorNombre}`.trim()
+              : (s.resueltoPorId || undefined),
             aprobadorComentario: s.comentarioResolucion || undefined,
             fechaAprobacion: s.fechaResolucion || undefined
           };
@@ -163,7 +165,9 @@ export const CronogramaProvider = ({ children }: { children: ReactNode }) => {
             archivoNombre: s.archivoSustentoUrl && s.archivoSustentoUrl !== '' ? (s.archivoSustentoUrl.split('/').pop() || 'oficio.pdf') : '',
             estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
             fechaRegistro: s.createdAt,
-            aprobador: s.resueltoPorId || undefined,
+            aprobador: s.resueltoPorNombre
+              ? `${s.resueltoPorRol || ''} ${s.resueltoPorNombre}`.trim()
+              : (s.resueltoPorId || undefined),
             aprobadorComentario: s.comentarioResolucion || undefined,
             fechaAprobacion: s.fechaResolucion || undefined
           };

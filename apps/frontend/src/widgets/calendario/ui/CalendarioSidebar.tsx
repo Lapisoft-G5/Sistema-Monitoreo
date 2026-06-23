@@ -567,6 +567,21 @@ export const CalendarioSidebar = ({
                 {selectedVisit.observaciones || 'Sin indicaciones o detalles adicionales registrados.'}
               </div>
             </div>
+
+            {selectedVisit.estado === 'REPROGRAMADO' && activeRequest?.aprobador && (
+              <div className="p-3.5 bg-emerald-50/60 border border-emerald-100 rounded-xl text-emerald-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200 mt-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                <span>
+                  <strong>Reprogramación Autorizada:</strong> Cambio aprobado por{' '}
+                  <strong>{activeRequest.aprobador}</strong>.
+                  {activeRequest.aprobadorComentario && (
+                    <span className="block mt-1 font-normal italic text-slate-600">
+                      "{activeRequest.aprobadorComentario}"
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* BOTONES DE ACCIÓN */}
@@ -642,7 +657,7 @@ export const CalendarioSidebar = ({
                       </span>
                     </div>
 
-                    {activeRequest && (
+                    {activeRequest && selectedVisit.estado !== 'REPROGRAMADO' && (
                       <Button
                         variant="outline"
                         onClick={() => setShowReprogramarModal(true)}

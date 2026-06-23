@@ -154,6 +154,11 @@ export class PrismaSolicitudReprogramacionRepository implements SolicitudReprogr
   constructor(private readonly prisma: PrismaService) {}
 
   private mapSolicitud(s: any): ISolicitudReprogramacion {
+    const aprobadorNombre = s.resueltoPor?.persona
+      ? `${s.resueltoPor.persona.nombres} ${s.resueltoPor.persona.apellidos}`
+      : null;
+    const aprobadorRol = s.resueltoPor?.rol?.nombre || null;
+
     return {
       id: s.id,
       cronogramaId: s.cronogramaId,
@@ -173,6 +178,8 @@ export class PrismaSolicitudReprogramacionRepository implements SolicitudReprogr
       archivoSustentoUrl: s.archivoSustentoUrl,
       estado: s.estado as EstadoSolicitudReprogramacion,
       resueltoPorId: s.resueltoPorId,
+      resueltoPorNombre: aprobadorNombre,
+      resueltoPorRol: aprobadorRol,
       comentarioResolucion: s.comentarioResolucion,
       fechaResolucion: s.fechaResolucion ? s.fechaResolucion.toISOString() : null,
       createdAt: s.createdAt.toISOString(),
@@ -188,19 +195,45 @@ export class PrismaSolicitudReprogramacionRepository implements SolicitudReprogr
     }
     const rows = await this.prisma.solicitudReprogramacion.findMany({
       where,
+      include: {
+        resueltoPor: {
+          include: {
+            persona: true,
+            rol: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
     return rows.map((r) => this.mapSolicitud(r));
   }
 
   async findById(id: string): Promise<ISolicitudReprogramacion | null> {
-    const row = await this.prisma.solicitudReprogramacion.findUnique({ where: { id } });
+    const row = await this.prisma.solicitudReprogramacion.findUnique({
+      where: { id },
+      include: {
+        resueltoPor: {
+          include: {
+            persona: true,
+            rol: true,
+          },
+        },
+      },
+    });
     return row ? this.mapSolicitud(row) : null;
   }
 
   async findPendienteByCronograma(cronogramaId: string): Promise<ISolicitudReprogramacion | null> {
     const row = await this.prisma.solicitudReprogramacion.findFirst({
       where: { cronogramaId, estado: 'PENDIENTE' },
+      include: {
+        resueltoPor: {
+          include: {
+            persona: true,
+            rol: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
     return row ? this.mapSolicitud(row) : null;
@@ -232,6 +265,14 @@ export class PrismaSolicitudReprogramacionRepository implements SolicitudReprogr
         resueltoPorId: data.resueltoPorId,
         comentarioResolucion: data.comentarioResolucion,
         fechaResolucion: new Date(),
+      },
+      include: {
+        resueltoPor: {
+          include: {
+            persona: true,
+            rol: true,
+          },
+        },
       },
     });
     return this.mapSolicitud(row);

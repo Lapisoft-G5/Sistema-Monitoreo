@@ -47,12 +47,15 @@ interface ReportesGridProps {
   setFilterModalidad: (m: string) => void;
   filterNivel: string;
   setFilterNivel: (n: string) => void;
-  filterTipo: string;
-  setFilterTipo: (t: string) => void;
+  filterAnio: string;
+  setFilterAnio: (a: string) => void;
   nivelesDisponibles: string[];
+  añosDisponibles: string[];
   isAnyFilterActive: boolean;
   handleClearFilters: () => void;
   plantillas: Plantilla[];
+  /** Cuando true, ajusta filtros y tarjetas para la perspectiva del docente evaluado */
+  isEvaluatedView?: boolean;
 }
 
 const MODALIDADES = ['EBR', 'EBA', 'EBE', 'CEPTRO'];
@@ -123,12 +126,14 @@ export const ReportesGrid = ({
   setFilterModalidad,
   filterNivel,
   setFilterNivel,
-  filterTipo,
-  setFilterTipo,
+  filterAnio,
+  setFilterAnio,
   nivelesDisponibles,
+  añosDisponibles,
   isAnyFilterActive,
   handleClearFilters,
   plantillas,
+  isEvaluatedView = false,
 }: ReportesGridProps) => {
   // Modal details
   const [selectedVisit, setSelectedVisit] = useState<BackendReportVisit | null>(null);
@@ -294,58 +299,89 @@ export const ReportesGrid = ({
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="space-y-1">
-            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block pb-0.5">
-              Búsqueda Rápida
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="IE, especialista o docente..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 text-xs leading-none h-9 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
-              />
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+        {isEvaluatedView ? (
+          /* Vista simplificada para el docente evaluado */
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block pb-0.5">
+                Buscar por IE o Especialista
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Nombre de la IE o del especialista..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 text-xs leading-none h-9 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              </div>
             </div>
+            <SelectField
+              label="Año"
+              value={filterAnio}
+              onChange={(val) => setFilterAnio(val)}
+              placeholder="Todos los años"
+              options={[
+                { value: 'Todos', label: 'Todos los años' },
+                ...añosDisponibles.map((a) => ({ value: a, label: a })),
+              ]}
+            />
           </div>
+        ) : (
+          /* Vista completa para especialista/jefe */
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block pb-0.5">
+                Búsqueda Rápida
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="IE, especialista o docente..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 text-xs leading-none h-9 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              </div>
+            </div>
 
-          <SelectField
-            label="Modalidad"
-            value={filterModalidad}
-            onChange={(val) => setFilterModalidad(val)}
-            placeholder="Todas las modalidades"
-            options={[
-              { value: 'Todos', label: 'Todas las modalidades' },
-              ...MODALIDADES.map((m) => ({ value: m, label: m })),
-            ]}
-          />
+            <SelectField
+              label="Modalidad"
+              value={filterModalidad}
+              onChange={(val) => setFilterModalidad(val)}
+              placeholder="Todas las modalidades"
+              options={[
+                { value: 'Todos', label: 'Todas las modalidades' },
+                ...MODALIDADES.map((m) => ({ value: m, label: m })),
+              ]}
+            />
 
-          <SelectField
-            label="Nivel Educativo"
-            value={filterNivel}
-            onChange={(val) => setFilterNivel(val)}
-            disabled={filterModalidad === 'Todos'}
-            placeholder="Todos los niveles"
-            options={[
-              { value: 'Todos', label: 'Todos los niveles' },
-              ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
-            ]}
-          />
+            <SelectField
+              label="Nivel Educativo"
+              value={filterNivel}
+              onChange={(val) => setFilterNivel(val)}
+              disabled={filterModalidad === 'Todos'}
+              placeholder="Todos los niveles"
+              options={[
+                { value: 'Todos', label: 'Todos los niveles' },
+                ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
+              ]}
+            />
 
-          <SelectField
-            label="Tipo de Ficha"
-            value={filterTipo}
-            onChange={(val) => setFilterTipo(val)}
-            placeholder="Todos los tipos"
-            options={[
-              { value: 'Todos', label: 'Todos los tipos' },
-              { value: 'DOCENTE', label: 'Docente (Acompañamiento en aula)' },
-              { value: 'DIRECTIVO', label: 'Directivo (Gestión escolar)' },
-            ]}
-          />
-        </div>
+            <SelectField
+              label="Año"
+              value={filterAnio}
+              onChange={(val) => setFilterAnio(val)}
+              placeholder="Todos los años"
+              options={[
+                { value: 'Todos', label: 'Todos los años' },
+                ...añosDisponibles.map((a) => ({ value: a, label: a })),
+              ]}
+            />
+          </div>
+        )}
       </Card>
 
       {/* Listado Principal */}
@@ -413,13 +449,18 @@ export const ReportesGrid = ({
                         <h3 className="text-sm font-black text-slate-800 tracking-tight leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                           {visit.institucion}
                         </h3>
-                        <div className="text-[11px] text-slate-600 font-bold flex items-center gap-1">
-                          <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
-                          <span className="truncate">Evaluado: {visit.docenteDirectivo}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                          <User className="h-3 w-3 text-slate-400 shrink-0" />
-                          <span className="truncate">Esp: {visit.especialista}</span>
+                        {!isEvaluatedView && (
+                          <div className="text-[11px] text-slate-600 font-bold flex items-center gap-1">
+                            <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <span className="truncate">Evaluado: {visit.docenteDirectivo}</span>
+                          </div>
+                        )}
+                        <div className={`flex items-center gap-1 ${isEvaluatedView ? 'text-[11px] text-slate-600 font-bold' : 'text-[10px] text-slate-400 font-semibold'}`}>
+                          <User className={`h-3 w-3 shrink-0 ${isEvaluatedView ? 'text-primary' : 'text-slate-400'}`} />
+                          <span className="truncate">
+                            {isEvaluatedView ? 'Evaluado por: ' : 'Esp: '}
+                            {visit.especialista}
+                          </span>
                         </div>
                       </div>
 

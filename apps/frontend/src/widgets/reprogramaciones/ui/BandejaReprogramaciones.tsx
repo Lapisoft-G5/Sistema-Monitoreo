@@ -99,7 +99,10 @@ export const BandejaReprogramaciones = () => {
           }
         } else {
           // Jefe de Gestión / Admin / Jefe de Área only see requests from Specialists (UGEL)
-          const isSpecialistEvaluator = req.visit.especialistaCargo === 'Especialista';
+          const isSpecialistEvaluator =
+            req.visit.especialistaCargo === 'Especialista' ||
+            req.visit.especialistaCargo === 'Jefe de Área' ||
+            req.visit.especialistaCargo === 'Jefe de Gestión';
 
           if (!isSpecialistEvaluator) {
             return false;

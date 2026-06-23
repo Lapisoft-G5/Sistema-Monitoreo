@@ -242,6 +242,17 @@ export const CalendarioGrid = ({
       newDate.setDate(currentDate.getDate() - 7);
     } else if (activeView === 'DIARIO') {
       newDate.setDate(currentDate.getDate() - 1);
+      const y = newDate.getFullYear();
+      const m = String(newDate.getMonth() + 1).padStart(2, '0');
+      const d = String(newDate.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+      setSelectedDateStr(dateStr);
+      const dayVisits = filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === dateStr);
+      if (dayVisits.length > 0) {
+        setSelectedVisitId(dayVisits[0].id);
+      } else {
+        setSelectedVisitId(null);
+      }
     }
     setCurrentDate(newDate);
   };
@@ -254,6 +265,17 @@ export const CalendarioGrid = ({
       newDate.setDate(currentDate.getDate() + 7);
     } else if (activeView === 'DIARIO') {
       newDate.setDate(currentDate.getDate() + 1);
+      const y = newDate.getFullYear();
+      const m = String(newDate.getMonth() + 1).padStart(2, '0');
+      const d = String(newDate.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+      setSelectedDateStr(dateStr);
+      const dayVisits = filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === dateStr);
+      if (dayVisits.length > 0) {
+        setSelectedVisitId(dayVisits[0].id);
+      } else {
+        setSelectedVisitId(null);
+      }
     }
     setCurrentDate(newDate);
   };

@@ -17,9 +17,11 @@ import { Badge } from '@/shared/ui/badge';
 import { SelectField } from '@/shared/ui/form-controls';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { FichaAuditorModal } from './FichaAuditorModal';
+import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
+import { LlenarFichaForm } from '@/features/monitoreos';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
 import { reportesApi } from '@/shared/api/reportes.api';
+import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
 
 interface IFichaRespuestaDesempenoConPreguntaExtra {
   id: string;
@@ -148,16 +150,60 @@ export const ReportesGrid = ({
     enabled: !!selectedVisit,
   });
 
+  const { data: realPlantillas } = usePlantillasList();
+
+  const allPlantillas = useMemo(() => {
+    if (!realPlantillas || realPlantillas.length === 0) {
+      return plantillas;
+    }
+    return realPlantillas.map((p: IPlantilla) => ({
+      id: p.id,
+      tipoMonitoreo: p.tipoMonitoreo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo',
+      anioAcademico: p.anioAcademico,
+      baremo: p.baremo,
+      descripcion: p.descripcion || '',
+      estado: p.estado,
+      fechaCreacion: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+      creadoPorRole: p.rolAutorAlCrear,
+      ieId: p.institucionId || undefined,
+      niveles: p.niveles.map(n => ({
+        nivel: n.nivelRomano,
+        denominacion: n.denominacion,
+        rangoMin: n.rangoMin,
+        color: n.color
+      })),
+      desempenos: p.desempenos.map(d => ({
+        id: d.id,
+        nombre: d.nombre,
+        descripcionCorta: d.descripcionCorta || '',
+        preguntaExtra: d.preguntaExtra || '',
+        aspectos: (d.aspectos || []).map(a => ({
+          id: a.id,
+          descripcion: a.descripcion
+        })),
+        rubrica: (d.rubrica || []).map(r => ({
+          nivel: r.nivelRomano,
+          descripcion: r.descripcion
+        }))
+      })),
+      ejesItems: (p.ejesItems || []).map((item) => ({
+        id: item.id,
+        numero: item.numero,
+        descripcion: item.descripcion,
+      })),
+    }));
+  }, [realPlantillas, plantillas]);
+
   const activeTemplate = useMemo(() => {
     if (!selectedVisit) return null;
     const hasBackendData = 'nivelLogro' in selectedVisit;
     if (hasBackendData && backendFicha) {
-      const match = plantillas.find((p) => p.id === backendFicha.plantillaId);
+      const match = allPlantillas.find((p) => p.id === backendFicha.plantillaId);
       if (match) return match;
     }
     const searchType = selectedVisit.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    return plantillas.find((p) => p.tipoMonitoreo === searchType) || plantillas[0];
-  }, [selectedVisit, backendFicha, plantillas]);
+    return allPlantillas.find((p) => p.tipoMonitoreo === searchType) || allPlantillas[0];
+  }, [selectedVisit, backendFicha, allPlantillas]);
 
   const activeFichaState = useMemo(() => {
     if (!selectedVisit) return null;
@@ -430,6 +476,10 @@ export const ReportesGrid = ({
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => {
+                            setSelectedVisit(visit);
+                            setShowFichaModal(true);
+                          }}
                           className="text-[10px] font-bold border-slate-200 text-slate-600 h-8 px-2.5 rounded-lg flex items-center gap-1 bg-surface hover:bg-slate-50 cursor-pointer"
                         >
                           <Eye className="h-3.5 w-3.5 text-primary" />
@@ -577,14 +627,15 @@ export const ReportesGrid = ({
       )}
 
       {selectedVisit && activeTemplate && activeFichaState && (
-        <FichaAuditorModal
+        <LlenarFichaForm
           isOpen={showFichaModal}
-          onClose={() => setShowFichaModal(false)}
+          onClose={() => {
+            setShowFichaModal(false);
+            setSelectedVisit(null);
+          }}
           visit={selectedVisit}
           template={activeTemplate}
-          fichaState={activeFichaState}
-          downloadingId={downloadingId}
-          onDownloadPDF={handleDownloadPDF}
+          initialState={activeFichaState}
         />
       )}
     </div>

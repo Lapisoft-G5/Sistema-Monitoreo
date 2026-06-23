@@ -1845,5 +1845,10 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado)
   - **Problema:** El hook de compatibilidad `usePlantillas()` lee desde el contexto/localStorage local, el cual no está hidratado en la página de reportes, haciendo que `activeTemplate` fuera `undefined` y previniendo el montaje del modal al presionar "Ver Ficha".
   - **Resolución:** Se modificó [ReportesGrid.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/widgets/reportes/ui/ReportesGrid.tsx) para obtener las plantillas directamente de la API mediante `usePlantillasList()` (Query TanStack) y mapearlas al modelo que requiere la interfaz, solventando por completo la inoperatividad del botón.
 
+#### 5. Habilitación de Reportes de Monitoreo para el Docente Evaluado
+- **Cambio en el Scope del Backend:** Se implementó la regla de filtrado en `forFicha` y `forCronograma` dentro de [scope-filter.ts](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/backend/src/shared/auth/scope-filter.ts) para el rol `docente`. Ahora se mapea correctamente el `ctx.userId` (ID del usuario logueado) hacia el evaluado en la ficha y el cronograma (`evaluado: { persona: { usuario: { id: ctx.userId } } }`), restringiendo su consulta únicamente a sus propios reportes de monitoreo.
+- **Cambio en las Políticas de RLS (Base de Datos):** Se aplicaron nuevas políticas de seguridad a nivel de fila (`fichas_role_isolation` y `cronogramas_role_isolation` en la migración `20260623180200_add_docente_to_rls_policies`) para permitir que los usuarios con rol `docente` puedan consultar (SELECT) los cronogramas donde figuran como el docente evaluado, y las fichas de monitoreo en estado `FINALIZADO` correspondientes a sus evaluaciones.
+
+
 
 

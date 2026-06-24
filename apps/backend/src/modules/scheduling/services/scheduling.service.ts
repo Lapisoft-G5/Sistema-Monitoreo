@@ -282,6 +282,11 @@ export class SchedulingService {
           }
         }
       } else if (isDirector) {
+        if (cronograma.nivelEducativo !== 'Secundaria') {
+          throw new ForbiddenException(
+            'El Director IE solo puede resolver solicitudes de nivel Secundaria.',
+          );
+        }
         if (cronograma.institucionId !== session.institucionId) {
           throw new ForbiddenException(
             'El Director IE solo puede resolver solicitudes de su propia institución.',

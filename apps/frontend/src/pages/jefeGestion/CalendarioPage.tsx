@@ -165,8 +165,9 @@ export const CalendarioPage = () => {
       }
       if (isDirector && user) {
         const isSameSchool =
-          user.institucionNombre &&
-          visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
+          (user.institucion && visit.institucionId === user.institucion) ||
+          (user.institucionNombre &&
+            visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase());
 
         const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
         const isDirectedToMe =

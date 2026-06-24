@@ -103,4 +103,12 @@ export const plantillasApi = {
       method: 'POST',
       body: JSON.stringify({ descripcion }),
     }),
+
+  delete: (id: string) =>
+    request<{ id: string; deletedFichas: number; deletedEvidencias: number }>(`/api/plantillas/${id}`, {
+      method: 'DELETE',
+    }),
+
+  countFichas: (id: string) =>
+    request<{ count: number; estado: 'Borrador' | 'Vigente' | 'Historico' }>(`/api/plantillas/${id}/fichas-count`),
 };

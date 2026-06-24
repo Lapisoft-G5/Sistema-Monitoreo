@@ -112,6 +112,71 @@ export class PlantillaService {
     return this.repository.updateEstado(id, dto.estado);
   }
 
+  async eliminar(
+    id: string,
+    session: SessionUser,
+  ): Promise<{ id: string; deletedFichas: number; deletedEvidencias: number }> {
+    const original = await this.repository.findById(id);
+    if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
+    this.guardModificacion(original, session);
+
+    if (session.role !== RoleCode.JEFE_GESTION) {
+      throw new ForbiddenException('Solo el Jefe de Gestion puede eliminar plantillas.');
+    }
+
+    const fichas = await this.repository.findFichasByPlantilla(id);
+    const fichasCount = fichas.length;
+
+    if (original.estado !== 'Historico' && fichasCount > 0) {
+      throw new ConflictException(
+        `No se puede eliminar la plantilla en estado ${original.estado} porque tiene ${fichasCount} ficha(s) asociada(s). Archivela primero (cambie a Historico) o versione desde el editor.`,
+      );
+    }
+
+    const evidenciaUrls: string[] = fichas.flatMap((f) => f.evidenciaUrls);
+
+    const result = await this.repository.eliminarConCascade(id);
+
+    let deletedEvidencias = 0;
+    if (evidenciaUrls.length > 0) {
+      deletedEvidencias = await this.deleteEvidenciaFiles(evidenciaUrls);
+    }
+
+    return {
+      id: result.id,
+      deletedFichas: result.deletedFichas,
+      deletedEvidencias,
+    };
+  }
+
+  private async deleteEvidenciaFiles(urls: string[]): Promise<number> {
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    let deleted = 0;
+    for (const url of urls) {
+      try {
+        const filename = path.basename(new URL(url, 'http://x').pathname);
+        const filepath = path.join(process.cwd(), 'uploads', filename);
+        await fs.unlink(filepath);
+        deleted += 1;
+      } catch {
+        // ignore: archivo no existe o no se pudo eliminar
+      }
+    }
+    return deleted;
+  }
+
+  async countFichas(
+    id: string,
+    session: SessionUser,
+  ): Promise<{ count: number; estado: 'Borrador' | 'Vigente' | 'Historico' }> {
+    const original = await this.repository.findById(id);
+    if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
+    this.guardVisibilidad(original, session);
+    const count = await this.repository.countFichasAsociadas(id);
+    return { count, estado: original.estado };
+  }
+
   async duplicar(id: string, session: SessionUser, descripcion?: string): Promise<IPlantilla> {
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);

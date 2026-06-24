@@ -38,6 +38,10 @@ export abstract class PlantillaRepository {
 
   abstract countFichasAsociadas(plantillaId: string): Promise<number>;
 
+  abstract findFichasByPlantilla(
+    plantillaId: string,
+  ): Promise<{ id: string; evidenciaUrls: string[] }[]>;
+
   abstract create(data: CreatePlantillaData): Promise<IPlantilla>;
 
   abstract updateInPlace(plantillaId: string, data: UpdatePlantillaData): Promise<IPlantilla>;
@@ -52,6 +56,10 @@ export abstract class PlantillaRepository {
     id: string,
     estado: 'Borrador' | 'Vigente' | 'Historico',
   ): Promise<IPlantilla>;
+
+  abstract softDelete(id: string): Promise<IPlantilla>;
+
+  abstract eliminarConCascade(id: string): Promise<{ id: string; deletedFichas: number }>;
 
   abstract clone(
     sourceId: string,

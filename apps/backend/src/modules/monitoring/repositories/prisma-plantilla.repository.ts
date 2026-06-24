@@ -342,6 +342,26 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     return this.prisma.fichaMonitoreo.count({ where: { plantillaId } });
   }
 
+  async findFichasByPlantilla(
+    plantillaId: string,
+  ): Promise<{ id: string; evidenciaUrls: string[] }[]> {
+    const fichas = await this.prisma.fichaMonitoreo.findMany({
+      where: { plantillaId },
+      select: {
+        id: true,
+        respuestasEjeItem: {
+          select: { evidenciaUrl: true },
+        },
+      },
+    });
+    return fichas.map((f) => ({
+      id: f.id,
+      evidenciaUrls: f.respuestasEjeItem
+        .map((r) => r.evidenciaUrl)
+        .filter((u): u is string => typeof u === 'string' && u.length > 0),
+    }));
+  }
+
   async create(data: CreatePlantillaData): Promise<IPlantilla> {
     // Calcular la siguiente versión disponible para (tipo, año)
     const maxVersion = await this.prisma.plantillaMonitoreo.aggregate({
@@ -670,6 +690,30 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     if (!exists) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
     await this.prisma.plantillaMonitoreo.update({ where: { id }, data: { estado } });
     return this.buildPlantilla(id);
+  }
+
+  async softDelete(id: string): Promise<IPlantilla> {
+    const exists = await this.prisma.plantillaMonitoreo.findUnique({ where: { id } });
+    if (!exists) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
+    if (exists.deleted) {
+      return this.buildPlantilla(id);
+    }
+    await this.prisma.plantillaMonitoreo.update({
+      where: { id },
+      data: { deleted: true },
+    });
+    return this.buildPlantilla(id);
+  }
+
+  async eliminarConCascade(id: string): Promise<{ id: string; deletedFichas: number }> {
+    const exists = await this.prisma.plantillaMonitoreo.findUnique({ where: { id } });
+    if (!exists) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
+
+    return this.prisma.$transaction(async (tx) => {
+      const deletedFichas = await tx.fichaMonitoreo.deleteMany({ where: { plantillaId: id } });
+      await tx.plantillaMonitoreo.delete({ where: { id } });
+      return { id, deletedFichas: deletedFichas.count };
+    });
   }
 
   async clone(

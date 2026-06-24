@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -81,6 +82,25 @@ export class PlantillaController {
     @Req() req: any,
   ): Promise<IPlantilla> {
     return this.service.duplicar(id, this.toSession(req), body?.descripcion);
+  }
+
+  @Delete(':id')
+  @RequirePermissions('monitoreo:execute')
+  @HttpCode(HttpStatus.OK)
+  async eliminar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+  ): Promise<{ id: string; deletedFichas: number; deletedEvidencias: number }> {
+    return this.service.eliminar(id, this.toSession(req));
+  }
+
+  @Get(':id/fichas-count')
+  @RequirePermissions('monitoreo:read')
+  async countFichas(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+  ): Promise<{ count: number; estado: 'Borrador' | 'Vigente' | 'Historico' }> {
+    return this.service.countFichas(id, this.toSession(req));
   }
 
   private toSession(req: any): SessionUser {

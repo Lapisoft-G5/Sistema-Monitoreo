@@ -1880,7 +1880,20 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado)
   - Archivos nuevos: `docentes-cargos.repository.ts`, `prisma-docentes-cargos.repository.ts`.
   - Archivos modificados: `docentes-cargos.service.ts` (-200 líneas), `teachers.module.ts` (nuevo provider).
 
-#### 8. (Continuará...) Fase 2.3 y 2.4 — Scheduling y Ficha
+#### 8. Fase 2.3 y 2.4 — Scheduling y Ficha (Completada)
+
+- **Resolución Fase 2.3 (`scheduling.service.ts`):**
+  - Se agregaron 2 métodos al repositorio `CronogramaRepository`: `findMonitorEspecialidades` y `applyReprogramacion` (GUC `set_config` + cronograma.update en una tx).
+  - Se eliminó la inyección de `PrismaService` del servicio; el repositorio maneja la transacción y el GUC.
+  - Archivos: `cronograma.repository.ts`, `prisma-cronograma.repository.ts`, `scheduling.service.ts`.
+- **Resolución Fase 2.4 (`ficha.service.ts`):**
+  - Se agregaron 10 métodos a `FichaRepository`: `findPlantillaVigente`, `findCronogramaBasicById`, `findCursoBasicById`, `findDocenteCursoByDocenteId`, `findFirstCursoBasic`, `findPlantillaBasicById`, `updateCronogramaEstado`, `findRespuestaEjeItemByFichaAndEje`, `migrarPlantilla` (tx completa con deleteMany+createMany+update), `existsWithScope`.
+  - Se expandió `StorageBucket` con `'evidencias'` y se inyectó `StorageService` (token `STORAGE_SERVICE`).
+  - `subirEvidencia` ahora usa `storage.savePdf()` en vez de `fs.writeFileSync`.
+  - Se eliminó la dependencia de `PrismaService`, `randomUUID`, y los imports dinámicos de `fs`/`path`.
+  - Archivos: `ficha.repository.ts`, `prisma-ficha.repository.ts`, `ficha.service.ts`, `storage.constants.ts`, `disk-storage.service.ts`.
+
+- **auth.guard.ts:** No requirió cambios (único Prisma call es `$executeRawUnsafe` para RLS GUCs, correcto en un guard).
 
 ---
 
@@ -1904,8 +1917,10 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado)
 **Cambios:**
 - **2.1 Especialistas-Cargos:** 5 nuevos métodos en `EspecialistaRepository`, servicio limpio de Prisma.
 - **2.2 Docentes-Cargos:** Nuevo `DocentesCargosRepository` con 9 métodos, servicio pierde 200 líneas de lógica de BD.
+- **2.3 Scheduling:** 2 nuevos métodos en `CronogramaRepository` (`findMonitorEspecialidades`, `applyReprogramacion`), GUC movido al repositorio.
+- **2.4 Ficha:** 10 nuevos métodos en `FichaRepository`, `StorageService` inyectado para evidencias, servicio limpio de Prisma.
 
-**Estado:** Pendiente 2.3 (scheduling) y 2.4 (ficha). auth.guard.ts no requiere cambios (solo `$executeRawUnsafe` para RLS GUCs).
+**Estado:** Completado (4 servicios refactorizados). auth.guard.ts no requirió cambios (único Prisma call es `$executeRawUnsafe` para RLS GUCs, correcto en un guard).
 - **Rediseño de Métricas (KPIs) para Docente:** Se modificó [ReportesStats.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/widgets/reportes/ui/ReportesStats.tsx) para aceptar la prop `isEvaluatedView`. Cuando es verdadera (docente evaluado), oculta los KPI de cobertura genéricos (cobertura total de IEs) y muestra en su lugar métricas relevantes a su propio desempeño: "Monitoreos Recibidos", "Mi Rendimiento" (% de nivel satisfactorio), "Mi Promedio General" (calculado a partir de sus fichas completadas) y "Mi Nivel de Logro" (el nivel más reciente alcanzado).
 - **Adaptación del Filtro y Reemplazo de Tipo de Ficha por Año:**
   - Se removió el filtro "Tipo de Ficha" (ya que para el docente es redundante y para otros roles se prioriza el filtro cronológico) y se integró un nuevo filtro por **Año (Año de ejecución)** en [ReportesPage.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/pages/jefeGestion/ReportesPage.tsx) y [ReportesGrid.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/widgets/reportes/ui/ReportesGrid.tsx).

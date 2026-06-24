@@ -99,6 +99,22 @@ export const CronogramaPage = () => {
   const [formObservaciones, setFormObservaciones] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [showMaxVisitasModal, setShowMaxVisitasModal] = useState(false);
+
+  // Docente actualmente seleccionado en el formulario y sus visitas existentes
+  const selectedDocente = useMemo(() => {
+    if (!formDocente) return null;
+    return docentes.find(
+      (d) => `${d.nombres} ${d.apellidos}`.trim() === formDocente.trim(),
+    ) ?? null;
+  }, [formDocente, docentes]);
+
+  const visitasExistentesCount = useMemo(() => {
+    if (!selectedDocente || editCronogramaId) return 0;
+    return cronogramas.filter(
+      (c) => c.evaluadoId === selectedDocente.id && c.tipo === formTipo,
+    ).length;
+  }, [selectedDocente, formTipo, cronogramas, editCronogramaId]);
 
   // --- Estados de Detalles / Ver ---
   const [viewCronograma, setViewCronograma] = useState<Cronograma | null>(null);
@@ -415,6 +431,12 @@ export const CronogramaPage = () => {
 
     if (!matchedEsp || !matchedInst || !matchedDoc) {
       setFormError('Error de resolución: No se encontraron los IDs correspondientes.');
+      return;
+    }
+
+    // Validar límite de 5 visitas por docente (solo al crear)
+    if (!editCronogramaId && visitasExistentesCount >= 5) {
+      setShowMaxVisitasModal(true);
       return;
     }
 
@@ -1180,6 +1202,30 @@ export const CronogramaPage = () => {
           </div>
         );
       })()}
+
+      {/* ── Modal: Límite de 5 visitas por docente alcanzado ── */}
+      {showMaxVisitasModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <Card className="bg-surface w-full max-w-md border border-border rounded-2xl shadow-xl p-6 space-y-4">
+            <div className="flex items-center gap-2 text-amber-800">
+              <AlertCircle className="h-6 w-6 text-amber-600" />
+              <h3 className="text-base font-extrabold tracking-tight">Límite de Visitas Alcanzado</h3>
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              El docente <strong>{formDocente}</strong> ya tiene <strong>5 visitas</strong> de monitoreo programadas.
+              No es posible agregar más visitas para este docente.
+            </p>
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={() => setShowMaxVisitasModal(false)}
+                className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer"
+              >
+                Entendido
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* ── Modal de Confirmación para Eliminado ── */}
       {deleteCronogramaId && (

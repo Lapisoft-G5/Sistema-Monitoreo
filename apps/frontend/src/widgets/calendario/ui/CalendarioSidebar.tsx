@@ -92,6 +92,7 @@ export const CalendarioSidebar = ({
     user?.role === 'especialista' ||
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
+
   const {
     cronogramas,
     setCronogramas,
@@ -127,71 +128,87 @@ export const CalendarioSidebar = ({
     return reprogramaciones[selectedVisit.id] || null;
   }, [reprogramaciones, selectedVisit]);
 
+  const canDecide = useMemo(() => {
+    if (!selectedVisit || !user) return false;
+    if (isEspecialista) return false;
+    if (user.role === 'jefe_gestion') return true;
+    if (user.role === 'jefe_area') {
+      if (user.especialistaNivel && selectedVisit.nivel !== user.especialistaNivel) return false;
+      return true;
+    }
+    if (user.role === 'director_institucion') {
+      if (selectedVisit.nivel !== 'Secundaria') return false;
+      const isSameSchool = !!(
+        user.institucionNombre &&
+        selectedVisit.institucion.toLowerCase() === user.institucionNombre.toLowerCase()
+      );
+      return isSameSchool;
+    }
+    return false;
+  }, [selectedVisit, user, isEspecialista]);
+
   const visitsOnSelectedDate = useMemo(() => {
     return filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === selectedDateStr);
   }, [filteredVisits, selectedDateStr]);
 
   const activeTemplate = useMemo(() => {
-    if (!selectedVisit) return null;
+    if (!selectedVisit || !user) return null;
     const searchType = selectedVisit.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    const isDirector = user?.role === 'director_institucion';
+    const isInstitucionRole =
+      user.role === 'director_institucion' ||
+      user.role === 'coordinador_pedagogico' ||
+      user.role === 'jefe_taller';
 
-    const matchedTemplate = plantillas.find((p) => {
-      if (p.tipoMonitoreo !== searchType || p.estado !== 'Vigente') return false;
-      if (isDirector) {
-        return p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion;
-      } else {
-        return !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion';
-      }
-    });
+    const matchTypeAndEstado = (p: (typeof plantillas)[number]) =>
+      p.tipoMonitoreo === searchType && p.estado === 'Vigente';
 
-    if (!matchedTemplate) {
-      // Fallback a cualquier plantilla general vigente de ese tipo
-      return plantillas.find((p) => p.tipoMonitoreo === searchType && p.estado === 'Vigente') || plantillas[0];
+    // Priority 1: plantilla de la IE (para roles institucionales)
+    let matchedTemplate: (typeof plantillas)[number] | undefined;
+    if (isInstitucionRole && user.institucion) {
+      matchedTemplate = plantillas.find(
+        (p) => matchTypeAndEstado(p) && p.creadoPorRole === 'director_ie' && p.ieId === user.institucion,
+      );
     }
 
-    return matchedTemplate;
+    // Priority 2: plantilla UGEL
+    if (!matchedTemplate) {
+      matchedTemplate = plantillas.find(
+        (p) => matchTypeAndEstado(p) && (!p.creadoPorRole || p.creadoPorRole === 'jefe_gestion'),
+      );
+    }
+
+    // Ultimate fallback
+    return matchedTemplate ?? plantillas.find((p) => p.tipoMonitoreo === searchType && p.estado === 'Vigente') ?? plantillas[0] ?? null;
   }, [selectedVisit, plantillas, user]);
 
   // Determinar si el usuario actual es el evaluador autorizado para iniciar esta visita
+  // Solo la persona asignada como especialista/coordinador/jefe de taller/director puede llenar la ficha.
   const isEvaluadorAutorizado = useMemo(() => {
     if (!selectedVisit || !user) return false;
 
-    // Caso 1: Visita con plantilla de la I.E. (creada por un Director)
-    if (activeTemplate?.creadoPorRole === 'director_ie') {
-      const isDirector = user.role === 'director_institucion';
-      const isSameSchool =
-        user.institucion === activeTemplate.ieId ||
-        user.institucionNombre?.toLowerCase() === selectedVisit.institucion.toLowerCase();
-      return isDirector && isSameSchool;
-    }
-
-    // Caso 2: Visita con plantilla de la UGEL (creada por el Jefe de Gestión)
-    // El especialista o coordinador o jefe de taller asignado a la visita puede completarla.
-    // También incluye Jefe de Gestión que es Especialista (caso Maria Elena: jefe_gestion + Especialista).
+    // Roles que pueden evaluar (deben coincidir con el asignado a la visita)
     const allowedRoles = [
       'especialista',
       'coordinador_pedagogico',
       'jefe_taller',
       'jefe_gestion',
       'jefe_area',
+      'director_institucion',
     ];
-    if (allowedRoles.includes(user.role)) {
-      // Si el usuario tiene Especialista vinculado, comparar por id
-      if (user.especialistaId && selectedVisit.monitorId) {
-        return user.especialistaId === selectedVisit.monitorId;
-      }
-      // Fallback: coincidencia por nombre (legacy)
-      const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
-      const visitEspecialista = selectedVisit.especialista.toLowerCase();
-      return (
-        userFullName.includes(visitEspecialista) ||
-        visitEspecialista.includes(userFullName) ||
-        visitEspecialista.includes(user.nombres.toLowerCase())
-      );
-    }
+    if (!allowedRoles.includes(user.role)) return false;
 
-    return false;
+    // Si el usuario tiene Especialista vinculado, comparar por id
+    if (user.especialistaId && selectedVisit.monitorId) {
+      return user.especialistaId === selectedVisit.monitorId;
+    }
+    // Fallback: coincidencia por nombre (legacy)
+    const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+    const visitEspecialista = selectedVisit.especialista.toLowerCase();
+    return (
+      userFullName.includes(visitEspecialista) ||
+      visitEspecialista.includes(userFullName) ||
+      visitEspecialista.includes(user.nombres.toLowerCase())
+    );
   }, [selectedVisit, user, activeTemplate]);
 
   // Determinar si el día actual coincide con la fecha programada
@@ -437,7 +454,7 @@ export const CalendarioSidebar = ({
           )}
 
           {/* Badge de Solicitud de Cambio Pendiente (Para el Jefe de Gestión) */}
-          {activeRequest && activeRequest.estado === 'PENDIENTE' && !isEspecialista && (
+          {activeRequest && activeRequest.estado === 'PENDIENTE' && canDecide && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-bold flex items-start gap-2 shadow-sm animate-pulse">
               <AlertCircle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
               <span>Solicitud de Reprogramación Pendiente</span>
@@ -611,17 +628,8 @@ export const CalendarioSidebar = ({
                     <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                       <Clock className="h-4.5 w-4.5 text-blue-500 mt-0.5 shrink-0" />
                       <span>
-                        {activeTemplate?.creadoPorRole === 'director_ie' ? (
-                          <>
-                            <strong>Visita de I.E.:</strong> Solo el Director correspondiente a la institución{' '}
-                            <strong>{selectedVisit.institucion}</strong> tiene permisos para ejecutar esta ficha.
-                          </>
-                        ) : (
-                          <>
-                            <strong>Visita de UGEL:</strong> Solo el Especialista asignado ({' '}
-                            <strong>{selectedVisit.especialista}</strong>) o un usuario con rol de Jefe de Gestión/Jefe de Área vinculado a esa persona tiene permisos para ejecutar esta ficha.
-                          </>
-                        )}
+                        <strong>Acceso Restringido:</strong> Solo la persona asignada ({' '}
+                        <strong>{selectedVisit.especialista}</strong>) puede ejecutar esta ficha de monitoreo.
                       </span>
                     </div>
 
@@ -779,7 +787,7 @@ export const CalendarioSidebar = ({
           onClose={() => setShowReprogramarModal(false)}
           visit={selectedVisit}
           request={activeRequest}
-          isEspecialista={isEspecialista}
+          canDecide={canDecide}
           onApprove={(visitId, comment) => {
             approveRescheduleRequest(
               visitId,

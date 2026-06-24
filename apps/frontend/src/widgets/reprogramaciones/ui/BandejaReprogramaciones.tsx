@@ -37,6 +37,25 @@ export const BandejaReprogramaciones = () => {
     user?.role === 'especialista' ||
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
+
+  const canDecideRequest = (visit: Cronograma) => {
+    if (isEspecialista) return false;
+    if (user?.role === 'jefe_gestion') return true;
+    if (user?.role === 'jefe_area') {
+      if (user.especialistaNivel && visit.nivel !== user.especialistaNivel) return false;
+      return true;
+    }
+    if (user?.role === 'director_institucion') {
+      if (visit.nivel !== 'Secundaria') return false;
+      const isSameSchool = !!(
+        user.institucionNombre &&
+        visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase()
+      );
+      return isSameSchool;
+    }
+    return false;
+  };
+
   const {
     cronogramas,
     reprogramaciones,
@@ -284,7 +303,7 @@ export const BandejaReprogramaciones = () => {
                   Solicitado el: {req.fechaRegistro}
                 </span>
 
-                {req.estado === 'PENDIENTE' && !isEspecialista ? (
+                {req.estado === 'PENDIENTE' && canDecideRequest(req.visit) ? (
                   <Button
                     onClick={() => handleOpenReview(req.visit.id)}
                     className="bg-primary hover:bg-primary-hover text-white text-[11px] font-black h-8 px-4 rounded-lg flex items-center gap-1 shadow-sm cursor-pointer"
@@ -339,7 +358,7 @@ export const BandejaReprogramaciones = () => {
           onClose={() => setShowReprogramarModal(false)}
           visit={selectedVisit}
           request={activeRequest}
-          isEspecialista={isEspecialista}
+          canDecide={canDecideRequest(selectedVisit)}
           onApprove={(visitId, comment) => {
             approveRescheduleRequest(visitId, user ? `${user.nombres} ${user.apellidos}` : 'Carlos Mendoza', comment);
             setShowReprogramarModal(false);

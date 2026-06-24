@@ -20,7 +20,7 @@ interface DecidirReprogramacionFormProps {
   onClose: () => void;
   visit: Cronograma;
   request: SolicitudReprogramacion;
-  isEspecialista: boolean;
+  canDecide: boolean;
   onApprove: (visitId: string, comment: string) => void;
   onReject: (visitId: string, comment: string) => void;
 }
@@ -50,7 +50,7 @@ export const DecidirReprogramacionForm = ({
   onClose,
   visit,
   request,
-  isEspecialista,
+  canDecide,
   onApprove,
   onReject,
 }: DecidirReprogramacionFormProps) => {
@@ -287,7 +287,7 @@ export const DecidirReprogramacionForm = ({
             </div>
 
             {/* ACCIÓN REQUERIDA: Aprobación del Jefe de Gestión */}
-            {request.estado === 'PENDIENTE' && !isEspecialista && (
+            {request.estado === 'PENDIENTE' && canDecide && (
               <div className="mt-6 border border-amber-200 bg-amber-50/20 rounded-2xl p-5 space-y-4 animate-in slide-in-from-bottom-5 duration-300 shadow-sm">
                 <div className="flex items-center gap-2 text-xs font-black text-amber-800 uppercase tracking-widest">
                   <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -325,7 +325,7 @@ export const DecidirReprogramacionForm = ({
             )}
 
             {/* Notificación para el Especialista si está pendiente */}
-            {request.estado === 'PENDIENTE' && isEspecialista && (
+            {request.estado === 'PENDIENTE' && !canDecide && (
               <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-600 text-xs font-medium leading-relaxed flex items-start gap-2.5 shadow-inner">
                 <AlertCircle className="h-5 w-5 text-slate-400 mt-0.5 shrink-0" />
                 <span>

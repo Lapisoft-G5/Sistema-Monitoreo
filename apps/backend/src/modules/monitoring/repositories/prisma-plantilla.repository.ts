@@ -744,13 +744,23 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     });
     if (!original) throw new NotFoundException(`Plantilla origen ${sourceId} no encontrada.`);
 
+    const anioActual = new Date().getFullYear();
+    const maxVersion = await this.prisma.plantillaMonitoreo.aggregate({
+      where: {
+        tipoMonitoreo: original.tipoMonitoreo,
+        anioAcademico: anioActual,
+      },
+      _max: { version: true },
+    });
+    const nextVersion = (maxVersion._max.version ?? 0) + 1;
+
     const nuevoId = randomUUID();
     await this.prisma.plantillaMonitoreo.create({
       data: {
         id: nuevoId,
         tipoMonitoreo: original.tipoMonitoreo,
-        anioAcademico: new Date().getFullYear(),
-        version: 1,
+        anioAcademico: anioActual,
+        version: nextVersion,
         baremo: original.baremo,
         descripcion:
           descripcion ??

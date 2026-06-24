@@ -7,6 +7,7 @@ import type {
   IReporteResumenIE,
   NivelLogro,
   TipoMonitoreo,
+  EstadoFicha,
 } from '@sistema-monitoreo/shared-contracts';
 import {
   PaginatedFichas,
@@ -91,10 +92,10 @@ export class PrismaReporteRepository implements ReporteRepository {
       especialistaNombre: `${f.cronograma.monitor.persona.nombres} ${f.cronograma.monitor.persona.apellidos}`,
       tipoMonitoreo: f.cronograma.tipoMonitoreo as TipoMonitoreo,
       anioAcademico: f.anioAcademico,
-      nivelLogro: f.nivelLogro as any,
+      nivelLogro: f.nivelLogro as NivelLogro,
       promedio: Number(f.promedio),
       puntajeTotal: f.puntajeTotal,
-      estado: f.estado as any,
+      estado: f.estado as EstadoFicha,
       fechaEjecucion: f.createdAt.toISOString(),
       modalidad: f.cronograma.modalidad,
       nivel: f.cronograma.nivelEducativo,

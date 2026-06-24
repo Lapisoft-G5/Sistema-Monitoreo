@@ -4,21 +4,12 @@ import type {
   IUpdateDocenteRequest,
   IBajaDocenteResponse,
 } from '@sistema-monitoreo/shared-contracts';
-
-const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { request } from '../config/api.js';
 
 export const teachersApi = {
   findAll: async (): Promise<{ ok: boolean; data?: IDocenteResponse[]; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/docentes`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
+      const data = await request<IDocenteResponse[]>('/api/docentes');
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -29,17 +20,10 @@ export const teachersApi = {
     dto: ICreateDocenteRequest,
   ): Promise<{ ok: boolean; data?: IDocenteResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/docentes`, {
+      const data = await request<IDocenteResponse>('/api/docentes', {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dto),
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -51,17 +35,10 @@ export const teachersApi = {
     dto: IUpdateDocenteRequest,
   ): Promise<{ ok: boolean; data?: IDocenteResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/docentes/${id}`, {
+      const data = await request<IDocenteResponse>(`/api/docentes/${id}`, {
         method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dto),
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -72,15 +49,9 @@ export const teachersApi = {
     id: string,
   ): Promise<{ ok: boolean; data?: IBajaDocenteResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/docentes/${id}/baja`, {
+      const data = await request<IBajaDocenteResponse>(`/api/docentes/${id}/baja`, {
         method: 'PATCH',
-        credentials: 'include',
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -91,15 +62,9 @@ export const teachersApi = {
     id: string,
   ): Promise<{ ok: boolean; data?: IBajaDocenteResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/docentes/${id}/alta`, {
+      const data = await request<IBajaDocenteResponse>(`/api/docentes/${id}/alta`, {
         method: 'PATCH',
-        credentials: 'include',
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -112,15 +77,7 @@ export const teachersApi = {
     error?: unknown;
   }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/docentes/cargos`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
+      const data = await request<Array<{ id: string; nombre: string }>>('/api/docentes/cargos');
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -131,15 +88,7 @@ export const teachersApi = {
     dni: string,
   ): Promise<{ ok: boolean; data?: unknown; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/docentes/buscar/${dni}`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
+      const data = await request<unknown>(`/api/docentes/buscar/${dni}`);
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -151,20 +100,10 @@ export const teachersApi = {
     docenteCargoId: string,
   ): Promise<{ ok: boolean; data?: unknown; error?: unknown }> => {
     try {
-      const response = await fetch(
-        `${getApiBaseUrl()}/api/docentes/${docenteId}/cargos/${docenteCargoId}/fin`,
-        {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-        },
+      const data = await request<unknown>(
+        `/api/docentes/${docenteId}/cargos/${docenteCargoId}/fin`,
+        { method: 'PATCH', body: JSON.stringify({}) },
       );
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };

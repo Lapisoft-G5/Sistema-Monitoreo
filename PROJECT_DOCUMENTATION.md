@@ -272,10 +272,11 @@ El `AuthGuard` del frontend (en el router) verifica la cookie de sesión. En cad
 
 ### Servicios/API
 
-Capa ubicada en `shared/api/`:
+Capa ubicada en `shared/`:
 
-- `fetchInterceptor.ts` — sobrescribe `window.fetch` con lógica de refresh automático
-- `auth.api.ts` — `login`, `logout`, `refresh`, `changePassword`, `forgotPassword`, `resetPassword`
+- `config/api.ts` — **Centralizado**: `API_BASE_URL` (desde `VITE_API_URL`) y `request<T>()` (helper tipado que maneja FormData, errores HTTP y respuestas vacías). Todos los API modules lo importan desde aquí, eliminando la duplicación de `getApiBaseUrl()` que existía en 11 archivos.
+- `api/fetchInterceptor.ts` — sobrescribe `window.fetch` con lógica de refresh automático
+- `api/auth.api.ts` — `login`, `logout`, `refresh`, `changePassword`, `forgotPassword`, `resetPassword`
 - APIs específicas dentro de cada `entities/model-*/` y `features/*/api/`
 
 ### Hooks personalizados
@@ -551,7 +552,7 @@ sequenceDiagram
 4. **Baremo:** `Vigente` (rangos discretos con gaps) o `Porcentual` (basado en porcentajes).
 5. **Pregunta extra por desempeño:** Cada desempeño puede tener un campo `preguntaExtra` opcional (texto) que se muestra como pregunta Sí/No en la ficha de evaluación.
 6. **Ejes e Items (solo DOCENTE):** Las plantillas de tipo DOCENTE pueden incluir ejes e ítems configurables (número + descripción). Se renderizan en la ficha con selector de nivel (I-IV) y subida de evidencia (PDF, DOC, JPG, PNG).
-7. **Duplicación por Director IE:** El endpoint `POST /:id/duplicar` permite al Director IE copiar una plantilla UGEL (o existente) a su institución. La copia se crea como `Borrador` con `rolAutorAlCrear='director_ie'` e `institucionId` del director. El Director IE puede luego promoverla a Vigente.
+7. **Duplicación por Director IE:** El endpoint `POST /:id/duplicar` permite al Director IE copiar una plantilla UGEL (o existente) a su institución. La copia se crea como `Borrador` con `rolAutorAlCrear='director_ie'` e `institucionId` del director. El Director IE puede luego promoverla a Vigente. La versión se calcula automáticamente (`nextVersion = max(version) + 1`) en lugar de hardcodear 1, para evitar errores P2002 (unique constraint) si la misma plantilla se duplica múltiples veces.
 8. **Rol de autor (`rolAutorAlCrear`):** Al crear o duplicar, el backend asigna `'jefe_gestion'` para usuarios Jefe de Gestión y `'director_ie'` para Directores IE (el valor `'director_ie'` cumple el CHECK constraint de BD, distinto del `RoleCode.DIRECTOR_INSTITUCION='director_institucion'` usado en auth).
 9. **Restricción de eliminación:** Si la plantilla tiene fichas asociadas, no se puede eliminar (foreign key).
 
@@ -564,11 +565,10 @@ sequenceDiagram
 
 **Reglas de negocio:**
 
-1. **Máximo 3 visitas pendientes por especialista:** Un especialista no puede tener más de 3 cronogramas en estado `PROGRAMADO` sin completar.
-2. **Estados de visita:** `PROGRAMADO` → `EN_PROCESO` → `COMPLETADO` | `REPROGRAMADO` | `CANCELADO`.
-3. **Número de visita:** Entre 1 y 5 por docente.
-4. **Inmutabilidad de fecha/hora:** Un trigger en la BD (`trg_validar_update_cronograma`) impide modificar `fecha_programada` o `hora_inicio` directamente. Solo se puede cambiar mediante una reprogramación aprobada.
-5. **Reprogramaciones:**
+1. **Estados de visita:** `PROGRAMADO` → `EN_PROCESO` → `COMPLETADO` | `REPROGRAMADO` | `CANCELADO`.
+2. **Número de visita:** Entre 1 y 5 por docente. Al intentar programar una sexta visita, el frontend muestra un modal informativo indicando el límite alcanzado.
+3. **Inmutabilidad de fecha/hora:** Un trigger en la BD (`trg_validar_update_cronograma`) impide modificar `fecha_programada` o `hora_inicio` directamente. Solo se puede cambiar mediante una reprogramación aprobada.
+4. **Reprogramaciones:**
    - Cualquier usuario puede solicitar una reprogramación.
    - La solicitud guarda la fecha/hora original y la propuesta.
    - **¿Quién puede aprobar/rechazar?**
@@ -576,8 +576,13 @@ sequenceDiagram
      - **Jefe de Área**: solo puede resolver solicitudes de su mismo nivel educativo. Para nivel Secundaria, además debe coincidir la especialidad del monitor con la del Jefe de Área.
      - **Director IE (solo nivel Secundaria)**: puede resolver solicitudes de su propia institución (incluye las de su Coordinador Pedagógico y Jefe de Taller).
      - Otros roles no pueden resolver solicitudes.
+   - **Frontend (`CalendarioSidebar`)**: el permiso `canDecide` se calcula por solicitud según el rol del usuario, institución asignada y la institución de la visita. Solo si `canDecide` es `true` se muestran los botones Aprobar/Rechazar.
    - Al aprobar (POST `/solicitudes-reprogramacion/:id/aprobar`), se ejecuta `aplicarReprogramacion` que setea `app.reprogramacion_apply = true` para bypassear el trigger y actualizar el cronograma.
    - Solo puede haber una solicitud PENDIENTE por cronograma (índice parcial).
+5. **Ejecución de monitoreo:**
+   - Solo la persona asignada como `monitorId` puede ejecutar el monitoreo (iniciar ficha, llenar respuestas, finalizar).
+   - El frontend verifica `monitorId === user.id` para mostrar el botón "Iniciar Monitoreo". Si no coincide, se muestra el banner: *"Solo la persona asignada puede ejecutar esta visita"*.
+   - El sidebar de calendario (`CalendarioSidebar`) también unifica este mensaje tanto para programación como para ejecución, y filtra el calendario del Director IE usando comparación UUID de `institucionId`.
 
 **Datos que consume:** `Cronograma`, `SolicitudReprogramacion`, `Especialista`, `Docente`, `InstitucionEducativa`
 **Datos que genera:** Visitas programadas, solicitudes de reprogramación, cambios de estado
@@ -673,14 +678,15 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Jefe de Gestión selecciona especialista + IE + docente] --> B{Validar máximo 3 pendientes}
-    B -->|Supera límite| C[Error: especialista tiene 3 visitas pendientes]
-    B -->|OK| D[Crear cronograma estado PROGRAMADO]
+    A[Jefe de Gestión selecciona especialista + IE + docente] --> B{¿Docente ya tiene 5 visitas?}
+    B -->|Sí, límite alcanzado| C[Modal informativo: máximo 5 visitas por docente]
+    C --> D[Crear cronograma estado PROGRAMADO]
+    B -->|No| D
     D --> E[Especialista ve en su calendario]
     E --> F{¿Puede asistir?}
     F -->|Sí| G[Realiza visita y llena ficha]
     F -->|No, reprogramación necesaria| H[Crear solicitud reprogramación]
-    H --> I[Jefe de Gestión, Jefe de Área o Director IE (Secundaria) revisa solicitud]
+    H --> I[Según rol: Jefe de Gestión, Jefe de Área o Director IE (Secundaria) revisa solicitud]
     I --> J{¿Aprueba?}
     J -->|Sí| K[AplicarReprogramacion: actualiza fecha/hora con bypass trigger]
     J -->|No| L[Solicitud RECHAZADA, visita mantiene fecha original]
@@ -1362,7 +1368,7 @@ Existen datos históricos en Excel que deben migrarse al sistema. No hay un proc
 │           │   └── directorUgel/     → Dashboard Director UGEL
 │           └── shared/
 │               ├── api/              → fetchInterceptor, auth.api
-│               ├── config/           → features.ts (PERSISTENCE_MODE)
+│               ├── config/           → features.ts (PERSISTENCE_MODE), api.ts (API_BASE_URL, request<T>)
 │               ├── constants/        → roles.ts (ROLE_PERMISSIONS, getDefaultLandingPage)
 │               ├── lib/              → Utilidades (cn, etc.)
 │               ├── types/            → Tipos compartidos
@@ -1381,10 +1387,8 @@ Existen datos históricos en Excel que deben migrarse al sistema. No hay un proc
 │   │       ├── plantillas/           → IPlantilla, Create/Update contracts
 │   │       ├── evaluations/          → IFichaMonitoreo, NivelLogro, EstadoFicha
 │   │       ├── reports/              → IReporteFicha, IReporteResumenIE
-│   │       └── constants/            → ModalidadEducativa, MODALIDAD_NIVEL_MAP, etc.
+│   │   └── constants/            → ModalidadEducativa, MODALIDAD_NIVEL_MAP, UserRole, etc.
 │   │
-│   └── shared-types/                 → Tipos mínimos compartidos (UserRole)
-│
 ├── database/
 │   ├── seeders/                      → Seeders de la BD
 │   │   ├── index.js                 → Orquestador
@@ -1673,7 +1677,7 @@ Existen datos históricos en Excel que deben migrarse al sistema. No hay un proc
 
 ### 15.9 Monorepo con pnpm workspaces
 
-**Decisión:** Un solo repositorio con múltiples paquetes (frontend, backend, shared-contracts, shared-types).
+**Decisión:** Un solo repositorio con múltiples paquetes (frontend, backend, shared-contracts).
 
 **Beneficios:**
 - Dependencias compartidas (TypeScript, ESLint, Prettier)
@@ -1746,9 +1750,7 @@ Existen datos históricos en Excel que deben migrarse al sistema. No hay un proc
 
 ### Deuda técnica
 
-11. **Tipos redundantes:** Existen `shared-types` (mínimo) y `shared-contracts` (extenso). El tipo `UserRole` está definido en ambos. Unificar en `shared-contracts`.
-
-12. **Prisma migrations manuales:** La migración 12 (`sprint3_catalogos_y_indices`) se generó manualmente con `CREATE TABLE IF NOT EXISTS`, lo que sugiere que el schema de Prisma no se usó como única fuente de verdad en ese punto.
+11. **Prisma migrations manuales:** La migración 12 (`sprint3_catalogos_y_indices`) se generó manualmente con `CREATE TABLE IF NOT EXISTS`, lo que sugiere que el schema de Prisma no se usó como única fuente de verdad en ese punto.
 
 13. **Alias de roles:** Existen `director_ie` y `director_institucion` como roles separados, con un alias en TypeScript (`director_ie` como fallback). Esto puede confundir. Unificar en un solo nombre.
 

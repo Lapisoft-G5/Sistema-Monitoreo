@@ -11,6 +11,7 @@ import {
   Eye,
   Trash2
 } from 'lucide-react';
+import { API_BASE_URL } from '@shared/config/api';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import type { Cronograma } from '@/entities/model-cronogramas';
@@ -599,7 +600,7 @@ export const LlenarFichaForm = ({
                             href={
                               evidenciaUrls[item.id]?.startsWith('http')
                                 ? evidenciaUrls[item.id]
-                                : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${evidenciaUrls[item.id]}`
+                                : `${API_BASE_URL}${evidenciaUrls[item.id]}`
                             }
                             target="_blank"
                             rel="noopener noreferrer"

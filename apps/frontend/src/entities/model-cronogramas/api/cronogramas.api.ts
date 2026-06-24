@@ -5,22 +5,7 @@ import type {
   TipoMonitoreo,
   EstadoVisita,
 } from '@sistema-monitoreo/shared-contracts';
-
-const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    credentials: 'include',
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ message: response.statusText }));
-    throw new Error(err.message || `HTTP ${response.status}`);
-  }
-  if (response.status === 204) return undefined as T;
-  return response.json();
-}
+import { request } from '@shared/config/api';
 
 export interface CreateVisitaInput {
   monitorId: string;

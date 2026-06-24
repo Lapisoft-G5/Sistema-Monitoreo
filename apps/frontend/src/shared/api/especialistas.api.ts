@@ -4,31 +4,28 @@ import type {
   IQueryEspecialistaRequest,
   IUpdateEspecialistaRequest,
 } from '@sistema-monitoreo/shared-contracts';
+import { request } from '../config/api.js';
 
-const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
+function buildUrl(base: string, query?: Record<string, unknown>): string {
+  if (!query) return base;
+  const params = new URLSearchParams();
+  Object.entries(query).forEach(([key, val]) => {
+    if (val !== undefined && val !== null) {
+      params.append(key, String(val));
+    }
+  });
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
+}
 
 export const especialistasApi = {
   findAll: async (
     query?: IQueryEspecialistaRequest,
   ): Promise<{ ok: boolean; data?: IEspecialistaResponse[]; error?: unknown }> => {
     try {
-      const url = new URL(`${getApiBaseUrl()}/api/especialistas`);
-      if (query) {
-        Object.entries(query).forEach(([key, val]) => {
-          if (val !== undefined && val !== null) {
-            url.searchParams.append(key, String(val));
-          }
-        });
-      }
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
+      const data = await request<IEspecialistaResponse[]>(
+        buildUrl('/api/especialistas', query as Record<string, unknown>),
+      );
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -39,15 +36,7 @@ export const especialistasApi = {
     id: string,
   ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
+      const data = await request<IEspecialistaResponse>(`/api/especialistas/${id}`);
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -58,17 +47,10 @@ export const especialistasApi = {
     dto: ICreateEspecialistaRequest,
   ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/especialistas`, {
+      const data = await request<IEspecialistaResponse>('/api/especialistas', {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dto),
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -80,17 +62,10 @@ export const especialistasApi = {
     dto: IUpdateEspecialistaRequest,
   ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}`, {
+      const data = await request<IEspecialistaResponse>(`/api/especialistas/${id}`, {
         method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dto),
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -101,15 +76,9 @@ export const especialistasApi = {
     id: string,
   ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}`, {
+      const data = await request<IEspecialistaResponse>(`/api/especialistas/${id}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -120,15 +89,9 @@ export const especialistasApi = {
     id: string,
   ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}/baja`, {
+      const data = await request<IEspecialistaResponse>(`/api/especialistas/${id}/baja`, {
         method: 'PATCH',
-        credentials: 'include',
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
@@ -139,15 +102,9 @@ export const especialistasApi = {
     id: string,
   ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/especialistas/${id}/alta`, {
+      const data = await request<IEspecialistaResponse>(`/api/especialistas/${id}/alta`, {
         method: 'PATCH',
-        credentials: 'include',
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };

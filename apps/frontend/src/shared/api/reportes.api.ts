@@ -4,21 +4,7 @@ import type {
   NivelLogro,
   TipoMonitoreo,
 } from '@sistema-monitoreo/shared-contracts';
-
-const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    credentials: 'include',
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ message: response.statusText }));
-    throw new Error(err.message || `HTTP ${response.status}`);
-  }
-  return response.json();
-}
+import { request, API_BASE_URL } from '../config/api.js';
 
 export const reportesApi = {
   fichasCompletadas: (query?: {
@@ -44,5 +30,5 @@ export const reportesApi = {
   resumenIE: (anio: number) =>
     request<IReporteResumenIE[]>(`/api/reportes/resumen-ie?anio=${anio}`),
 
-  fichaHTMLUrl: (id: string) => `${getApiBaseUrl()}/api/reportes/ficha/${id}/export-html`,
+  fichaHTMLUrl: (id: string) => `${API_BASE_URL}/api/reportes/ficha/${id}/export-html`,
 };

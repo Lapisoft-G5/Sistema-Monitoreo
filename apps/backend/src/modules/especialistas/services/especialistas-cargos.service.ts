@@ -1,7 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { SessionRepository } from '../../auth/repositories/session.repository.js';
+import { EspecialistaRepository } from '../repositories/especialista.repository.js';
 import { EspecialistaCargoEnum } from '../../../shared/auth/capability-map.js';
 
 /**
@@ -20,23 +19,17 @@ import { EspecialistaCargoEnum } from '../../../shared/auth/capability-map.js';
 @Injectable()
 export class EspecialistasCargosService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly especialistaRepository: EspecialistaRepository,
     private readonly sessionRepository: SessionRepository,
   ) {}
 
   async list(especialistaId: string) {
-    const especialista = await this.prisma.especialista.findUnique({
-      where: { id: especialistaId },
-      include: {
-        cargos: {
-          orderBy: [{ fechaFin: 'asc' }, { fechaInicio: 'desc' }],
-        },
-      },
-    });
+    const especialista = await this.especialistaRepository.findById(especialistaId);
     if (!especialista) {
       throw new NotFoundException(`Especialista ${especialistaId} no encontrado.`);
     }
-    return especialista.cargos.map((ec) => ({
+    const cargos = await this.especialistaRepository.findCargosByEspecialistaId(especialistaId);
+    return cargos.map((ec) => ({
       id: ec.id,
       cargo: ec.cargo,
       fechaInicio: ec.fechaInicio,
@@ -50,42 +43,19 @@ export class EspecialistasCargosService {
    * Tambien sincroniza `Especialista.cargo` con el nuevo valor.
    */
   async add(especialistaId: string, cargo: EspecialistaCargoEnum, fechaInicio?: Date) {
-    const especialista = await this.prisma.especialista.findUnique({
-      where: { id: especialistaId },
-      include: {
-        cargos: { where: { fechaFin: null } },
-      },
-    });
+    const especialista = await this.especialistaRepository.findById(especialistaId);
     if (!especialista) {
       throw new NotFoundException(`Especialista ${especialistaId} no encontrado.`);
     }
-    if (especialista.cargos.length > 0) {
+    const activeCount = await this.especialistaRepository.countActiveCargos(especialistaId);
+    if (activeCount > 0) {
       throw new ConflictException(
-        `El Especialista ya tiene un cargo activo: "${especialista.cargos[0].cargo}". ` +
-          `Finalicelo primero antes de agregar uno nuevo.`,
+        `El Especialista ya tiene un cargo activo. Finalicelo primero antes de agregar uno nuevo.`,
       );
     }
 
     const inicio = fechaInicio ?? new Date();
-
-    return this.prisma.$transaction(async (tx) => {
-      const created = await tx.especialistaCargo.create({
-        data: {
-          id: randomUUID(),
-          especialistaId,
-          cargo,
-          fechaInicio: inicio,
-          fechaFin: null,
-          esPrincipal: true,
-        },
-      });
-      // Sincronizar el campo espejo `Especialista.cargo`.
-      await tx.especialista.update({
-        where: { id: especialistaId },
-        data: { cargo },
-      });
-      return created;
-    });
+    return this.especialistaRepository.createCargo(especialistaId, cargo, inicio);
   }
 
   /**
@@ -95,9 +65,7 @@ export class EspecialistasCargosService {
    * apuntando a algo que ya no esta activo — un admin lo actualizara).
    */
   async finalize(especialistaId: string, especialistaCargoId: string, fechaFin?: Date) {
-    const ec = await this.prisma.especialistaCargo.findUnique({
-      where: { id: especialistaCargoId },
-    });
+    const ec = await this.especialistaRepository.findCargoById(especialistaCargoId);
     if (!ec || ec.especialistaId !== especialistaId) {
       throw new NotFoundException(
         `EspecialistaCargo ${especialistaCargoId} no encontrado para el especialista ${especialistaId}.`,
@@ -110,34 +78,14 @@ export class EspecialistasCargosService {
     }
 
     const fin = fechaFin ?? new Date();
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.especialistaCargo.update({
-        where: { id: especialistaCargoId },
-        data: { fechaFin: fin },
-      });
-      // Sincronizar el campo espejo: queda con el cargo recien finalizado.
-      // Un admin debera agregar el siguiente cargo via POST.
-      await tx.especialista.update({
-        where: { id: especialistaId },
-        data: { cargo: ec.cargo },
-      });
-    });
+    await this.especialistaRepository.finalizeCargo(especialistaId, especialistaCargoId, fin, ec.cargo);
 
     // Invalidar sesiones del usuario: sus capabilities cambiaron.
-    const userId = await this.findUserIdByEspecialistaId(especialistaId);
+    const userId = await this.especialistaRepository.findUserIdByEspecialistaId(especialistaId);
     if (userId) {
       await this.sessionRepository.invalidateAllUserSessions(userId, 'CARGO_FINALIZADO');
     }
 
     return { ok: true, cargoFinalizado: ec.cargo, fechaFin: fin };
-  }
-
-  private async findUserIdByEspecialistaId(especialistaId: string): Promise<string | null> {
-    const esp = await this.prisma.especialista.findUnique({
-      where: { id: especialistaId },
-      select: { persona: { select: { usuario: { select: { id: true } } } } },
-    });
-    return esp?.persona?.usuario?.id ?? null;
   }
 }

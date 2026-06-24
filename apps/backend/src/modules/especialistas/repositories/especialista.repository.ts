@@ -5,6 +5,15 @@ import type {
   IQueryEspecialistaRequest,
 } from '@sistema-monitoreo/shared-contracts';
 
+export interface CargoRecord {
+  id: string;
+  cargo: string;
+  especialistaId: string;
+  fechaInicio: Date;
+  fechaFin: Date | null;
+  esPrincipal: boolean;
+}
+
 export abstract class EspecialistaRepository {
   abstract findAll(filters?: IQueryEspecialistaRequest): Promise<IEspecialistaResponse[]>;
   abstract findById(id: string): Promise<IEspecialistaResponse | null>;
@@ -22,4 +31,9 @@ export abstract class EspecialistaRepository {
   abstract activate(id: string): Promise<IEspecialistaResponse>;
   abstract deactivate(id: string): Promise<IEspecialistaResponse>;
   abstract findUserIdByEspecialistaId(especialistaId: string): Promise<string | null>;
+  abstract findCargosByEspecialistaId(especialistaId: string): Promise<CargoRecord[]>;
+  abstract findCargoById(id: string): Promise<CargoRecord | null>;
+  abstract countActiveCargos(especialistaId: string): Promise<number>;
+  abstract createCargo(especialistaId: string, cargo: string, fechaInicio: Date): Promise<CargoRecord>;
+  abstract finalizeCargo(especialistaId: string, cargoId: string, fechaFin: Date, cargoValue: string): Promise<void>;
 }

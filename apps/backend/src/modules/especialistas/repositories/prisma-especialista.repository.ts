@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import { EspecialistaRepository } from './especialista.repository.js';
+import { EspecialistaRepository, CargoRecord } from './especialista.repository.js';
 import type {
   IEspecialistaResponse,
   ICreateEspecialistaRequest,
@@ -705,5 +705,57 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
       select: { persona: { select: { usuario: { select: { id: true } } } } },
     });
     return esp?.persona?.usuario?.id ?? null;
+  }
+
+  async findCargosByEspecialistaId(especialistaId: string): Promise<CargoRecord[]> {
+    return this.prisma.especialistaCargo.findMany({
+      where: { especialistaId },
+      orderBy: [{ fechaFin: 'asc' }, { fechaInicio: 'desc' }],
+    });
+  }
+
+  async findCargoById(id: string): Promise<CargoRecord | null> {
+    return this.prisma.especialistaCargo.findUnique({
+      where: { id },
+    });
+  }
+
+  async countActiveCargos(especialistaId: string): Promise<number> {
+    return this.prisma.especialistaCargo.count({
+      where: { especialistaId, fechaFin: null },
+    });
+  }
+
+  async createCargo(especialistaId: string, cargo: string, fechaInicio: Date): Promise<CargoRecord> {
+    return this.prisma.$transaction(async (tx) => {
+      const created = await tx.especialistaCargo.create({
+        data: {
+          id: randomUUID(),
+          especialistaId,
+          cargo,
+          fechaInicio,
+          fechaFin: null,
+          esPrincipal: true,
+        },
+      });
+      await tx.especialista.update({
+        where: { id: especialistaId },
+        data: { cargo },
+      });
+      return created;
+    });
+  }
+
+  async finalizeCargo(especialistaId: string, cargoId: string, fechaFin: Date, cargoValue: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.especialistaCargo.update({
+        where: { id: cargoId },
+        data: { fechaFin },
+      });
+      await tx.especialista.update({
+        where: { id: especialistaId },
+        data: { cargo: cargoValue },
+      });
+    });
   }
 }

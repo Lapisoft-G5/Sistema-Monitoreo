@@ -54,6 +54,8 @@ describe('SchedulingService - Reprogramaciones', () => {
       create: jest.fn<any>().mockResolvedValue(visitaBase),
       update: jest.fn<any>().mockResolvedValue({ ...visitaBase, estado: 'REPROGRAMADO' }),
       remove: jest.fn<any>(),
+      findMonitorEspecialidades: jest.fn<any>().mockResolvedValue([]),
+      applyReprogramacion: jest.fn<any>().mockResolvedValue(undefined),
     };
     const mockSol: Partial<jest.Mocked<SolicitudReprogramacionRepository>> = {
       findAll: jest.fn<any>(),
@@ -366,14 +368,11 @@ describe('SchedulingService - Reprogramaciones', () => {
       });
 
       const r = await service.aprobarSolicitud('sol-1', { comentario: 'Aprobado' }, sesionJefe);
-      expect(prisma.cronograma.update).toHaveBeenCalledWith({
-        where: { id: 'vis-1' },
-        data: {
-          fechaProgramada: new Date('2026-04-01'),
-          horaInicio: '10:00:00',
-          estado: 'REPROGRAMADO',
-        },
-      });
+      expect(cronogramaRepo.applyReprogramacion).toHaveBeenCalledWith(
+        'vis-1',
+        new Date('2026-04-01'),
+        '10:00:00',
+      );
       expect(r.estado).toBe('APROBADO');
     });
   });

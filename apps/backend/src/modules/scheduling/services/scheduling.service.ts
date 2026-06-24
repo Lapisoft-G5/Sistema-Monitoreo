@@ -6,7 +6,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { STORAGE_SERVICE, type StorageService } from '../../../shared/storage/storage.constants.js';
-import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
 import {
   CronogramaRepository,
@@ -40,7 +39,6 @@ export class SchedulingService {
     private readonly cronogramaRepo: CronogramaRepository,
     private readonly solicitudRepo: SolicitudReprogramacionRepository,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
-    private readonly prisma: PrismaService,
     private readonly scopeFilter: ScopeFilter,
   ) {}
 
@@ -267,10 +265,8 @@ export class SchedulingService {
           session.especialistaEspecialidades &&
           session.especialistaEspecialidades.length > 0
         ) {
-          const monitorEspecialidades = await this.prisma.especialistaEspecialidad.findMany({
-            where: { especialistaId: cronograma.monitorId },
-            include: { especialidad: true },
-          });
+          const monitorEspecialidades =
+            await this.cronogramaRepo.findMonitorEspecialidades(cronograma.monitorId);
           const monitorEspecs = monitorEspecialidades.map((e) => e.especialidad.nombre);
           const hasOverlap = session.especialistaEspecialidades.some((e) =>
             monitorEspecs.includes(e),
@@ -314,21 +310,11 @@ export class SchedulingService {
 
     // Si se aprobo, mutamos el cronograma en la misma operacion
     if (estado === 'APROBADO') {
-      // El trigger SQL exige esta bandera de sesion para aceptar el UPDATE.
-      // Usamos una transaccion explicita para asegurar que corran en la misma conexion.
-      await this.prisma.$transaction([
-        this.prisma.$executeRawUnsafe(
-          `SELECT set_config('app.reprogramacion_apply', 'true', true)`,
-        ),
-        this.prisma.cronograma.update({
-          where: { id: solicitud.cronogramaId },
-          data: {
-            fechaProgramada: new Date(solicitud.fechaPropuesta),
-            horaInicio: solicitud.horaPropuesta,
-            estado: 'REPROGRAMADO',
-          },
-        }),
-      ]);
+      await this.cronogramaRepo.applyReprogramacion(
+        solicitud.cronogramaId,
+        new Date(solicitud.fechaPropuesta),
+        solicitud.horaPropuesta,
+      );
     }
     return resuelta;
   }

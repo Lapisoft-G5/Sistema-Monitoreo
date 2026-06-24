@@ -54,6 +54,14 @@ export abstract class CronogramaRepository {
   abstract create(data: CreateVisitaData): Promise<IVisita>;
   abstract update(id: string, data: UpdateVisitaData): Promise<IVisita>;
   abstract remove(id: string): Promise<void>;
+  abstract findMonitorEspecialidades(
+    monitorId: string,
+  ): Promise<Array<{ especialidad: { nombre: string } }>>;
+  abstract applyReprogramacion(
+    cronogramaId: string,
+    fechaProgramada: Date,
+    horaInicio: string,
+  ): Promise<void>;
 }
 
 export abstract class SolicitudReprogramacionRepository {

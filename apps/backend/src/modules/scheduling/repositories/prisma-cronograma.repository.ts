@@ -147,6 +147,35 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
   async remove(id: string): Promise<void> {
     await this.prisma.cronograma.delete({ where: { id } });
   }
+
+  async findMonitorEspecialidades(
+    monitorId: string,
+  ): Promise<Array<{ especialidad: { nombre: string } }>> {
+    return this.prisma.especialistaEspecialidad.findMany({
+      where: { especialistaId: monitorId },
+      include: { especialidad: { select: { nombre: true } } },
+    }) as unknown as Array<{ especialidad: { nombre: string } }>;
+  }
+
+  async applyReprogramacion(
+    cronogramaId: string,
+    fechaProgramada: Date,
+    horaInicio: string,
+  ): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.$executeRawUnsafe(
+        `SELECT set_config('app.reprogramacion_apply', 'true', true)`,
+      ),
+      this.prisma.cronograma.update({
+        where: { id: cronogramaId },
+        data: {
+          fechaProgramada,
+          horaInicio,
+          estado: 'REPROGRAMADO',
+        },
+      }),
+    ]);
+  }
 }
 
 @Injectable()

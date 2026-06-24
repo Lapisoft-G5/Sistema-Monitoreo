@@ -61,6 +61,7 @@ export class ReporteController {
       id: req.user.sub,
       role: req.user.role,
       institucionId: req.user.institucion_id ?? null,
+      especialistaNivel: req.user.especialista_nivel ?? null,
     };
   }
 }

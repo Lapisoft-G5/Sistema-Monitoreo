@@ -24,6 +24,7 @@ export interface SessionUser {
   id: string;
   role: string;
   institucionId?: string | null;
+  especialistaNivel?: string | null;
 }
 
 @Injectable()
@@ -50,6 +51,7 @@ export class FichaService {
       userId: session.id,
       role: session.role as RoleCode,
       institucionId: session.institucionId ?? null,
+      especialistaNivel: session.especialistaNivel ?? null,
     });
     const allowed = await this.prisma.fichaMonitoreo.findFirst({
       where: { id: f.id, ...scope },

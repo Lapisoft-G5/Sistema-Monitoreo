@@ -339,11 +339,18 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         especialidades: {
           include: { especialidad: true },
         },
+        cargos: { where: { fechaFin: null } },
       },
     });
     if (!esp) {
       throw new NotFoundException(`Especialista con ID ${id} no encontrado.`);
     }
+
+    // Cargo efectivo actual = el EspecialistaCargo activo, o 'Especialista'
+    // si no hay ninguno. Se usa para decidir si el update cambia el cargo
+    // y, por ende, requiere sincronizar la tabla EspecialistaCargo.
+    const cargoActivoActual = esp.cargos[0]?.cargo ?? CargoNombre.ESPECIALISTA;
+    const cargoCambio = data.cargo && data.cargo !== cargoActivoActual;
 
     return await this.prisma.$transaction(async (tx) => {
       // A. Actualizar Persona (dni bloqueado)
@@ -380,6 +387,33 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
             data.escalaMagisterial !== undefined ? data.escalaMagisterial : undefined,
         },
       });
+
+      // C.2 Sincronizar EspecialistaCargo cuando el cargo cambió. El mapper
+      // (`mapEspecialista`) calcula el cargo efectivo desde la fila
+      // EspecialistaCargo con fechaFin IS NULL; actualizar sólo el campo
+      // legacy `Especialista.cargo` no basta para que la persona aparezca
+      // en la tabla de Jefes de Área / Jefes de Gestión. Por eso, al cambiar
+      // el cargo: (1) finalizar el cargo activo actual (si lo hay) y
+      // (2) crear un nuevo EspecialistaCargo activo cuando el cargo destino
+      // no sea 'Especialista' (demisión: sólo se finaliza, sin crear nuevo).
+      if (cargoCambio) {
+        await tx.especialistaCargo.updateMany({
+          where: { especialistaId: id, fechaFin: null },
+          data: { fechaFin: new Date() },
+        });
+        if (data.cargo !== CargoNombre.ESPECIALISTA) {
+          await tx.especialistaCargo.create({
+            data: {
+              id: randomUUID(),
+              especialistaId: id,
+              cargo: data.cargo,
+              fechaInicio: new Date(),
+              fechaFin: null,
+              esPrincipal: true,
+            },
+          });
+        }
+      }
 
       if (
         data.especialidad !== undefined ||

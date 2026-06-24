@@ -45,6 +45,22 @@ export interface FinalizarFichaData {
   compromisos?: string;
 }
 
+export interface CronogramaBasic {
+  id: string;
+  estado: string;
+  tipoMonitoreo: string;
+  fechaProgramada: Date;
+  evaluadoId: string;
+}
+
+export interface PlantillaBasic {
+  id: string;
+  estado: string;
+  tipoMonitoreo: string;
+  anioAcademico: number;
+  descripcion: string | null;
+}
+
 export abstract class FichaRepository {
   abstract findByVisitaId(cronogramaId: string): Promise<IFichaMonitoreo | null>;
   abstract findById(id: string): Promise<IFichaMonitoreo | null>;
@@ -63,4 +79,23 @@ export abstract class FichaRepository {
     compromisos?: string,
   ): Promise<IFichaMonitoreo>;
   abstract plantillaEstaHistorica(plantillaId: string): Promise<boolean>;
+
+  abstract findPlantillaVigente(tipo: string, anio: number): Promise<PlantillaBasic | null>;
+  abstract findCronogramaBasicById(id: string): Promise<CronogramaBasic | null>;
+  abstract findCursoBasicById(id: string): Promise<{ id: string } | null>;
+  abstract findDocenteCursoByDocenteId(docenteId: string): Promise<{ cursoId: string } | null>;
+  abstract findFirstCursoBasic(): Promise<{ id: string } | null>;
+  abstract findPlantillaBasicById(id: string): Promise<PlantillaBasic | null>;
+  abstract updateCronogramaEstado(id: string, estado: string): Promise<void>;
+  abstract findRespuestaEjeItemByFichaAndEje(
+    fichaId: string,
+    ejeItemId: string,
+  ): Promise<{ nivel: number } | null>;
+  abstract migrarPlantilla(
+    fichaId: string,
+    nuevaPlantillaId: string,
+    oldDesempenos: Array<{ id: string; nivel: number }>,
+    oldAspectos: Array<{ id: string; marcado: boolean }>,
+  ): Promise<IFichaMonitoreo>;
+  abstract existsWithScope(id: string, scopeWhere: Record<string, unknown>): Promise<boolean>;
 }

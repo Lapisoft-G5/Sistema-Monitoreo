@@ -16,6 +16,8 @@ import {
   SaveRespuestaData,
   SaveRespuestaAspectoData,
   SaveRespuestaEjeItemData,
+  CronogramaBasic,
+  PlantillaBasic,
 } from './ficha.repository.js';
 
 @Injectable()
@@ -279,5 +281,131 @@ export class PrismaFichaRepository implements FichaRepository {
       select: { estado: true },
     });
     return p?.estado === 'Historico';
+  }
+
+  async findPlantillaVigente(tipo: string, anio: number): Promise<PlantillaBasic | null> {
+    const p = await this.prisma.plantillaMonitoreo.findFirst({
+      where: { tipoMonitoreo: tipo, anioAcademico: anio, estado: 'Vigente', deleted: false },
+      select: { id: true, estado: true, tipoMonitoreo: true, anioAcademico: true, descripcion: true },
+    });
+    return p as PlantillaBasic | null;
+  }
+
+  async findCronogramaBasicById(id: string): Promise<CronogramaBasic | null> {
+    const c = await this.prisma.cronograma.findUnique({
+      where: { id },
+      select: { id: true, estado: true, tipoMonitoreo: true, fechaProgramada: true, evaluadoId: true },
+    });
+    return c as CronogramaBasic | null;
+  }
+
+  async findCursoBasicById(id: string): Promise<{ id: string } | null> {
+    return this.prisma.curso.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+  }
+
+  async findDocenteCursoByDocenteId(docenteId: string): Promise<{ cursoId: string } | null> {
+    return this.prisma.docenteCurso.findFirst({
+      where: { docenteId },
+      select: { cursoId: true },
+    });
+  }
+
+  async findFirstCursoBasic(): Promise<{ id: string } | null> {
+    return this.prisma.curso.findFirst({
+      select: { id: true },
+    });
+  }
+
+  async findPlantillaBasicById(id: string): Promise<PlantillaBasic | null> {
+    const p = await this.prisma.plantillaMonitoreo.findUnique({
+      where: { id },
+      select: { id: true, estado: true, tipoMonitoreo: true, anioAcademico: true, descripcion: true },
+    });
+    return p as PlantillaBasic | null;
+  }
+
+  async updateCronogramaEstado(id: string, estado: string): Promise<void> {
+    await this.prisma.cronograma.update({
+      where: { id },
+      data: { estado } as any,
+    });
+  }
+
+  async findRespuestaEjeItemByFichaAndEje(
+    fichaId: string,
+    ejeItemId: string,
+  ): Promise<{ nivel: number } | null> {
+    return this.prisma.fichaRespuestaEjeItem.findFirst({
+      where: { fichaId, ejeItemId },
+      select: { nivel: true },
+    });
+  }
+
+  async migrarPlantilla(
+    fichaId: string,
+    nuevaPlantillaId: string,
+    oldDesempenos: Array<{ id: string; nivel: number }>,
+    oldAspectos: Array<{ id: string; marcado: boolean }>,
+  ): Promise<IFichaMonitoreo> {
+    const desempenosV2 = await this.prisma.desempenoPlantilla.findMany({
+      where: { plantillaId: nuevaPlantillaId },
+      include: { aspectos: true },
+    });
+    const desempenoPorNombre = new Map<string, (typeof desempenosV2)[number]>();
+    for (const d of desempenosV2) {
+      desempenoPorNombre.set(d.nombre, d);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.fichaRespuestaDesempeno.deleteMany({ where: { fichaId } });
+      await tx.fichaRespuestaAspecto.deleteMany({ where: { fichaId } });
+
+      for (const r of oldDesempenos) {
+        const desempenoV1 = await tx.desempenoPlantilla.findUnique({
+          where: { id: r.id },
+        });
+        const desempenoV2 = desempenoV1 ? desempenoPorNombre.get(desempenoV1.nombre) : null;
+        if (desempenoV2) {
+          await tx.fichaRespuestaDesempeno.create({
+            data: { fichaId, desempenoId: desempenoV2.id, nivel: r.nivel },
+          });
+        }
+      }
+
+      for (const r of oldAspectos) {
+        const aspectoV1 = await tx.aspectoEvaluado.findUnique({
+          where: { id: r.id },
+          include: { desempeno: true },
+        });
+        if (!aspectoV1) continue;
+        const desempenoV2 = desempenoPorNombre.get(aspectoV1.desempeno.nombre);
+        const aspectoV2 = desempenoV2?.aspectos.find(
+          (a) => a.descripcion === aspectoV1.descripcion,
+        );
+        if (aspectoV2) {
+          await tx.fichaRespuestaAspecto.create({
+            data: { fichaId, aspectoId: aspectoV2.id, marcado: r.marcado },
+          });
+        }
+      }
+
+      await tx.fichaMonitoreo.update({
+        where: { id: fichaId },
+        data: { plantillaId: nuevaPlantillaId },
+      });
+    });
+
+    return this.buildFicha(fichaId);
+  }
+
+  async existsWithScope(id: string, scopeWhere: Record<string, unknown>): Promise<boolean> {
+    const result = await this.prisma.fichaMonitoreo.findFirst({
+      where: { id, ...scopeWhere } as any,
+      select: { id: true },
+    });
+    return result !== null;
   }
 }

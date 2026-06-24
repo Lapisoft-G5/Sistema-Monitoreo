@@ -4,12 +4,13 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import type { IFichaMonitoreo, NivelLogro } from '@sistema-monitoreo/shared-contracts';
 import { FichaRepository } from '../repositories/ficha.repository.js';
-import { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import { STORAGE_SERVICE, type StorageService } from '../../../shared/storage/storage.constants.js';
 import { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
 import { ScopeFilter } from '../../../shared/auth/scope-filter.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
@@ -31,7 +32,7 @@ export interface SessionUser {
 export class FichaService {
   constructor(
     private readonly repository: FichaRepository,
-    private readonly prisma: PrismaService,
+    @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly scopeFilter: ScopeFilter,
   ) {}
 
@@ -53,19 +54,14 @@ export class FichaService {
       institucionId: session.institucionId ?? null,
       especialistaNivel: session.especialistaNivel ?? null,
     });
-    const allowed = await this.prisma.fichaMonitoreo.findFirst({
-      where: { id: f.id, ...scope },
-      select: { id: true },
-    });
+    const allowed = await this.repository.existsWithScope(f.id, scope);
     if (!allowed) throw new ForbiddenException('No tiene acceso a esta ficha.');
 
     return f;
   }
 
   async crear(dto: CreateFichaDto, session: SessionUser): Promise<IFichaMonitoreo> {
-    const cronograma = await this.prisma.cronograma.findUnique({
-      where: { id: dto.cronogramaId },
-    });
+    const cronograma = await this.repository.findCronogramaBasicById(dto.cronogramaId);
     if (!cronograma) throw new NotFoundException(`Visita ${dto.cronogramaId} no encontrada.`);
 
     const existente = await this.repository.findByVisitaId(dto.cronogramaId);
@@ -73,22 +69,16 @@ export class FichaService {
       throw new ConflictException(`Ya existe una ficha para esta visita (id=${existente.id}).`);
     }
 
-    // Resolver plantilla vigente del tipo
-    const plantilla = await this.prisma.plantillaMonitoreo.findFirst({
-      where: {
-        tipoMonitoreo: cronograma.tipoMonitoreo,
-        anioAcademico: cronograma.fechaProgramada.getFullYear(),
-        estado: 'Vigente',
-        deleted: false,
-      },
-    });
+    const plantilla = await this.repository.findPlantillaVigente(
+      cronograma.tipoMonitoreo,
+      cronograma.fechaProgramada.getFullYear(),
+    );
     if (!plantilla) {
       throw new BadRequestException(
         `No existe plantilla Vigente para (${cronograma.tipoMonitoreo}, ${cronograma.fechaProgramada.getFullYear()}).`,
       );
     }
 
-    // Validar contexto obligatorio para DOCENTE, NULL para DIRECTIVO
     if (cronograma.tipoMonitoreo === 'DOCENTE') {
       const missing: string[] = [];
       if (!dto.areaCurricular) missing.push('areaCurricular');
@@ -99,22 +89,18 @@ export class FichaService {
 
       let validCursoId = dto.cursoId;
       if (validCursoId) {
-        const exists = await this.prisma.curso.findUnique({ where: { id: validCursoId } });
+        const exists = await this.repository.findCursoBasicById(validCursoId);
         if (!exists) {
           validCursoId = undefined;
         }
       }
 
       if (!validCursoId) {
-        // Buscar un curso asociado a este docente
-        const docenteCurso = await this.prisma.docenteCurso.findFirst({
-          where: { docenteId: cronograma.evaluadoId },
-        });
+        const docenteCurso = await this.repository.findDocenteCursoByDocenteId(cronograma.evaluadoId);
         if (docenteCurso) {
           validCursoId = docenteCurso.cursoId;
         } else {
-          // Fallback al primer curso del sistema
-          const fallbackCurso = await this.prisma.curso.findFirst();
+          const fallbackCurso = await this.repository.findFirstCursoBasic();
           if (fallbackCurso) {
             validCursoId = fallbackCurso.id;
           }
@@ -130,7 +116,6 @@ export class FichaService {
         );
       }
     } else if (cronograma.tipoMonitoreo === 'DIRECTIVO') {
-      // DIRECTIVO: todo el contexto debe ser NULL
       if (
         dto.areaCurricular ||
         dto.grado ||
@@ -160,10 +145,7 @@ export class FichaService {
       creadoPorId: session.id,
     });
 
-    await this.prisma.cronograma.update({
-      where: { id: dto.cronogramaId },
-      data: { estado: 'EN_PROCESO' },
-    });
+    await this.repository.updateCronogramaEstado(dto.cronogramaId, 'EN_PROCESO');
 
     return result;
   }
@@ -214,19 +196,12 @@ export class FichaService {
    * El frontend abre ModalMigracionPlantilla al recibir este codigo.
    */
   private async ensurePlantillaVigente(ficha: IFichaMonitoreo): Promise<void> {
-    const plantilla = await this.prisma.plantillaMonitoreo.findUnique({
-      where: { id: ficha.plantillaId },
-    });
+    const plantilla = await this.repository.findPlantillaBasicById(ficha.plantillaId);
     if (plantilla && plantilla.estado === 'Vigente') return;
 
-    const vigente = await this.prisma.plantillaMonitoreo.findFirst({
-      where: {
-        tipoMonitoreo: plantilla?.tipoMonitoreo,
-        anioAcademico: plantilla?.anioAcademico,
-        estado: 'Vigente',
-        deleted: false,
-      },
-    });
+    const vigente = plantilla
+      ? await this.repository.findPlantillaVigente(plantilla.tipoMonitoreo, plantilla.anioAcademico)
+      : null;
 
     const conflict = new ConflictException({
       message:
@@ -267,10 +242,7 @@ export class FichaService {
       dto.compromisos,
     );
 
-    await this.prisma.cronograma.update({
-      where: { id: ficha.cronogramaId },
-      data: { estado: 'COMPLETADO' },
-    });
+    await this.repository.updateCronogramaEstado(ficha.cronogramaId, 'COMPLETADO');
 
     return result;
   }
@@ -288,67 +260,17 @@ export class FichaService {
       );
     }
 
-    // Verificar que la plantilla nueva existe y es del mismo tipo
-    const plantillaNueva = await this.prisma.plantillaMonitoreo.findUnique({
-      where: { id: nuevaPlantillaId },
-    });
+    const plantillaNueva = await this.repository.findPlantillaBasicById(nuevaPlantillaId);
     if (!plantillaNueva) {
       throw new NotFoundException(`Plantilla ${nuevaPlantillaId} no encontrada.`);
     }
 
-    // Mapear desempenoId v1 -> desempenoId v2 por nombre
-    const desempenosV2 = await this.prisma.desempenoPlantilla.findMany({
-      where: { plantillaId: nuevaPlantillaId },
-      include: { aspectos: true },
-    });
-    const desempenoPorNombre = new Map<string, (typeof desempenosV2)[number]>();
-    for (const d of desempenosV2) {
-      desempenoPorNombre.set(d.nombre, d);
-    }
-
-    // Mutar respuestas a la nueva plantilla
-    await this.prisma.$transaction(async (tx) => {
-      // Eliminar respuestas del desempeno viejo
-      await tx.fichaRespuestaDesempeno.deleteMany({ where: { fichaId } });
-      await tx.fichaRespuestaAspecto.deleteMany({ where: { fichaId } });
-      // Re-crear respuestas para desempenos de la nueva plantilla
-      for (const r of ficha.respuestasDesempeno) {
-        // Buscar desempeno equivalente en v2 por nombre
-        const desempenoV1 = await tx.desempenoPlantilla.findUnique({
-          where: { id: r.desempenoId },
-        });
-        const desempenoV2 = desempenoV1 ? desempenoPorNombre.get(desempenoV1.nombre) : null;
-        if (desempenoV2) {
-          await tx.fichaRespuestaDesempeno.create({
-            data: { fichaId, desempenoId: desempenoV2.id, nivel: r.nivel },
-          });
-        }
-        // Si no hay equivalente, la respuesta se pierde (silenciosamente)
-      }
-      for (const r of ficha.respuestasAspecto) {
-        const aspectoV1 = await tx.aspectoEvaluado.findUnique({
-          where: { id: r.aspectoId },
-          include: { desempeno: true },
-        });
-        if (!aspectoV1) continue;
-        const desempenoV2 = desempenoPorNombre.get(aspectoV1.desempeno.nombre);
-        const aspectoV2 = desempenoV2?.aspectos.find(
-          (a) => a.descripcion === aspectoV1.descripcion,
-        );
-        if (aspectoV2) {
-          await tx.fichaRespuestaAspecto.create({
-            data: { fichaId, aspectoId: aspectoV2.id, marcado: r.marcado },
-          });
-        }
-      }
-      // Actualizar la ficha con la nueva plantillaId
-      await tx.fichaMonitoreo.update({
-        where: { id: fichaId },
-        data: { plantillaId: nuevaPlantillaId },
-      });
-    });
-
-    return this.repository.findById(fichaId) as Promise<IFichaMonitoreo>;
+    return this.repository.migrarPlantilla(
+      fichaId,
+      nuevaPlantillaId,
+      ficha.respuestasDesempeno.map((r) => ({ id: r.desempenoId, nivel: r.nivel })),
+      ficha.respuestasAspecto.map((r) => ({ id: r.aspectoId, marcado: r.marcado })),
+    );
   }
 
   async guardarRespuestaEjeItem(
@@ -388,29 +310,17 @@ export class FichaService {
     }
     await this.ensurePlantillaVigente(ficha);
 
-    const fs = await import('node:fs');
-    const path = await import('node:path');
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    const ext = path.extname(file.originalname) || '.bin';
-    const filename = `${fichaId}_${ejeItemId}_${Date.now()}${ext}`;
-    const filepath = path.join(uploadsDir, filename);
-    fs.writeFileSync(filepath, file.buffer);
+    const saved = await this.storage.savePdf('evidencias', file.originalname, file.buffer);
 
-    const url = `/uploads/${filename}`;
-    const existing = await this.prisma.fichaRespuestaEjeItem.findFirst({
-      where: { fichaId, ejeItemId },
-    });
+    const existing = await this.repository.findRespuestaEjeItemByFichaAndEje(fichaId, ejeItemId);
     const nivel = existing ? existing.nivel : 1;
     await this.repository.saveRespuestaEjeItem({
       fichaId,
       ejeItemId,
       nivel,
-      evidenciaUrl: url,
+      evidenciaUrl: saved.url,
     });
-    return url;
+    return saved.url;
   }
 
   // ============== Motor de baremo (expuesto para tests y reuso) ==============

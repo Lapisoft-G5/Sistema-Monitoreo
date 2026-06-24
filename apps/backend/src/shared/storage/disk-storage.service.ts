@@ -18,7 +18,7 @@ export class DiskStorageService implements StorageService, OnModuleInit {
   }
 
   onModuleInit() {
-    for (const bucket of ['planes', 'reprogramaciones'] as StorageBucket[]) {
+    for (const bucket of ['planes', 'reprogramaciones', 'evidencias'] as StorageBucket[]) {
       const dir = this.getBucketPath(bucket);
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });

@@ -59,7 +59,7 @@ export const PlantillasCatalog = () => {
         (p) =>
           !p.creadoPorRole ||
           p.creadoPorRole === 'jefe_gestion' ||
-          (p.creadoPorRole === 'director_institucion' && p.ieId === user?.institucion),
+          (p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion),
       );
     }
     return plantillas.filter((p) => !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion');
@@ -278,7 +278,7 @@ export const PlantillasCatalog = () => {
           {filteredPlantillas.map((plantilla) => {
             const isDocente = plantilla.tipoMonitoreo === 'Monitoreo Docente';
             const isGeneral = !plantilla.creadoPorRole || plantilla.creadoPorRole === 'jefe_gestion';
-            const canManage = !isDirector || (plantilla.creadoPorRole === 'director_institucion' && plantilla.ieId === user?.institucion);
+            const canManage = !isDirector || (plantilla.creadoPorRole === 'director_ie' && plantilla.ieId === user?.institucion);
 
             return (
               <Card

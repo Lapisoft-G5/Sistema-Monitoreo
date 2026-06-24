@@ -539,7 +539,10 @@ sequenceDiagram
 
 **Reglas de negocio:**
 
-1. **Una plantilla Vigente por (tipo, año):** Índice parcial `uq_plantilla_vigente_tipo_anio` asegura que solo una plantilla de tipo DOCENTE o DIRECTIVO por año esté activa.
+1. **Una plantilla Vigente por scope (UGEL vs IE):** La unicidad de plantilla Vigente se aplica por scope:
+   - **UGEL** (`rolAutorAlCrear='jefe_gestion'`, `institucionId=null`): solo una plantilla Vigente por `(tipoMonitoreo, anioAcademico)` — índice `uq_plantilla_ugel_vigente`.
+   - **IE** (`rolAutorAlCrear='director_ie'`, `institucionId=IE-X`): solo una plantilla Vigente por `(institucionId, tipoMonitoreo, anioAcademico)` — índice `uq_plantilla_ie_vigente`.
+   - Una plantilla UGEL y una IE del mismo tipo+año pueden coexistir Vigentes porque aplican a scopes distintos. El check se implementa tanto a nivel BD (índices parciales) como en `plantilla.service.ts:cambiarEstado`.
 2. **Estados:** `Borrador` → `Vigente` → `Historico`. No se puede retroceder.
 3. **Versionado:**
    - Si la plantilla está en `Borrador` y no tiene fichas asociadas → **actualización in-place** (modifica directamente).
@@ -548,7 +551,9 @@ sequenceDiagram
 4. **Baremo:** `Vigente` (rangos discretos con gaps) o `Porcentual` (basado en porcentajes).
 5. **Pregunta extra por desempeño:** Cada desempeño puede tener un campo `preguntaExtra` opcional (texto) que se muestra como pregunta Sí/No en la ficha de evaluación.
 6. **Ejes e Items (solo DOCENTE):** Las plantillas de tipo DOCENTE pueden incluir ejes e ítems configurables (número + descripción). Se renderizan en la ficha con selector de nivel (I-IV) y subida de evidencia (PDF, DOC, JPG, PNG).
-7. **Restricción de eliminación:** Si la plantilla tiene fichas asociadas, no se puede eliminar (foreign key).
+7. **Duplicación por Director IE:** El endpoint `POST /:id/duplicar` permite al Director IE copiar una plantilla UGEL (o existente) a su institución. La copia se crea como `Borrador` con `rolAutorAlCrear='director_ie'` e `institucionId` del director. El Director IE puede luego promoverla a Vigente.
+8. **Rol de autor (`rolAutorAlCrear`):** Al crear o duplicar, el backend asigna `'jefe_gestion'` para usuarios Jefe de Gestión y `'director_ie'` para Directores IE (el valor `'director_ie'` cumple el CHECK constraint de BD, distinto del `RoleCode.DIRECTOR_INSTITUCION='director_institucion'` usado en auth).
+9. **Restricción de eliminación:** Si la plantilla tiene fichas asociadas, no se puede eliminar (foreign key).
 
 **Datos que consume:** `PlantillaMonitoreo`, `DesempenoPlantilla`, `AspectoEvaluado`, `NivelCalificacion`, `RubricaNivel`, `EjeItemPlantilla`, `FichaMonitoreo`
 **Datos que genera:** Versiones de plantillas, desempeños, aspectos, rúbricas, niveles, ejes/ítems
@@ -800,7 +805,9 @@ ejes_items_plantilla 1:N→ fichas_respuesta_eje_item
 
 | Índice | Tipo | Propósito |
 |--------|------|-----------|
-| `uq_plantilla_vigente_tipo_anio` | Parcial único | Solo 1 plantilla Vigente por (tipo, año) |
+| `uq_plantilla_ugel_vigente` | Parcial único | Solo 1 plantilla UGEL Vigente por `(tipo_monitoreo, anio_academico)` donde `rol_autor_al_crear='jefe_gestion'` |
+| `uq_plantilla_ie_vigente` | Parcial único | Solo 1 plantilla IE Vigente por `(institucion_id, tipo_monitoreo, anio_academico)` donde `rol_autor_al_crear='director_ie'` |
+| `plantillas_monitoreo_..._version_key` | Compuesto único | Índice único generado por Prisma `@@unique([tipoMonitoreo, anioAcademico, version])` — evita duplicados de tipo+año+versión entre todas las plantillas, independientemente del scope |
 | `uq_solicitud_pendiente_por_cronograma` | Parcial único | Solo 1 solicitud PENDIENTE por cronograma |
 | `uq_plan_ugel_activo` | Parcial único | Solo 1 plan UGEL activo por año |
 | `uq_plan_ie_activo` | Parcial único | Solo 1 plan IE activo por (autor, año) |
@@ -808,9 +815,10 @@ ejes_items_plantilla 1:N→ fichas_respuesta_eje_item
 
 ### CHECK constraints
 
-12 constraints que validan a nivel BD:
+14 constraints que validan a nivel BD:
 - Estados de cronogramas: `PROGRAMADO`, `EN_PROCESO`, `COMPLETADO`, `REPROGRAMADO`, `CANCELADO`
 - Estados de plantillas: `Borrador`, `Vigente`, `Historico`
+- Rol autor plantilla: `jefe_gestion`, `director_ie` (`plantillas_monitoreo_rol_autor_check`)
 - Niveles de logro: `INICIO`, `EN_PROCESO`, `LOGRO_ESPERADO`, `LOGRO_DESTACADO`
 - Promedio de ficha: entre 1.0 y 4.0
 - Número de visita: entre 1 y 5

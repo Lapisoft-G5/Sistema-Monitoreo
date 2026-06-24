@@ -104,16 +104,36 @@ export class PrismaTeachersRepository implements TeachersRepository {
     const persona = await this.prisma.persona.findUnique({
       where: { dni },
       include: {
+        usuario: { select: { id: true, isActive: true, isFirstLogin: true } },
         docente: {
           include: {
             docenteCargos: {
+              where: { fechaFin: null },
               include: { cargo: true },
+            },
+          },
+        },
+        especialista: {
+          include: {
+            cargos: {
+              where: { fechaFin: null },
+              orderBy: { esPrincipal: 'desc' },
             },
           },
         },
       },
     });
     if (!persona) return null;
+
+    const docenteCargosActivos = persona.docente?.docenteCargos?.map((dc) => dc.cargo.nombre) ?? [];
+    const esDirector = docenteCargosActivos.includes('Director');
+    const esCoordinadorPedagogico = docenteCargosActivos.includes('Coordinador Pedagógico');
+    const esJefeTaller = docenteCargosActivos.includes('Jefe de Taller');
+    const esDocenteAula = docenteCargosActivos.includes('Docente de Aula');
+
+    const especialistaCargoActivo =
+      persona.especialista?.cargos?.[0]?.cargo ?? persona.especialista?.cargo ?? null;
+
     return {
       id: persona.id,
       dni: persona.dni,
@@ -121,6 +141,22 @@ export class PrismaTeachersRepository implements TeachersRepository {
       apellidos: persona.apellidos,
       correo: persona.correo,
       telefono: persona.telefono,
+      tieneUsuario: persona.usuario != null,
+      roles: {
+        esDocente: persona.docente != null,
+        docenteInstitucionId: persona.docente?.institucionId ?? null,
+        docenteNivelEducativo: persona.docente?.nivelEducativo ?? null,
+        docenteCargosActivos,
+        esDirector,
+        esCoordinadorPedagogico,
+        esJefeTaller,
+        esDocenteAula,
+        esEspecialista: persona.especialista != null,
+        especialistaCargoActivo,
+        especialistaNivelEducativo: persona.especialista?.nivelEducativo ?? null,
+        especialistaModalidad: persona.especialista?.modalidad ?? null,
+        especialistaEstado: persona.especialista?.estado ?? null,
+      },
       docente: persona.docente
         ? {
             id: persona.docente.id,
@@ -128,7 +164,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
             nivelEducativo: persona.docente.nivelEducativo,
             condicionLaboral: persona.docente.condicionLaboral,
             escalaMagisterial: persona.docente.escalaMagisterial,
-            cargo: persona.docente.docenteCargos?.[0]?.cargo?.nombre || null,
+            cargosActivos: docenteCargosActivos,
           }
         : null,
     };

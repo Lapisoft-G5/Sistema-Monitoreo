@@ -46,7 +46,16 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     const extraRelations = especialidadesList.filter((e: any) => !e.esPrincipal);
 
     const cargoActivo = (esp.cargos || []).find((c) => c.fechaFin === null);
-    const cargoEfectivo = cargoActivo?.cargo ?? 'Especialista';
+    // Si el Especialista está inactivo, su cargo efectivo es 'Especialista'
+    // (cargo por defecto), aunque mantenga un EspecialistaCargo 'Jefe de
+    // Área'/'Jefe de Gestión' con fechaFin NULL (datos legacy previos al
+    // fix que sincroniza el cargo al deactivate). Esto asegura que un
+    // Especialista inactivo aparezca en la página de Especialistas y NO
+    // en la página del cargo que perdió.
+    const cargoEfectivo =
+      esp.estado === EstadoRegistro.INACTIVO
+        ? 'Especialista'
+        : cargoActivo?.cargo ?? 'Especialista';
 
     return {
       id: esp.id,

@@ -5,8 +5,11 @@ import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
+import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';
+import { useDniAutocomplete } from '@shared/hooks/useDniAutocomplete';
+import { checkRoleConflict } from '@shared/hooks/roleValidation';
 
 interface Props {
   onCancel: () => void;
@@ -109,6 +112,45 @@ export const DocenteFormBase = ({
   });
   const [selectedSeccion, setSelectedSeccion] = useState('');
 
+  const { data: persona, isLoading: searchingDni, isLocked: isDniLocked, message: dniMessage } = useDniAutocomplete(
+    form.dni,
+    !initialData,
+  );
+
+  const rolObjetivo: 'docente' | 'director' =
+    form.cargo === 'Director' ? 'director' : 'docente';
+  const roleCheck = checkRoleConflict(persona, rolObjetivo);
+  const dniBloqueadoPorRol = roleCheck.bloquea;
+
+  const [showRoleConfirm, setShowRoleConfirm] = useState(false);
+
+  useEffect(() => {
+    if (persona) {
+      const t = setTimeout(() => {
+        setForm((prev) => ({
+          ...prev,
+          nombres: persona.nombres || prev.nombres,
+          apellidos: persona.apellidos || prev.apellidos,
+          correo: persona.correo || prev.correo,
+          celular: persona.telefono || prev.celular,
+        }));
+      }, 0);
+      return () => clearTimeout(t);
+    }
+    if (!searchingDni && form.dni.length === 8 && !persona) {
+      const t = setTimeout(() => {
+        setForm((prev) => ({
+          ...prev,
+          nombres: '',
+          apellidos: '',
+          correo: '',
+          celular: '',
+        }));
+      }, 0);
+      return () => clearTimeout(t);
+    }
+  }, [persona, searchingDni, form.dni]);
+
   useEffect(() => {
     const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
     setTimeout(() => setSelectedGrado(defaultGrados[0] || ''), 0);
@@ -169,6 +211,16 @@ export const DocenteFormBase = ({
   const handleSubmit = () => {
     setSubmitted(true);
     if (!validationResult.success || isLoading) return;
+    if (dniBloqueadoPorRol) return;
+    if (roleCheck.advierte && !dniBloqueadoPorRol) {
+      setShowRoleConfirm(true);
+      return;
+    }
+    onSubmit(form);
+  };
+
+  const handleConfirmRole = () => {
+    setShowRoleConfirm(false);
     onSubmit(form);
   };
 
@@ -189,7 +241,9 @@ export const DocenteFormBase = ({
               placeholder="Ej. 74859612"
               error={showError('dni')}
               adornment={
-                dniOk ? (
+                searchingDni ? (
+                  <div className="animate-spin rounded-full h-[18px] w-[18px] border-b-2 border-primary"></div>
+                ) : dniOk ? (
                   <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
                 ) : undefined
               }
@@ -203,6 +257,7 @@ export const DocenteFormBase = ({
               onChange={(v) => set('nombres', v)}
               placeholder="Ej. Rosa Elena"
               error={showError('nombres')}
+              disabled={isDniLocked}
             />
           </div>
           <div className="md:col-span-2">
@@ -213,9 +268,36 @@ export const DocenteFormBase = ({
               onChange={(v) => set('apellidos', v)}
               placeholder="Ej. Mamani Ccopa"
               error={showError('apellidos')}
+              disabled={isDniLocked}
             />
           </div>
         </div>
+
+        {dniMessage && !searchingDni && (
+          <div className="mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-2">
+            <Check className="h-4 w-4" strokeWidth={2.5} />
+            {dniMessage}
+          </div>
+        )}
+
+        {persona && roleCheck.mensaje && (
+          <div
+            className={`mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border ${
+              roleCheck.bloquea
+                ? 'bg-rose-50 text-rose-700 border-rose-300'
+                : 'bg-amber-50 text-amber-800 border-amber-300'
+            }`}
+          >
+            <span className="font-extrabold uppercase tracking-wide text-[0.72rem]">
+              {roleCheck.bloquea ? 'Bloqueado' : 'Advertencia'}:
+            </span>{' '}
+            {roleCheck.mensaje}
+            {roleCheck.detalle && (
+              <span className="block mt-1 font-normal text-[0.72rem]">{roleCheck.detalle}</span>
+            )}
+          </div>
+        )}
+
         <div style={{ ...twoCols, marginTop: 18 }}>
           <TextField
             label="Correo Electrónico"
@@ -224,6 +306,7 @@ export const DocenteFormBase = ({
             onChange={(v) => set('correo', v)}
             placeholder="Ej. director@ie.edu.pe"
             error={showError('correo')}
+            disabled={isDniLocked}
           />
           <TextField
             label="Número de Celular"
@@ -456,10 +539,43 @@ export const DocenteFormBase = ({
         <FormButton variant="secondary" onClick={onCancel} disabled={isLoading}>
           Cancelar
         </FormButton>
-        <FormButton onClick={handleSubmit} disabled={isLoading}>
+        <FormButton
+          onClick={handleSubmit}
+          disabled={isLoading || dniBloqueadoPorRol}
+        >
           {isLoading ? 'Guardando...' : submitLabel || 'Guardar Director/Docente'}
         </FormButton>
       </div>
+
+      {showRoleConfirm && persona && (
+        <ConfirmModal
+          title="Confirmar creación con rol adicional"
+          message={
+            <div className="text-xs text-slate-600 leading-relaxed space-y-2">
+              <p>
+                La persona <strong>{persona.nombres} {persona.apellidos}</strong> (DNI {persona.dni}) ya está registrada en el sistema.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-2.5 text-amber-800">
+                <p className="font-semibold">Roles actuales:</p>
+                <ul className="list-disc list-inside mt-1 text-[0.72rem]">
+                  {persona.roles.esDirector && <li>Director de I.E.</li>}
+                  {persona.roles.esCoordinadorPedagogico && <li>Coordinador Pedagógico</li>}
+                  {persona.roles.esJefeTaller && <li>Jefe de Taller</li>}
+                  {persona.roles.esDocenteAula && <li>Docente de Aula</li>}
+                  {persona.roles.esEspecialista && <li>{persona.roles.especialistaCargoActivo} ({persona.roles.especialistaNivelEducativo})</li>}
+                </ul>
+              </div>
+              <p>
+                Se creará un nuevo registro como <strong>{form.cargo}</strong> además de los roles existentes. ¿Desea continuar?
+              </p>
+            </div>
+          }
+          confirmLabel="Sí, crear con rol adicional"
+          cancelLabel="Cancelar"
+          onConfirm={handleConfirmRole}
+          onCancel={() => setShowRoleConfirm(false)}
+        />
+      )}
     </div>
   );
 };

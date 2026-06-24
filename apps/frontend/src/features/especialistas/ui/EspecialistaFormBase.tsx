@@ -1,9 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { User, Briefcase, Check, Plus, X } from 'lucide-react';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistaSchema } from '@entities/model-especialistas/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
+import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
+import { useDniAutocomplete } from '@shared/hooks/useDniAutocomplete';
+import { checkRoleConflict } from '@shared/hooks/roleValidation';
 
 interface Props {
   onCancel: () => void;
@@ -62,6 +65,49 @@ export const EspecialistaFormBase = ({
   const [newEspecialidad, setNewEspecialidad] = useState('');
   const newEspRef = useRef<HTMLInputElement>(null);
 
+  const { data: persona, isLoading: searchingDni, isLocked: isDniLocked, message: dniMessage } = useDniAutocomplete(
+    form.dni,
+    !initialData,
+  );
+
+  const rolObjetivo: 'especialista' | 'jefe_area' | 'jefe_gestion' =
+    form.cargo === 'Jefe de Área'
+      ? 'jefe_area'
+      : form.cargo === 'Jefe de Gestión'
+        ? 'jefe_gestion'
+        : 'especialista';
+  const roleCheck = checkRoleConflict(persona, rolObjetivo, form.cargo);
+  const dniBloqueadoPorRol = roleCheck.bloquea;
+
+  const [showRoleConfirm, setShowRoleConfirm] = useState(false);
+
+  useEffect(() => {
+    if (persona) {
+      const t = setTimeout(() => {
+        setForm((prev) => ({
+          ...prev,
+          nombres: persona.nombres || prev.nombres,
+          apellidos: persona.apellidos || prev.apellidos,
+          correo: persona.correo || prev.correo,
+          celular: persona.telefono || prev.celular,
+        }));
+      }, 0);
+      return () => clearTimeout(t);
+    }
+    if (!searchingDni && form.dni.length === 8 && !persona) {
+      const t = setTimeout(() => {
+        setForm((prev) => ({
+          ...prev,
+          nombres: '',
+          apellidos: '',
+          correo: '',
+          celular: '',
+        }));
+      }, 0);
+      return () => clearTimeout(t);
+    }
+  }, [persona, searchingDni, form.dni]);
+
   const set = <K extends keyof EspecialistaFormData>(key: K, value: EspecialistaFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -118,9 +164,7 @@ export const EspecialistaFormBase = ({
   const currentModalidad = form.modalidad || 'EBR';
   const availableNiveles = MODALIDAD_NIVEL_MAP[currentModalidad] || [];
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    if (Object.keys(errors).length > 0 || isLoading) return;
+  const submitForm = () => {
     const finalForm = {
       ...form,
       especialidades: [
@@ -129,6 +173,22 @@ export const EspecialistaFormBase = ({
       ],
     };
     onSubmit(finalForm);
+  };
+
+  const handleSubmit = () => {
+    setSubmitted(true);
+    if (Object.keys(errors).length > 0 || isLoading) return;
+    if (dniBloqueadoPorRol) return;
+    if (roleCheck.advierte && !dniBloqueadoPorRol) {
+      setShowRoleConfirm(true);
+      return;
+    }
+    submitForm();
+  };
+
+  const handleConfirmRole = () => {
+    setShowRoleConfirm(false);
+    submitForm();
   };
 
   return (
@@ -145,7 +205,9 @@ export const EspecialistaFormBase = ({
               placeholder="Ej. 74859612"
               error={showError('dni')}
               adornment={
-                dniOk ? (
+                searchingDni ? (
+                  <div className="animate-spin rounded-full h-[18px] w-[18px] border-b-2 border-primary"></div>
+                ) : dniOk ? (
                   <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
                 ) : undefined
               }
@@ -159,6 +221,7 @@ export const EspecialistaFormBase = ({
               onChange={(v) => set('nombres', v)}
               placeholder="Ej. Juan Carlos"
               error={showError('nombres')}
+              disabled={isDniLocked}
             />
           </div>
           <div className="md:col-span-2">
@@ -169,9 +232,35 @@ export const EspecialistaFormBase = ({
               onChange={(v) => set('apellidos', v)}
               placeholder="Ej. Pérez López"
               error={showError('apellidos')}
+              disabled={isDniLocked}
             />
           </div>
         </div>
+
+        {dniMessage && !searchingDni && (
+          <div className="mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-2">
+            <Check className="h-4 w-4" strokeWidth={2.5} />
+            {dniMessage}
+          </div>
+        )}
+
+        {persona && roleCheck.mensaje && (
+          <div
+            className={`mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border ${
+              roleCheck.bloquea
+                ? 'bg-rose-50 text-rose-700 border-rose-300'
+                : 'bg-amber-50 text-amber-800 border-amber-300'
+            }`}
+          >
+            <span className="font-extrabold uppercase tracking-wide text-[0.72rem]">
+              {roleCheck.bloquea ? 'Bloqueado' : 'Advertencia'}:
+            </span>{' '}
+            {roleCheck.mensaje}
+            {roleCheck.detalle && (
+              <span className="block mt-1 font-normal text-[0.72rem]">{roleCheck.detalle}</span>
+            )}
+          </div>
+        )}
 
         <div style={{ ...twoCols, marginTop: 18 }}>
           <TextField
@@ -180,6 +269,7 @@ export const EspecialistaFormBase = ({
             onChange={(v) => set('correo', v)}
             placeholder="Ej. jperez@ugel-lampa.gob.pe"
             error={showError('correo')}
+            disabled={isDniLocked}
           />
           <TextField
             label="Número de Celular"
@@ -393,10 +483,43 @@ export const EspecialistaFormBase = ({
         <FormButton variant="secondary" onClick={onCancel} disabled={isLoading}>
           Cancelar
         </FormButton>
-        <FormButton onClick={handleSubmit} disabled={isLoading}>
+        <FormButton
+          onClick={handleSubmit}
+          disabled={isLoading || dniBloqueadoPorRol}
+        >
           {isLoading ? 'Guardando...' : 'Guardar Datos'}
         </FormButton>
       </div>
+
+      {showRoleConfirm && persona && (
+        <ConfirmModal
+          title="Confirmar creación con rol adicional"
+          message={
+            <div className="text-xs text-slate-600 leading-relaxed space-y-2">
+              <p>
+                La persona <strong>{persona.nombres} {persona.apellidos}</strong> (DNI {persona.dni}) ya está registrada en el sistema.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-2.5 text-amber-800">
+                <p className="font-semibold">Roles actuales:</p>
+                <ul className="list-disc list-inside mt-1 text-[0.72rem]">
+                  {persona.roles.esDirector && <li>Director de I.E.</li>}
+                  {persona.roles.esCoordinadorPedagogico && <li>Coordinador Pedagógico</li>}
+                  {persona.roles.esJefeTaller && <li>Jefe de Taller</li>}
+                  {persona.roles.esDocenteAula && <li>Docente de Aula</li>}
+                  {persona.roles.esEspecialista && <li>{persona.roles.especialistaCargoActivo} ({persona.roles.especialistaNivelEducativo})</li>}
+                </ul>
+              </div>
+              <p>
+                Se creará un nuevo registro como <strong>{form.cargo}</strong> además de los roles existentes. ¿Desea continuar?
+              </p>
+            </div>
+          }
+          confirmLabel="Sí, crear con rol adicional"
+          cancelLabel="Cancelar"
+          onConfirm={handleConfirmRole}
+          onCancel={() => setShowRoleConfirm(false)}
+        />
+      )}
     </div>
   );
 };

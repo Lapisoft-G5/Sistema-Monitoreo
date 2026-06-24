@@ -4,7 +4,9 @@ import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-doce
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import { directorSchema } from '@entities/model-docentes/validator';
 import { SectionCard, TextField, SelectField, FormButton, twoCols } from '@shared/ui/form-controls';
-import { teachersApi } from '@shared/api/teachers.api';
+import { ConfirmModal } from '@shared/ui/ConfirmModal';
+import { useDniAutocomplete } from '@shared/hooks/useDniAutocomplete';
+import { checkRoleConflict } from '@shared/hooks/roleValidation';
 
 const INITIAL: DirectorFormData = {
   nombres: '',
@@ -43,58 +45,42 @@ export const DirectorFormBase = ({
   }));
   const [submitted, setSubmitted] = useState(false);
 
-  const [searchingDni, setSearchingDni] = useState(false);
-  const [isDniLocked, setIsDniLocked] = useState(false);
-  const [dniMessage, setDniMessage] = useState('');
+  const { data: persona, isLoading: searchingDni, isLocked: isDniLocked, message: dniMessage } = useDniAutocomplete(
+    form.dni,
+    !initialData,
+  );
+
+  const roleCheck = checkRoleConflict(persona, 'director');
+  const dniBloqueadoPorRol = roleCheck.bloquea;
+
+  const [showRoleConfirm, setShowRoleConfirm] = useState(false);
 
   useEffect(() => {
-    if (form.dni.length === 8) {
-      const searchDni = async () => {
-        setTimeout(() => {
-          setSearchingDni(true);
-          setDniMessage('');
-        }, 0);
-        try {
-          const res = await teachersApi.findByDni(form.dni);
-          if (res.ok && res.data) {
-            const persona = res.data as { nombres?: string; apellidos?: string; correo?: string; telefono?: string };
-            setTimeout(() => {
-              setForm((prev) => ({
-                ...prev,
-                nombres: persona.nombres || '',
-                apellidos: persona.apellidos || '',
-                correo: persona.correo || '',
-                celular: persona.telefono || prev.celular,
-              }));
-              setIsDniLocked(true);
-              setDniMessage('Persona encontrada en el sistema. Datos personales autocompletados.');
-            }, 0);
-          } else {
-            setTimeout(() => {
-              setIsDniLocked(false);
-              setDniMessage('');
-            }, 0);
-          }
-        } catch (err) {
-          console.error('Error searching DNI:', err);
-          setTimeout(() => {
-            setIsDniLocked(false);
-            setDniMessage('');
-          }, 0);
-        } finally {
-          setTimeout(() => {
-            setSearchingDni(false);
-          }, 0);
-        }
-      };
-      searchDni();
-    } else {
-      setTimeout(() => {
-        setIsDniLocked(false);
-        setDniMessage('');
+    if (persona) {
+      const t = setTimeout(() => {
+        setForm((prev) => ({
+          ...prev,
+          nombres: persona.nombres || prev.nombres,
+          apellidos: persona.apellidos || prev.apellidos,
+          correo: persona.correo || prev.correo,
+          celular: persona.telefono || prev.celular,
+        }));
       }, 0);
+      return () => clearTimeout(t);
     }
-  }, [form.dni]);
+    if (!searchingDni && form.dni.length === 8 && !persona) {
+      const t = setTimeout(() => {
+        setForm((prev) => ({
+          ...prev,
+          nombres: '',
+          apellidos: '',
+          correo: '',
+          celular: '',
+        }));
+      }, 0);
+      return () => clearTimeout(t);
+    }
+  }, [persona, searchingDni, form.dni]);
 
   const set = <K extends keyof DirectorFormData>(key: K, value: DirectorFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -120,6 +106,16 @@ export const DirectorFormBase = ({
   const handleSubmit = () => {
     setSubmitted(true);
     if (!result.success || isLoading) return;
+    if (dniBloqueadoPorRol) return;
+    if (roleCheck.advierte && !dniBloqueadoPorRol) {
+      setShowRoleConfirm(true);
+      return;
+    }
+    onSubmit(form);
+  };
+
+  const handleConfirmRole = () => {
+    setShowRoleConfirm(false);
     onSubmit(form);
   };
 
@@ -167,11 +163,6 @@ export const DirectorFormBase = ({
                 ) : undefined
               }
             />
-            {dniMessage && (
-              <span className={`text-[0.72rem] mt-0.5 font-semibold ${isDniLocked ? 'text-emerald-500' : 'text-blue-500'}`}>
-                {dniMessage}
-              </span>
-            )}
           </div>
           <TextField
             label="Número de Celular"
@@ -187,6 +178,32 @@ export const DirectorFormBase = ({
             }
           />
         </div>
+
+        {dniMessage && !searchingDni && (
+          <div className="mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-2">
+            <Check className="h-4 w-4" strokeWidth={2.5} />
+            {dniMessage}
+          </div>
+        )}
+
+        {persona && roleCheck.mensaje && (
+          <div
+            className={`mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border ${
+              roleCheck.bloquea
+                ? 'bg-rose-50 text-rose-700 border-rose-300'
+                : 'bg-amber-50 text-amber-800 border-amber-300'
+            }`}
+          >
+            <span className="font-extrabold uppercase tracking-wide text-[0.72rem]">
+              {roleCheck.bloquea ? 'Bloqueado' : 'Advertencia'}:
+            </span>{' '}
+            {roleCheck.mensaje}
+            {roleCheck.detalle && (
+              <span className="block mt-1 font-normal text-[0.72rem]">{roleCheck.detalle}</span>
+            )}
+          </div>
+        )}
+
         <div style={{ marginTop: 18, maxWidth: 'calc(50% - 9px)', minWidth: 240 }}>
           <TextField
             label="Correo Electrónico Institucional"
@@ -273,10 +290,43 @@ export const DirectorFormBase = ({
         <FormButton variant="secondary" onClick={onCancel} disabled={isLoading}>
           Cancelar
         </FormButton>
-        <FormButton onClick={handleSubmit} disabled={isLoading}>
+        <FormButton
+          onClick={handleSubmit}
+          disabled={isLoading || dniBloqueadoPorRol}
+        >
           {isLoading ? 'Guardando...' : submitLabel || 'Guardar Director'}
         </FormButton>
       </div>
+
+      {showRoleConfirm && persona && (
+        <ConfirmModal
+          title="Confirmar creación con rol adicional"
+          message={
+            <div className="text-xs text-slate-600 leading-relaxed space-y-2">
+              <p>
+                La persona <strong>{persona.nombres} {persona.apellidos}</strong> (DNI {persona.dni}) ya está registrada en el sistema.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-2.5 text-amber-800">
+                <p className="font-semibold">Roles actuales:</p>
+                <ul className="list-disc list-inside mt-1 text-[0.72rem]">
+                  {persona.roles.esDirector && <li>Director de I.E.</li>}
+                  {persona.roles.esCoordinadorPedagogico && <li>Coordinador Pedagógico</li>}
+                  {persona.roles.esJefeTaller && <li>Jefe de Taller</li>}
+                  {persona.roles.esDocenteAula && <li>Docente de Aula</li>}
+                  {persona.roles.esEspecialista && <li>{persona.roles.especialistaCargoActivo} ({persona.roles.especialistaNivelEducativo})</li>}
+                </ul>
+              </div>
+              <p>
+                Se creará un nuevo registro como <strong>Director de I.E.</strong> además de los roles existentes. ¿Desea continuar?
+              </p>
+            </div>
+          }
+          confirmLabel="Sí, crear con rol adicional"
+          cancelLabel="Cancelar"
+          onConfirm={handleConfirmRole}
+          onCancel={() => setShowRoleConfirm(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import {
   Injectable,
-  ConflictException,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -92,13 +91,6 @@ export class EspecialistaService {
           'Para un Especialista de nivel Primaria, la especialidad debe ser PIP o Educación Física si se define.',
         );
       }
-    }
-
-    const existingPersona = await this.catalogsRepository.findPersonaByDni(dto.dni);
-    if (existingPersona) {
-      throw new ConflictException(
-        `La persona con DNI ${dto.dni} ya está registrada en el sistema.`,
-      );
     }
 
     const role = await this.catalogsRepository.findRoleByCode(dto.rolCode);

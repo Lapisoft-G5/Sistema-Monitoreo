@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { EspecialistaRepository } from './especialista.repository.js';
@@ -129,27 +134,61 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     roleId: string,
   ): Promise<IEspecialistaResponse> {
     return await this.prisma.$transaction(async (tx) => {
-      // A. Crear Persona
-      const persona = await tx.persona.create({
-        data: {
-          dni: data.dni,
-          nombres: data.nombres,
-          apellidos: data.apellidos,
-          correo: data.correo || null,
-          telefono: data.telefono || null,
-        },
+      // A. Reutilizar Persona si ya existe por DNI, si no, crearla.
+      const existingPersona = await tx.persona.findUnique({
+        where: { dni: data.dni },
+        include: { especialista: true, usuario: true },
       });
 
-      // C. Crear Usuario
-      await tx.usuario.create({
-        data: {
-          personaId: persona.id,
-          rolId: roleId,
-          passwordHash,
-          isActive: true,
-          isFirstLogin: true,
-        },
-      });
+      let persona: { id: string };
+      if (existingPersona) {
+        if (existingPersona.especialista) {
+          throw new ConflictException(
+            `La persona con DNI ${data.dni} ya está registrada como Especialista/Jefe. No se puede crear un nuevo registro.`,
+          );
+        }
+        persona = await tx.persona.update({
+          where: { id: existingPersona.id },
+          data: {
+            nombres: data.nombres,
+            apellidos: data.apellidos,
+            correo: data.correo || null,
+            telefono: data.telefono || null,
+          },
+        });
+
+        if (!existingPersona.usuario) {
+          await tx.usuario.create({
+            data: {
+              personaId: persona.id,
+              rolId: roleId,
+              passwordHash,
+              isActive: true,
+              isFirstLogin: true,
+            },
+          });
+        }
+      } else {
+        persona = await tx.persona.create({
+          data: {
+            dni: data.dni,
+            nombres: data.nombres,
+            apellidos: data.apellidos,
+            correo: data.correo || null,
+            telefono: data.telefono || null,
+          },
+        });
+
+        await tx.usuario.create({
+          data: {
+            personaId: persona.id,
+            rolId: roleId,
+            passwordHash,
+            isActive: true,
+            isFirstLogin: true,
+          },
+        });
+      }
 
       // D. Crear Especialista
       const especialista = await tx.especialista.create({

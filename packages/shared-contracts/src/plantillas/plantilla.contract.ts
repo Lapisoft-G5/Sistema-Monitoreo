@@ -8,7 +8,7 @@ export type Baremo = 'Vigente' | 'Porcentual';
 
 export type ModoVersionado = 'IN_PLACE' | 'VERSIONADO';
 
-export type RolAutorPlantilla = 'jefe_gestion' | 'director_institucion';
+export type RolAutorPlantilla = 'jefe_gestion' | 'director_ie';
 
 export interface INivelCalificacion {
   id: string;

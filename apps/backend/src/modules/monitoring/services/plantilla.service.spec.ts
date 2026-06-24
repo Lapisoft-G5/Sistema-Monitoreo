@@ -245,7 +245,7 @@ describe('PlantillaService - ILA-0046', () => {
       expect(repo.clone).toHaveBeenCalledWith(
         'plantilla-v1',
         'user-dir',
-        'director_institucion',
+        'director_ie',
         'ie-1',
         undefined,
       );

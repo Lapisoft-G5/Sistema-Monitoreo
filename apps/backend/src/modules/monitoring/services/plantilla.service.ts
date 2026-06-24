@@ -185,7 +185,7 @@ export class PlantillaService {
     let institucionId = null;
 
     if (this.isDirector(session)) {
-      rolAutorAlCrear = 'director_institucion';
+      rolAutorAlCrear = 'director_ie';
       institucionId = session.institucionId ?? null;
       if (!institucionId) {
         throw new ForbiddenException('Director IE sin institucionId en sesion.');
@@ -199,7 +199,7 @@ export class PlantillaService {
     return this.repository.clone(
       id,
       session.id,
-      rolAutorAlCrear as 'jefe_gestion' | 'director_institucion',
+      rolAutorAlCrear as 'jefe_gestion' | 'director_ie',
       institucionId,
       descripcion,
     );
@@ -227,12 +227,12 @@ export class PlantillaService {
   }
 
   private resolveAutor(session: SessionUser): {
-    rolAutorAlCrear: 'jefe_gestion' | 'director_institucion';
+    rolAutorAlCrear: 'jefe_gestion' | 'director_ie';
     institucionId: string | null;
   } {
     if (this.isDirector(session)) {
       return {
-        rolAutorAlCrear: 'director_institucion',
+        rolAutorAlCrear: 'director_ie',
         institucionId: session.institucionId ?? null,
       };
     }

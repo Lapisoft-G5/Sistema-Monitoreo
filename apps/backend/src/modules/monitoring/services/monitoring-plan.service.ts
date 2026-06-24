@@ -125,8 +125,8 @@ export class MonitoringPlanService {
     return session.role === RoleCode.DIRECTOR_INSTITUCION;
   }
 
-  private toRolAutor(role: RoleCode): 'jefe_gestion' | 'director_institucion' {
-    if (this.isDirector({ id: '', role })) return 'director_institucion';
+  private toRolAutor(role: RoleCode): 'jefe_gestion' | 'director_ie' {
+    if (this.isDirector({ id: '', role })) return 'director_ie';
     return 'jefe_gestion';
   }
 

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
+import { randomUUID } from 'node:crypto';
 import {
   ConflictException,
   Injectable,
@@ -215,6 +216,26 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           escalaMagisterial: data.escalaMagisterial ?? null,
         },
       });
+
+      // E. Crear EspecialistaCargo activo cuando el cargo inicial NO es
+      // 'Especialista'. El mapper (`mapEspecialista`) calcula el cargo
+      // efectivo desde la fila EspecialistaCargo con fechaFin IS NULL; sin
+      // esa fila, el cargo efectivo cae a 'Especialista' y la persona
+      // desaparece de la tabla de Jefes de Área / Jefes de Gestión aunque
+      // el campo legacy `Especialista.cargo` diga lo contrario.
+      const cargoInicial = data.cargo || CargoNombre.ESPECIALISTA;
+      if (cargoInicial !== CargoNombre.ESPECIALISTA) {
+        await tx.especialistaCargo.create({
+          data: {
+            id: randomUUID(),
+            especialistaId: especialista.id,
+            cargo: cargoInicial,
+            fechaInicio: new Date(),
+            fechaFin: null,
+            esPrincipal: true,
+          },
+        });
+      }
 
       const specialtiesToCreate: { nombre: string; esPrincipal: boolean }[] = [];
 

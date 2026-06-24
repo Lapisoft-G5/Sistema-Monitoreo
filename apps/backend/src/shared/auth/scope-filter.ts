@@ -129,7 +129,11 @@ export class ScopeFilter {
       return { creadoPorId: ctx.userId };
     }
     if (this.isJefeAreaScope(ctx.role)) {
-      return { creadoPorId: ctx.userId };
+      // Jefe de Área ve todas las fichas de los Especialistas de su mismo
+      // nivel educativo (Inicial / Primaria / Secundaria). El filtro va
+      // via cronograma.monitor (Especialista) para incluir las fichas que
+      // cualquier especialista del nivel haya creado, no sólo las propias.
+      return { cronograma: { monitor: { nivelEducativo: ctx.especialistaNivel ?? '__none__' } } };
     }
     if (this.isOwnScope(ctx.role)) {
       return {

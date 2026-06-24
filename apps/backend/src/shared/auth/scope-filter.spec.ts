@@ -110,9 +110,15 @@ describe('ScopeFilter', () => {
       ).toEqual({ cronograma: { institucionId: 'ie-x' } });
     });
 
-    it('JEFE_AREA: filter por creadoPorId', () => {
-      expect(filter.forFicha(ctx({ role: RoleCode.JEFE_AREA, userId: 'jefe-7' }))).toEqual({
-        creadoPorId: 'jefe-7',
+    it('JEFE_AREA: filter por nivelEducativo del monitor (especialistas de su nivel)', () => {
+      expect(
+        filter.forFicha(ctx({ role: RoleCode.JEFE_AREA, especialistaNivel: 'Secundaria' })),
+      ).toEqual({ cronograma: { monitor: { nivelEducativo: 'Secundaria' } } });
+    });
+
+    it('JEFE_AREA sin nivel: sentinela (no matchea nada)', () => {
+      expect(filter.forFicha(ctx({ role: RoleCode.JEFE_AREA, especialistaNivel: null }))).toEqual({
+        cronograma: { monitor: { nivelEducativo: '__none__' } },
       });
     });
 

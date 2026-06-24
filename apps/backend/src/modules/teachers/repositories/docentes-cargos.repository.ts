@@ -1,0 +1,44 @@
+export interface DocenteCargoRow {
+  id: string;
+  docenteId: string;
+  cargoId: string;
+  fechaInicio: Date;
+  fechaFin: Date | null;
+  esPrincipal: boolean;
+  cargo: { id: string; nombre: string };
+}
+
+export interface DocentePersonaInfo {
+  personaId: string;
+  usuarioId: string | null;
+  especialistaId: string | null;
+}
+
+export interface FinalizeCargoParams {
+  docenteId: string;
+  cargoId: string;
+  fechaFin: Date;
+  principalPromotionTargetId: string | null;
+  roleUpdate: { usuarioId: string; roleCodigo: string } | null;
+  especialistaUpdate: { especialistaId: string; cargo: string; estado: string } | null;
+  monitorEspecialistaId: string | null;
+}
+
+export abstract class DocentesCargosRepository {
+  abstract findDocenteExistence(docenteId: string): Promise<boolean>;
+  abstract findCargoByNombre(nombre: string): Promise<{ id: string; nombre: string } | null>;
+  abstract findDocenteCargoWithCargo(id: string): Promise<DocenteCargoRow | null>;
+  abstract findActiveDocenteCargosWithCargo(docenteId: string): Promise<DocenteCargoRow[]>;
+  abstract findAllCargosByDocenteId(docenteId: string): Promise<DocenteCargoRow[]>;
+  abstract findDocentePersonaInfo(docenteId: string): Promise<DocentePersonaInfo | null>;
+  abstract findUserIdByDocenteId(docenteId: string): Promise<string | null>;
+
+  abstract addCargo(
+    docenteId: string,
+    cargoId: string,
+    fechaInicio: Date,
+    esPrincipal: boolean,
+  ): Promise<DocenteCargoRow>;
+
+  abstract finalizeCargo(params: FinalizeCargoParams): Promise<void>;
+}

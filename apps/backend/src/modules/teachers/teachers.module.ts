@@ -7,6 +7,8 @@ import { PrismaModule } from '../../shared/prisma/prisma.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { TeachersRepository } from './repositories/teachers.repository.js';
 import { PrismaTeachersRepository } from './repositories/prisma-teachers.repository.js';
+import { DocentesCargosRepository } from './repositories/docentes-cargos.repository.js';
+import { PrismaDocentesCargosRepository } from './repositories/prisma-docentes-cargos.repository.js';
 import { CatalogsModule } from '../catalogs/catalogs.module.js';
 import { CargoCompatibilityService } from '../../shared/auth/cargo-compatibility.service.js';
 
@@ -21,7 +23,11 @@ import { CargoCompatibilityService } from '../../shared/auth/cargo-compatibility
       provide: TeachersRepository,
       useClass: PrismaTeachersRepository,
     },
+    {
+      provide: DocentesCargosRepository,
+      useClass: PrismaDocentesCargosRepository,
+    },
   ],
-  exports: [TeachersService, TeachersRepository, DocentesCargosService],
+  exports: [TeachersService, TeachersRepository, DocentesCargosService, DocentesCargosRepository],
 })
 export class TeachersModule {}

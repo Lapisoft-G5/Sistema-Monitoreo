@@ -1,10 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CargoCompatibilityService } from '../../../shared/auth/cargo-compatibility.service.js';
 import { SessionRepository } from '../../auth/repositories/session.repository.js';
 import { CargoNombre, resolvePrincipalCargo } from '../../../shared/auth/capability-map.js';
-import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
+import { DocentesCargosRepository } from '../repositories/docentes-cargos.repository.js';
 
 /**
  * Servicio de gestion de cargos del docente.
@@ -21,7 +19,7 @@ import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 @Injectable()
 export class DocentesCargosService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly docentesCargosRepository: DocentesCargosRepository,
     private readonly compatibility: CargoCompatibilityService,
     private readonly sessionRepository: SessionRepository,
   ) {}
@@ -31,19 +29,12 @@ export class DocentesCargosService {
    * fecha_inicio desc. Incluye el nombre del cargo y `es_principal` calculado.
    */
   async list(docenteId: string) {
-    const docente = await this.prisma.docente.findUnique({
-      where: { id: docenteId },
-      include: {
-        docenteCargos: {
-          include: { cargo: true },
-          orderBy: [{ fechaFin: 'asc' }, { fechaInicio: 'desc' }],
-        },
-      },
-    });
-    if (!docente) {
+    const exists = await this.docentesCargosRepository.findDocenteExistence(docenteId);
+    if (!exists) {
       throw new NotFoundException(`Docente ${docenteId} no encontrado.`);
     }
-    return docente.docenteCargos.map((dc) => ({
+    const cargos = await this.docentesCargosRepository.findAllCargosByDocenteId(docenteId);
+    return cargos.map((dc) => ({
       id: dc.id,
       cargoId: dc.cargoId,
       cargo: dc.cargo.nombre,
@@ -59,16 +50,8 @@ export class DocentesCargosService {
    */
   async add(docenteId: string, cargoNombre: CargoNombre, fechaInicio?: Date) {
     // 1. Verificar que el docente existe.
-    const docente = await this.prisma.docente.findUnique({
-      where: { id: docenteId },
-      include: {
-        docenteCargos: {
-          where: { fechaFin: null },
-          include: { cargo: true },
-        },
-      },
-    });
-    if (!docente) {
+    const exists = await this.docentesCargosRepository.findDocenteExistence(docenteId);
+    if (!exists) {
       throw new NotFoundException(`Docente ${docenteId} no encontrado.`);
     }
 
@@ -76,46 +59,27 @@ export class DocentesCargosService {
     await this.compatibility.ensureCanAddCargo(docenteId, cargoNombre);
 
     // 3. Buscar el cargoId en la tabla cargos (por nombre).
-    const cargoRow = await this.prisma.cargo.findFirst({
-      where: { nombre: cargoNombre },
-    });
+    const cargoRow = await this.docentesCargosRepository.findCargoByNombre(cargoNombre);
     if (!cargoRow) {
       throw new NotFoundException(`Cargo "${cargoNombre}" no existe en el catalogo.`);
     }
 
     // 4. Recalcular es_principal: incluir el nuevo y resolver.
-    const activos = docente.docenteCargos
+    const activos = await this.docentesCargosRepository.findActiveDocenteCargosWithCargo(docenteId);
+    const nombresActivos = activos
       .filter((dc) => dc.cargo?.nombre)
       .map((dc) => dc.cargo.nombre as CargoNombre);
-    const todos = [...activos, cargoNombre];
+    const todos = [...nombresActivos, cargoNombre];
     const principalNombre = resolvePrincipalCargo(todos);
 
-    // 5. Transaccion: crear el nuevo y ajustar es_principal de los activos.
-    return this.prisma.$transaction(async (tx) => {
-      const created = await tx.docenteCargo.create({
-        data: {
-          id: randomUUID(),
-          docenteId,
-          cargoId: cargoRow.id,
-          fechaInicio: fechaInicio ?? new Date(),
-          fechaFin: null,
-          esPrincipal: principalNombre === cargoNombre,
-        },
-      });
-      // Si el nuevo no es el principal, el actual sigue siendolo.
-      // Si el nuevo SI es el principal, demote al actual (si hay).
-      if (principalNombre === cargoNombre) {
-        await tx.docenteCargo.updateMany({
-          where: {
-            docenteId,
-            fechaFin: null,
-            NOT: { id: created.id },
-          },
-          data: { esPrincipal: false },
-        });
-      }
-      return created;
-    });
+    // 5. Crear el nuevo y ajustar es_principal de los activos (tx en repo).
+    const inicio = fechaInicio ?? new Date();
+    return this.docentesCargosRepository.addCargo(
+      docenteId,
+      cargoRow.id,
+      inicio,
+      principalNombre === cargoNombre,
+    );
   }
 
   /**
@@ -124,10 +88,7 @@ export class DocentesCargosService {
    * si era el unico.
    */
   async finalize(docenteId: string, docenteCargoId: string, fechaFin?: Date) {
-    const dc = await this.prisma.docenteCargo.findUnique({
-      where: { id: docenteCargoId },
-      include: { cargo: true },
-    });
+    const dc = await this.docentesCargosRepository.findDocenteCargoWithCargo(docenteCargoId);
     if (!dc || dc.docenteId !== docenteId) {
       throw new NotFoundException(
         `DocenteCargo ${docenteCargoId} no encontrado para el docente ${docenteId}.`,
@@ -140,162 +101,93 @@ export class DocentesCargosService {
     }
 
     const fin = fechaFin ?? new Date();
-    await this.prisma.$transaction(async (tx) => {
-      // Fetch docente with persona, usuario, and especialista to perform operations
-      const docente = await tx.docente.findUniqueOrThrow({
-        where: { id: docenteId },
-        include: {
-          persona: {
-            include: {
-              usuario: true,
-              especialista: true,
-            },
-          },
-        },
-      });
 
-      // 1. Cerrar el cargo.
-      await tx.docenteCargo.update({
-        where: { id: docenteCargoId },
-        data: { fechaFin: fin },
-      });
+    // Calcular estado post-cierre con los datos actuales
+    const restantes = await this.docentesCargosRepository.findActiveDocenteCargosWithCargo(docenteId);
+    const postCloseCargos = restantes.filter((r) => r.id !== docenteCargoId);
+    const postCloseNombres = postCloseCargos
+      .filter((r) => r.cargo?.nombre)
+      .map((r) => r.cargo.nombre as CargoNombre);
 
-      // Fetch active remaining docente cargos
-      const restantes = await tx.docenteCargo.findMany({
-        where: { docenteId, fechaFin: null },
-        include: { cargo: true },
-      });
+    // Resolver promocion de principal
+    const nuevoPrincipal = resolvePrincipalCargo(postCloseNombres);
+    const principalPromotionTargetId =
+      dc.esPrincipal && nuevoPrincipal
+        ? (postCloseCargos.find((r) => r.cargo?.nombre === nuevoPrincipal)?.id ?? null)
+        : null;
 
-      // 2. Si era principal, promover al siguiente activo de mayor prioridad.
-      if (dc.esPrincipal) {
-        const nombres = restantes
-          .filter((r) => r.cargo?.nombre)
-          .map((r) => r.cargo.nombre as CargoNombre);
-        const nuevoPrincipal = resolvePrincipalCargo(nombres);
-        if (nuevoPrincipal) {
-          // Buscar el DocenteCargo del nombre resuelto y marcarlo.
-          const target = restantes.find((r) => r.cargo?.nombre === nuevoPrincipal);
-          if (target) {
-            await tx.docenteCargo.update({
-              where: { id: target.id },
-              data: { esPrincipal: true },
-            });
-          }
-        }
+    // Resolver side effects para cargos de monitor
+    const MONITOR_CARGOS = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'];
+    let roleUpdate: { usuarioId: string; roleCodigo: string } | null = null;
+    let especialistaUpdate: { especialistaId: string; cargo: string; estado: string } | null = null;
+    let monitorEspecialistaId: string | null = null;
+
+    if (MONITOR_CARGOS.includes(dc.cargo.nombre)) {
+      const docenteInfo = await this.docentesCargosRepository.findDocentePersonaInfo(docenteId);
+      if (!docenteInfo) {
+        throw new NotFoundException(`Docente ${docenteId} no encontrado.`);
       }
 
-      // 3. Sincronizar el rol de usuario y el Especialista según los cargos restantes
-      const monitorCargos = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'];
-      if (monitorCargos.includes(dc.cargo.nombre)) {
-        const remainingMonitors = restantes
-          .filter((r) => r.cargo?.nombre && monitorCargos.includes(r.cargo.nombre))
-          .map((r) => r.cargo.nombre);
+      const remainingMonitors = postCloseCargos
+        .filter((r) => r.cargo?.nombre && MONITOR_CARGOS.includes(r.cargo.nombre))
+        .map((r) => r.cargo.nombre);
 
-        if (remainingMonitors.length === 0) {
-          // Si ya no quedan cargos de monitor activos, volver a rol 'docente'
-          if (docente.persona?.usuario) {
-            const docenteRole = await tx.role.findFirst({
-              where: { codigo: 'docente' },
-            });
-            if (docenteRole) {
-              await tx.usuario.update({
-                where: { id: docente.persona.usuario.id },
-                data: { rolId: docenteRole.id },
-              });
-            }
-          }
+      if (remainingMonitors.length === 0) {
+        if (docenteInfo.usuarioId) {
+          roleUpdate = { usuarioId: docenteInfo.usuarioId, roleCodigo: 'docente' };
+        }
+        if (docenteInfo.especialistaId) {
+          especialistaUpdate = {
+            especialistaId: docenteInfo.especialistaId,
+            cargo: dc.cargo.nombre,
+            estado: 'Inactivo',
+          };
+          monitorEspecialistaId = docenteInfo.especialistaId;
+        }
+      } else {
+        let targetRole = 'docente';
+        let highestCargo = '';
+        if (remainingMonitors.includes('Director')) {
+          targetRole = 'director_institucion';
+          highestCargo = 'Director';
+        } else if (remainingMonitors.includes('Coordinador Pedagógico')) {
+          targetRole = 'coordinador_pedagogico';
+          highestCargo = 'Coordinador Pedagógico';
+        } else if (remainingMonitors.includes('Jefe de Taller')) {
+          targetRole = 'jefe_taller';
+          highestCargo = 'Jefe de Taller';
+        }
 
-          // Desactivar el especialista asociado
-          if (docente.persona?.especialista) {
-            await tx.especialista.update({
-              where: { id: docente.persona.especialista.id },
-              data: { estado: EstadoRegistro.INACTIVO },
-            });
-
-            // Cancelar visitas (Cronogramas) pendientes
-            const pendingVisits = await tx.cronograma.findMany({
-              where: {
-                monitorId: docente.persona.especialista.id,
-                estado: {
-                  in: ['PROGRAMADO', 'EN_PROCESO', 'REPROGRAMADO'],
-                },
-              },
-            });
-
-            for (const visit of pendingVisits) {
-              const currentDetails = visit.detalles ? `${visit.detalles}\n` : '';
-              await tx.cronograma.update({
-                where: { id: visit.id },
-                data: {
-                  estado: 'CANCELADO',
-                  detalles: `${currentDetails}Visita cancelada automáticamente por finalización del cargo de monitor.`,
-                },
-              });
-            }
-          }
-        } else {
-          // Aún quedan otros cargos de monitor activos.
-          // Actualizar el rol del usuario al rol de mayor prioridad restante
-          let targetRole = 'docente';
-          if (remainingMonitors.includes('Director')) {
-            targetRole = 'director_institucion';
-          } else if (remainingMonitors.includes('Coordinador Pedagógico')) {
-            targetRole = 'coordinador_pedagogico';
-          } else if (remainingMonitors.includes('Jefe de Taller')) {
-            targetRole = 'jefe_taller';
-          }
-
-          if (docente.persona?.usuario) {
-            const role = await tx.role.findFirst({
-              where: { codigo: targetRole },
-            });
-            if (role) {
-              await tx.usuario.update({
-                where: { id: docente.persona.usuario.id },
-                data: { rolId: role.id },
-              });
-            }
-          }
-
-          // Sincronizar el cargo del especialista
-          if (docente.persona?.especialista) {
-            let highestCargo = '';
-            if (remainingMonitors.includes('Director')) {
-              highestCargo = 'Director';
-            } else if (remainingMonitors.includes('Coordinador Pedagógico')) {
-              highestCargo = 'Coordinador Pedagógico';
-            } else if (remainingMonitors.includes('Jefe de Taller')) {
-              highestCargo = 'Jefe de Taller';
-            }
-
-            await tx.especialista.update({
-              where: { id: docente.persona.especialista.id },
-              data: {
-                cargo: highestCargo,
-                estado: EstadoRegistro.ACTIVO,
-              },
-            });
-          }
+        if (docenteInfo.usuarioId) {
+          roleUpdate = { usuarioId: docenteInfo.usuarioId, roleCodigo: targetRole };
+        }
+        if (docenteInfo.especialistaId) {
+          especialistaUpdate = {
+            especialistaId: docenteInfo.especialistaId,
+            cargo: highestCargo,
+            estado: 'Activo',
+          };
         }
       }
+    }
+
+    // Ejecutar finalizacion atomica (tx en repo)
+    await this.docentesCargosRepository.finalizeCargo({
+      docenteId,
+      cargoId: docenteCargoId,
+      fechaFin: fin,
+      principalPromotionTargetId,
+      roleUpdate,
+      especialistaUpdate,
+      monitorEspecialistaId,
     });
 
-    // 3. Invalidar TODAS las sesiones activas del usuario asociado al docente.
-    // Sus capabilities cambiaron (perdio un cargo, o el principal cambio); el
-    // siguiente request con su access token devolvera 401 -> forzar re-login.
-    const userId = await this.findUserIdByDocenteId(docenteId);
+    // Invalidar TODAS las sesiones activas del usuario asociado al docente.
+    const userId = await this.docentesCargosRepository.findUserIdByDocenteId(docenteId);
     if (userId) {
       await this.sessionRepository.invalidateAllUserSessions(userId, 'CARGO_FINALIZADO');
     }
 
     return { ok: true, cargoFinalizado: dc.cargo.nombre, fechaFin: fin };
-  }
-
-  private async findUserIdByDocenteId(docenteId: string): Promise<string | null> {
-    const docente = await this.prisma.docente.findUnique({
-      where: { id: docenteId },
-      select: { persona: { select: { usuario: { select: { id: true } } } } },
-    });
-    return docente?.persona?.usuario?.id ?? null;
   }
 }

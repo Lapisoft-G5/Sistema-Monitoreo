@@ -1865,7 +1865,47 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado)
 - **Cambio en las Políticas de RLS (Base de Datos):** Se aplicaron nuevas políticas de seguridad a nivel de fila (`fichas_role_isolation` y `cronogramas_role_isolation` en la migración `20260623180200_add_docente_to_rls_policies`) para permitir que los usuarios con rol `docente` puedan consultar (SELECT) los cronogramas donde figuran como el docente evaluado, y las fichas de monitoreo en estado `FINALIZADO` correspondientes a sus evaluaciones.
 
 
-#### 6. Rediseño del Panel de Control de Reportes para el Docente Evaluado y Filtro por Año
+#### 7. Fase 2 — Refactor Repository Pattern (PrismaService bypass)
+- **Problema:** 5 servicios/guards inyectaban `PrismaService` directamente para acceder a la BD, saltándose la capa de repositorio. Esto rompía el patrón arquitectónico, acumulaba ~91 errores de lint por `any` en retornos de Prisma, y duplicaba lógica de acceso a datos.
+- **Resolución Fase 2.1 (`especialistas-cargos.service.ts`):**
+  - Se agregaron 5 métodos al repositorio `EspecialistaRepository` (interfaz + `PrismaEspecialistaRepository`): `findCargosByEspecialistaId`, `findCargoById`, `countActiveCargos`, `createCargo` (atomic tx: create + sync mirror), `finalizeCargo` (atomic tx: update + sync mirror).
+  - Se eliminó la dependencia directa de `PrismaService` y `randomUUID` del servicio.
+  - Se eliminó el método privado `findUserIdByEspecialistaId` (ahora usa el del repositorio).
+  - Archivos: `especialista.repository.ts`, `prisma-especialista.repository.ts`, `especialistas-cargos.service.ts`.
+- **Resolución Fase 2.2 (`docentes-cargos.service.ts`):**
+  - Se creó un repositorio dedicado `DocentesCargosRepository` + `PrismaDocentesCargosRepository` (9 métodos) para no mezclar con `TeachersRepository` que ya es grande.
+  - El método `finalizeCargo` recibe un `FinalizeCargoParams` pre-calculado por el servicio (resolución de principal, determinación de roles) y ejecuta todo en una sola transacción atómica: cierre de cargo → promoción de principal → sync rol usuario → sync especialista → cancelación de visitas pendientes.
+  - El método `addCargo` maneja creación + democión de principal en una tx.
+  - El servicio conserva la lógica de negocio pura: `CargoCompatibilityService`, `resolvePrincipalCargo`, `SessionRepository`.
+  - Archivos nuevos: `docentes-cargos.repository.ts`, `prisma-docentes-cargos.repository.ts`.
+  - Archivos modificados: `docentes-cargos.service.ts` (-200 líneas), `teachers.module.ts` (nuevo provider).
+
+#### 8. (Continuará...) Fase 2.3 y 2.4 — Scheduling y Ficha
+
+---
+
+## 19. Refactorizaciones Archivadas
+
+### Fase 1 — Centralización de API Frontend (Completada)
+
+**Objetivo:** Eliminar 11 duplicaciones de `getApiBaseUrl()` en el frontend y estandarizar llamadas HTTP.
+
+**Cambios:**
+- Se creó `shared/config/api.ts` con `API_BASE_URL` centralizado y `request<T>()` helper tipado que maneja FormData, errores HTTP y respuestas vacías.
+- Se actualizaron todos los API modules (auth, docentes, instituciones, especialistas, etc.) para importar desde `shared/config/api.ts`.
+- Se eliminaron los paquetes `shared-types` y `shared-utils` (no se usaban).
+- Se eliminó `shared/api/cronogramas.api.ts` duplicado.
+- Commit: `b600c93`.
+
+### Fase 2 — Refactor Repository Pattern (Backend)
+
+**Objetivo:** Eliminar el bypass de `PrismaService` en servicios de cargos y guards, moviendo todo el acceso a datos a repositorios dedicados.
+
+**Cambios:**
+- **2.1 Especialistas-Cargos:** 5 nuevos métodos en `EspecialistaRepository`, servicio limpio de Prisma.
+- **2.2 Docentes-Cargos:** Nuevo `DocentesCargosRepository` con 9 métodos, servicio pierde 200 líneas de lógica de BD.
+
+**Estado:** Pendiente 2.3 (scheduling) y 2.4 (ficha). auth.guard.ts no requiere cambios (solo `$executeRawUnsafe` para RLS GUCs).
 - **Rediseño de Métricas (KPIs) para Docente:** Se modificó [ReportesStats.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/widgets/reportes/ui/ReportesStats.tsx) para aceptar la prop `isEvaluatedView`. Cuando es verdadera (docente evaluado), oculta los KPI de cobertura genéricos (cobertura total de IEs) y muestra en su lugar métricas relevantes a su propio desempeño: "Monitoreos Recibidos", "Mi Rendimiento" (% de nivel satisfactorio), "Mi Promedio General" (calculado a partir de sus fichas completadas) y "Mi Nivel de Logro" (el nivel más reciente alcanzado).
 - **Adaptación del Filtro y Reemplazo de Tipo de Ficha por Año:**
   - Se removió el filtro "Tipo de Ficha" (ya que para el docente es redundante y para otros roles se prioriza el filtro cronológico) y se integró un nuevo filtro por **Año (Año de ejecución)** en [ReportesPage.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/pages/jefeGestion/ReportesPage.tsx) y [ReportesGrid.tsx](file:///home/drajev/Proyectos/Sistema-Monitoreo/apps/frontend/src/widgets/reportes/ui/ReportesGrid.tsx).

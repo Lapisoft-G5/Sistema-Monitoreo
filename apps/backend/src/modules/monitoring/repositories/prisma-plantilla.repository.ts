@@ -324,6 +324,11 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
       if (filters.anioAcademico !== undefined) where.anioAcademico = filters.anioAcademico;
       if (filters.tipoMonitoreo) where.tipoMonitoreo = filters.tipoMonitoreo;
       if (filters.estado) where.estado = filters.estado;
+      if (filters.rolAutorAlCrear) where.rolAutorAlCrear = filters.rolAutorAlCrear;
+      if (filters.institucionId !== undefined) {
+        where.institucionId = filters.institucionId;
+      }
+      if (filters.scope) where.scope = filters.scope;
     }
     const plantillas = await this.prisma.plantillaMonitoreo.findMany({
       where,

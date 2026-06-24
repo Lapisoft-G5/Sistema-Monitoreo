@@ -32,6 +32,8 @@ export abstract class PlantillaRepository {
     anioAcademico?: number;
     tipoMonitoreo?: 'DOCENTE' | 'DIRECTIVO';
     estado?: 'Borrador' | 'Vigente' | 'Historico';
+    rolAutorAlCrear?: 'jefe_gestion' | 'director_ie';
+    institucionId?: string | null;
   }): Promise<IPlantilla[]>;
 
   abstract findById(id: string): Promise<IPlantilla | null>;

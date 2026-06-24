@@ -21,4 +21,13 @@ export class QueryPlantillaDto {
   @IsString()
   @IsIn(['Borrador', 'Vigente', 'Historico'])
   estado?: 'Borrador' | 'Vigente' | 'Historico';
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['jefe_gestion', 'director_ie'])
+  rolAutorAlCrear?: 'jefe_gestion' | 'director_ie';
+
+  @IsOptional()
+  @IsString()
+  institucionId?: string;
 }

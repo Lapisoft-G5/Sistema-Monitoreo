@@ -96,16 +96,26 @@ export class PlantillaService {
     }
 
     if (dto.estado === 'Vigente') {
-      // No debe haber otra plantilla vigente del mismo tipo+anio
+      // Unicidad de plantilla Vigente por scope (UGEL o IE):
+      //  - Plantilla UGEL (rolAutorAlCrear='jefe_gestion', institucionId=null):
+      //    no debe haber otra UGEL Vigente del mismo tipo+anio.
+      //  - Plantilla IE (rolAutorAlCrear='director_ie', institucionId=IE-X):
+      //    no debe haber otra de la MISMA IE Vigente del mismo tipo+anio.
+      //    Una plantilla UGEL Vigente puede coexistir con una IE Vigente
+      //    del mismo tipo+anio, porque aplican a scopes distintos.
       const otrasVigentes = await this.repository.findAll({
         tipoMonitoreo: original.tipoMonitoreo,
         anioAcademico: original.anioAcademico,
         estado: 'Vigente',
+        rolAutorAlCrear: original.rolAutorAlCrear,
+        institucionId: original.institucionId,
       });
       const conflicto = otrasVigentes.find((p) => p.id !== id);
       if (conflicto) {
         throw new ConflictException(
-          `Ya existe plantilla Vigente para (${original.tipoMonitoreo}, ${original.anioAcademico}): ${conflicto.id}. Archivela primero.`,
+          `Ya existe plantilla Vigente para (${original.tipoMonitoreo}, ${original.anioAcademico})` +
+            (original.institucionId ? ` en su IE` : '') +
+            `: ${conflicto.id}. Arch\u00edvela primero.`,
         );
       }
     }

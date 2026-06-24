@@ -15,8 +15,10 @@ export interface ILoginResponse {
     institucion?: string;
     institucionNombre?: string;
     institucionNivel?: string;
+    especialistaId?: string;
     especialistaNivel?: string;
     especialistaModalidad?: string;
+    especialistaEspecialidades?: string[];
     distrito?: string;
     firstLogin: boolean;
   };

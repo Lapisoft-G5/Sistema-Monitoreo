@@ -1,6 +1,6 @@
 # Documentación Técnica — Sistema de Monitoreo Educativo UGEL Lampa
 
-> **Versión:** 0.1.0  
+> **Versión:** 0.2.0  
 > **Fecha de análisis:** Junio 2026  
 > **Estado:** En desarrollo / pruebas (no en producción)  
 > **Ámbito:** UGEL Lampa, Puno, Perú — 50 a 200 instituciones educativas  
@@ -1815,7 +1815,7 @@ El **Sistema de Monitoreo Educativo UGEL Lampa** es una aplicación web construi
 
 ### Estado del proyecto
 
-El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado) con la funcionalidad central implementada: autenticación, CRUD de entidades, monitoreo, evaluaciones y reportes. Aún no está en producción.
+El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 4 completado) con la funcionalidad central implementada: autenticación, CRUD de entidades, monitoreo, evaluaciones y reportes. Aún no está en producción.
 
 **Contexto adicional:**
 - **Escala esperada:** 50 a 200 instituciones educativas, 50-200 usuarios concurrentes
@@ -1895,6 +1895,26 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado)
 
 - **auth.guard.ts:** No requirió cambios (único Prisma call es `$executeRawUnsafe` para RLS GUCs, correcto en un guard).
 
+#### 9. Fase 3 — Configuración Centralizada y Tipos Compartidos
+- **Objetivo:** Centralizar toda la configuración de la aplicación (variables de entorno) usando `ConfigService` de NestJS con `class-validator`, y crear tipos compartidos base para unificar contratos entre frontend y backend.
+- **Resolución — ConfigModule con validación:**
+  - Se creó `config/env.validation.ts` con esquema `class-validator` para todas las variables de entorno (JWT_SECRET, DB_URL, BCRYPT_SALT_ROUNDS, CORS_ORIGINS, etc.), reemplazando `process.env` disperso.
+  - Se creó `config/app-config.types.ts` con interfaz `AppConfig` tipada que agrupa todas las configuraciones expuestas por `ConfigService`.
+  - Se registró `validate()` en `ConfigModule.forRoot()` dentro de `app.module.ts`.
+  - Se actualizó `main.ts` para leer CORS origins, puerto y host desde `ConfigService` en vez de `process.env`.
+  - Se actualizaron `auth.controller.ts` (cookie maxAge), `auth-token.service.ts` (JWT secrets), `booking-teachers.repository.ts` y `especialista.service.ts` (BCRYPT_SALT_ROUNDS) para usar `ConfigService`.
+  - Se eliminaron comparaciones hardcodeadas de `'0.0.0.0'` y `'production'`.
+  - Archivos: `env.validation.ts`, `app-config.types.ts`, `app.module.ts`, `main.ts`, y 6 controladores/servicios.
+- **Resolución — Tipos Compartidos:**
+  - Se creó `shared/types/session-user.ts` con interfaz unificada `SessionUser` (id, rol, permisos, personaId, etc.) tipando el objeto `req.user` en todas partes.
+  - Se creó `shared/types/base.entity.ts` con clase `BaseEntity` (id, createdAt, updatedAt, createdBy, updatedBy) para estandarizar entidades del backend.
+  - Se actualizaron todos los servicios (ficha, plantilla, monitoring-plan, scheduling) y sus controladores/specs para importar `SessionUser` desde la ubicación compartida.
+  - Archivos: `session-user.ts`, `base.entity.ts`, y 12 controladores/servicios/specs.
+- **Resolución — Utilitarios Comunes:**
+  - Se crearon `common/utils/collection.utils.ts` (groupBy, mapValues, pick, omit) y `common/utils/string.utils.ts` (capitalize, truncate) con helpers tipados.
+  - Se eliminaron archivos `.gitkeep` de `config/` y `common/`.
+- **Contexto:** Esta fase establece la "Fundación" del backend: un módulo de configuración robusto y tipos base compartidos, como prerrequisito para fases posteriores de modularización y testing.
+
 ---
 
 ## 19. Refactorizaciones Archivadas
@@ -1927,4 +1947,25 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 3 completado)
   - Los años disponibles se calculan de manera dinámica (usando `useMemo`) evaluando las fechas de ejecución reales en las fichas completadas/cronogramas devueltos.
 - **Correcciones de UI y Tipo:**
   - Se ocultó el campo redundante de "Evaluado" en la tarjeta de visita cuando `isEvaluatedView` es verdadero (el docente evaluado sabe que es él mismo) y se resaltó la línea del especialista evaluador.
-  - Se corrigieron los problemas de tipado TypeScript de `promedio` y `nivelLogro` en `ReportesPage.tsx` al definir estrictamente el tipo de retorno de `completedVisits` como `BackendReportVisit[]`.
+   - Se corrigieron los problemas de tipado TypeScript de `promedio` y `nivelLogro` en `ReportesPage.tsx` al definir estrictamente el tipo de retorno de `completedVisits` como `BackendReportVisit[]`.
+
+### Fase 3 — Configuración Centralizada y Tipos Compartidos (Completada)
+
+**Objetivo:** Centralizar toda la configuración de la aplicación (variables de entorno) usando `ConfigService` de NestJS con `class-validator`, y crear tipos compartidos base para unificar contratos entre frontend y backend.
+
+**Cambios:**
+- **ConfigModule con validación:**
+  - Nuevo `config/env.validation.ts` con esquema `class-validator` para todas las variables de entorno.
+  - Nueva interfaz `config/app-config.types.ts` tipando toda la configuración (`AppConfig`).
+  - Registro de `validate()` en `ConfigModule.forRoot()` dentro de `app.module.ts`.
+  - `main.ts` lee CORS origins, puerto y host desde `ConfigService`.
+  - Servicios actualizados: `auth.controller.ts` (cookie maxAge), `auth-token.service.ts` (JWT secrets), `booking-teachers.repository.ts` y `especialista.service.ts` (BCRYPT_SALT_ROUNDS).
+  - Eliminación de comparaciones hardcodeadas `'0.0.0.0'` y `'production'`.
+- **Tipos Compartidos:**
+  - Nueva interfaz `SessionUser` en `shared/types/session-user.ts`, tipando `req.user` en toda la aplicación.
+  - Nueva clase base `BaseEntity` en `shared/types/base.entity.ts` para entidades del backend.
+  - Actualización de 12 controladores/servicios/specs para usar las importaciones compartidas.
+- **Utilitarios Comunes:**
+  - Nuevos helpers: `collection.utils.ts` (groupBy, mapValues, pick, omit) y `string.utils.ts` (capitalize, truncate).
+  - Eliminación de `.gitkeep` obsoletos.
+- **Commits:** `dd9f750`, `c09abf3`.

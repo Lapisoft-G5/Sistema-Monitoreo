@@ -6,7 +6,7 @@ import type {
   TipoMonitoreo,
   EstadoFicha,
 } from '@sistema-monitoreo/shared-contracts';
-import { RoleCode } from '../../../common/enums/role.enum.js';
+import type { SessionUser } from '../../../shared/types/session-user.js';
 
 export interface QueryFichasCompletadas {
   anioAcademico?: number;
@@ -42,9 +42,4 @@ export abstract class ReporteRepository {
   ): Promise<IReporteFicha | null>;
 }
 
-export interface SessionScope {
-  id: string;
-  role: RoleCode;
-  institucionId?: string | null;
-  especialistaNivel?: string | null;
-}
+export type SessionScope = SessionUser;

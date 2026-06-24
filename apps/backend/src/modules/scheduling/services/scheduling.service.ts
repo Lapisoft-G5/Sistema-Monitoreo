@@ -24,14 +24,7 @@ import type {
 } from '../dto/solicitud-reprogramacion.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
-
-export interface SessionUser {
-  id: string;
-  role: RoleCode;
-  institucionId?: string | null;
-  especialistaNivel?: string | null;
-  especialistaEspecialidades?: string[] | null;
-}
+import type { SessionUser } from '../../../shared/types/session-user.js';
 
 @Injectable()
 export class SchedulingService {

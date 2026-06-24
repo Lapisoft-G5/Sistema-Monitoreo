@@ -1,4 +1,5 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'node:crypto';
 import { Prisma } from '../../../generated/prisma/client.js';
@@ -67,7 +68,10 @@ export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
 
 @Injectable()
 export class AuthTokenService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+  ) {}
 
   generateTokens(
     payload: JwtPayload,
@@ -78,8 +82,8 @@ export class AuthTokenService {
     refreshExpiresAt: Date;
   } {
     const accessOpts: JwtSignOptions = {
-      secret: process.env.JWT_SECRET,
-      expiresIn: (process.env.JWT_EXPIRES_IN ?? '15m') as JwtSignOptions['expiresIn'],
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN') ?? '15m') as JwtSignOptions['expiresIn'],
       jwtid: sessionJti,
     };
     const accessToken = this.jwtService.sign(
@@ -91,8 +95,8 @@ export class AuthTokenService {
     const refreshTokenHash = createHash('sha256').update(rawRefreshToken).digest('hex');
 
     const refreshOpts: JwtSignOptions = {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as JwtSignOptions['expiresIn'],
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: (this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d') as JwtSignOptions['expiresIn'],
     };
     const refreshTokenJWT = this.jwtService.sign(
       { jti: sessionJti, sub: payload.sub, tokenHash: refreshTokenHash },
@@ -108,7 +112,7 @@ export class AuthTokenService {
   verifyRefreshToken(token: string): { jti: string; sub: string; tokenHash: string; exp: number } {
     try {
       return this.jwtService.verify(token, {
-        secret: process.env.JWT_REFRESH_SECRET as string,
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET') as string,
       });
     } catch {
       throw new UnauthorizedException('Refresh token inválido o expirado');

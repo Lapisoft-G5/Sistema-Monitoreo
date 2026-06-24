@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import { validate } from './config/env.validation.js';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { HealthModule } from './shared/health/health.module.js';
@@ -21,6 +22,7 @@ import { ReportsModule } from './modules/reports/reports.module.js';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../../.env', './apps/backend/.env'],
+      validate,
     }),
     LoggerModule.forRoot({
       pinoHttp: {

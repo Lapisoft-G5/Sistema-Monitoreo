@@ -21,7 +21,8 @@ import {
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
-import { SchedulingService, type SessionUser } from '../services/scheduling.service.js';
+import { SchedulingService } from '../services/scheduling.service.js';
+import type { SessionUser } from '../../../shared/types/session-user.js';
 import { CreateVisitaDto, UpdateVisitaDto } from '../dto/create-visita.dto.js';
 import {
   CreateSolicitudReprogramacionDto,

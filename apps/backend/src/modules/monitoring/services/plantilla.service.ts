@@ -12,12 +12,7 @@ import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import type { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-plantilla.dto.js';
 import type { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
-
-export interface SessionUser {
-  id: string;
-  role: RoleCode;
-  institucionId?: string | null;
-}
+import type { SessionUser } from '../../../shared/types/session-user.js';
 
 @Injectable()
 export class PlantillaService {

@@ -1,9 +1,11 @@
 import {
+  Inject,
   Injectable,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { EspecialistaRepository } from '../repositories/especialista.repository.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
@@ -24,6 +26,7 @@ export class EspecialistaService {
     private readonly repository: EspecialistaRepository,
     private readonly catalogsRepository: CatalogsRepository,
     private readonly sessionRepository: SessionRepository,
+    private readonly configService: ConfigService,
   ) {}
 
   async findAll(filters?: QueryEspecialistaDto): Promise<IEspecialistaResponse[]> {
@@ -110,7 +113,7 @@ export class EspecialistaService {
       dto.cargaLaboral = 40;
     }
 
-    const saltRounds = 12;
+    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') ?? 12;
     const passwordHash = await bcrypt.hash(dto.dni, saltRounds);
     return this.repository.create(dto, passwordHash, role.id);
   }

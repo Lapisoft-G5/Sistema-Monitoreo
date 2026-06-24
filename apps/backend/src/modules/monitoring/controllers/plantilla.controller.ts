@@ -18,7 +18,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import type { IPlantilla, IUpdatePlantillaResponse } from '@sistema-monitoreo/shared-contracts';
-import { PlantillaService, type SessionUser } from '../services/plantilla.service.js';
+import { PlantillaService } from '../services/plantilla.service.js';
+import type { SessionUser } from '../../../shared/types/session-user.js';
 import { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-plantilla.dto.js';
 import { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';

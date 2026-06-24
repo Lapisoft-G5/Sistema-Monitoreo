@@ -14,6 +14,7 @@ import { STORAGE_SERVICE, type StorageService } from '../../../shared/storage/st
 import { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
 import { ScopeFilter } from '../../../shared/auth/scope-filter.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import type { SessionUser } from '../../../shared/types/session-user.js';
 import type {
   CreateFichaDto,
   SaveRespuestaDesempenoDto,
@@ -21,13 +22,7 @@ import type {
   FinalizarFichaDto,
 } from '../dto/ficha.dto.js';
 
-export interface SessionUser {
-  id: string;
-  role: string;
-  institucionId?: string | null;
-  especialistaNivel?: string | null;
-}
-
+// RoleCode imported via SessionUser type for scope filter casts
 @Injectable()
 export class FichaService {
   constructor(

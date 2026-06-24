@@ -3,7 +3,8 @@ import { RoleCode } from '../../../common/enums/role.enum.js';
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { MonitoringPlanService, type SessionUser } from './monitoring-plan.service.js';
+import { MonitoringPlanService } from './monitoring-plan.service.js';
+import type { SessionUser } from '../../../shared/types/session-user.js';
 import { MonitoringPlanRepository } from '../repositories/monitoring-plan.repository.js';
 import type { IMonitoringPlanResponse } from '@sistema-monitoreo/shared-contracts';
 

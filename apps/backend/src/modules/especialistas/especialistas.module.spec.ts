@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { jest } from '@jest/globals';
+import { ConfigModule } from '@nestjs/config';
 import { EspecialistasModule } from './especialistas.module.js';
 import { EspecialistaService } from './services/especialista.service.js';
 import { EspecialistaRepository } from './repositories/especialista.repository.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { ConfigService } from '@nestjs/config';
 import { CatalogsRepository } from '../catalogs/repositories/catalogs.repository.js';
 
 describe('EspecialistasModule', () => {
@@ -12,7 +12,7 @@ describe('EspecialistasModule', () => {
 
   beforeEach(async () => {
     module = await Test.createTestingModule({
-      imports: [EspecialistasModule],
+      imports: [ConfigModule.forRoot({ isGlobal: true }), EspecialistasModule],
     })
       .overrideProvider(CatalogsRepository)
       .useValue({
@@ -41,11 +41,6 @@ describe('EspecialistasModule', () => {
         role: { findUnique: jest.fn<any>() },
         $transaction: jest.fn<any>(),
         $queryRaw: jest.fn<any>(),
-      })
-      .overrideProvider(ConfigService)
-      .useValue({
-        getOrThrow: jest.fn<any>().mockReturnValue('test_secret'),
-        get: jest.fn<any>().mockReturnValue(undefined),
       })
       .compile();
   });

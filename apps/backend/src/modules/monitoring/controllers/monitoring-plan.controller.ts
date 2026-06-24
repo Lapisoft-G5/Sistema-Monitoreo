@@ -24,7 +24,8 @@ import type {
   IMonitoringPlanResponse,
   IPlanInstitucionCubierta,
 } from '@sistema-monitoreo/shared-contracts';
-import { MonitoringPlanService, type SessionUser } from '../services/monitoring-plan.service.js';
+import type { SessionUser } from '../../../shared/types/session-user.js';
+import { MonitoringPlanService } from '../services/monitoring-plan.service.js';
 import { CreatePlanDto } from '../dto/create-plan.dto.js';
 import { QueryPlanDto } from '../dto/query-plan.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';

@@ -13,12 +13,7 @@ import { MonitoringPlanRepository } from '../repositories/monitoring-plan.reposi
 import type { CreatePlanDto } from '../dto/create-plan.dto.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
-
-export interface SessionUser {
-  id: string;
-  role: RoleCode;
-  institucionId?: string | null;
-}
+import type { SessionUser } from '../../../shared/types/session-user.js';
 
 @Injectable()
 export class MonitoringPlanService {

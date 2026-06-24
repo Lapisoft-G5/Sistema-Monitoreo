@@ -20,7 +20,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
-import { FichaService, type SessionUser } from '../services/ficha.service.js';
+import { FichaService } from '../services/ficha.service.js';
+import type { SessionUser } from '../../../shared/types/session-user.js';
 import {
   CreateFichaDto,
   SaveRespuestaDesempenoDto,

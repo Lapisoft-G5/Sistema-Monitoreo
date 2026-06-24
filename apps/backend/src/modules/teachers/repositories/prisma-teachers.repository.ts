@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Inject, Injectable, ConflictException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
@@ -28,7 +29,10 @@ type DocenteWithRelations = Prisma.DocenteGetPayload<{
 
 @Injectable()
 export class PrismaTeachersRepository implements TeachersRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+  ) {}
 
   private mapDocente(docente: DocenteWithRelations): DocenteEntity {
     return {
@@ -516,7 +520,7 @@ export class PrismaTeachersRepository implements TeachersRepository {
       });
 
       if (!existingUser) {
-        const saltRounds = 12;
+        const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') ?? 12;
         const passwordHash = await bcrypt.hash(dto.dni, saltRounds);
         await tx.usuario.create({
           data: {

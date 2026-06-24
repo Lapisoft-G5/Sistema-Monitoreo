@@ -58,6 +58,14 @@ const JefeAreaDetailPage = lazy(() =>
   import('../jefeGestion/JefeAreaDetailPage').then((m) => ({ default: m.JefeAreaDetailPage })),
 );
 
+// ── Monitoreo (mismas páginas que Jefe de Gestión) ──
+const CronogramaPage = lazy(() =>
+  import('../jefeGestion/CronogramaPage').then((m) => ({ default: m.CronogramaPage })),
+);
+const CalendarioPage = lazy(() =>
+  import('../jefeGestion/CalendarioPage').then((m) => ({ default: m.CalendarioPage })),
+);
+
 export const adminRoutes: RouteObject[] = [
   // Padrón de Instituciones
   {
@@ -228,6 +236,33 @@ export const adminRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <JefeAreaDetailPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  // ── Módulo de Monitoreo (compartido con Jefe de Gestión) ──
+  {
+    element: <ProtectedRoute permission="monitoreo_cronograma" />,
+    children: [
+      {
+        path: 'monitoreo/cronograma',
+        element: (
+          <LazyLoader>
+            <CronogramaPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute permission="monitoreo_calendario" />,
+    children: [
+      {
+        path: 'monitoreo/calendario',
+        element: (
+          <LazyLoader>
+            <CalendarioPage />
           </LazyLoader>
         ),
       },

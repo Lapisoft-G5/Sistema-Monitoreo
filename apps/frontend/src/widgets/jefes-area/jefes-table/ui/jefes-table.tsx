@@ -19,7 +19,7 @@ interface JefesTableWidgetProps {
   onChanged?: () => void;
 }
 
-export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView, onChanged }: JefesTableWidgetProps) => {
+export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTableWidgetProps) => {
   const navigate = useNavigate();
   const [deletingDoc, setDeletingDoc] = useState<JefeArea | null>(null);
   const [restoringDoc, setRestoringDoc] = useState<JefeArea | null>(null);

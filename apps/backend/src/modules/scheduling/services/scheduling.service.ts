@@ -252,6 +252,7 @@ export class SchedulingService {
 
     const isAll = this.scopeFilter.isAllScope(session.role);
     const isJefeArea = this.scopeFilter.isJefeAreaScope(session.role);
+    const isDirector = session.role === RoleCode.DIRECTOR_INSTITUCION;
 
     if (!isAll) {
       if (isJefeArea) {
@@ -280,9 +281,15 @@ export class SchedulingService {
             );
           }
         }
+      } else if (isDirector) {
+        if (cronograma.institucionId !== session.institucionId) {
+          throw new ForbiddenException(
+            'El Director IE solo puede resolver solicitudes de su propia institución.',
+          );
+        }
       } else {
         throw new ForbiddenException(
-          'Solo Jefe de Gestion o Jefe de Area pueden resolver solicitudes de reprogramacion.',
+          'Solo Jefe de Gestion, Jefe de Area o Directores IE pueden resolver solicitudes de reprogramacion.',
         );
       }
     }

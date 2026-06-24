@@ -45,17 +45,12 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     const mainRelation = especialidadesList.find((e: any) => e.esPrincipal);
     const extraRelations = especialidadesList.filter((e: any) => !e.esPrincipal);
 
+    // Cargo efectivo: el EspecialistaCargo activo (fechaFin IS NULL). Si
+    // no hay cargo activo, cae a 'Especialista' (cargo por defecto).
+    // El deactivate ya no inactiva al Especialista, sólo le quita el
+    // cargo, por lo que no se necesita un caso especial para estado=Inactivo.
     const cargoActivo = (esp.cargos || []).find((c) => c.fechaFin === null);
-    // Si el Especialista está inactivo, su cargo efectivo es 'Especialista'
-    // (cargo por defecto), aunque mantenga un EspecialistaCargo 'Jefe de
-    // Área'/'Jefe de Gestión' con fechaFin NULL (datos legacy previos al
-    // fix que sincroniza el cargo al deactivate). Esto asegura que un
-    // Especialista inactivo aparezca en la página de Especialistas y NO
-    // en la página del cargo que perdió.
-    const cargoEfectivo =
-      esp.estado === EstadoRegistro.INACTIVO
-        ? 'Especialista'
-        : cargoActivo?.cargo ?? 'Especialista';
+    const cargoEfectivo = cargoActivo?.cargo ?? 'Especialista';
 
     return {
       id: esp.id,
@@ -489,6 +484,10 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
   async delete(id: string): Promise<IEspecialistaResponse> {
     const esp = await this.prisma.especialista.findUnique({
       where: { id },
+      include: {
+        cargos: { where: { fechaFin: null } },
+        persona: { include: { usuario: { include: { rol: true } } } },
+      },
     });
     if (!esp) {
       throw new NotFoundException(`Especialista con ID ${id} no encontrado.`);
@@ -521,34 +520,54 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
       );
     }
 
-    return await this.prisma.$transaction(async (tx) => {
-      // Inactivar usuario asociado
-      await tx.usuario.updateMany({
-        where: { personaId: esp.personaId },
-        data: { isActive: false },
-      });
+    // El "deactivate" de un Especialista es semánticamente "quitar el cargo
+    // activo" (NO inactivar al Especialista entero). El Especialista sigue
+    // activo y útil como Especialista regular; sólo se le retira el cargo
+    // específico (Jefe de Área / Jefe de Gestión). Por eso:
+    //   - Especialista.estado se mantiene en 'Activo'
+    //   - Usuario.isActive se mantiene en true
+    //   - El EspecialistaCargo activo se finaliza (fechaFin=NOW)
+    //   - Especialista.cargo (legacy) se sincroniza a 'Especialista'
+    //   - Si el Usuario tenía rol 'jefe_area' (porque tenía un cargo de Jefe
+    //     de Área activo o legacy), se le baja a 'especialista' para que
+    //     pierda las capabilities de jefe_area. La decisión se basa en el
+    //     ROL del Usuario (no en el cargo activo) porque el rol es la
+    //     fuente de capabilities: aunque ya no haya cargo activo, mantener
+    //     'jefe_area' le daría acceso a las rutas de Jefes de Área.
 
-      // Finalizar el EspecialistaCargo activo (si lo hay) para que el
-      // Especialista deje de figurar con ese cargo en el padrón. La fecha
-      // de fin se setea a NOW; el cargo queda en el historial.
+    const rolCodigo = esp.persona?.usuario?.rol?.codigo;
+
+    return await this.prisma.$transaction(async (tx) => {
+      // Finalizar el EspecialistaCargo activo (si lo hay).
       const fin = new Date();
       await tx.especialistaCargo.updateMany({
         where: { especialistaId: id, fechaFin: null },
         data: { fechaFin: fin },
       });
 
-      // Sincronizar el campo espejo `Especialista.cargo` a 'Especialista'
-      // (cargo por defecto cuando no hay cargo activo). Esto permite que
-      // el Especialista inactivo aparezca en la página de Especialistas
-      // (filtro cargo === 'Especialista') en vez de quedarse en la
-      // página del cargo que se le quitó.
+      // Sincronizar el campo espejo.
       await tx.especialista.update({
         where: { id },
-        data: {
-          estado: EstadoRegistro.INACTIVO,
-          cargo: 'Especialista',
-        },
+        data: { cargo: 'Especialista' },
       });
+
+      // Si el Usuario tenía rol 'jefe_area', bajarlo a 'especialista'.
+      // (No se baja de 'jefe_gestion' porque el usuario mantiene ese rol
+      // jerárquico independientemente del cargo de Especialista.)
+      if (rolCodigo === 'jefe_area') {
+        const rolJefeArea = await tx.role.findUnique({
+          where: { codigo: 'jefe_area' },
+        });
+        const rolEspecialista = await tx.role.findUnique({
+          where: { codigo: 'especialista' },
+        });
+        if (rolJefeArea && rolEspecialista) {
+          await tx.usuario.updateMany({
+            where: { personaId: esp.personaId, rolId: rolJefeArea.id },
+            data: { rolId: rolEspecialista.id },
+          });
+        }
+      }
 
       const fullEsp = await tx.especialista.findUniqueOrThrow({
         where: { id },

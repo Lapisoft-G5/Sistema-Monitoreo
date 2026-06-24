@@ -204,24 +204,17 @@ export class EspecialistaService {
 
   async activate(id: string): Promise<IEspecialistaResponse> {
     const result = await this.repository.activate(id);
-    // Si el Especialista reactivado tenía una sesión activa, invalidarla
-    // para forzar re-login con las nuevas capabilities (cargo=Especialista).
-    const userId = await this.repository.findUserIdByEspecialistaId(id);
-    if (userId) {
-      await this.sessionRepository.invalidateAllUserSessions(userId, 'CARGO_FINALIZADO');
-    }
+    // No invalidamos sesión: activate es idempotente y no cambia rol/cargo.
     return result;
   }
 
   async deactivate(id: string): Promise<IEspecialistaResponse> {
     const result = await this.repository.deactivate(id);
-    // Invalidar sesiones activas del Especialista inactivado para que
-    // pierda acceso de inmediato (sus capabilities cambiaron: perdió el
-    // cargo Jefe de Área / Jefe de Gestión).
-    const userId = await this.repository.findUserIdByEspecialistaId(id);
-    if (userId) {
-      await this.sessionRepository.invalidateAllUserSessions(userId, 'CARGO_FINALIZADO');
-    }
+    // No invalidamos sesión: deactivate solo quita el cargo del Especialista
+    // (lo baja de Jefe de Área a Especialista regular). El Usuario sigue
+    // activo y puede continuar usando el sistema. Si se le bajó el rol
+    // de 'jefe_area' a 'especialista', las nuevas capabilities aplicarán
+    // en el próximo login (o en el próximo refresh del token).
     return result;
   }
 }

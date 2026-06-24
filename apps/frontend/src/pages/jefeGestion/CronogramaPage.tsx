@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Compass, PlusCircle, Search, Trash2, Eye, Pencil, X, AlertCircle, Calendar, User, BookOpen, Layers, FileText } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -57,6 +58,7 @@ const formatTableDateTime = (isoString: string) => {
 
 export const CronogramaPage = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
   const isDirector =
     user?.role === 'director_institucion' ||
     user?.role === 'coordinador_pedagogico' ||
@@ -194,7 +196,7 @@ export const CronogramaPage = () => {
     const visitasExistentes = cronogramas.filter(
       (c) => c.evaluadoId === matchedDoc.id && c.tipo === formTipo,
     ).length;
-    const next = Math.min(visitasExistentes + 1, 4);
+    const next = Math.min(visitasExistentes + 1, 5);
     const t = setTimeout(() => {
       setFormVisita(String(next).padStart(2, '0'));
     }, 0);
@@ -290,12 +292,7 @@ export const CronogramaPage = () => {
       }
 
       if (user?.role === 'jefe_area') {
-        if (item.nivel !== user.especialistaNivel) return false;
-        if (item.nivel === 'Secundaria' && user.especialistaEspecialidades && user.especialistaEspecialidades.length > 0) {
-           const monitorEspecs = item.monitorEspecialidades || [];
-           const hasOverlap = user.especialistaEspecialidades.some((e: string) => monitorEspecs.includes(e));
-           if (!hasOverlap && monitorEspecs.length > 0) return false;
-        }
+        if (user.especialistaNivel && item.nivel !== user.especialistaNivel) return false;
       }
 
       return true;
@@ -430,6 +427,13 @@ export const CronogramaPage = () => {
         };
         await updateCronograma(editCronogramaId, updatePayload);
         setShowFormModal(false);
+        // Auto-navegar al calendario en la fecha del cronograma editado
+        const editedCronograma = cronogramas.find((c) => c.id === editCronogramaId);
+        if (editedCronograma) {
+          navigate('/monitoreo/calendario', {
+            state: { newDate: editedCronograma.fechaHora.substring(0, 10) },
+          });
+        }
       } else {
         const [datePart, timePart] = formFechaHora.split('T');
         const horaInicio = timePart.length === 5 ? `${timePart}:00` : timePart;
@@ -446,10 +450,15 @@ export const CronogramaPage = () => {
           detalles: formObservaciones.trim() || undefined
         });
         setShowFormModal(false);
+        // Auto-navegar al calendario en la fecha del cronograma recién creado
+        navigate('/monitoreo/calendario', {
+          state: { newDate: datePart },
+        });
       }
     } catch (err) {
-      console.error('Error guardando cronograma:', err);
-      setFormError('Error de comunicación con el servidor.');
+      console.error('[Cronograma] Error guardando:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
+      setFormError(`Error al guardar: ${errorMsg}`);
     } finally {
       setFormSubmitting(false);
     }
@@ -485,7 +494,7 @@ export const CronogramaPage = () => {
     }
   };
 
-  const visitaOptions = ['01', '02', '03', '04'];
+  const visitaOptions = ['01', '02', '03', '04', '05'];
 
   return (
     <div className="flex flex-col w-full gap-6 animate-in fade-in-0 duration-300">
@@ -762,9 +771,12 @@ export const CronogramaPage = () => {
             <form onSubmit={handleFormSubmit} className="flex flex-col overflow-y-auto flex-1">
               <div className="p-6 flex flex-col gap-5">
                 {formError && (
-                  <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3.5 text-destructive text-xs">
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div>{formError}</div>
+                  <div className="flex items-start gap-2 bg-rose-50 border-2 border-rose-300 rounded-xl p-4 text-rose-700 text-sm font-semibold shadow-sm">
+                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-rose-600" />
+                    <div className="flex-1">
+                      <p className="font-extrabold uppercase tracking-wide text-xs mb-1">No se pudo guardar el cronograma</p>
+                      <p className="font-normal">{formError}</p>
+                    </div>
                   </div>
                 )}
 

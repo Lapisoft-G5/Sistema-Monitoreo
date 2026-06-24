@@ -561,7 +561,7 @@ sequenceDiagram
 
 1. **Máximo 3 visitas pendientes por especialista:** Un especialista no puede tener más de 3 cronogramas en estado `PROGRAMADO` sin completar.
 2. **Estados de visita:** `PROGRAMADO` → `EN_PROCESO` → `COMPLETADO` | `REPROGRAMADO` | `CANCELADO`.
-3. **Número de visita:** Entre 1 y 4 por docente.
+3. **Número de visita:** Entre 1 y 5 por docente.
 4. **Inmutabilidad de fecha/hora:** Un trigger en la BD (`trg_validar_update_cronograma`) impide modificar `fecha_programada` o `hora_inicio` directamente. Solo se puede cambiar mediante una reprogramación aprobada.
 5. **Reprogramaciones:**
    - Cualquier usuario puede solicitar una reprogramación.
@@ -813,7 +813,7 @@ ejes_items_plantilla 1:N→ fichas_respuesta_eje_item
 - Estados de plantillas: `Borrador`, `Vigente`, `Historico`
 - Niveles de logro: `INICIO`, `EN_PROCESO`, `LOGRO_ESPERADO`, `LOGRO_DESTACADO`
 - Promedio de ficha: entre 1.0 y 4.0
-- Número de visita: entre 1 y 4
+- Número de visita: entre 1 y 5
 
 ### Trigger
 

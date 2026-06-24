@@ -8,6 +8,7 @@ import {
   IsString,
   IsUUID,
   Matches,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -29,6 +30,7 @@ export class CreateVisitaDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(5)
   numeroVisita!: number;
 
   @IsDateString()

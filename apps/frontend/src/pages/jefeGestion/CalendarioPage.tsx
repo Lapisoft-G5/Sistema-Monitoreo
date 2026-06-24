@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Calendar, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { useUser } from '@entities/model-user';
@@ -8,6 +9,8 @@ import { BandejaReprogramaciones } from '@widgets/reprogramaciones';
 
 export const CalendarioPage = () => {
   const { user } = useUser();
+  const location = useLocation();
+  const navigate = useNavigate();
   const isEspecialista =
     user?.role === 'especialista' ||
     user?.role === 'coordinador_pedagogico' ||
@@ -29,6 +32,26 @@ export const CalendarioPage = () => {
   });
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [showDetailsPanel, setShowDetailsPanel] = useState<boolean>(true);
+
+  // ── Auto-navegación tras crear/editar cronograma ──
+  // Si llegamos desde CronogramaPage con state.newDate (YYYY-MM-DD),
+  // navegamos el calendario a esa fecha y limpiamos el state.
+  useEffect(() => {
+    const newDate = (location.state as { newDate?: string } | null)?.newDate;
+    if (newDate) {
+      const parts = newDate.split('-');
+      if (parts.length === 3) {
+        const [y, m, d] = parts.map(Number);
+        const target = new Date(y, m - 1, d, 12);
+        if (!isNaN(target.getTime())) {
+          setTimeout(() => setCurrentDate(target), 0);
+          setTimeout(() => setSelectedDateStr(newDate), 0);
+        }
+      }
+      // Limpia el state para no re-navegar al refrescar la página
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   // ── Filtros del Calendario ──
   const [filterModalidad, setFilterModalidad] = useState('Todos');
@@ -158,12 +181,7 @@ export const CalendarioPage = () => {
       }
 
       if (user?.role === 'jefe_area') {
-        if (visit.nivel !== user.especialistaNivel) return false;
-        if (visit.nivel === 'Secundaria' && user.especialistaEspecialidades && user.especialistaEspecialidades.length > 0) {
-           const monitorEspecs = visit.monitorEspecialidades || [];
-           const hasOverlap = user.especialistaEspecialidades.some((e: string) => monitorEspecs.includes(e));
-           if (!hasOverlap && monitorEspecs.length > 0) return false;
-        }
+        if (user.especialistaNivel && visit.nivel !== user.especialistaNivel) return false;
       }
 
       // Filtros específicos de Director

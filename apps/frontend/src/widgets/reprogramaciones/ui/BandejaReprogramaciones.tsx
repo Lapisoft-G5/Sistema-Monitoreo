@@ -108,15 +108,9 @@ export const BandejaReprogramaciones = () => {
             return false;
           }
 
-          // Filtro adicional para Jefe de Área: solo ver de su nivel/especialidad
+          // Filtro adicional para Jefe de Área: solo ver de su nivel
           if (user?.role === 'jefe_area') {
-            if (req.visit.nivel !== user.especialistaNivel) return false;
-            
-            if (req.visit.nivel === 'Secundaria' && user.especialistaEspecialidades && user.especialistaEspecialidades.length > 0) {
-               const monitorEspecs = req.visit.monitorEspecialidades || [];
-               const hasOverlap = user.especialistaEspecialidades.some((e: string) => monitorEspecs.includes(e));
-               if (!hasOverlap && monitorEspecs.length > 0) return false;
-            }
+            if (user.especialistaNivel && req.visit.nivel !== user.especialistaNivel) return false;
           }
         }
       }

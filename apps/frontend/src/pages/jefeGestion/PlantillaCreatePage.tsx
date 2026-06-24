@@ -3,43 +3,57 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { PlantillaForm, type PlantillaFormState } from '@widgets/plantillas';
-import { usePlantillas } from '@entities/model-plantillas';
-import { useUser } from '@entities/model-user';
 import { plantillasApi } from '@entities/model-plantillas/api/plantillas.api';
 import { useQueryClient } from '@tanstack/react-query';
+import { ConfirmModal } from '@shared/ui/ConfirmModal';
 
 const toBackendTipo = (tipo: string): 'DOCENTE' | 'DIRECTIVO' =>
   tipo.toUpperCase().includes('DIRECTIVO') ? 'DIRECTIVO' : 'DOCENTE';
 
 export const PlantillaCreatePage = () => {
   const navigate = useNavigate();
-  const { addPlantilla } = usePlantillas();
-  const { user } = useUser();
   const qc = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingArchive, setPendingArchive] = useState<{ plantillas: { id: string; anioAcademico: number; tipoMonitoreo: string }[]; data: PlantillaFormState; backendTipo: 'DOCENTE' | 'DIRECTIVO' } | null>(null);
 
   const handleSubmit = async (data: PlantillaFormState) => {
     setIsSaving(true);
-    const role: 'director_institucion' | 'jefe_gestion' =
-      user?.role === 'director_institucion' ? 'director_institucion' : 'jefe_gestion';
+    setSubmitError(null);
 
     const backendTipo = toBackendTipo(data.tipoMonitoreo);
 
     try {
-      // 0. Si ya existe una plantilla Vigente del mismo tipo+año, archivarla primero
       const existing = await plantillasApi.findAll({
         tipoMonitoreo: backendTipo,
         anioAcademico: Number(data.anioAcademico),
         estado: 'Vigente',
       });
       if (existing && existing.length > 0) {
-        for (const old of existing) {
-          await plantillasApi.cambiarEstado(old.id, 'Historico');
-        }
+        setPendingArchive({
+          plantillas: existing.map((p) => ({ id: p.id, anioAcademico: p.anioAcademico, tipoMonitoreo: p.tipoMonitoreo })),
+          data,
+          backendTipo,
+        });
+        setIsSaving(false);
+        return;
       }
 
-      // 1. Crear en backend via API directa
-      // Filtrar aspectos vacíos (sin descripción) antes de enviar
+      await executeCreate(data, backendTipo, []);
+    } catch (err) {
+      console.error('[plantilla] Error al crear:', err);
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      setSubmitError(msg);
+      setIsSaving(false);
+    }
+  };
+
+  const executeCreate = async (data: PlantillaFormState, backendTipo: 'DOCENTE' | 'DIRECTIVO', toArchive: { id: string }[]) => {
+    try {
+      for (const old of toArchive) {
+        await plantillasApi.cambiarEstado(old.id, 'Historico');
+      }
+
       const created = await plantillasApi.create({
         tipoMonitoreo: backendTipo,
         anioAcademico: Number(data.anioAcademico),
@@ -70,43 +84,24 @@ export const PlantillaCreatePage = () => {
               nivelRomano: r.nivel,
               descripcion: r.descripcion,
             })),
-          }))
-          // Solo incluir desempeños que tengan al menos 1 aspecto con contenido
-          .filter((d) => d.aspectos.length > 0 || true),
+          })),
         ejeItems: (data.ejeItems ?? []).map((item) => ({
           numero: item.numero,
           descripcion: item.descripcion,
         })),
       });
 
-      // 2. Cambiar estado a Vigente
       await plantillasApi.cambiarEstado(created.id, 'Vigente');
 
-      // 3. Agregar al contexto local con el ID real del backend
-      addPlantilla({
-        id: created.id,
-        tipoMonitoreo: data.tipoMonitoreo,
-        anioAcademico: Number(data.anioAcademico),
-        baremo: data.baremo,
-        niveles: data.niveles,
-        desempenos: data.desempenos,
-        ejesItems: data.ejeItems,
-        fechaCreacion: new Date().toISOString().split('T')[0],
-        estado: 'Vigente',
-        descripcion: `Plantilla registrada el ${new Date().toLocaleDateString('es-ES')}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
-        creadoPorRole: role,
-        creadoPorId: user?.id,
-        ieId: user?.institucion,
-      });
-
-      // 4. Invalidar cache de TanStack Query
       qc.invalidateQueries({ queryKey: ['plantillas'] });
 
+      setPendingArchive(null);
+      setIsSaving(false);
       navigate(-1);
     } catch (err) {
       console.error('[plantilla] Error al crear:', err);
       const msg = err instanceof Error ? err.message : 'Error desconocido';
-      alert(`Error al crear la plantilla:\n${msg}`);
+      setSubmitError(msg);
       setIsSaving(false);
     }
   };
@@ -128,7 +123,37 @@ export const PlantillaCreatePage = () => {
         </div>
       </div>
 
+      {submitError && (
+        <div className="border border-rose-200 bg-rose-50 text-rose-700 text-sm rounded-xl p-3 font-semibold">
+          {submitError}
+        </div>
+      )}
+
       <PlantillaForm onCancel={() => navigate(-1)} onSubmit={handleSubmit} isSaving={isSaving} />
+
+      {pendingArchive && (
+        <ConfirmModal
+          title="Archivar plantilla vigente existente"
+          message={
+            <span className="text-xs text-slate-600 leading-relaxed block">
+              Ya existe {pendingArchive.plantillas.length} plantilla(s) vigente(s) de tipo{' '}
+              <strong>{pendingArchive.plantillas[0]?.tipoMonitoreo}</strong> para el año{' '}
+              <strong>{pendingArchive.plantillas[0]?.anioAcademico}</strong>. Si continúa, la(s) plantilla(s)
+              vigente(s) pasará(n) a estado <strong>Histórico</strong> y la nueva plantilla quedará como
+              Vigente. ¿Desea continuar?
+            </span>
+          }
+          confirmLabel="Sí, archivar y crear"
+          cancelLabel="Cancelar"
+          onConfirm={() => {
+            if (pendingArchive) {
+              setIsSaving(true);
+              executeCreate(pendingArchive.data, pendingArchive.backendTipo, pendingArchive.plantillas);
+            }
+          }}
+          onCancel={() => setPendingArchive(null)}
+        />
+      )}
     </div>
   );
 };

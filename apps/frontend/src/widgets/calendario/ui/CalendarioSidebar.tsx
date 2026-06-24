@@ -18,7 +18,6 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useCronogramas, type Cronograma } from '@/entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
 import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
-import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
 import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
 import { FEATURES } from '@shared/config/features';
 import {
@@ -115,48 +114,8 @@ export const CalendarioSidebar = ({
     plantillaVigenteNombre: string;
   } | null>(null);
 
-  // Plantillas cargadas de la API
-  const { data: realPlantillas } = usePlantillasList();
-
-  const plantillas = useMemo(() => {
-    if (!realPlantillas) return [];
-    return realPlantillas.map((p: IPlantilla) => ({
-      id: p.id,
-      tipoMonitoreo: p.tipoMonitoreo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo',
-      anioAcademico: p.anioAcademico,
-      baremo: p.baremo,
-      descripcion: p.descripcion || '',
-      estado: p.estado,
-      fechaCreacion: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
-      creadoPorRole: p.rolAutorAlCrear,
-      ieId: p.institucionId || undefined,
-      niveles: p.niveles.map(n => ({
-        nivel: n.nivelRomano,
-        denominacion: n.denominacion,
-        rangoMin: n.rangoMin,
-        color: n.color
-      })),
-      desempenos: p.desempenos.map(d => ({
-        id: d.id,
-        nombre: d.nombre,
-        descripcionCorta: d.descripcionCorta || '',
-        preguntaExtra: d.preguntaExtra || '',
-        aspectos: (d.aspectos || []).map(a => ({
-          id: a.id,
-          descripcion: a.descripcion
-        })),
-        rubrica: (d.rubrica || []).map(r => ({
-          nivel: r.nivelRomano,
-          descripcion: r.descripcion
-        }))
-      })),
-      ejesItems: (p.ejesItems || []).map((item) => ({
-        id: item.id,
-        numero: item.numero,
-        descripcion: item.descripcion,
-      })),
-    }));
-  }, [realPlantillas]);
+  // Plantillas cargadas de la API (ya vienen mapeadas al modelo Plantilla del frontend)
+  const { data: plantillas = [] } = usePlantillasList();
 
   const selectedVisit = useMemo(() => {
     if (!selectedVisitId) return null;
@@ -208,12 +167,21 @@ export const CalendarioSidebar = ({
     }
 
     // Caso 2: Visita con plantilla de la UGEL (creada por el Jefe de Gestión)
-    // El especialista o coordinador o jefe de taller asignado a la visita puede completarla
-    if (
-      user.role === 'especialista' ||
-      user.role === 'coordinador_pedagogico' ||
-      user.role === 'jefe_taller'
-    ) {
+    // El especialista o coordinador o jefe de taller asignado a la visita puede completarla.
+    // También incluye Jefe de Gestión que es Especialista (caso Maria Elena: jefe_gestion + Especialista).
+    const allowedRoles = [
+      'especialista',
+      'coordinador_pedagogico',
+      'jefe_taller',
+      'jefe_gestion',
+      'jefe_area',
+    ];
+    if (allowedRoles.includes(user.role)) {
+      // Si el usuario tiene Especialista vinculado, comparar por id
+      if (user.especialistaId && selectedVisit.monitorId) {
+        return user.especialistaId === selectedVisit.monitorId;
+      }
+      // Fallback: coincidencia por nombre (legacy)
       const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
       const visitEspecialista = selectedVisit.especialista.toLowerCase();
       return (
@@ -650,8 +618,8 @@ export const CalendarioSidebar = ({
                           </>
                         ) : (
                           <>
-                            <strong>Visita de UGEL:</strong> Solo el especialista asignado ({' '}
-                            <strong>{selectedVisit.especialista}</strong>) tiene permisos para ejecutar esta ficha.
+                            <strong>Visita de UGEL:</strong> Solo el Especialista asignado ({' '}
+                            <strong>{selectedVisit.especialista}</strong>) o un usuario con rol de Jefe de Gestión/Jefe de Área vinculado a esa persona tiene permisos para ejecutar esta ficha.
                           </>
                         )}
                       </span>

@@ -571,6 +571,10 @@ sequenceDiagram
 5. **Reprogramaciones:**
    - Cualquier usuario puede solicitar una reprogramación.
    - La solicitud guarda la fecha/hora original y la propuesta.
+   - **¿Quién puede aprobar/rechazar?**
+     - **Jefe de Gestión** y **Director UGEL**: pueden resolver cualquier solicitud (alcance total).
+     - **Jefe de Área**: solo puede resolver solicitudes de su mismo nivel educativo. Para nivel Secundaria, además debe coincidir la especialidad del monitor con la del Jefe de Área.
+     - Otros roles (Director IE, Especialista, etc.) no pueden resolver solicitudes.
    - Al aprobar (POST `/solicitudes-reprogramacion/:id/aprobar`), se ejecuta `aplicarReprogramacion` que setea `app.reprogramacion_apply = true` para bypassear el trigger y actualizar el cronograma.
    - Solo puede haber una solicitud PENDIENTE por cronograma (índice parcial).
 
@@ -675,7 +679,7 @@ flowchart TD
     E --> F{¿Puede asistir?}
     F -->|Sí| G[Realiza visita y llena ficha]
     F -->|No, reprogramación necesaria| H[Crear solicitud reprogramación]
-    H --> I[Jefe de Gestión revisa solicitud]
+    H --> I[Jefe de Gestión o Jefe de Área revisa solicitud]
     I --> J{¿Aprueba?}
     J -->|Sí| K[AplicarReprogramacion: actualiza fecha/hora con bypass trigger]
     J -->|No| L[Solicitud RECHAZADA, visita mantiene fecha original]

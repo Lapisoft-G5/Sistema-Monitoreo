@@ -16,9 +16,10 @@ interface JefesTableWidgetProps {
   setJefes: React.Dispatch<React.SetStateAction<JefeArea[]>>;
   onEdit?: (jefe: JefeArea) => void;
   onView: (jefe: JefeArea) => void;
+  onChanged?: () => void;
 }
 
-export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTableWidgetProps) => {
+export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView, onChanged }: JefesTableWidgetProps) => {
   const navigate = useNavigate();
   const [deletingDoc, setDeletingDoc] = useState<JefeArea | null>(null);
   const [restoringDoc, setRestoringDoc] = useState<JefeArea | null>(null);
@@ -35,9 +36,10 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
         if (index !== -1) {
           MOCK_JEFES_AREA[index].activo = false;
         }
-        setJefes((prev) =>
-          prev.map((e) => (e.id === deletingDoc.id ? { ...e, activo: false } : e)),
-        );
+        // Al desactivar, el Especialista pierde su cargo Jefe de Área y
+        // deja de aparecer en esta lista (filtro cargo==='Jefe de Área').
+        // Refetch vía callback para reflejar el estado real del backend.
+        onChanged?.();
       } else {
         const errMsg =
           (res.error as { message?: string })?.message ||
@@ -60,9 +62,9 @@ export const JefesTableWidget = ({ jefes, setJefes, onEdit, onView }: JefesTable
         if (index !== -1) {
           MOCK_JEFES_AREA[index].activo = true;
         }
-        setJefes((prev) =>
-          prev.map((e) => (e.id === restoringDoc.id ? { ...e, activo: true } : e)),
-        );
+        // Al reactivar, el Especialista queda como Especialista regular
+        // (sin cargo Jefe de Área). Refetch para reflejar el estado real.
+        onChanged?.();
       } else {
         const errMsg =
           (res.error as { message?: string })?.message ||

@@ -12,6 +12,7 @@ import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 import { CargoEspecialista } from '@sistema-monitoreo/shared-contracts';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
+import { SessionRepository } from '../../auth/repositories/session.repository.js';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { CondicionLaboral } from '../../../common/enums/condicion-laboral.enum.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
@@ -22,6 +23,7 @@ export class EspecialistaService {
   constructor(
     private readonly repository: EspecialistaRepository,
     private readonly catalogsRepository: CatalogsRepository,
+    private readonly sessionRepository: SessionRepository,
   ) {}
 
   async findAll(filters?: QueryEspecialistaDto): Promise<IEspecialistaResponse[]> {
@@ -201,11 +203,26 @@ export class EspecialistaService {
   }
 
   async activate(id: string): Promise<IEspecialistaResponse> {
-    return this.repository.activate(id);
+    const result = await this.repository.activate(id);
+    // Si el Especialista reactivado tenía una sesión activa, invalidarla
+    // para forzar re-login con las nuevas capabilities (cargo=Especialista).
+    const userId = await this.repository.findUserIdByEspecialistaId(id);
+    if (userId) {
+      await this.sessionRepository.invalidateAllUserSessions(userId, 'CARGO_FINALIZADO');
+    }
+    return result;
   }
 
   async deactivate(id: string): Promise<IEspecialistaResponse> {
-    return this.repository.deactivate(id);
+    const result = await this.repository.deactivate(id);
+    // Invalidar sesiones activas del Especialista inactivado para que
+    // pierda acceso de inmediato (sus capabilities cambiaron: perdió el
+    // cargo Jefe de Área / Jefe de Gestión).
+    const userId = await this.repository.findUserIdByEspecialistaId(id);
+    if (userId) {
+      await this.sessionRepository.invalidateAllUserSessions(userId, 'CARGO_FINALIZADO');
+    }
+    return result;
   }
 }
 

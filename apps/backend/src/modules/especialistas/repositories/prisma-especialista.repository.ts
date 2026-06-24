@@ -32,6 +32,7 @@ type EspecialistaWithRelations = Prisma.EspecialistaGetPayload<{
     especialidades: {
       include: { especialidad: true };
     };
+    cargos: true;
   };
 }>;
 
@@ -44,6 +45,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     const mainRelation = especialidadesList.find((e: any) => e.esPrincipal);
     const extraRelations = especialidadesList.filter((e: any) => !e.esPrincipal);
 
+    const cargoActivo = (esp.cargos || []).find((c) => c.fechaFin === null);
+    const cargoEfectivo = cargoActivo?.cargo ?? 'Especialista';
+
     return {
       id: esp.id,
       personaId: esp.personaId,
@@ -54,7 +58,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
       modalidad: esp.modalidad ?? null,
       estado: esp.estado,
       cargaLaboral: esp.cargaLaboral,
-      cargo: esp.cargo,
+      cargo: cargoEfectivo,
       condicionLaboral: esp.condicionLaboral ?? null,
       escalaMagisterial: esp.escalaMagisterial,
       createdAt: esp.createdAt,
@@ -84,7 +88,6 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
       where: {
         ...(filters?.estado && { estado: filters.estado }),
         ...(filters?.nivelEducativo && { nivelEducativo: filters.nivelEducativo }),
-        ...(filters?.cargo && { cargo: filters.cargo }),
       },
       include: {
         persona: {
@@ -99,10 +102,15 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         especialidades: {
           include: { especialidad: true },
         },
+        cargos: true,
       },
     });
 
-    return list.map((esp) => this.mapEspecialista(esp));
+    const mapped = list.map((esp) => this.mapEspecialista(esp));
+    if (filters?.cargo) {
+      return mapped.filter((esp) => esp.cargo === filters.cargo);
+    }
+    return mapped;
   }
 
   async findById(id: string): Promise<IEspecialistaResponse | null> {
@@ -121,6 +129,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         especialidades: {
           include: { especialidad: true },
         },
+        cargos: true,
       },
     });
     if (!esp) return null;
@@ -286,6 +295,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           especialidades: {
             include: { especialidad: true },
           },
+          cargos: true,
         },
       });
 
@@ -459,6 +469,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           especialidades: {
             include: { especialidad: true },
           },
+          cargos: true,
         },
       });
 
@@ -508,10 +519,26 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         data: { isActive: false },
       });
 
-      // Inactivar especialista
+      // Finalizar el EspecialistaCargo activo (si lo hay) para que el
+      // Especialista deje de figurar con ese cargo en el padrón. La fecha
+      // de fin se setea a NOW; el cargo queda en el historial.
+      const fin = new Date();
+      await tx.especialistaCargo.updateMany({
+        where: { especialistaId: id, fechaFin: null },
+        data: { fechaFin: fin },
+      });
+
+      // Sincronizar el campo espejo `Especialista.cargo` a 'Especialista'
+      // (cargo por defecto cuando no hay cargo activo). Esto permite que
+      // el Especialista inactivo aparezca en la página de Especialistas
+      // (filtro cargo === 'Especialista') en vez de quedarse en la
+      // página del cargo que se le quitó.
       await tx.especialista.update({
         where: { id },
-        data: { estado: EstadoRegistro.INACTIVO },
+        data: {
+          estado: EstadoRegistro.INACTIVO,
+          cargo: 'Especialista',
+        },
       });
 
       const fullEsp = await tx.especialista.findUniqueOrThrow({
@@ -529,6 +556,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           especialidades: {
             include: { especialidad: true },
           },
+          cargos: true,
         },
       });
 
@@ -551,7 +579,11 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
         data: { isActive: true },
       });
 
-      // Activar especialista
+      // Activar especialista. No se restaura automáticamente un cargo
+      // anterior (EspecialistaCargo): el Especialista queda como
+      // Especialista regular. El admin debe agregar un nuevo cargo via
+      // POST /especialistas/:id/cargos si quiere devolverlo a Jefe de
+      // Área u otro rol.
       await tx.especialista.update({
         where: { id },
         data: { estado: EstadoRegistro.ACTIVO },
@@ -572,6 +604,7 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
           especialidades: {
             include: { especialidad: true },
           },
+          cargos: true,
         },
       });
 
@@ -581,5 +614,13 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
 
   async deactivate(id: string): Promise<IEspecialistaResponse> {
     return this.delete(id);
+  }
+
+  async findUserIdByEspecialistaId(especialistaId: string): Promise<string | null> {
+    const esp = await this.prisma.especialista.findUnique({
+      where: { id: especialistaId },
+      select: { persona: { select: { usuario: { select: { id: true } } } } },
+    });
+    return esp?.persona?.usuario?.id ?? null;
   }
 }

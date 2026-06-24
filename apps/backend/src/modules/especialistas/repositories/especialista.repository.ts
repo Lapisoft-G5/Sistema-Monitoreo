@@ -21,4 +21,5 @@ export abstract class EspecialistaRepository {
   abstract delete(id: string): Promise<IEspecialistaResponse>;
   abstract activate(id: string): Promise<IEspecialistaResponse>;
   abstract deactivate(id: string): Promise<IEspecialistaResponse>;
+  abstract findUserIdByEspecialistaId(especialistaId: string): Promise<string | null>;
 }

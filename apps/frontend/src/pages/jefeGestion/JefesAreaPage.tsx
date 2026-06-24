@@ -75,6 +75,7 @@ export const JefesAreaPage = () => {
         setJefes={setJefes}
         onView={(jefe) => navigate(`/jefes-area/${jefe.id}`)}
         onEdit={(jefe) => navigate(`/jefes-area/${jefe.id}/editar`)}
+        onChanged={fetchJefes}
       />
     </div>
   );

@@ -728,13 +728,13 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
         await tx.fichaRespuestaAspecto.deleteMany({ where: { fichaId: { in: fichaIds } } });
         await tx.fichaRespuestaDesempeno.deleteMany({ where: { fichaId: { in: fichaIds } } });
 
+        const deleted = await tx.fichaMonitoreo.deleteMany({ where: { plantillaId: id } });
+        deletedFichas = deleted.count;
+
         const contextoIds = fichas.map((f) => f.fichaContextoId).filter(Boolean);
         if (contextoIds.length > 0) {
           await tx.fichaContexto.deleteMany({ where: { id: { in: contextoIds } } });
         }
-
-        const result = await tx.fichaMonitoreo.deleteMany({ where: { plantillaId: id } });
-        deletedFichas = result.count;
       }
 
       await tx.plantillaMonitoreo.delete({ where: { id } });

@@ -10,7 +10,8 @@ import {
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
-import { useCronogramas, type Cronograma } from '@/entities/model-cronogramas';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
+import type { Cronograma } from '@entities/model-cronogramas';
 import type { SolicitudReprogramacion } from '@/entities/model-reprogramaciones';
 import { useUser } from '@/entities/model-user';
 import {
@@ -62,7 +63,7 @@ export const BandejaReprogramaciones = () => {
     submitRescheduleRequest,
     approveRescheduleRequest,
     rejectRescheduleRequest,
-  } = useCronogramas();
+  } = useCronogramasData();
 
   // Filtro local de estado de solicitud
   const [filterRequestStatus, setFilterRequestStatus] = useState<'Todos' | 'PENDIENTE' | 'APROBADO' | 'RECHAZADO'>('Todos');

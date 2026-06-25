@@ -2,15 +2,13 @@ import { useState } from 'react';
 import { FastActions } from '@shared/ui/FastActions';
 import type { Docente, CondicionDirectiva } from '@entities/model-docentes';
 import { CONDICION_DIRECTIVA_COLOR } from '@entities/model-docentes';
-// Reutilizamos la lógica de filtros/paginación de docentes (mismo patrón del equipo).
-import { useDocentesTable } from '@widgets/docentes/docentes-table/lib/useTable';
+import { useEntityTable } from '@shared/hooks/useEntityTable';
+import { EntityTable } from '@shared/ui/EntityTable';
 import { teachersApi } from '@shared/api/teachers.api';
-import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { Card } from '@shared/ui/card';
 import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Badge } from '@shared/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
+import { TableCell, TableHead, TableRow } from '@shared/ui/table';
 
 // Escala magisterial romana → número con cero (V → "05"), como en el mockup.
 const ESCALA_NUM: Record<string, string> = {
@@ -26,6 +24,18 @@ const ESCALA_NUM: Record<string, string> = {
 
 // PRIMARIA → Primaria
 const nivelLabel = (nivel: string) => nivel.charAt(0) + nivel.slice(1).toLowerCase();
+
+const directorFilter = (dir: Docente, params: URLSearchParams) => {
+  const hasCargo = dir.cargosList?.some((c) => c.nombre === 'Director') ?? (dir.cargo === 'Director');
+  if (!hasCargo) return false;
+  const searchQuery = params.get('search') || '';
+  const matchSearch =
+    !searchQuery ||
+    dir.nombres.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    dir.apellidos.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    dir.dni.includes(searchQuery);
+  return matchSearch;
+};
 
 interface DirectoresTableWidgetProps {
   directores: Docente[];
@@ -45,10 +55,7 @@ export const DirectoresTableWidget = ({
   const [deleting, setDeleting] = useState<Docente | null>(null);
   const [restoring, setRestoring] = useState<Docente | null>(null);
 
-  const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } = useDocentesTable(
-    directores,
-    'Director',
-  );
+  const pagination = useEntityTable({ data: directores, filterFn: directorFilter });
 
   const getInstName = (id: string) =>
     instituciones.find((i) => i.id === id)?.nombre ?? 'I.E. No Asignada';
@@ -94,128 +101,74 @@ export const DirectoresTableWidget = ({
   };
 
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in-0 duration-300">
-      <Card className="p-0 border border-border shadow-xs overflow-hidden">
-        <div className="overflow-x-auto w-full">
-          <Table>
-            <TableHeader className="bg-muted/40">
-              <TableRow>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider pl-5">
-                  Nombres y Apellidos
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  DNI
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Cargo
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Institución Educativa
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Condición
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Escala
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Estado
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">
-                  Acciones
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageItems.map((dir) => (
-                <TableRow key={dir.id} className="hover:bg-muted/30 transition-colors">
-                  <TableCell className="pl-5">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="size-9">
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                          {dir.nombres[0]}
-                          {dir.apellidos[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <div className="font-bold text-text text-sm truncate">
-                          {dir.apellidos}, {dir.nombres}
-                        </div>
-                        <div className="text-xs text-text-muted truncate">
-                          {dir.correo} | Cel: {dir.celular}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-semibold text-text">{dir.dni}</TableCell>
-                  <TableCell className="text-xs font-medium text-text">
-                    Director de {nivelLabel(dir.nivelEducativo)}
-                  </TableCell>
-                  <TableCell className="text-xs font-medium text-text">
-                    {getInstName(dir.institucionId)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className="text-[0.65rem] py-0.5 px-2.5 uppercase font-bold border-0 text-white"
-                      style={{
-                        backgroundColor:
-                          CONDICION_DIRECTIVA_COLOR[dir.condicion as CondicionDirectiva] ??
-                          '#6b7280',
-                      }}
-                    >
-                      {dir.condicion}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="text-xs font-bold px-2.5">
-                      {ESCALA_NUM[dir.escala] ?? dir.escala}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        dir.activo
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : 'bg-slate-100 text-slate-600 border-slate-200'
-                      }
-                    >
-                      {dir.activo ? 'Activo' : 'Inactivo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right pr-5">
-                    <FastActions
-                      onView={() => onView(dir)}
-                      onEdit={dir.activo && onEdit ? () => onEdit(dir) : undefined}
-                      onDelete={dir.activo ? () => setDeleting(dir) : undefined}
-                      onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
-                      viewTitle="Ver ficha"
-                      restoreTitle="Reactivar director"
-                      deleteTitle="Desactivar director"
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-              {pageItems.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-text-muted py-12">
-                    No se encontraron directores con los filtros seleccionados.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        <TablePagination
-          from={from}
-          to={to}
-          totalItems={filteredTotal}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setPage}
-          itemName="directores"
-        />
-      </Card>
+    <>
+      <EntityTable
+        header={
+          <>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider pl-5">Nombres y Apellidos</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">DNI</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Cargo</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Institución Educativa</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Condición</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Escala</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Estado</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">Acciones</TableHead>
+          </>
+        }
+        pagination={pagination}
+        emptyMessage="No se encontraron directores con los filtros seleccionados."
+        itemName="directores"
+      >
+        {pagination.pageItems.map((dir) => (
+          <TableRow key={dir.id} className="hover:bg-muted/30 transition-colors">
+            <TableCell className="pl-5">
+              <div className="flex items-center gap-3">
+                <Avatar className="size-9">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    {dir.nombres[0]}{dir.apellidos[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <div className="font-bold text-text text-sm truncate">{dir.apellidos}, {dir.nombres}</div>
+                  <div className="text-xs text-text-muted truncate">{dir.correo} | Cel: {dir.celular}</div>
+                </div>
+              </div>
+            </TableCell>
+            <TableCell className="font-semibold text-text">{dir.dni}</TableCell>
+            <TableCell className="text-xs font-medium text-text">Director de {nivelLabel(dir.nivelEducativo)}</TableCell>
+            <TableCell className="text-xs font-medium text-text">{getInstName(dir.institucionId)}</TableCell>
+            <TableCell>
+              <Badge
+                className="text-[0.65rem] py-0.5 px-2.5 uppercase font-bold border-0 text-white"
+                style={{ backgroundColor: CONDICION_DIRECTIVA_COLOR[dir.condicion as CondicionDirectiva] ?? '#6b7280' }}
+              >
+                {dir.condicion}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Badge variant="secondary" className="text-xs font-bold px-2.5">
+                {ESCALA_NUM[dir.escala] ?? dir.escala}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Badge className={dir.activo ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-600 border-slate-200'}>
+                {dir.activo ? 'Activo' : 'Inactivo'}
+              </Badge>
+            </TableCell>
+            <TableCell className="text-right pr-5">
+              <FastActions
+                onView={() => onView(dir)}
+                onEdit={dir.activo && onEdit ? () => onEdit(dir) : undefined}
+                onDelete={dir.activo ? () => setDeleting(dir) : undefined}
+                onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
+                viewTitle="Ver ficha"
+                restoreTitle="Reactivar director"
+                deleteTitle="Desactivar director"
+              />
+            </TableCell>
+          </TableRow>
+        ))}
+      </EntityTable>
 
       {deleting && (
         <ConfirmModal
@@ -239,6 +192,6 @@ export const DirectoresTableWidget = ({
           onCancel={() => setRestoring(null)}
         />
       )}
-    </div>
+    </>
   );
 };

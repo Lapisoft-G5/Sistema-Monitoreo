@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Sparkles,
   X,
@@ -15,7 +16,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import { useCronogramas, type Cronograma } from '@/entities/model-cronogramas';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
+import type { Cronograma } from '@entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
 import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
 import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
@@ -93,15 +95,16 @@ export const CalendarioSidebar = ({
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
 
-  const {
-    cronogramas,
-    setCronogramas,
-    reprogramaciones,
-    submitRescheduleRequest,
-    approveRescheduleRequest,
-    rejectRescheduleRequest,
-    deleteCronograma,
-  } = useCronogramas();
+const qc = useQueryClient();
+
+const {
+  cronogramas,
+  reprogramaciones,
+  submitRescheduleRequest,
+  approveRescheduleRequest,
+  rejectRescheduleRequest,
+  deleteCronograma,
+} = useCronogramasData();
 
   // Modales locales
   const [showFichaModal, setShowFichaModal] = useState<boolean>(false);
@@ -282,8 +285,8 @@ export const CalendarioSidebar = ({
     if (!FEATURES.apiOnly) {
       localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
     }
-    setCronogramas((prev) =>
-      prev.map((c) => (c.id === visitId ? { ...c, estado: 'EN PROCESO' } : c))
+    qc.setQueryData(['cronogramas'], (prev: any) =>
+      Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'EN PROCESO' } : c)) : prev
     );
 
     // Persistir en backend (best-effort, no bloquea la UI)
@@ -351,8 +354,8 @@ export const CalendarioSidebar = ({
     }
   ) => {
     localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
-    setCronogramas((prev) =>
-      prev.map((c) => (c.id === visitId ? { ...c, estado: 'COMPLETADO' } : c))
+    qc.setQueryData(['cronogramas'], (prev: any) =>
+      Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'COMPLETADO' } : c)) : prev
     );
 
     try {

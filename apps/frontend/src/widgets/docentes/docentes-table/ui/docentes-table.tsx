@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { FastActions } from '@shared/ui/FastActions';
 import type { Docente } from '@entities/model-docentes';
 
-import { useDocentesTable } from '../lib/useTable';
-import { TablePagination } from '@shared/ui/table-pagination';
+import { useEntityTable } from '@shared/hooks/useEntityTable';
+import { EntityTable } from '@shared/ui/EntityTable';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { Card } from '@shared/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
+import { TableCell, TableHead, TableRow } from '@shared/ui/table';
 import { Badge } from '@shared/ui/badge';
 
 import { teachersApi } from '@shared/api/teachers.api';
@@ -23,6 +22,40 @@ interface DocentesTableWidgetProps {
   itemName?: string;
 }
 
+const docenteFilter = (targetCargo: DocentesTableWidgetProps['targetCargo']) =>
+  (doc: Docente, params: URLSearchParams) => {
+    const searchQuery = params.get('search') || '';
+    const condicionFilter = params.get('condicion') || '';
+    const seccionFilter = params.get('seccion') || '';
+    const nivelFilter = params.get('nivelEducativo') || '';
+
+    let hasCargo: boolean;
+    if (targetCargo === 'Docente de Aula') {
+      const hasActiveMonitor = doc.cargosList?.some(
+        (c) => c.fechaFin === null && ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(c.nombre),
+      );
+      hasCargo = hasActiveMonitor !== undefined ? !hasActiveMonitor : doc.cargo === 'Docente de Aula';
+    } else {
+      hasCargo = doc.cargosList?.some((c) => c.nombre === targetCargo) ?? (doc.cargo === targetCargo);
+    }
+    if (!hasCargo) return false;
+
+    const matchSearch =
+      !searchQuery ||
+      doc.nombres.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.apellidos.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.dni.includes(searchQuery);
+
+    const matchCondicion = !condicionFilter || doc.condicion === condicionFilter;
+    const matchSeccion =
+      !seccionFilter ||
+      (doc.secciones || []).some((s) => `${s.grado} ${s.seccion}` === seccionFilter);
+    const matchNivel =
+      !nivelFilter || doc.nivelEducativo?.toUpperCase() === nivelFilter.toUpperCase();
+
+    return matchSearch && matchCondicion && matchSeccion && matchNivel;
+  };
+
 export const DocentesTableWidget = ({
   docentes,
   setDocentes,
@@ -37,10 +70,7 @@ export const DocentesTableWidget = ({
   const [restoringDoc, setRestoringDoc] = useState<Docente | null>(null);
   const [finalizingDoc, setFinalizingDoc] = useState<Docente | null>(null);
 
-  const { pageItems, filteredTotal, currentPage, totalPages, from, to, setPage } = useDocentesTable(
-    docentes,
-    targetCargo,
-  );
+  const pagination = useEntityTable({ data: docentes, filterFn: docenteFilter(targetCargo) });
 
   const confirmFinalizeCargo = async () => {
     if (!finalizingDoc) return;
@@ -119,161 +149,85 @@ export const DocentesTableWidget = ({
     }
   };
 
+  const getCargoStatus = (doc: Docente) => {
+    const targetCargoObj = doc.cargosList?.find((c) => c.nombre === targetCargo && c.fechaFin === null) ||
+                           doc.cargosList?.find((c) => c.nombre === targetCargo);
+    const isCargoFinalized = targetCargoObj ? targetCargoObj.fechaFin !== null : false;
+    const isMonitorCargo = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(targetCargo);
+    return { targetCargoObj, isCargoFinalized, isMonitorCargo };
+  };
+
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in-0 duration-300">
-      <Card className="p-0 border border-border shadow-xs overflow-hidden">
-        <div className="overflow-x-auto w-full">
-          <Table>
-            <TableHeader className="bg-muted/40">
-              <TableRow>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider pl-5">
-                  DNI
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Apellidos y Nombres
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Correo
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Teléfono
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Condición / Escala
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Grado y Sección a cargo
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">
-                  Estado
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">
-                  Acciones
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageItems.map((doc) => (
-                <TableRow key={doc.id} className="hover:bg-muted/30 transition-colors">
-                  <TableCell className="font-semibold pl-5 text-text">{doc.dni}</TableCell>
-                  <TableCell>
-                    <div className="font-bold text-text">
-                      {doc.apellidos}, {doc.nombres}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-text text-sm">{doc.correo}</TableCell>
-                  <TableCell className="text-text text-sm">{doc.celular}</TableCell>
-                  <TableCell>
-                    <div className="text-xs font-medium text-text">{doc.condicion}</div>
-                    <div className="text-[0.65rem] text-text-muted mt-0.5">
-                      Escala: {doc.escala}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {(doc.secciones || []).map((sec) => (
-                        <Badge
-                          key={sec.id}
-                          variant="outline"
-                          className="text-[0.7rem] py-0.5 px-2.5 font-bold bg-muted/40 text-text border-border"
-                        >
-                          {sec.grado} "{sec.seccion}"
-                        </Badge>
-                      ))}
-                      {(doc.secciones || []).length === 0 && (
-                        <span className="text-xs text-text-muted italic">Sin asignar</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {(() => {
-                      const targetCargoObj = doc.cargosList?.find((c) => c.nombre === targetCargo && c.fechaFin === null) ||
-                                             doc.cargosList?.find((c) => c.nombre === targetCargo);
-                      const isCargoFinalized = targetCargoObj ? targetCargoObj.fechaFin !== null : false;
-                      if (isCargoFinalized) {
-                        return (
-                          <Badge className="bg-slate-100 text-slate-600 border-slate-200">
-                            Cargo Finalizado
-                          </Badge>
-                        );
-                      }
-                      return (
-                        <Badge
-                          className={
-                            doc.activo
-                              ? 'bg-green-50 text-green-700 border-green-200'
-                              : 'bg-slate-100 text-slate-600 border-slate-200'
-                          }
-                        >
-                          {doc.activo ? 'Activo' : 'Inactivo'}
-                        </Badge>
-                      );
-                    })()}
-                  </TableCell>
-                  <TableCell className="text-right pr-5">
-                    {(() => {
-                      const targetCargoObj = doc.cargosList?.find((c) => c.nombre === targetCargo && c.fechaFin === null) ||
-                                             doc.cargosList?.find((c) => c.nombre === targetCargo);
-                      const isCargoFinalized = targetCargoObj ? targetCargoObj.fechaFin !== null : false;
-                      const isMonitorCargo = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(targetCargo);
-
-                      return (
-                        <FastActions
-                          onView={() => onView(doc)}
-                          onEdit={
-                            doc.activo && !isCargoFinalized
-                              ? () => {
-                                  onEdit?.(doc);
-                                  navigate(`${routePrefix}/${doc.id}/editar`);
-                                }
-                              : undefined
-                          }
-                          onDelete={
-                            !isMonitorCargo && doc.activo
-                              ? () => setDeletingDoc(doc)
-                              : undefined
-                          }
-                          onRestore={
-                            !isMonitorCargo && !doc.activo
-                              ? () => setRestoringDoc(doc)
-                              : undefined
-                          }
-                          onFinalize={
-                            isMonitorCargo && !isCargoFinalized
-                              ? () => setFinalizingDoc(doc)
-                              : undefined
-                          }
-                          viewTitle="Ver ficha"
-                          restoreTitle="Reactivar docente"
-                          deleteTitle="Desactivar docente"
-                          finalizeTitle={`Finalizar Cargo de ${targetCargo}`}
-                        />
-                      );
-                    })()}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {pageItems.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-text-muted py-12">
-                    No se encontraron {itemName} con los filtros seleccionados.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        <TablePagination
-          from={from}
-          to={to}
-          totalItems={filteredTotal}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setPage}
-          itemName={itemName}
-        />
-      </Card>
+    <>
+      <EntityTable
+        header={
+          <>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider pl-5">DNI</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Apellidos y Nombres</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Correo</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Teléfono</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Condición / Escala</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Grado y Sección a cargo</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Estado</TableHead>
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">Acciones</TableHead>
+          </>
+        }
+        pagination={pagination}
+        emptyMessage={`No se encontraron ${itemName} con los filtros seleccionados.`}
+        itemName={itemName}
+      >
+        {pagination.pageItems.map((doc) => {
+          const { isCargoFinalized, isMonitorCargo } = getCargoStatus(doc);
+          return (
+            <TableRow key={doc.id} className="hover:bg-muted/30 transition-colors">
+              <TableCell className="font-semibold pl-5 text-text">{doc.dni}</TableCell>
+              <TableCell>
+                <div className="font-bold text-text">{doc.apellidos}, {doc.nombres}</div>
+              </TableCell>
+              <TableCell className="text-text text-sm">{doc.correo}</TableCell>
+              <TableCell className="text-text text-sm">{doc.celular}</TableCell>
+              <TableCell>
+                <div className="text-xs font-medium text-text">{doc.condicion}</div>
+                <div className="text-[0.65rem] text-text-muted mt-0.5">Escala: {doc.escala}</div>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-1">
+                  {(doc.secciones || []).map((sec) => (
+                    <Badge key={sec.id} variant="outline" className="text-[0.7rem] py-0.5 px-2.5 font-bold bg-muted/40 text-text border-border">
+                      {sec.grado} "{sec.seccion}"
+                    </Badge>
+                  ))}
+                  {(doc.secciones || []).length === 0 && (
+                    <span className="text-xs text-text-muted italic">Sin asignar</span>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                {isCargoFinalized ? (
+                  <Badge className="bg-slate-100 text-slate-600 border-slate-200">Cargo Finalizado</Badge>
+                ) : (
+                  <Badge className={doc.activo ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-600 border-slate-200'}>
+                    {doc.activo ? 'Activo' : 'Inactivo'}
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-right pr-5">
+                <FastActions
+                  onView={() => onView(doc)}
+                  onEdit={doc.activo && !isCargoFinalized ? () => { onEdit?.(doc); navigate(`${routePrefix}/${doc.id}/editar`); } : undefined}
+                  onDelete={!isMonitorCargo && doc.activo ? () => setDeletingDoc(doc) : undefined}
+                  onRestore={!isMonitorCargo && !doc.activo ? () => setRestoringDoc(doc) : undefined}
+                  onFinalize={isMonitorCargo && !isCargoFinalized ? () => setFinalizingDoc(doc) : undefined}
+                  viewTitle="Ver ficha"
+                  restoreTitle="Reactivar docente"
+                  deleteTitle="Desactivar docente"
+                  finalizeTitle={`Finalizar Cargo de ${targetCargo}`}
+                />
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </EntityTable>
 
       {deletingDoc && (
         <ConfirmModal
@@ -309,6 +263,6 @@ export const DocentesTableWidget = ({
           onCancel={() => setFinalizingDoc(null)}
         />
       )}
-    </div>
+    </>
   );
 };

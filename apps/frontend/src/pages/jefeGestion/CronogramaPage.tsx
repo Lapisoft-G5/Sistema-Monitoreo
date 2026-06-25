@@ -247,11 +247,15 @@ export const CronogramaPage = () => {
     return allNiveles;
   }, [formModalidad, user]);
 
-  // ── Especialistas filtrados por modalidad + nivel ──
+  // ── Especialistas filtrados por modalidad + nivel + cargo monitor ──
+  const MONITOR_CARGOS = ['Especialista', 'Jefe de Área', 'Jefe de Gestión'];
   const especialistasFiltrados = useMemo(() => {
     if (!formModalidad || !formNivel) return [];
     return especialistas.filter(
-      (esp) => esp.modalidad === formModalidad && esp.nivelEducativo === formNivel
+      (esp) =>
+        esp.modalidad === formModalidad &&
+        esp.nivelEducativo === formNivel &&
+        MONITOR_CARGOS.includes(esp.cargo)
     );
   }, [formModalidad, formNivel, especialistas]);
 

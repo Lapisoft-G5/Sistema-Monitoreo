@@ -363,6 +363,7 @@ Ejemplos de la organización actual:
 - `prisma-plantilla.repository.ts` → `plantilla-mapper.helper.ts`, `plantilla-read.helper.ts`, `plantilla-write.helper.ts`, `plantilla-delete.helper.ts`, `plantilla-clone.helper.ts`, `plantilla-versionar.helper.ts`, `plantilla-sync-arbol.helper.ts`, `plantilla-sync-arbol-tx.helper.ts`
 - `prisma-teachers.repository.ts` → `docente-mapper.helper.ts`, `docente-read.helper.ts`, `docente-create.helper.ts`, `docente-update.helper.ts`, `docente-update-estado.helper.ts`, `docente-shared.helper.ts`
 - `prisma-especialista.repository.ts` → `especialista-mapper.helper.ts`, `especialista-read.helper.ts`, `especialista-create.helper.ts`, `especialista-update.helper.ts`, `especialista-delete.helper.ts`, `especialista-cargo.helper.ts`
+- `prisma-institutions.repository.ts` → `institucion-mapper.helper.ts`, `institucion-director.helper.ts`, `institucion-read.helper.ts`, `institucion-write.helper.ts`, `institucion-state.helper.ts`
 
 ### Modelos
 

@@ -5,9 +5,8 @@ import { type Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
-import { teachersApi } from '@shared/api/teachers.api';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import { fetchDocenteById } from '@features/docentes/docente-service';
+import { fetchInstitucionById } from '@features/institutions/institution-service';
 
 const nivelLabel = (n: string) => n.charAt(0) + n.slice(1).toLowerCase();
 
@@ -24,20 +23,17 @@ export const DocenteDetailPage = () => {
       if (!id) return;
       setLoading(true);
       try {
-        const res = await teachersApi.findAll();
-        if (res.ok && res.data) {
-          const found = res.data.find((d) => d.id === id);
-          if (found) {
-            const mapped = mapApiDocenteToFrontend(found);
-            setDirector(mapped);
-            // Fetch institution name
-            const instRes = await institutionsApi.findById(found.institucionId);
-            if (instRes.ok && instRes.data) {
-              setInstName(instRes.data.nombre);
+        const found = await fetchDocenteById(id);
+        if (found) {
+          setDirector(found);
+          if (found.institucionId) {
+            const inst = await fetchInstitucionById(found.institucionId);
+            if (inst) {
+              setInstName(inst.nombre);
             }
-          } else {
-            setDirector(null);
           }
+        } else {
+          setDirector(null);
         }
       } catch (err) {
         console.error('Error fetching director detail:', err);

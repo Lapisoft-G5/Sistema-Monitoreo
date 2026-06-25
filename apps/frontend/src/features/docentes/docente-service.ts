@@ -4,6 +4,36 @@ import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { teachersApi } from '@shared/api/teachers.api';
 import type { IDocenteResponse } from '@sistema-monitoreo/shared-contracts';
 
+export const fetchDocentes = async (): Promise<Docente[]> => {
+  const res = await teachersApi.findAll();
+  if (res.ok && res.data) {
+    return res.data.map(mapApiDocenteToFrontend);
+  }
+  return [];
+};
+
+export const fetchCargos = async () => {
+  return teachersApi.getCargos();
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const updateDocenteRaw = async (id: string, dto: any) => {
+  return teachersApi.update(id, dto);
+};
+
+export const fetchDocenteByDni = async (dni: string): Promise<Docente | null> => {
+  const res = await teachersApi.findByDni(dni);
+  if (res.ok && res.data) {
+    return mapApiDocenteToFrontend(res.data as IDocenteResponse);
+  }
+  return null;
+};
+
+export const fetchDocenteById = async (id: string): Promise<Docente | null> => {
+  const docentes = await fetchDocentes();
+  return docentes.find((d) => d.id === id) ?? null;
+};
+
 const MAP_ROMAN_TO_INT: Record<string, number> = {
   I: 1,
   II: 2,

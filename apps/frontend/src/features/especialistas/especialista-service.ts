@@ -2,8 +2,23 @@ import { useState } from 'react';
 import type { Especialista } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistasApi } from '@shared/api/especialistas.api';
+import type { IEspecialistaResponse, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
 
-import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
+export const fetchEspecialistas = async (query?: IQueryEspecialistaRequest): Promise<Especialista[]> => {
+  const res = await especialistasApi.findAll(query);
+  if (res.ok && res.data) {
+    return res.data.map(mapApiEspecialistaToFrontend);
+  }
+  return [];
+};
+
+export const fetchEspecialistaById = async (id: string): Promise<Especialista | null> => {
+  const res = await especialistasApi.findById(id);
+  if (res.ok && res.data) {
+    return mapApiEspecialistaToFrontend(res.data);
+  }
+  return null;
+};
 
 export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Especialista => {
   return {

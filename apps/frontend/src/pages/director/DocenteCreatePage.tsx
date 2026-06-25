@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { CreateDocenteCard } from '@widgets/docentes';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import { fetchInstituciones } from '@features/institutions/institution-service';
 import type { Institucion } from '@entities/model-instituciones';
 
 export const DocenteCreatePage = () => {
@@ -15,10 +14,8 @@ export const DocenteCreatePage = () => {
   useEffect(() => {
     const fetchIes = async () => {
       setLoading(true);
-      const res = await institutionsApi.findAll({ limit: 1000 });
-      if (res.ok && res.data) {
-        setInstituciones(res.data.data.map(mapApiInstitucionToFrontend));
-      }
+      const mapped = await fetchInstituciones({ limit: 1000 });
+      setInstituciones(mapped);
       setLoading(false);
     };
     fetchIes();

@@ -4,8 +4,7 @@ import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen } from 'lucide-
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
-import { jefesAreaApi } from '@shared/api/jefes-area.api';
-import { mapApiJefeAreaToFrontend } from '@features/jefes-area';
+import { fetchJefeAreaById } from '@features/jefes-area/jefe-area-service';
 import type { JefeArea } from '@entities/model-jefes-area';
 
 export const JefeAreaDetailPage = () => {
@@ -20,13 +19,8 @@ export const JefeAreaDetailPage = () => {
       if (!id) return;
       setLoading(true);
       try {
-        const res = await jefesAreaApi.findById(id);
-        if (res.ok && res.data) {
-          setJefe(mapApiJefeAreaToFrontend(res.data));
-        } else {
-          console.error('Error fetching jefe de area details:', res.error);
-          setJefe(null);
-        }
+        const jefe = await fetchJefeAreaById(id);
+        setJefe(jefe);
       } catch (err) {
         console.error('Network error fetching jefe de area details:', err);
         setJefe(null);

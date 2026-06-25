@@ -5,8 +5,7 @@ import { type Especialista } from '@entities/model-especialistas';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
-import { especialistasApi } from '@shared/api/especialistas.api';
-import { mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
+import { fetchEspecialistaById } from '@features/especialistas/especialista-service';
 
 export const EspecialistaDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,13 +18,8 @@ export const EspecialistaDetailPage = () => {
     const fetchDetail = async () => {
       if (!id) return;
       setLoading(true);
-      const res = await especialistasApi.findById(id);
-      if (res.ok && res.data) {
-        setEspecialista(mapApiEspecialistaToFrontend(res.data));
-      } else {
-        console.error('Error fetching specialist details:', res.error);
-        setEspecialista(null);
-      }
+      const esp = await fetchEspecialistaById(id);
+      setEspecialista(esp);
       setLoading(false);
     };
 

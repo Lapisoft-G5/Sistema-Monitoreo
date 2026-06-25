@@ -6,8 +6,7 @@ import { PageHeader } from '@shared/ui/pageHeader';
 
 import { FilterJefesArea } from '@features/jefes-area';
 import { JefesStatsWidget, JefesTableWidget } from '@widgets/jefes-area';
-import { jefesAreaApi } from '@shared/api/jefes-area.api';
-import { mapApiJefeAreaToFrontend } from '@features/jefes-area/jefe-area-service';
+import { fetchJefesArea } from '@features/jefes-area/jefe-area-service';
 import type { JefeArea } from '@entities/model-jefes-area';
 
 export const JefesAreaPage = () => {
@@ -18,15 +17,9 @@ export const JefesAreaPage = () => {
   const fetchJefes = async () => {
     setLoading(true);
     try {
-      const res = await jefesAreaApi.findAll();
-      if (res.ok && res.data) {
-        // Asegurar que solo se incluyan los que tienen cargo de Jefe de Área
-        const filtered = res.data.filter((esp) => esp.cargo === 'Jefe de Área');
-        const mapped = filtered.map(mapApiJefeAreaToFrontend);
-        setJefes(mapped);
-      } else {
-        console.error('Error al cargar los jefes de área desde la API:', res.error);
-      }
+      const mapped = await fetchJefesArea();
+      const filtered = mapped.filter((esp) => esp.cargo === 'Jefe de Área');
+      setJefes(filtered);
     } catch (err) {
       console.error('Error de red al cargar jefes de área:', err);
     } finally {

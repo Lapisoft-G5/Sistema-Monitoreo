@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Institucion } from '@entities/model-instituciones';
 import type { InstitutionRawInput } from './ui/CreateInstitutionFormBase';
 import { institutionsApi } from '@shared/api/institutions.api';
-import type { IInstitucionResponse } from '@sistema-monitoreo/shared-contracts';
+import type { IInstitucionResponse, IQueryInstitucionRequest } from '@sistema-monitoreo/shared-contracts';
 
 export const mapApiInstitucionToFrontend = (apiInst: IInstitucionResponse): Institucion => {
   return {
@@ -23,6 +23,22 @@ export const mapApiInstitucionToFrontend = (apiInst: IInstitucionResponse): Inst
     activo: apiInst.estado === 'Activa',
     estado: apiInst.estado === 'Activa' ? 'Activa' : 'Inactiva',
   };
+};
+
+export const fetchInstituciones = async (query?: IQueryInstitucionRequest): Promise<Institucion[]> => {
+  const res = await institutionsApi.findAll(query);
+  if (res.ok && res.data) {
+    return res.data.data.map(mapApiInstitucionToFrontend);
+  }
+  return [];
+};
+
+export const fetchInstitucionById = async (id: string): Promise<Institucion | null> => {
+  const res = await institutionsApi.findById(id);
+  if (res.ok && res.data) {
+    return mapApiInstitucionToFrontend(res.data);
+  }
+  return null;
 };
 
 export const useInstitutionService = () => {

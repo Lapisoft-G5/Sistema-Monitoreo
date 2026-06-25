@@ -2,7 +2,23 @@ import { useState } from 'react';
 import type { JefeArea } from '@entities/model-jefes-area';
 import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
-import type { IEspecialistaResponse as IJefeAreaResponse } from '@sistema-monitoreo/shared-contracts';
+import type { IEspecialistaResponse as IJefeAreaResponse, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
+
+export const fetchJefesArea = async (query?: IQueryEspecialistaRequest): Promise<JefeArea[]> => {
+  const res = await jefesAreaApi.findAll(query);
+  if (res.ok && res.data) {
+    return res.data.map(mapApiJefeAreaToFrontend);
+  }
+  return [];
+};
+
+export const fetchJefeAreaById = async (id: string): Promise<JefeArea | null> => {
+  const res = await jefesAreaApi.findById(id);
+  if (res.ok && res.data) {
+    return mapApiJefeAreaToFrontend(res.data);
+  }
+  return null;
+};
 
 const normalizeNivel = (nivel?: string | null): 'Inicial' | 'Primaria' | 'Secundaria' => {
   if (!nivel) return 'Secundaria';

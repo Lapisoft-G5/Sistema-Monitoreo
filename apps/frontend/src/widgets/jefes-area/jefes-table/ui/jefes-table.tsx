@@ -31,13 +31,6 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
     try {
       const res = await jefesAreaApi.deactivate(deletingDoc.id);
       if (res.ok) {
-        const index = MOCK_JEFES_AREA.findIndex((d) => d.id === deletingDoc.id);
-        if (index !== -1) {
-          MOCK_JEFES_AREA[index].activo = false;
-        }
-        // Al desactivar, el Especialista pierde su cargo Jefe de Área y
-        // deja de aparecer en esta lista (filtro cargo==='Jefe de Área').
-        // Refetch vía callback para reflejar el estado real del backend.
         onChanged?.();
       } else {
         const errMsg =
@@ -57,12 +50,6 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
     try {
       const res = await jefesAreaApi.activate(restoringDoc.id);
       if (res.ok) {
-        const index = MOCK_JEFES_AREA.findIndex((d) => d.id === restoringDoc.id);
-        if (index !== -1) {
-          MOCK_JEFES_AREA[index].activo = true;
-        }
-        // Al reactivar, el Especialista queda como Especialista regular
-        // (sin cargo Jefe de Área). Refetch para reflejar el estado real.
         onChanged?.();
       } else {
         const errMsg =

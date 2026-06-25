@@ -3,8 +3,7 @@ import { Compass, PlusCircle, Search, Trash2, Eye, FileText, X, AlertCircle, Lay
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { usePlanesMonitoreo } from '@features/planes-monitoreo/planes-monitoreo-service';
-import { planesMonitoreoApi } from '@shared/api/planes-monitoreo.api';
+import { usePlanesMonitoreo, getArchivoPlanUrl } from '@features/planes-monitoreo/planes-monitoreo-service';
 import { TextField, SelectField } from '@shared/ui/form-controls';
 import { Card, CardContent } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
@@ -325,7 +324,7 @@ export const PlanMonitoreoAnualPage = () => {
                       {/* Acciones */}
                       <div className="flex items-center gap-2 mt-auto shrink-0">
                         <a
-                          href={planesMonitoreoApi.archivoUrl(plan.id)}
+                          href={getArchivoPlanUrl(plan.id)}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center justify-center gap-1.5 text-xs font-bold px-3.5 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg h-8 transition-colors select-none"
@@ -416,7 +415,7 @@ export const PlanMonitoreoAnualPage = () => {
                     {/* Acciones */}
                     <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                       <a
-                        href={planesMonitoreoApi.archivoUrl(plan.id)}
+                        href={getArchivoPlanUrl(plan.id)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center justify-center gap-1.5 text-xs font-bold px-4 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg h-8 transition-colors select-none"

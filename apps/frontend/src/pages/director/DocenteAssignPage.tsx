@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, Search, AlertCircle, Shield, Info } from 'lucide-react';
-import { teachersApi } from '@shared/api/teachers.api';
-import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import { fetchDocentes, fetchCargos, updateDocenteRaw } from '@features/docentes/docente-service';
 import type { Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
@@ -31,21 +30,15 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
       setLoadingDocentes(true);
       setFetchError(null);
       try {
-        const [teachersRes, cargosRes] = await Promise.all([
-          teachersApi.findAll(),
-          teachersApi.getCargos(),
+        const [docentesMapped, cargosRes] = await Promise.all([
+          fetchDocentes(),
+          fetchCargos(),
         ]);
 
-        if (teachersRes.ok && teachersRes.data) {
-          const mapped = teachersRes.data.map(mapApiDocenteToFrontend);
-          // Filtrar solo los docentes activos con cargo "Docente de Aula" de esta I.E.
-          const filtered = mapped.filter(
-            (d) => d.activo && d.cargo === 'Docente de Aula'
-          );
-          setDocentes(filtered);
-        } else {
-          setFetchError('No se pudo cargar la lista de docentes disponibles.');
-        }
+        const filtered = docentesMapped.filter(
+          (d) => d.activo && d.cargo === 'Docente de Aula'
+        );
+        setDocentes(filtered);
 
         if (cargosRes.ok && cargosRes.data) {
           setCargos(cargosRes.data);
@@ -123,7 +116,7 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
         })) || [],
       };
 
-      const res = await teachersApi.update(selectedDocente.id, dto);
+      const res = await updateDocenteRaw(selectedDocente.id, dto);
       if (res.ok) {
         navigate(redirectPath);
       } else {

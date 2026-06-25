@@ -7,8 +7,7 @@ import { FilterInstitutions } from '@features/institutions/ui/filter-institution
 import { InstitutionsStatsWidget } from '@/widgets/institutions/institutions-stats';
 import { InstitutionsTableWidget } from '@/widgets/institutions/institutions-table/ui/institution-table';
 import { useNavigate } from 'react-router-dom';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import { fetchInstituciones } from '@features/institutions/institution-service';
 import type { Institucion } from '@entities/model-instituciones';
 
 export const InstitucionesPage = () => {
@@ -16,20 +15,15 @@ export const InstitucionesPage = () => {
   const [instituciones, setInstituciones] = useState<Institucion[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchInstituciones = async () => {
+  const loadInstituciones = async () => {
     setLoading(true);
-    const res = await institutionsApi.findAll({ limit: 1000 });
-    if (res.ok && res.data) {
-      const mapped = res.data.data.map(mapApiInstitucionToFrontend);
-      setInstituciones(mapped);
-    } else {
-      console.error('Error loading institutions from API:', res.error);
-    }
+    const mapped = await fetchInstituciones({ limit: 1000 });
+    setInstituciones(mapped);
     setLoading(false);
   };
 
   useEffect(() => {
-    Promise.resolve().then(() => fetchInstituciones());
+    Promise.resolve().then(() => loadInstituciones());
   }, []);
 
   const distritosOptions = useMemo(

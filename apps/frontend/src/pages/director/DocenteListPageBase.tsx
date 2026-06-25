@@ -6,8 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { FilterDocentes } from '@features/docentes';
 import { DocentesStatsWidget, DocentesTableWidget } from '@widgets/docentes';
-import { teachersApi } from '@shared/api/teachers.api';
-import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import { fetchDocentes } from '@features/docentes/docente-service';
 import type { Docente } from '@entities/model-docentes';
 import type { Institucion } from '@entities/model-instituciones';
 import { useUser } from '@entities/model-user';
@@ -42,20 +41,14 @@ export const DocenteListPageBase = ({
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const teachersRes = await teachersApi.findAll();
-
-      if (teachersRes.ok && teachersRes.data) {
-        let mapped = teachersRes.data.map(mapApiDocenteToFrontend);
-        if (filterCargoOut) {
-          const isDirectorIe = user?.role === 'director_institucion';
-          if (isDirectorIe) {
-            mapped = mapped.filter((d) => d.cargo !== filterCargoOut);
-          }
+      let docentesMapped = await fetchDocentes();
+      if (filterCargoOut) {
+        const isDirectorIe = user?.role === 'director_institucion';
+        if (isDirectorIe) {
+          docentesMapped = docentesMapped.filter((d) => d.cargo !== filterCargoOut);
         }
-        setDocentes(mapped);
-      } else {
-        console.error(`Error loading ${itemName}:`, teachersRes.error);
       }
+      setDocentes(docentesMapped);
 
       if (user?.institucion && user?.institucionNombre) {
         setInstituciones([

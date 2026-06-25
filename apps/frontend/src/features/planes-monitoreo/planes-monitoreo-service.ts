@@ -2,6 +2,10 @@ import { useState, useCallback } from 'react';
 import { planesMonitoreoApi } from '@shared/api/planes-monitoreo.api';
 import type { IMonitoringPlanResponse } from '@sistema-monitoreo/shared-contracts';
 
+export const getArchivoPlanUrl = (planId: string): string => {
+  return planesMonitoreoApi.archivoUrl(planId);
+};
+
 export const usePlanesMonitoreo = () => {
   const [planes, setPlanes] = useState<IMonitoringPlanResponse[]>([]);
   const [loading, setLoading] = useState(false);

@@ -6,8 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { FilterEspecialistas } from '@features/especialistas';
 import { EspecialistasStatsWidget, EspecialistasTableWidget } from '@widgets/especialistas';
-import { especialistasApi } from '@shared/api/especialistas.api';
-import { mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
+import { fetchEspecialistas } from '@features/especialistas/especialista-service';
 import type { Especialista } from '@entities/model-especialistas';
 
 export const EspecialistasPage = () => {
@@ -15,22 +14,16 @@ export const EspecialistasPage = () => {
   const [especialistas, setEspecialistas] = useState<Especialista[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchEspecialistas = async () => {
+  const loadEspecialistas = async () => {
     setLoading(true);
-    const res = await especialistasApi.findAll({ cargo: 'Especialista' });
-    if (res.ok && res.data) {
-      const mapped = res.data.map(mapApiEspecialistaToFrontend);
-      // Mantener únicamente especialistas cuyo cargo es 'Especialista'
-      const filtered = mapped.filter((esp) => esp.cargo === 'Especialista');
-      setEspecialistas(filtered);
-    } else {
-      console.error('Error loading specialists from API:', res.error);
-    }
+    const mapped = await fetchEspecialistas({ cargo: 'Especialista' });
+    const filtered = mapped.filter((esp) => esp.cargo === 'Especialista');
+    setEspecialistas(filtered);
     setLoading(false);
   };
 
   useEffect(() => {
-    Promise.resolve().then(() => fetchEspecialistas());
+    Promise.resolve().then(() => loadEspecialistas());
   }, []);
 
   if (loading) {

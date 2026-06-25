@@ -715,6 +715,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     if (!exists) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
 
     return this.prisma.$transaction(async (tx) => {
+      // 1. Ficha response records
       const fichas = await tx.fichaMonitoreo.findMany({
         where: { plantillaId: id },
         select: { id: true, fichaContextoId: true },
@@ -731,13 +732,37 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
         const deleted = await tx.fichaMonitoreo.deleteMany({ where: { plantillaId: id } });
         deletedFichas = deleted.count;
 
-        const contextoIds = fichas.map((f) => f.fichaContextoId).filter(Boolean);
-        if (contextoIds.length > 0) {
-          await tx.fichaContexto.deleteMany({ where: { id: { in: contextoIds } } });
-        }
+        const contextoIds = fichas.map((f) => f.fichaContextoId);
+        await tx.fichaContexto.deleteMany({ where: { id: { in: contextoIds } } });
       }
 
+      // 2. DesempenoPlantilla children (aspectos, rubrica)
+      await tx.fichaRespuestaDesempeno.deleteMany({
+        where: { desempeno: { plantillaId: id } },
+      });
+      await tx.rubricaNivel.deleteMany({
+        where: { desempeno: { plantillaId: id } },
+      });
+      await tx.aspectoEvaluado.deleteMany({
+        where: { desempeno: { plantillaId: id } },
+      });
+      await tx.desempenoPlantilla.deleteMany({ where: { plantillaId: id } });
+
+      // 3. NivelCalificacion children (rubrica)
+      await tx.rubricaNivel.deleteMany({
+        where: { nivelCalificacion: { plantillaId: id } },
+      });
+      await tx.nivelCalificacion.deleteMany({ where: { plantillaId: id } });
+
+      // 4. EjeItemPlantilla children
+      await tx.fichaRespuestaEjeItem.deleteMany({
+        where: { ejeItem: { plantillaId: id } },
+      });
+      await tx.ejeItemPlantilla.deleteMany({ where: { plantillaId: id } });
+
+      // 5. Plantilla itself
       await tx.plantillaMonitoreo.delete({ where: { id } });
+
       return { id, deletedFichas };
     });
   }

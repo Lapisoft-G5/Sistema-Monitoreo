@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FastActions } from '@shared/ui/FastActions';
 import type { Docente, CondicionDirectiva } from '@entities/model-docentes';
-import { CONDICION_DIRECTIVA_COLOR, MOCK_DOCENTES } from '@entities/model-docentes';
+import { CONDICION_DIRECTIVA_COLOR } from '@entities/model-docentes';
 // Reutilizamos la lógica de filtros/paginación de docentes (mismo patrón del equipo).
 import { useDocentesTable } from '@widgets/docentes/docentes-table/lib/useTable';
 import { teachersApi } from '@shared/api/teachers.api';
@@ -58,10 +58,6 @@ export const DirectoresTableWidget = ({
     try {
       const res = await teachersApi.deactivate(deleting.id);
       if (res.ok) {
-        const idx = MOCK_DOCENTES.findIndex((d) => d.id === deleting.id);
-        if (idx !== -1) {
-          MOCK_DOCENTES[idx].activo = false;
-        }
         setDirectores((prev) =>
           prev.map((d) => (d.id === deleting.id ? { ...d, activo: false } : d)),
         );
@@ -82,10 +78,6 @@ export const DirectoresTableWidget = ({
     try {
       const res = await teachersApi.activate(restoring.id);
       if (res.ok) {
-        const idx = MOCK_DOCENTES.findIndex((d) => d.id === restoring.id);
-        if (idx !== -1) {
-          MOCK_DOCENTES[idx].activo = true;
-        }
         setDirectores((prev) =>
           prev.map((d) => (d.id === restoring.id ? { ...d, activo: true } : d)),
         );

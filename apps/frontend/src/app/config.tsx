@@ -1,8 +1,6 @@
 import { type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserProvider } from '@entities/model-user';
-import { CronogramaProvider } from '@entities/model-cronogramas';
-import { PlantillasProvider } from '@entities/model-plantillas';
 import { setupFetchInterceptor } from '@shared/api/fetchInterceptor';
 
 // 1. Activamos el interceptor global de red de la capa shared
@@ -28,11 +26,7 @@ export const AppConfig = ({ children }: AppConfigProps) => {
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider>
-        <CronogramaProvider>
-          <PlantillasProvider>
-            {children}
-          </PlantillasProvider>
-        </CronogramaProvider>
+        {children}
       </UserProvider>
     </QueryClientProvider>
   );

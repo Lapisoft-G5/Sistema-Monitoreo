@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FastActions } from '@shared/ui/FastActions';
 import type { Docente } from '@entities/model-docentes';
-import { MOCK_DOCENTES } from '@entities/model-docentes';
+
 import { useDocentesTable } from '../lib/useTable';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -51,17 +51,7 @@ export const DocentesTableWidget = ({
     try {
       const res = await teachersApi.finalizeCargo(finalizingDoc.id, targetCargoObj.id);
       if (res.ok) {
-        const index = MOCK_DOCENTES.findIndex((d) => d.id === finalizingDoc.id);
         const nowStr = new Date().toISOString().split('T')[0];
-        
-        if (index !== -1) {
-          const updatedCargos = MOCK_DOCENTES[index].cargosList?.map((c) =>
-            c.id === targetCargoObj.id ? { ...c, fechaFin: nowStr, esPrincipal: false } : c
-          );
-          MOCK_DOCENTES[index].cargosList = updatedCargos;
-          MOCK_DOCENTES[index].cargo = 'Docente de Aula';
-        }
-
         setDocentes((prev) =>
           prev.map((d) => {
             if (d.id === finalizingDoc.id) {
@@ -94,10 +84,6 @@ export const DocentesTableWidget = ({
     try {
       const res = await teachersApi.deactivate(deletingDoc.id);
       if (res.ok) {
-        const index = MOCK_DOCENTES.findIndex((d) => d.id === deletingDoc.id);
-        if (index !== -1) {
-          MOCK_DOCENTES[index].activo = false;
-        }
         setDocentes((prev) =>
           prev.map((d) => (d.id === deletingDoc.id ? { ...d, activo: false } : d)),
         );
@@ -118,10 +104,6 @@ export const DocentesTableWidget = ({
     try {
       const res = await teachersApi.activate(restoringDoc.id);
       if (res.ok) {
-        const index = MOCK_DOCENTES.findIndex((d) => d.id === restoringDoc.id);
-        if (index !== -1) {
-          MOCK_DOCENTES[index].activo = true;
-        }
         setDocentes((prev) =>
           prev.map((d) => (d.id === restoringDoc.id ? { ...d, activo: true } : d)),
         );

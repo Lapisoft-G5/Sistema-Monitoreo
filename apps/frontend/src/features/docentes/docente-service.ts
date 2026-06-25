@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { Docente, NivelEducativo } from '@entities/model-docentes';
-import { MOCK_DOCENTES } from '@entities/model-docentes';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { teachersApi } from '@shared/api/teachers.api';
 import type { IDocenteResponse } from '@sistema-monitoreo/shared-contracts';
@@ -118,7 +117,6 @@ export const useDocenteService = () => {
       const res = await teachersApi.create(dto);
       if (res.ok && res.data) {
         const mapped = mapApiDocenteToFrontend(res.data);
-        MOCK_DOCENTES.push(mapped);
         return { success: true, data: mapped };
       } else {
         const errMsg =
@@ -171,10 +169,6 @@ export const useDocenteService = () => {
       const res = await teachersApi.update(id, dto);
       if (res.ok && res.data) {
         const mapped = mapApiDocenteToFrontend(res.data);
-        const index = MOCK_DOCENTES.findIndex((d) => d.id === id);
-        if (index !== -1) {
-          MOCK_DOCENTES[index] = mapped;
-        }
         return { success: true, data: mapped };
       } else {
         const errMsg =

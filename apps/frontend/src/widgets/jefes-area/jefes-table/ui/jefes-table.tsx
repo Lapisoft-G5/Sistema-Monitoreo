@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FastActions } from '@shared/ui/FastActions';
 import type { JefeArea } from '@entities/model-jefes-area';
-import { MOCK_JEFES_AREA } from '@entities/model-jefes-area';
 import { useJefesTable } from '../lib/useTable';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';

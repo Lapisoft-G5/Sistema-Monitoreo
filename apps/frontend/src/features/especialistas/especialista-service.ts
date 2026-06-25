@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { Especialista } from '@entities/model-especialistas';
-import { MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistasApi } from '@shared/api/especialistas.api';
 
@@ -67,7 +66,6 @@ export const useEspecialistaService = () => {
       const res = await especialistasApi.create(dto);
       if (res.ok && res.data) {
         const mapped = mapApiEspecialistaToFrontend(res.data);
-        MOCK_ESPECIALISTAS.push(mapped);
         return { success: true, data: mapped };
       } else {
         const errMsg =
@@ -114,10 +112,6 @@ export const useEspecialistaService = () => {
       const res = await especialistasApi.update(id, dto);
       if (res.ok && res.data) {
         const mapped = mapApiEspecialistaToFrontend(res.data);
-        const index = MOCK_ESPECIALISTAS.findIndex((e) => e.id === id);
-        if (index !== -1) {
-          MOCK_ESPECIALISTAS[index] = mapped;
-        }
         return { success: true, data: mapped };
       } else {
         const errMsg =

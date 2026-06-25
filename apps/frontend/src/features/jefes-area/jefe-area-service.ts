@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { JefeArea } from '@entities/model-jefes-area';
-import { MOCK_JEFES_AREA } from '@entities/model-jefes-area';
 import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
 import type { IEspecialistaResponse as IJefeAreaResponse } from '@sistema-monitoreo/shared-contracts';
@@ -67,7 +66,6 @@ export const useJefeAreaService = () => {
       const res = await jefesAreaApi.update(formData.specialistId, dto);
       if (res.ok && res.data) {
         const mapped = mapApiJefeAreaToFrontend(res.data);
-        MOCK_JEFES_AREA.push(mapped);
         return { success: true, data: mapped };
       } else {
         const errMsg =
@@ -106,10 +104,6 @@ export const useJefeAreaService = () => {
       const res = await jefesAreaApi.update(id, dto);
       if (res.ok && res.data) {
         const mapped = mapApiJefeAreaToFrontend(res.data);
-        const index = MOCK_JEFES_AREA.findIndex((e) => e.id === id);
-        if (index !== -1) {
-          MOCK_JEFES_AREA[index] = mapped;
-        }
         return { success: true, data: mapped };
       } else {
         const errMsg =

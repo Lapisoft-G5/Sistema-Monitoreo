@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FastActions } from '@shared/ui/FastActions';
-import { type Institucion, MOCK_INSTITUCIONES } from '@entities/model-instituciones';
+import { type Institucion } from '@entities/model-instituciones';
 import { NivelBadge, ModalidadBadge, DirectorCell } from '@entities/model-instituciones/ui';
 import { useInstitutionsTable } from '../lib/useTable';
 import { TablePagination } from '@shared/ui/table-pagination';

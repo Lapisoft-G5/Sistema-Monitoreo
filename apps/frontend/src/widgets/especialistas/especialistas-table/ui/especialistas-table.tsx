@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FastActions } from '@shared/ui/FastActions';
 import type { Especialista } from '@entities/model-especialistas';
-import { CARGO_COLORS, MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
+import { CARGO_COLORS } from '@entities/model-especialistas';
 import { useEspecialistasTable } from '../lib/useTable';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -37,10 +37,6 @@ export const EspecialistasTableWidget = ({
     try {
       const res = await especialistasApi.deactivate(deletingDoc.id);
       if (res.ok) {
-        const index = MOCK_ESPECIALISTAS.findIndex((d) => d.id === deletingDoc.id);
-        if (index !== -1) {
-          MOCK_ESPECIALISTAS[index].activo = false;
-        }
         setEspecialistas((prev) =>
           prev.map((e) => (e.id === deletingDoc.id ? { ...e, activo: false } : e)),
         );
@@ -62,10 +58,6 @@ export const EspecialistasTableWidget = ({
     try {
       const res = await especialistasApi.activate(restoringDoc.id);
       if (res.ok) {
-        const index = MOCK_ESPECIALISTAS.findIndex((d) => d.id === restoringDoc.id);
-        if (index !== -1) {
-          MOCK_ESPECIALISTAS[index].activo = true;
-        }
         setEspecialistas((prev) =>
           prev.map((e) => (e.id === restoringDoc.id ? { ...e, activo: true } : e)),
         );

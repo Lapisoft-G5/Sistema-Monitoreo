@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { Institucion } from '@entities/model-instituciones';
-import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
 import type { InstitutionRawInput } from './ui/CreateInstitutionFormBase';
 import { institutionsApi } from '@shared/api/institutions.api';
 import type { IInstitucionResponse } from '@sistema-monitoreo/shared-contracts';
@@ -52,7 +51,6 @@ export const useInstitutionService = () => {
       const res = await institutionsApi.create(dto);
       if (res.ok && res.data) {
         const mapped = mapApiInstitucionToFrontend(res.data);
-        MOCK_INSTITUCIONES.push(mapped);
         return { success: true, data: mapped };
       } else {
         const errMsg =
@@ -87,10 +85,6 @@ export const useInstitutionService = () => {
       const res = await institutionsApi.update(id, dto);
       if (res.ok && res.data) {
         const mapped = mapApiInstitucionToFrontend(res.data);
-        const index = MOCK_INSTITUCIONES.findIndex((i) => i.id === id);
-        if (index !== -1) {
-          MOCK_INSTITUCIONES[index] = mapped;
-        }
         return { success: true, data: mapped };
       } else {
         const errMsg =

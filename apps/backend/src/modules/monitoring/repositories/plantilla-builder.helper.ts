@@ -1,0 +1,77 @@
+import { NotFoundException } from '@nestjs/common';
+import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
+
+export async function buildPlantilla(
+  prisma: PrismaService,
+  plantillaId: string,
+): Promise<IPlantilla> {
+  const plantilla = await prisma.plantillaMonitoreo.findUnique({
+    where: { id: plantillaId },
+    include: {
+      nivelesCalificacion: { orderBy: { orden: 'asc' } },
+      desempenos: {
+        orderBy: { orden: 'asc' },
+        include: {
+          aspectos: { orderBy: { orden: 'asc' } },
+          rubrica: { include: { nivelCalificacion: true } },
+        },
+      },
+      ejesItems: { orderBy: { orden: 'asc' } },
+    },
+  });
+  if (!plantilla) {
+    throw new NotFoundException(`Plantilla ${plantillaId} no encontrada.`);
+  }
+  return {
+    id: plantilla.id,
+    tipoMonitoreo: plantilla.tipoMonitoreo as 'DOCENTE' | 'DIRECTIVO',
+    anioAcademico: plantilla.anioAcademico,
+    version: plantilla.version,
+    baremo: plantilla.baremo as 'Vigente' | 'Porcentual',
+    descripcion: plantilla.descripcion,
+    estado: plantilla.estado as 'Borrador' | 'Vigente' | 'Historico',
+    autorId: plantilla.autorId,
+    rolAutorAlCrear: plantilla.rolAutorAlCrear as 'jefe_gestion' | 'director_ie',
+    institucionId: plantilla.institucionId,
+    niveles: plantilla.nivelesCalificacion.map((n) => ({
+      id: n.id,
+      plantillaId: n.plantillaId,
+      nivelRomano: n.nivelRomano as 'I' | 'II' | 'III' | 'IV',
+      denominacion: n.denominacion,
+      rangoMin: n.rangoMin,
+      color: n.color,
+      orden: n.orden,
+    })),
+    desempenos: plantilla.desempenos.map((d) => ({
+      id: d.id,
+      plantillaId: d.plantillaId,
+      nombre: d.nombre,
+      descripcionCorta: d.descripcionCorta,
+      preguntaExtra: d.preguntaExtra,
+      orden: d.orden,
+      aspectos: d.aspectos.map((a) => ({
+        id: a.id,
+        desempenoId: a.desempenoId,
+        descripcion: a.descripcion,
+        orden: a.orden,
+      })),
+      rubrica: d.rubrica.map((r) => ({
+        id: r.id,
+        desempenoId: r.desempenoId,
+        nivelCalificacionId: r.nivelCalificacionId,
+        nivelRomano: r.nivelCalificacion.nivelRomano as 'I' | 'II' | 'III' | 'IV',
+        descripcion: r.descripcion,
+      })),
+    })),
+    ejesItems: plantilla.ejesItems.map((e) => ({
+      id: e.id,
+      plantillaId: e.plantillaId,
+      numero: e.numero,
+      descripcion: e.descripcion,
+      orden: e.orden,
+    })),
+    createdAt: plantilla.createdAt.toISOString(),
+    updatedAt: plantilla.updatedAt.toISOString(),
+  };
+}

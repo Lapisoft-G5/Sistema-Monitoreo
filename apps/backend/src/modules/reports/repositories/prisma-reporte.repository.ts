@@ -2,20 +2,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
-import type {
-  IReporteFicha,
-  IReporteResumenIE,
-  NivelLogro,
-  TipoMonitoreo,
-  EstadoFicha,
-} from '@sistema-monitoreo/shared-contracts';
+import type { IReporteFicha, IReporteResumenIE } from '@sistema-monitoreo/shared-contracts';
 import {
   PaginatedFichas,
   QueryFichasCompletadas,
   ReporteRepository,
   SessionScope,
 } from './reporte.repository.js';
-import { RoleCode } from '../../../common/enums/role.enum.js';
+import { fromPrismaFichaReporte } from './reporte.mapper.js';
 
 @Injectable()
 export class PrismaReporteRepository implements ReporteRepository {
@@ -80,26 +74,7 @@ export class PrismaReporteRepository implements ReporteRepository {
       this.prisma.fichaMonitoreo.count({ where }),
     ]);
 
-    const data: IReporteFicha[] = rows.map((f) => ({
-      id: f.id,
-      cronogramaId: f.cronogramaId,
-      institucionId: f.cronograma.institucion.id,
-      institucionNombre: f.cronograma.institucion.nombre,
-      institucionCodigoModular: f.cronograma.institucion.codigoModular,
-      evaluadoId: f.cronograma.evaluadoId,
-      evaluadoNombre: `${f.cronograma.evaluado.persona.nombres} ${f.cronograma.evaluado.persona.apellidos}`,
-      especialistaId: f.cronograma.monitorId,
-      especialistaNombre: `${f.cronograma.monitor.persona.nombres} ${f.cronograma.monitor.persona.apellidos}`,
-      tipoMonitoreo: f.cronograma.tipoMonitoreo as TipoMonitoreo,
-      anioAcademico: f.anioAcademico,
-      nivelLogro: f.nivelLogro as NivelLogro,
-      promedio: Number(f.promedio),
-      puntajeTotal: f.puntajeTotal,
-      estado: f.estado as EstadoFicha,
-      fechaEjecucion: f.createdAt.toISOString(),
-      modalidad: f.cronograma.modalidad,
-      nivel: f.cronograma.nivelEducativo,
-    }));
+    const data = rows.map(fromPrismaFichaReporte);
 
     return {
       data,
@@ -215,25 +190,6 @@ export class PrismaReporteRepository implements ReporteRepository {
     });
     if (!allowed) return null;
 
-    return {
-      id: f.id,
-      cronogramaId: f.cronogramaId,
-      institucionId: f.cronograma.institucion.id,
-      institucionNombre: f.cronograma.institucion.nombre,
-      institucionCodigoModular: f.cronograma.institucion.codigoModular,
-      evaluadoId: f.cronograma.evaluadoId,
-      evaluadoNombre: `${f.cronograma.evaluado.persona.nombres} ${f.cronograma.evaluado.persona.apellidos}`,
-      especialistaId: f.cronograma.monitorId,
-      especialistaNombre: `${f.cronograma.monitor.persona.nombres} ${f.cronograma.monitor.persona.apellidos}`,
-      tipoMonitoreo: f.cronograma.tipoMonitoreo as TipoMonitoreo,
-      anioAcademico: f.anioAcademico,
-      nivelLogro: f.nivelLogro as any,
-      promedio: Number(f.promedio),
-      puntajeTotal: f.puntajeTotal,
-      estado: f.estado as any,
-      fechaEjecucion: f.createdAt.toISOString(),
-      modalidad: f.cronograma.modalidad,
-      nivel: f.cronograma.nivelEducativo,
-    };
+    return fromPrismaFichaReporte(f);
   }
 }

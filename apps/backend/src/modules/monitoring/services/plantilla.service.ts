@@ -125,8 +125,8 @@ export class PlantillaService {
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
     this.guardModificacion(original, session);
 
-    if (session.role !== RoleCode.JEFE_GESTION) {
-      throw new ForbiddenException('Solo el Jefe de Gestion puede eliminar plantillas.');
+    if (session.role !== RoleCode.JEFE_GESTION && session.role !== RoleCode.DIRECTOR_INSTITUCION) {
+      throw new ForbiddenException('Solo el Jefe de Gestion o el Director IE pueden eliminar plantillas.');
     }
 
     const fichas = await this.repository.findFichasByPlantilla(id);

@@ -46,7 +46,6 @@ export const PlantillasCatalog = () => {
   const navigate = useNavigate();
   const { user } = useUser();
   const isDirector = user?.role === 'director_institucion';
-  const isJefeGestion = user?.role === 'jefe_gestion';
 
   const { data: plantillas = [], isLoading, isError, error, refetch } = usePlantillasList();
   const cambiarEstado = useCambiarEstadoPlantilla();
@@ -389,17 +388,19 @@ export const PlantillasCatalog = () => {
                           <span>Modificar Plantilla</span>
                         </button>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleToggleEstado(plantilla)}
-                            disabled={cambiarEstado.isPending}
-                            className="flex-1 justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
-                            title="Cambiar Estado"
-                          >
-                            <RefreshCw className="h-3 w-3 text-primary" />
-                            <span>Cambiar Estado</span>
-                          </button>
+                          {plantilla.estado !== 'Historico' && (
+                            <button
+                              onClick={() => handleToggleEstado(plantilla)}
+                              disabled={cambiarEstado.isPending}
+                              className="flex-1 justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                              title="Cambiar Estado"
+                            >
+                              <RefreshCw className="h-3 w-3 text-primary" />
+                              <span>Cambiar Estado</span>
+                            </button>
+                          )}
 
-                          {isJefeGestion && (
+                          {canManage && (
                             <button
                               onClick={() => setDeleteTemplateId(plantilla.id)}
                               className="p-2 border border-rose-100 text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition-colors cursor-pointer"

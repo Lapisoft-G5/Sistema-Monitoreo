@@ -715,9 +715,30 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     if (!exists) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
 
     return this.prisma.$transaction(async (tx) => {
-      const deletedFichas = await tx.fichaMonitoreo.deleteMany({ where: { plantillaId: id } });
+      const fichas = await tx.fichaMonitoreo.findMany({
+        where: { plantillaId: id },
+        select: { id: true, fichaContextoId: true },
+      });
+
+      let deletedFichas = 0;
+      if (fichas.length > 0) {
+        const fichaIds = fichas.map((f) => f.id);
+
+        await tx.fichaRespuestaEjeItem.deleteMany({ where: { fichaId: { in: fichaIds } } });
+        await tx.fichaRespuestaAspecto.deleteMany({ where: { fichaId: { in: fichaIds } } });
+        await tx.fichaRespuestaDesempeno.deleteMany({ where: { fichaId: { in: fichaIds } } });
+
+        const contextoIds = fichas.map((f) => f.fichaContextoId).filter(Boolean);
+        if (contextoIds.length > 0) {
+          await tx.fichaContexto.deleteMany({ where: { id: { in: contextoIds } } });
+        }
+
+        const result = await tx.fichaMonitoreo.deleteMany({ where: { plantillaId: id } });
+        deletedFichas = result.count;
+      }
+
       await tx.plantillaMonitoreo.delete({ where: { id } });
-      return { id, deletedFichas: deletedFichas.count };
+      return { id, deletedFichas };
     });
   }
 

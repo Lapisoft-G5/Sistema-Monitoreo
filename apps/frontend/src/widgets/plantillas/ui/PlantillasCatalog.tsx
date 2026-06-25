@@ -387,29 +387,26 @@ export const PlantillasCatalog = () => {
                           <Edit className="h-3.5 w-3.5 text-primary" />
                           <span>Modificar Plantilla</span>
                         </button>
-                        <div className="flex items-center gap-2">
-                          {plantilla.estado !== 'Historico' && (
-                            <button
-                              onClick={() => handleToggleEstado(plantilla)}
-                              disabled={cambiarEstado.isPending}
-                              className="flex-1 justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
-                              title="Cambiar Estado"
-                            >
-                              <RefreshCw className="h-3 w-3 text-primary" />
-                              <span>Cambiar Estado</span>
-                            </button>
-                          )}
+                        {plantilla.estado !== 'Historico' && (
+                          <button
+                            onClick={() => handleToggleEstado(plantilla)}
+                            disabled={cambiarEstado.isPending}
+                            className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                            title="Cambiar Estado"
+                          >
+                            <RefreshCw className="h-3 w-3 text-primary" />
+                            <span>Cambiar Estado</span>
+                          </button>
+                        )}
 
-                          {canManage && (
-                            <button
-                              onClick={() => setDeleteTemplateId(plantilla.id)}
-                              className="p-2 border border-rose-100 text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition-colors cursor-pointer"
-                              title="Eliminar Plantilla"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => setDeleteTemplateId(plantilla.id)}
+                          className="w-full justify-center border border-rose-100 text-rose-600 hover:bg-rose-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Eliminar Plantilla"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Eliminar Plantilla</span>
+                        </button>
                       </div>
                     )
                   )}

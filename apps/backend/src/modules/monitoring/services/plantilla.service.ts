@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   BadRequestException,
   ConflictException,
@@ -13,6 +12,7 @@ import type { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-
 import type { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
+import { validarReglas, resolveAutor, guardVisibilidad, guardModificacion } from './plantilla-service.validator.js';
 
 @Injectable()
 export class PlantillaService {
@@ -25,13 +25,13 @@ export class PlantillaService {
   async findById(id: string, session?: SessionUser): Promise<IPlantilla> {
     const p = await this.repository.findById(id);
     if (!p) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
-    this.guardVisibilidad(p, session);
+    guardVisibilidad(p, session);
     return p;
   }
 
   async create(dto: CreatePlantillaDto, session: SessionUser): Promise<IPlantilla> {
-    this.validarReglas(dto);
-    const { rolAutorAlCrear, institucionId } = this.resolveAutor(session);
+    validarReglas(dto);
+    const { rolAutorAlCrear, institucionId } = resolveAutor(session);
     return this.repository.create({
       data: dto,
       autorId: session.id,
@@ -47,11 +47,10 @@ export class PlantillaService {
   ): Promise<IUpdatePlantillaResponse> {
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
-    this.guardModificacion(original, session);
+    guardModificacion(original, session);
 
     const fichasAsociadas = await this.repository.countFichasAsociadas(id);
     if (fichasAsociadas > 0) {
-      // ILA-0046: clonar a v+1, no sobrescribir
       const clon = await this.repository.versionarConClon(id, { data: dto }, session.id);
       return {
         id: clon.id,
@@ -79,7 +78,7 @@ export class PlantillaService {
   ): Promise<IPlantilla> {
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
-    this.guardModificacion(original, session);
+    guardModificacion(original, session);
 
     if (original.estado === 'Historico') {
       throw new BadRequestException(
@@ -91,13 +90,6 @@ export class PlantillaService {
     }
 
     if (dto.estado === 'Vigente') {
-      // Unicidad de plantilla Vigente por scope (UGEL o IE):
-      //  - Plantilla UGEL (rolAutorAlCrear='jefe_gestion', institucionId=null):
-      //    no debe haber otra UGEL Vigente del mismo tipo+anio.
-      //  - Plantilla IE (rolAutorAlCrear='director_ie', institucionId=IE-X):
-      //    no debe haber otra de la MISMA IE Vigente del mismo tipo+anio.
-      //    Una plantilla UGEL Vigente puede coexistir con una IE Vigente
-      //    del mismo tipo+anio, porque aplican a scopes distintos.
       const otrasVigentes = await this.repository.findAll({
         tipoMonitoreo: original.tipoMonitoreo,
         anioAcademico: original.anioAcademico,
@@ -123,7 +115,7 @@ export class PlantillaService {
   ): Promise<{ id: string; deletedFichas: number; deletedEvidencias: number }> {
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
-    this.guardModificacion(original, session);
+    guardModificacion(original, session);
 
     if (session.role !== RoleCode.JEFE_GESTION && session.role !== RoleCode.DIRECTOR_INSTITUCION) {
       throw new ForbiddenException('Solo el Jefe de Gestion o el Director IE pueden eliminar plantillas.');
@@ -139,36 +131,14 @@ export class PlantillaService {
     }
 
     const evidenciaUrls: string[] = fichas.flatMap((f) => f.evidenciaUrls);
-
     const result = await this.repository.eliminarConCascade(id);
 
     let deletedEvidencias = 0;
     if (evidenciaUrls.length > 0) {
-      deletedEvidencias = await this.deleteEvidenciaFiles(evidenciaUrls);
+      deletedEvidencias = await deleteEvidenciaFiles(evidenciaUrls);
     }
 
-    return {
-      id: result.id,
-      deletedFichas: result.deletedFichas,
-      deletedEvidencias,
-    };
-  }
-
-  private async deleteEvidenciaFiles(urls: string[]): Promise<number> {
-    const fs = await import('node:fs/promises');
-    const path = await import('node:path');
-    let deleted = 0;
-    for (const url of urls) {
-      try {
-        const filename = path.basename(new URL(url, 'http://x').pathname);
-        const filepath = path.join(process.cwd(), 'uploads', filename);
-        await fs.unlink(filepath);
-        deleted += 1;
-      } catch {
-        // ignore: archivo no existe o no se pudo eliminar
-      }
-    }
-    return deleted;
+    return { id: result.id, deletedFichas: result.deletedFichas, deletedEvidencias };
   }
 
   async countFichas(
@@ -177,7 +147,7 @@ export class PlantillaService {
   ): Promise<{ count: number; estado: 'Borrador' | 'Vigente' | 'Historico' }> {
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
-    this.guardVisibilidad(original, session);
+    guardVisibilidad(original, session);
     const count = await this.repository.countFichasAsociadas(id);
     return { count, estado: original.estado };
   }
@@ -186,16 +156,13 @@ export class PlantillaService {
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
 
-    let rolAutorAlCrear = 'jefe_gestion';
-    let institucionId = null;
+    const { rolAutorAlCrear, institucionId } = resolveAutor(session);
 
-    if (this.isDirector(session)) {
-      rolAutorAlCrear = 'director_ie';
-      institucionId = session.institucionId ?? null;
-      if (!institucionId) {
-        throw new ForbiddenException('Director IE sin institucionId en sesion.');
-      }
-    } else if (session.role !== RoleCode.JEFE_GESTION) {
+    if (!institucionId && session.role === RoleCode.DIRECTOR_INSTITUCION) {
+      throw new ForbiddenException('Director IE sin institucionId en sesion.');
+    }
+
+    if (session.role !== RoleCode.JEFE_GESTION && session.role !== RoleCode.DIRECTOR_INSTITUCION) {
       throw new ForbiddenException(
         'Solo Jefe de Gestion o Directores IE pueden duplicar plantillas.',
       );
@@ -209,52 +176,21 @@ export class PlantillaService {
       descripcion,
     );
   }
+}
 
-  private validarReglas(dto: CreatePlantillaDto): void {
-    const nivelesSet = new Set(dto.niveles.map((n) => n.nivelRomano));
-    if (nivelesSet.size !== 4) {
-      throw new BadRequestException(
-        'La plantilla debe tener exactamente 4 niveles (I, II, III, IV).',
-      );
-    }
-    for (const d of dto.desempenos) {
-      const rubricaSet = new Set(d.rubrica.map((r) => r.nivelRomano));
-      if (rubricaSet.size !== 4) {
-        throw new BadRequestException(
-          `El desempeno "${d.nombre}" debe tener rubrica para los 4 niveles (I, II, III, IV).`,
-        );
-      }
-    }
-  }
-
-  private isDirector(session: SessionUser): boolean {
-    return session.role === RoleCode.DIRECTOR_INSTITUCION;
-  }
-
-  private resolveAutor(session: SessionUser): {
-    rolAutorAlCrear: 'jefe_gestion' | 'director_ie';
-    institucionId: string | null;
-  } {
-    if (this.isDirector(session)) {
-      return {
-        rolAutorAlCrear: 'director_ie',
-        institucionId: session.institucionId ?? null,
-      };
-    }
-    return { rolAutorAlCrear: 'jefe_gestion', institucionId: null };
-  }
-
-  private guardVisibilidad(plantilla: IPlantilla, session?: SessionUser): void {
-    if (!session) return;
-    if (this.isDirector(session) && plantilla.rolAutorAlCrear === 'jefe_gestion') {
-      // Director IE puede VER plantillas UGEL (en solo lectura), pero no editarlas
-      return;
+export async function deleteEvidenciaFiles(urls: string[]): Promise<number> {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  let deleted = 0;
+  for (const url of urls) {
+    try {
+      const filename = path.basename(new URL(url, 'http://x').pathname);
+      const filepath = path.join(process.cwd(), 'uploads', filename);
+      await fs.unlink(filepath);
+      deleted += 1;
+    } catch {
+      // ignore
     }
   }
-
-  private guardModificacion(plantilla: IPlantilla, session: SessionUser): void {
-    if (this.isDirector(session) && plantilla.rolAutorAlCrear === 'jefe_gestion') {
-      throw new ForbiddenException('Los Directores IE no pueden modificar plantillas UGEL.');
-    }
-  }
+  return deleted;
 }

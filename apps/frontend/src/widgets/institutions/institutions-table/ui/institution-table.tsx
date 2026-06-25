@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FastActions } from '@shared/ui/FastActions';
 import { type Institucion } from '@entities/model-instituciones';
-import { NivelBadge, ModalidadBadge, DirectorCell } from '@entities/model-instituciones/ui';
+import { NivelBadge, ModalidadBadge, DirectorCell } from '@features/institutions/ui';
 import { useInstitutionsTable } from '../lib/useTable';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -37,10 +37,6 @@ export const InstitutionsTableWidget = ({
     try {
       const res = await institutionsApi.softDelete(deletingInst.id);
       if (res.ok) {
-        const index = MOCK_INSTITUCIONES.findIndex((i) => i.id === deletingInst.id);
-        if (index !== -1) {
-          MOCK_INSTITUCIONES[index].activo = false;
-        }
         setInstituciones((prev) =>
           prev.map((i) => (i.id === deletingInst.id ? { ...i, activo: false } : i)),
         );
@@ -59,10 +55,6 @@ export const InstitutionsTableWidget = ({
     try {
       const res = await institutionsApi.restore(restoringInst.id);
       if (res.ok) {
-        const index = MOCK_INSTITUCIONES.findIndex((i) => i.id === restoringInst.id);
-        if (index !== -1) {
-          MOCK_INSTITUCIONES[index].activo = true;
-        }
         setInstituciones((prev) =>
           prev.map((i) => (i.id === restoringInst.id ? { ...i, activo: true } : i)),
         );

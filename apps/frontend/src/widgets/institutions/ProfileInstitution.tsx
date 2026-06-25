@@ -4,7 +4,7 @@ import {
   InstitutionProfileHeader,
   InstitutionLocationInfo,
   InstitutionDirectorInfo,
-} from '@entities/model-instituciones/ui';
+} from '@features/institutions/ui';
 import { Button } from '@shared/ui/button';
 
 interface Props {

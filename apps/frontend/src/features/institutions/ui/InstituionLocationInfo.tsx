@@ -1,6 +1,6 @@
 import { MapPin } from 'lucide-react';
-import type { Institucion } from '../model';
-import { NIVEL_LABEL } from '../constants';
+import type { Institucion } from '@entities/model-instituciones';
+import { NIVEL_LABEL } from '@entities/model-instituciones';
 
 const CAMPO = ({ label, value }: { label: string; value: string }) => (
   <div>

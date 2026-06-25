@@ -1,6 +1,5 @@
 import { User, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
-// ── 1. Nivel Badge ──
 export const NivelBadge = ({ nivel }: { nivel: string }) => {
   const colors: Record<string, string> = {
     Inicial: 'bg-pink-100 text-pink-700 border-pink-200',
@@ -28,7 +27,6 @@ export const EstadoBadge = ({ estado }: { estado: string }) => {
     );
   }
 
-  // Inactiva o por defecto
   return (
     <span className="flex items-center gap-1.5 w-fit px-2.5 py-1 bg-destructive/10 text-destructive border border-destructive/20 rounded-full text-[0.7rem] font-bold">
       <ShieldAlert className="w-3.5 h-3.5" /> Inactiva
@@ -36,7 +34,6 @@ export const EstadoBadge = ({ estado }: { estado: string }) => {
   );
 };
 
-// ── 3. Director Cell ──
 export const DirectorCell = ({ director }: { director?: string | null }) => {
   if (!director) {
     return <span className="text-text-muted text-xs italic">Sin asignar</span>;
@@ -52,7 +49,6 @@ export const DirectorCell = ({ director }: { director?: string | null }) => {
   );
 };
 
-// ── 4. Modalidad Badge ──
 export const ModalidadBadge = ({ modalidad }: { modalidad?: string | null }) => {
   const val = modalidad || 'EBR';
   const colors: Record<string, string> = {

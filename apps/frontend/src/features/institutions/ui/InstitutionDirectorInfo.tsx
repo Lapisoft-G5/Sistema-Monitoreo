@@ -1,5 +1,5 @@
 import { User, AlertTriangle } from 'lucide-react';
-import type { Institucion } from '../model';
+import type { Institucion } from '@entities/model-instituciones';
 
 const CAMPO = ({ label, value }: { label: string; value: string }) => (
   <div>

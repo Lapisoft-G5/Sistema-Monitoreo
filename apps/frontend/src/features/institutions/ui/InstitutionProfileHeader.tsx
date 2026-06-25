@@ -1,6 +1,6 @@
 import { GraduationCap } from 'lucide-react';
-import type { Institucion } from '../model';
-import { ESTADO_COLOR } from '../constants';
+import type { Institucion } from '@entities/model-instituciones';
+import { ESTADO_COLOR } from '@entities/model-instituciones';
 
 export const InstitutionProfileHeader = ({ institucion }: { institucion: Institucion }) => {
   const estadoColor = ESTADO_COLOR[institucion.estado] || '#64748b';
@@ -10,11 +10,9 @@ export const InstitutionProfileHeader = ({ institucion }: { institucion: Institu
       <div className="bg-gradient-to-r from-primary to-primary-hover h-20" />
       <div className="px-6 pb-5">
         <div className="flex items-end justify-between gap-4 -mt-8 mb-4 flex-wrap">
-          {/* Logo/Avatar */}
           <div className="w-16 h-16 rounded-2xl bg-surface border-4 border-surface flex items-center justify-center text-primary text-xl font-black shadow-sm flex-shrink-0">
             <GraduationCap className="h-7 w-7" />
           </div>
-          {/* Estado */}
           <span
             className="text-xs font-bold px-3 py-1.5 rounded-full border mb-1 flex items-center gap-1.5"
             style={{

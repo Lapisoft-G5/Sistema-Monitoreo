@@ -1,12 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { User, Briefcase, Check, Plus, X } from 'lucide-react';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistaSchema } from '@entities/model-especialistas/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
-import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
-import { checkRoleConflict } from '@shared/constants/roleValidation';
+import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
 
 interface Props {
   onCancel: () => void;
@@ -61,86 +60,82 @@ export const EspecialistaFormBase = ({
     }
     return base;
   });
-  const [submitted, setSubmitted] = useState(false);
   const [newEspecialidad, setNewEspecialidad] = useState('');
   const newEspRef = useRef<HTMLInputElement>(null);
-
-  const { data: persona, isLoading: searchingDni, isLocked: isDniLocked, message: dniMessage } = useDniAutocomplete(
-    form.dni,
-    !initialData,
-  );
-
-  const rolObjetivo: 'especialista' | 'jefe_area' | 'jefe_gestion' =
-    form.cargo === 'Jefe de Área'
-      ? 'jefe_area'
-      : form.cargo === 'Jefe de Gestión'
-        ? 'jefe_gestion'
-        : 'especialista';
-  const roleCheck = checkRoleConflict(persona, rolObjetivo, form.cargo);
-  const dniBloqueadoPorRol = roleCheck.bloquea;
-
-  const [showRoleConfirm, setShowRoleConfirm] = useState(false);
-
-  useEffect(() => {
-    if (persona) {
-      const t = setTimeout(() => {
-        setForm((prev) => ({
-          ...prev,
-          nombres: persona.nombres || prev.nombres,
-          apellidos: persona.apellidos || prev.apellidos,
-          correo: persona.correo || prev.correo,
-          celular: persona.telefono || prev.celular,
-        }));
-      }, 0);
-      return () => clearTimeout(t);
-    }
-    if (!searchingDni && form.dni.length === 8 && !persona) {
-      const t = setTimeout(() => {
-        setForm((prev) => ({
-          ...prev,
-          nombres: '',
-          apellidos: '',
-          correo: '',
-          celular: '',
-        }));
-      }, 0);
-      return () => clearTimeout(t);
-    }
-  }, [persona, searchingDni, form.dni]);
+  const especialidadesExtras = form.especialidadesExtras || [];
 
   const set = <K extends keyof EspecialistaFormData>(key: K, value: EspecialistaFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const validationResult = especialistaSchema.safeParse(form);
-  const errors: Record<string, string> = {};
+  const errors = useMemo(() => {
+    const errs = extractErrors(especialistaSchema.safeParse(form));
+    const isSecundaria = form.nivelEducativo === 'Secundaria';
+    const isPrimaria = form.nivelEducativo === 'Primaria';
 
-  if (!validationResult.success) {
-    validationResult.error.issues.forEach((issue) => {
-      const path = issue.path[0] as string;
-      if (!errors[path]) {
-        errors[path] = issue.message;
+    if (form.cargo === 'Especialista' || form.cargo === 'Jefe de Área') {
+      if (isSecundaria && !form.especialidad?.trim()) {
+        errs.especialidad = 'La especialidad principal es requerida para el nivel Secundaria';
       }
-    });
-  }
+      if (isPrimaria && form.cargo === 'Especialista') {
+        const sp = form.especialidad?.trim();
+        if (sp && sp !== 'PIP' && sp !== 'Educación Física' && sp !== 'Educacion Fisica') {
+          errs.especialidad = 'La especialidad debe ser PIP o Educación Física';
+        }
+      }
+    }
+    return errs;
+  }, [form]);
 
-  // Validación personalizada: especialidad requerida en Secundaria y Primaria
   const isSecundaria = form.nivelEducativo === 'Secundaria';
   const isPrimaria = form.nivelEducativo === 'Primaria';
-  const especialidadesExtras = form.especialidadesExtras || [];
 
-  if (form.cargo === 'Especialista' || form.cargo === 'Jefe de Área') {
-    if (isSecundaria) {
-      if (!form.especialidad?.trim()) {
-        errors.especialidad = 'La especialidad principal es requerida para el nivel Secundaria';
-      }
-    }
-    if (isPrimaria && form.cargo === 'Especialista') {
-      const sp = form.especialidad?.trim();
-      if (sp && sp !== 'PIP' && sp !== 'Educación Física' && sp !== 'Educacion Fisica') {
-        errors.especialidad = 'La especialidad debe ser PIP o Educación Física';
-      }
-    }
-  }
+  const {
+    submitted,
+    persona,
+    searchingDni,
+    isDniLocked,
+    dniMessage,
+    dniBloqueadoPorRol,
+    showRoleConfirm,
+    setShowRoleConfirm,
+    handleSubmit,
+    handleConfirmRole,
+    dniOk,
+    roleCheck,
+  } = usePersonForm({
+    dni: form.dni,
+    isNew: !initialData,
+    rolObjetivo: form.cargo === 'Jefe de Área'
+      ? 'jefe_area'
+      : form.cargo === 'Jefe de Gestión'
+        ? 'jefe_gestion'
+        : 'especialista',
+    cargoObjetivo: form.cargo,
+    onValidSubmit: () => {
+      const finalForm = {
+        ...form,
+        especialidades: [
+          ...(form.especialidad ? [form.especialidad] : []),
+          ...especialidadesExtras,
+        ],
+      };
+      onSubmit(finalForm);
+    },
+    isLoading,
+    errors,
+    setPersonaFields: (persona) => {
+      set('nombres', persona.nombres);
+      set('apellidos', persona.apellidos);
+      set('correo', persona.correo ?? '');
+      set('celular', persona.telefono ?? '');
+    },
+    clearPersonaFields: () => {
+      set('nombres', '');
+      set('apellidos', '');
+      set('correo', '');
+      set('celular', '');
+    },
+  });
 
   const addEspecialidad = () => {
     const val = newEspecialidad.trim();
@@ -157,39 +152,10 @@ export const EspecialistaFormBase = ({
   };
 
   const showError = (key: keyof EspecialistaFormData) => (submitted ? errors[key] : '');
-
-  const dniOk = /^\d{8}$/.test(form.dni);
   const celularOk = form.celular ? /^9\d{8}$/.test(form.celular) : false;
 
   const currentModalidad = form.modalidad || 'EBR';
   const availableNiveles = MODALIDAD_NIVEL_MAP[currentModalidad] || [];
-
-  const submitForm = () => {
-    const finalForm = {
-      ...form,
-      especialidades: [
-        ...(form.especialidad ? [form.especialidad] : []),
-        ...especialidadesExtras,
-      ],
-    };
-    onSubmit(finalForm);
-  };
-
-  const handleSubmit = () => {
-    setSubmitted(true);
-    if (Object.keys(errors).length > 0 || isLoading) return;
-    if (dniBloqueadoPorRol) return;
-    if (roleCheck.advierte && !dniBloqueadoPorRol) {
-      setShowRoleConfirm(true);
-      return;
-    }
-    submitForm();
-  };
-
-  const handleConfirmRole = () => {
-    setShowRoleConfirm(false);
-    submitForm();
-  };
 
   return (
     <div className="bg-bg p-0 flex flex-col gap-5 text-text animate-in fade-in-0 duration-300">

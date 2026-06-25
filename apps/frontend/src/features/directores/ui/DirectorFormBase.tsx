@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { User, Briefcase, Check } from 'lucide-react';
 import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import { directorSchema } from '@entities/model-docentes/validator';
 import { SectionCard, TextField, SelectField, FormButton, twoCols } from '@shared/ui/form-controls';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
-import { checkRoleConflict } from '@shared/constants/roleValidation';
+import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
 
 const INITIAL: DirectorFormData = {
   nombres: '',
@@ -43,44 +42,6 @@ export const DirectorFormBase = ({
     ...INITIAL,
     ...initialData,
   }));
-  const [submitted, setSubmitted] = useState(false);
-
-  const { data: persona, isLoading: searchingDni, isLocked: isDniLocked, message: dniMessage } = useDniAutocomplete(
-    form.dni,
-    !initialData,
-  );
-
-  const roleCheck = checkRoleConflict(persona, 'director');
-  const dniBloqueadoPorRol = roleCheck.bloquea;
-
-  const [showRoleConfirm, setShowRoleConfirm] = useState(false);
-
-  useEffect(() => {
-    if (persona) {
-      const t = setTimeout(() => {
-        setForm((prev) => ({
-          ...prev,
-          nombres: persona.nombres || prev.nombres,
-          apellidos: persona.apellidos || prev.apellidos,
-          correo: persona.correo || prev.correo,
-          celular: persona.telefono || prev.celular,
-        }));
-      }, 0);
-      return () => clearTimeout(t);
-    }
-    if (!searchingDni && form.dni.length === 8 && !persona) {
-      const t = setTimeout(() => {
-        setForm((prev) => ({
-          ...prev,
-          nombres: '',
-          apellidos: '',
-          correo: '',
-          celular: '',
-        }));
-      }, 0);
-      return () => clearTimeout(t);
-    }
-  }, [persona, searchingDni, form.dni]);
 
   const set = <K extends keyof DirectorFormData>(key: K, value: DirectorFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -93,33 +54,43 @@ export const DirectorFormBase = ({
     }
   };
 
-  const result = directorSchema.safeParse(form);
-  const errors: Record<string, string> = {};
-  if (!result.success) {
-    result.error.issues.forEach((issue) => {
-      const path = issue.path[0] as string;
-      if (!errors[path]) errors[path] = issue.message;
-    });
-  }
+  const errors = useMemo(() => extractErrors(directorSchema.safeParse(form)), [form]);
+
+  const {
+    submitted,
+    persona,
+    searchingDni,
+    isDniLocked,
+    dniMessage,
+    dniBloqueadoPorRol,
+    showRoleConfirm,
+    setShowRoleConfirm,
+    handleSubmit,
+    handleConfirmRole,
+    dniOk,
+    roleCheck,
+  } = usePersonForm({
+    dni: form.dni,
+    isNew: !initialData,
+    rolObjetivo: 'director',
+    onValidSubmit: () => onSubmit(form),
+    isLoading,
+    errors,
+    setPersonaFields: (persona) => {
+      set('nombres', persona.nombres);
+      set('apellidos', persona.apellidos);
+      set('correo', persona.correo ?? '');
+      set('celular', persona.telefono ?? '');
+    },
+    clearPersonaFields: () => {
+      set('nombres', '');
+      set('apellidos', '');
+      set('correo', '');
+      set('celular', '');
+    },
+  });
+
   const showError = (key: keyof DirectorFormData) => (submitted ? errors[key] : '');
-
-  const handleSubmit = () => {
-    setSubmitted(true);
-    if (!result.success || isLoading) return;
-    if (dniBloqueadoPorRol) return;
-    if (roleCheck.advierte && !dniBloqueadoPorRol) {
-      setShowRoleConfirm(true);
-      return;
-    }
-    onSubmit(form);
-  };
-
-  const handleConfirmRole = () => {
-    setShowRoleConfirm(false);
-    onSubmit(form);
-  };
-
-  const dniOk = /^\d{8}$/.test(form.dni);
   const celularOk = /^9\d{8}$/.test(form.celular);
 
   return (

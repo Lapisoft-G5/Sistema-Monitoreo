@@ -1,6 +1,6 @@
 # Documentación Técnica — Sistema de Monitoreo Educativo UGEL Lampa
 
-> **Versión:** 0.2.0  
+> **Versión:** 0.3.0  
 > **Fecha de análisis:** Junio 2026  
 > **Estado:** En desarrollo / pruebas (no en producción)  
 > **Ámbito:** UGEL Lampa, Puno, Perú — 50 a 200 instituciones educativas  
@@ -231,7 +231,7 @@ Cada funcionalidad (feature) contiene componentes de UI específicos y hooks de 
 
 - **Estado del servidor:** TanStack React Query (`@tanstack/react-query`) — caché, refetch automático, mutaciones, invalidación
 - **Estado global de usuario:** `UserContext` + `UserProvider` — almacena datos de sesión, rol, permisos
-- **Estado de catálogos:** `PlantillasProvider` y `CronogramaProvider` — contextos globales para datos compartidos
+- **Estado de catálogos:** TanStack Query — hooks por feature (`features/cronogramas/api/`, `features/plantillas/api/`) con datos cacheados y sincronizados con el servidor
 - **Estado local:** `useState` / `useReducer` de React
 - **Ruta actual:** React Router — estado en la URL
 
@@ -277,19 +277,19 @@ Capa ubicada en `shared/`:
 - `config/api.ts` — **Centralizado**: `API_BASE_URL` (desde `VITE_API_URL`) y `request<T>()` (helper tipado que maneja FormData, errores HTTP y respuestas vacías). Todos los API modules lo importan desde aquí, eliminando la duplicación de `getApiBaseUrl()` que existía en 11 archivos.
 - `api/fetchInterceptor.ts` — sobrescribe `window.fetch` con lógica de refresh automático
 - `api/auth.api.ts` — `login`, `logout`, `refresh`, `changePassword`, `forgotPassword`, `resetPassword`
-- APIs específicas dentro de cada `entities/model-*/` y `features/*/api/`
+- APIs específicas dentro de cada `features/*/api/`
 
 ### Hooks personalizados
 
 - `useUser()` — datos del usuario autenticado desde UserContext
+- `usePersonForm()` — hook compartido entre `DocenteFormBase`, `DirectorFormBase` y `EspecialistaFormBase` que encapsula la lógica común de: autocompletado por DNI, validación de conflictos de roles con `checkRoleConflict`, extracción de errores Zod (`extractErrors`), y flujo de envío con confirmación de roles
 - Hooks de TanStack Query en cada feature: `useQuery`, `useMutation`, `useQueryClient`
 - Hooks específicos como `use-ficha-monitoreo.ts` para operaciones de evaluación
 
 ### Contextos
 
 - `UserProvider` — sesión del usuario, permisos, rol
-- `CronogramaProvider` — datos de cronogramas compartidos
-- `PlantillasProvider` — plantillas de monitoreo compartidas
+- Hooks de TanStack Query por feature (`useCronogramasData`, `usePlantillasList`, `useReportesApi`) — datos cacheados sincronizados con el servidor, reemplazan a los antiguos `CronogramaProvider` y `PlantillasProvider`
 
 ### Componentes reutilizables
 
@@ -1815,7 +1815,7 @@ El **Sistema de Monitoreo Educativo UGEL Lampa** es una aplicación web construi
 
 ### Estado del proyecto
 
-El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 4 completado) con la funcionalidad central implementada: autenticación, CRUD de entidades, monitoreo, evaluaciones y reportes. Aún no está en producción.
+El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 5 completado) con la funcionalidad central implementada: autenticación, CRUD de entidades, monitoreo, evaluaciones y reportes. Aún no está en producción.
 
 **Contexto adicional:**
 - **Escala esperada:** 50 a 200 instituciones educativas, 50-200 usuarios concurrentes
@@ -1915,6 +1915,62 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 4 completado)
   - Se eliminaron archivos `.gitkeep` de `config/` y `common/`.
 - **Contexto:** Esta fase establece la "Fundación" del backend: un módulo de configuración robusto y tipos base compartidos, como prerrequisito para fases posteriores de modularización y testing.
 
+#### 10. Fase 4 — Unificación de Manejo de Estado (Frontend)
+- **Objetivo:** Eliminar los contextos globales `CronogramaProvider` y `PlantillasProvider`, migrar todo el estado del servidor a TanStack Query, mover los hooks API de `entities/` a `features/`, y reemplazar las mutaciones mock (arrays en memoria) con llamadas reales a la API.
+- **Resolución 4.1 — Migración de páginas de React Context a TanStack Query:**
+  - Se creó el hook puente `useCronogramasData()` en `features/cronogramas/hooks/` que unifica la lógica de obtención de cronogramas, visitas, especialistas, instituciones y docentes usando TanStack Query (`useQuery`/`useQueries`).
+  - Se actualizaron `ReportesPage`, `CronogramaPage`, `CalendarioPage`, `CalendarioSidebar` y `BandejaReprogramaciones` para usar `useCronogramasData()` en vez de consumir contexto.
+  - Se reemplazaron las mutaciones de contexto (`setCronogramas()`) con `qc.setQueryData()` para actualizaciones optimistas.
+- **Resolución 4.2 — Eliminación de Context providers y sincronización con localStorage:**
+  - Se removieron `CronogramaProvider` y `PlantillasProvider` de `app/config.tsx`.
+  - Se eliminaron los archivos `cronograma-context.ts`, `cronogramas/context.tsx`, `cronogramas/use-cronogramas.ts`, `plantillas/context.tsx`, `plantillas/use-plantillas.ts`.
+  - Se limpiaron los archivos `index.ts` de las entidades removiendo las exportaciones de los contextos eliminados.
+- **Resolución 4.3 — Migración de hooks TanStack Query de `entities/` a `features/`:**
+  - Se crearon `features/cronogramas/api/cronogramas.api.ts` y `features/cronogramas/api/use-cronogramas-api.ts` con los hooks de TanStack Query.
+  - Se crearon `features/plantillas/api/plantillas.api.ts` y `features/plantillas/api/use-plantillas-api.ts`.
+  - Se creó `features/reportes/api/use-reportes-api.ts` con hooks de reportes.
+  - Se eliminaron los archivos antiguos en `entities/model-cronogramas/`, `entities/model-plantillas/`, y sus hooks asociados.
+  - Se actualizaron todos los imports en pages y widgets para apuntar a los nuevos módulos en `features/`.
+- **Resolución 4.4 — Reemplazo de mutaciones MOCK con API real:**
+  - Se eliminaron las mutaciones `MOCK_*` de `docente-service.ts`, `especialista-service.ts`, `jefe-area-service.ts` e `institution-service.ts`.
+  - Se removieron los imports `MOCK_*` de todos los widgets de tabla.
+  - Se eliminaron todos los archivos `mocks.ts` de `entities/`.
+  - Se removió `export * from './mocks'` de los archivos `index.ts` de entidades.
+- **Archivos:** 30 archivos modificados (+686, -592 líneas).
+- **Commit:** `ace0b2b`.
+
+#### 11. Fase 5 — FSD Compliance (Frontend)
+- **Objetivo:** Corregir las violaciones de Feature-Sliced Design en el frontend: UI en entities, imports directos de API desde pages, hooks de negocio en shared/, y prevención de dependencias circulares.
+- **Resolución 5.1 — Mover UI de entities a features:**
+  - Se movieron 5 componentes de `entities/model-instituciones/ui/` a `features/institutions/ui/`.
+  - Se actualizaron imports en 3 widgets (`ViewInstitution`, `ProfileInstitution`, `institution-table`).
+  - Se eliminó el directorio `entities/model-instituciones/ui/`.
+- **Resolución 5.2 — Prevenir dependencia circular:**
+  - Se agregó regla `no-restricted-imports` en `eslint.config.js` para advertir sobre imports de `entities/**/ui*`.
+  - Se verificó que no existen imports de features desde entities (0 dependencias circulares).
+- **Resolución 5.3 — Eliminar imports directos de shared/api desde pages:**
+  - Se agregaron `fetchInstituciones`, `fetchInstitucionById` a `institution-service.ts`.
+  - Se agregaron `fetchDocentes`, `fetchDocenteById`, `fetchDocenteByDni`, `fetchCargos`, `updateDocenteRaw` a `docente-service.ts`.
+  - Se agregaron `fetchEspecialistas`, `fetchEspecialistaById` a `especialista-service.ts`.
+  - Se agregaron `fetchJefesArea`, `fetchJefeAreaById` a `jefe-area-service.ts`.
+  - Se agregó `getArchivoPlanUrl` a `planes-monitoreo-service.ts`.
+  - Se actualizaron 15 páginas para usar services en vez de `shared/api` directamente.
+  - **0 imports directos de `shared/api` desde `pages/`.**
+- **Resolución 5.4 — Mover hooks de negocio fuera de shared:**
+  - `useDniAutocomplete.ts` → `features/docentes/hooks/`.
+  - `roleValidation.ts` → `shared/constants/`.
+  - Se actualizaron imports en 3 features (`DirectorFormBase`, `DocenteFormBase`, `EspecialistaFormBase`).
+- **Archivos:** 37 archivos modificados/creados/eliminados.
+- **Commits:** `2ee3be7`, `04732cd`, `1ba50c6`, `e210737`.
+
+#### 12. Fase 6.3 — Hook compartido `usePersonForm` para formularios de personas
+- **Problema:** `DocenteFormBase`, `DirectorFormBase` y `EspecialistaFormBase` compartían ~60 líneas de lógica duplicada cada uno: autocompletado por DNI (`useDniAutocomplete` + `useEffect` para poblar campos), validación de conflictos de roles (`checkRoleConflict` + `ConfirmModal`), extracción de errores Zod, y flujo de envío con modal de confirmación.
+- **Resolución:**
+  - Se creó `shared/hooks/usePersonForm.ts` con el hook `usePersonForm` y el helper `extractErrors`, encapsulando toda la lógica común.
+  - Los tres formularios ahora lo consumen, reduciendo su tamaño total en ~106 líneas (DocenteFormBase: 581→538, DirectorFormBase: 332→303, EspecialistaFormBase: 525→491).
+  - El JSX de los formularios no requirió cambios (se destructurearon las variables con los mismos nombres).
+- **Archivos:** `shared/hooks/usePersonForm.ts` (nuevo), 3 FormBase actualizados.
+
 ---
 
 ## 19. Refactorizaciones Archivadas
@@ -1969,3 +2025,65 @@ El proyecto se encuentra en **fase de desarrollo/pruebas** (Sprint 4 completado)
   - Nuevos helpers: `collection.utils.ts` (groupBy, mapValues, pick, omit) y `string.utils.ts` (capitalize, truncate).
   - Eliminación de `.gitkeep` obsoletos.
 - **Commits:** `dd9f750`, `c09abf3`.
+
+### Fase 4 — Unificación de Manejo de Estado (Frontend) (Completada)
+
+**Objetivo:** Eliminar los contextos globales `CronogramaProvider` y `PlantillasProvider`, migrar todo el estado del servidor a TanStack Query, mover los hooks API de `entities/` a `features/`, y reemplazar las mutaciones mock (arrays en memoria) con llamadas reales a la API.
+
+**Cambios:**
+- **4.1 Migración de páginas de React Context a TanStack Query:**
+  - Nuevo hook puente `useCronogramasData()` en `features/cronogramas/hooks/`.
+  - Pages actualizadas: `ReportesPage`, `CronogramaPage`, `CalendarioPage`, `CalendarioSidebar`, `BandejaReprogramaciones`.
+  - Mutaciones reemplazadas con `qc.setQueryData()` para actualizaciones optimistas.
+- **4.2 Eliminación de Context providers y sincronización con localStorage:**
+  - Eliminación de `CronogramaProvider` y `PlantillasProvider` de `app/config.tsx`.
+  - Eliminación de 5 archivos de contexto/hooks (`context.tsx`, `cronograma-context.ts`, `use-cronogramas.ts`, `plantillas/context.tsx`, `plantillas/use-plantillas.ts`).
+- **4.3 Migración de hooks TanStack Query de `entities/` a `features/`:**
+  - Nuevos módulos: `features/cronogramas/api/`, `features/plantillas/api/`, `features/reportes/api/`.
+  - Eliminación de archivos antiguos en `entities/model-cronogramas/` y `entities/model-plantillas/`.
+- **4.4 Reemplazo de mutaciones MOCK con API real:**
+  - Eliminación de `MOCK_*` en 4 servicios (`docente-service`, `especialista-service`, `jefe-area-service`, `institution-service`).
+  - Eliminación de todos los `mocks.ts` en `entities/`.
+- **Archivos:** 30 archivos modificados (+686, -592 líneas).
+- **Commit:** `ace0b2b`.
+
+### Fase 5 — FSD Compliance (Frontend) (Completada)
+
+**Objetivo:** Corregir las violaciones de Feature-Sliced Design (FSD) en el frontend: UI en entities, imports directos de API desde pages, hooks de negocio en shared/, y prevención de dependencias circulares.
+
+**Cambios realizados:**
+
+- **5.1 Mover UI de entities a features:** 5 componentes movidos de `entities/model-instituciones/ui/` a `features/institutions/ui/`. 3 widgets actualizados (`ViewInstitution`, `ProfileInstitution`, `institution-table`). Directorio `entities/model-instituciones/ui/` eliminado.
+- **5.2 Prevenir dependencia circular:** Regla `no-restricted-imports` agregada en `eslint.config.js`. Verificación manual de 0 imports de features desde entities.
+- **5.3 Eliminar imports directos de shared/api desde pages:** 6 nuevas funciones agregadas a services existentes (`fetchInstituciones`, `fetchDocentes`, `fetchEspecialistas`, `fetchJefesArea`, `fetchCargos`, `getArchivoPlanUrl`, etc.). 15 páginas actualizadas. **0 imports directos de `shared/api` desde `pages/`.**
+- **5.4 Mover hooks de negocio:** `useDniAutocomplete` → `features/docentes/hooks/`. `roleValidation` → `shared/constants/`. 3 features actualizados.
+
+**Archivos:** 37 archivos modificados/creados/eliminados.
+- **Commits:**
+  - `2ee3be7` — 5.1 Mover UI de entities a features
+  - `04732cd` — 5.2 Regla de dependencia circular
+  - `1ba50c6` — 5.3 Eliminar imports directos de shared/api
+  - `e210737` — 5.4 Mover hooks de negocio fuera de shared
+
+### Fase 6 — Eliminación de Código Duplicado (Frontend)
+
+**Objetivo:** Reducir la duplicación de lógica y UI en el frontend extrayendo componentes y hooks compartidos.
+
+#### Fase 6.1 — Componentes compartidos EntityStats y EntityTable (Completada)
+
+**Problema:** Los widgets de tabla (`docentes-table`, `especialistas-table`, `institutions-table`, `jefes-table`) tenían lógica duplicada de caché, paginación y filtros. Los widgets de stats (`*-stats`) tenían estructura visual repetida.
+
+**Cambios realizados:**
+- **EntityStats** (`shared/ui/EntityStats.tsx`): Componente genérico de tarjetas KPI. Acepta `items: StatsItem[]` (label, value, icon) y renderiza grid responsivo. Reemplaza los KPI repetidos en 4 widgets de stats.
+- **EntityTable** (`shared/ui/EntityTable.tsx`): Componente genérico de tabla con paginación cliente-side, filtro de búsqueda, indicador de filas activas/inactivas y scroll responsivo. Reemplaza la lógica de tabla duplicada en los 4 widgets de tabla.
+- **Eliminaciones:** Se eliminaron los archivos `useTable.ts` de los 4 widgets de tabla (lógica de paginación/filtro ahora en EntityTable).
+- **Widgets actualizados:** `directores-stats`, `directores-table`, `docentes-stats`, `docentes-table`, `especialistas-stats`, `especialistas-table`, `institution-stats`, `institution-table`, `jefes-stats`, `jefes-table`.
+
+#### Fase 6.3 — Hook compartido `usePersonForm` (Completada)
+
+**Problema:** `DocenteFormBase`, `DirectorFormBase` y `EspecialistaFormBase` compartían ~60 líneas de lógica duplicada cada uno.
+
+**Cambios realizados:**
+- Se creó `shared/hooks/usePersonForm.ts` con el hook `usePersonForm` y el helper `extractErrors`, encapsulando: autocompletado por DNI, validación de conflictos de roles, extracción de errores Zod, y flujo de envío con confirmación de roles.
+- Los tres formularios se refactorizaron para consumir el hook, reduciendo su tamaño total en ~106 líneas.
+- **Nuevos archivos:** `shared/hooks/usePersonForm.ts`

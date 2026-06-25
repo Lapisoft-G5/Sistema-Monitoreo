@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { User, Briefcase, Plus, Trash2, Check, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
@@ -8,8 +8,7 @@ import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@share
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';
-import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
-import { checkRoleConflict } from '@shared/constants/roleValidation';
+import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
 
 interface Props {
   onCancel: () => void;
@@ -105,51 +104,11 @@ export const DocenteFormBase = ({
     };
   });
 
-  const [submitted, setSubmitted] = useState(false);
   const [selectedGrado, setSelectedGrado] = useState(() => {
     const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
     return defaultGrados[0] || '';
   });
   const [selectedSeccion, setSelectedSeccion] = useState('');
-
-  const { data: persona, isLoading: searchingDni, isLocked: isDniLocked, message: dniMessage } = useDniAutocomplete(
-    form.dni,
-    !initialData,
-  );
-
-  const rolObjetivo: 'docente' | 'director' =
-    form.cargo === 'Director' ? 'director' : 'docente';
-  const roleCheck = checkRoleConflict(persona, rolObjetivo);
-  const dniBloqueadoPorRol = roleCheck.bloquea;
-
-  const [showRoleConfirm, setShowRoleConfirm] = useState(false);
-
-  useEffect(() => {
-    if (persona) {
-      const t = setTimeout(() => {
-        setForm((prev) => ({
-          ...prev,
-          nombres: persona.nombres || prev.nombres,
-          apellidos: persona.apellidos || prev.apellidos,
-          correo: persona.correo || prev.correo,
-          celular: persona.telefono || prev.celular,
-        }));
-      }, 0);
-      return () => clearTimeout(t);
-    }
-    if (!searchingDni && form.dni.length === 8 && !persona) {
-      const t = setTimeout(() => {
-        setForm((prev) => ({
-          ...prev,
-          nombres: '',
-          apellidos: '',
-          correo: '',
-          celular: '',
-        }));
-      }, 0);
-      return () => clearTimeout(t);
-    }
-  }, [persona, searchingDni, form.dni]);
 
   useEffect(() => {
     const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
@@ -159,18 +118,41 @@ export const DocenteFormBase = ({
   const set = <K extends keyof DocenteFormData>(key: K, value: DocenteFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  // Validación rápida con Zod para mostrar errores en tiempo real
-  const validationResult = docenteSchema.safeParse(form);
-  const errors: Record<string, string> = {};
+  const errors = useMemo(() => extractErrors(docenteSchema.safeParse(form)), [form]);
 
-  if (!validationResult.success) {
-    validationResult.error.issues.forEach((issue) => {
-      const path = issue.path[0] as string;
-      if (!errors[path]) {
-        errors[path] = issue.message;
-      }
-    });
-  }
+  const {
+    submitted,
+    persona,
+    searchingDni,
+    isDniLocked,
+    dniMessage,
+    dniBloqueadoPorRol,
+    showRoleConfirm,
+    setShowRoleConfirm,
+    handleSubmit,
+    handleConfirmRole,
+    dniOk,
+    roleCheck,
+  } = usePersonForm({
+    dni: form.dni,
+    isNew: !initialData,
+    rolObjetivo: form.cargo === 'Director' ? 'director' : 'docente',
+    onValidSubmit: () => onSubmit(form),
+    isLoading,
+    errors,
+    setPersonaFields: (persona) => {
+      set('nombres', persona.nombres);
+      set('apellidos', persona.apellidos);
+      set('correo', persona.correo ?? '');
+      set('celular', persona.telefono ?? '');
+    },
+    clearPersonaFields: () => {
+      set('nombres', '');
+      set('apellidos', '');
+      set('correo', '');
+      set('celular', '');
+    },
+  });
 
   const showError = (key: keyof DocenteFormData) => (submitted ? errors[key] : '');
 
@@ -208,23 +190,6 @@ export const DocenteFormBase = ({
     );
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    if (!validationResult.success || isLoading) return;
-    if (dniBloqueadoPorRol) return;
-    if (roleCheck.advierte && !dniBloqueadoPorRol) {
-      setShowRoleConfirm(true);
-      return;
-    }
-    onSubmit(form);
-  };
-
-  const handleConfirmRole = () => {
-    setShowRoleConfirm(false);
-    onSubmit(form);
-  };
-
-  const dniOk = /^\d{8}$/.test(form.dni);
   const celularOk = /^9\d{8}$/.test(form.celular);
 
   return (

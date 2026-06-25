@@ -365,6 +365,12 @@ Ejemplos de la organización actual:
 - `prisma-especialista.repository.ts` → `especialista-mapper.helper.ts`, `especialista-read.helper.ts`, `especialista-create.helper.ts`, `especialista-update.helper.ts`, `especialista-delete.helper.ts`, `especialista-cargo.helper.ts`
 - `prisma-institutions.repository.ts` → `institucion-mapper.helper.ts`, `institucion-director.helper.ts`, `institucion-read.helper.ts`, `institucion-write.helper.ts`, `institucion-state.helper.ts`
 
+El mismo patrón se aplica a **servicios** grandes: la lógica compartida (validaciones de roles, permisos) se extrae a archivos `*-.validator.ts`, y los métodos de negocio complejos se agrupan en helpers `*-.helper.ts`. Ejemplos:
+- `teachers.service.ts` → `docente-service.validator.ts` (validaciones de roles y permisos)
+- `scheduling.service.ts` → `scheduling-cronograma.helper.ts`, `scheduling-solicitud.helper.ts`
+- `ficha.service.ts` → `ficha-read.helper.ts`, `ficha-create.helper.ts`, `ficha-respuesta.helper.ts`, `ficha-finalizar.helper.ts`
+- `plantilla.service.ts` → `plantilla-service.validator.ts`
+
 ### Modelos
 
 Definidos en el schema de Prisma (`schema.prisma`). 44 modelos que generan las tablas en PostgreSQL.

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Grid, List } from 'lucide-react';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
-import { usePlantillas } from '@entities/model-plantillas';
+import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api';
 import { useFichasCompletadas } from '@entities/model-reportes';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ReportesStats, ReportesGrid, type BackendReportVisit } from '@widgets/reportes';
@@ -62,7 +62,7 @@ export const ReportesPage = () => {
       user?.role === 'jefe_taller');
 
   const { cronogramas } = useCronogramasData();
-  const { plantillas } = usePlantillas();
+  const { data: plantillas = [] } = usePlantillasList();
   const { data: fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
 
   // ── Estados de Vista e Interacción ──

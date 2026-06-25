@@ -1,6 +1,6 @@
 # Documentación Técnica — Sistema de Monitoreo Educativo UGEL Lampa
 
-> **Versión:** 0.4.0  
+> **Versión:** 0.4.1  
 > **Fecha de análisis:** Junio 2026  
 > **Estado:** En desarrollo / pruebas (no en producción)  
 > **Ámbito:** UGEL Lampa, Puno, Perú — 50 a 200 instituciones educativas  
@@ -356,6 +356,13 @@ Se definen como **interfaces abstractas** (ej. `UserRepository`) con implementac
 - Desacoplar la capa de datos de la lógica de negocio
 - Facilitar tests unitarios (mock del repositorio)
 - Cambiar de ORM sin modificar servicios
+
+**Organización interna (helper pattern):** Los repositorios grandes (>200 líneas) se dividen en **funciones helper puras** exportadas desde archivos `*-*.helper.ts`, y la clase `Prisma*Repository` se convierte en una **fachada delgada** que delega en ellas. Cada helper cubre un grupo de casos de uso afines (lectura, creación, actualización, borrado, mapeo, etc.), manteniendo cada archivo por debajo de ~220 líneas. Las funciones helper reciben `PrismaService` como primer parámetro en lugar de acceder a `this.prisma`.
+
+Ejemplos de la organización actual:
+- `prisma-plantilla.repository.ts` → `plantilla-mapper.helper.ts`, `plantilla-read.helper.ts`, `plantilla-write.helper.ts`, `plantilla-delete.helper.ts`, `plantilla-clone.helper.ts`, `plantilla-versionar.helper.ts`, `plantilla-sync-arbol.helper.ts`, `plantilla-sync-arbol-tx.helper.ts`
+- `prisma-teachers.repository.ts` → `docente-mapper.helper.ts`, `docente-read.helper.ts`, `docente-create.helper.ts`, `docente-update.helper.ts`, `docente-update-estado.helper.ts`, `docente-shared.helper.ts`
+- `prisma-especialista.repository.ts` → `especialista-mapper.helper.ts`, `especialista-read.helper.ts`, `especialista-create.helper.ts`, `especialista-update.helper.ts`, `especialista-delete.helper.ts`, `especialista-cargo.helper.ts`
 
 ### Modelos
 

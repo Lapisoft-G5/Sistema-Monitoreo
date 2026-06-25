@@ -1,6 +1,6 @@
 # Documentación Técnica — Sistema de Monitoreo Educativo UGEL Lampa
 
-> **Versión:** 0.3.0  
+> **Versión:** 0.4.0  
 > **Fecha de análisis:** Junio 2026  
 > **Estado:** En desarrollo / pruebas (no en producción)  
 > **Ámbito:** UGEL Lampa, Puno, Perú — 50 a 200 instituciones educativas  
@@ -333,11 +333,14 @@ apps/backend/src/
 
 ### Capas por módulo
 
-Cada módulo sigue el patrón **Controller → Service → Repository (interfaz + implementación Prisma)**:
+Cada módulo sigue el patrón **Controller → Service → Repository (interfaz + implementación Prisma)** con una capa adicional de **Mapper** para separar los modelos de Prisma de las entidades de dominio:
 
 ```
-Ruta HTTP → Controller → DTOs (validación) → Service → Repository → Prisma → PostgreSQL
+Ruta HTTP → Controller → DTOs (validación) → Service → Repository (Prisma) → Mapper → Domain Entity
 ```
+
+- **Mappers** (`modules/*/mappers/`): Funciones puras `fromPrisma*()` que convierten tipos de Prisma a entidades de dominio (ej. `fromPrismaPersona(data: PrismaPersona): Persona`). No tienen estado ni dependencias DI, lo que los hace fácilmente testeables.
+- **Domain Entities** (`modules/*/entities/`): Clases que extienden `BaseEntity` (el cual provee `id`, `createdAt`, `updatedAt` via `!: `), separando el modelo de negocio del esquema de la base de datos. Esto facilita cambios de ORM sin afectar la lógica de negocio.
 
 ### Controladores
 
@@ -361,6 +364,7 @@ Definidos en el schema de Prisma (`schema.prisma`). 44 modelos que generan las t
 ### Middlewares
 
 - **RlsMiddleware** (`shared/prisma/rls.middleware.ts`): Se ejecuta en todas las rutas. Toma el usuario del request (`req.user`) y setea las GUCs de PostgreSQL (`app.user_id`, `app.user_rol`) para que las RLS policies filtren automáticamente.
+- **RlsGucService** (`modules/auth/services/rls-guc.service.ts`): Servicio `@Injectable` que encapsula la consulta raw a Prisma para setear las GUCs de sesión (`app.user_id`, `app.user_rol`, `app.user_institucion_id`). Es usado por `AuthGuard` (en lugar de llamar a PrismaService directamente), manteniendo la separación de responsabilidades.
 
 ### Autenticación
 

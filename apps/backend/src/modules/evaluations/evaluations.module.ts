@@ -5,6 +5,7 @@ import { FichaRepository } from './repositories/ficha.repository.js';
 import { PrismaFichaRepository } from './repositories/prisma-ficha.repository.js';
 import { PrismaModule } from '../../shared/prisma/prisma.module.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { BaremoCalculatorService } from './motor/baremo-calculator.service.js';
 import { ScopeFilter } from '../../shared/auth/scope-filter.js';
 
 @Module({
@@ -13,6 +14,7 @@ import { ScopeFilter } from '../../shared/auth/scope-filter.js';
   providers: [
     FichaService,
     ScopeFilter,
+    BaremoCalculatorService,
     {
       provide: FichaRepository,
       useClass: PrismaFichaRepository,

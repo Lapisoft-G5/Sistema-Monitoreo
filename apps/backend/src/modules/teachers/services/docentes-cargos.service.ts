@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { CargoCompatibilityService } from '../../../shared/auth/cargo-compatibility.service.js';
+import { CargoCompatibilityService } from './cargo-compatibility.service.js';
 import { SessionRepository } from '../../auth/repositories/session.repository.js';
 import { CargoNombre, resolvePrincipalCargo } from '../../../shared/auth/capability-map.js';
 import { DocentesCargosRepository } from '../repositories/docentes-cargos.repository.js';

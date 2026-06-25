@@ -9,8 +9,8 @@ import { TeachersRepository } from './repositories/teachers.repository.js';
 import { PrismaTeachersRepository } from './repositories/prisma-teachers.repository.js';
 import { DocentesCargosRepository } from './repositories/docentes-cargos.repository.js';
 import { PrismaDocentesCargosRepository } from './repositories/prisma-docentes-cargos.repository.js';
+import { CargoCompatibilityService } from './services/cargo-compatibility.service.js';
 import { CatalogsModule } from '../catalogs/catalogs.module.js';
-import { CargoCompatibilityService } from '../../shared/auth/cargo-compatibility.service.js';
 
 @Module({
   imports: [PrismaModule, AuthModule, CatalogsModule],

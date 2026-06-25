@@ -7,6 +7,7 @@ import {
   DocentePersonaInfo,
   FinalizeCargoParams,
 } from './docentes-cargos.repository.js';
+import { CargoNombre } from '../../../shared/auth/capability-map.js';
 
 @Injectable()
 export class PrismaDocentesCargosRepository implements DocentesCargosRepository {
@@ -42,6 +43,14 @@ export class PrismaDocentesCargosRepository implements DocentesCargosRepository 
       include: { cargo: true },
     });
     return records as unknown as DocenteCargoRow[];
+  }
+
+  async findActiveCargoNombresByDocenteId(docenteId: string): Promise<CargoNombre[]> {
+    const records = await this.prisma.docenteCargo.findMany({
+      where: { docenteId, fechaFin: null },
+      include: { cargo: true },
+    });
+    return records.filter((dc) => dc.cargo?.nombre).map((dc) => dc.cargo.nombre as CargoNombre);
   }
 
   async findAllCargosByDocenteId(docenteId: string): Promise<DocenteCargoRow[]> {

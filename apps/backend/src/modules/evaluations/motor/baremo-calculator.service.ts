@@ -1,10 +1,12 @@
+import { Injectable } from '@nestjs/common';
 import type { NivelLogro } from '@sistema-monitoreo/shared-contracts';
 
+@Injectable()
 export class BaremoCalculatorService {
   /**
    * Convierte nivel numerico (1-4) a romano.
    */
-  static nivelARomano(nivel: number): 'I' | 'II' | 'III' | 'IV' {
+  nivelARomano(nivel: number): 'I' | 'II' | 'III' | 'IV' {
     switch (nivel) {
       case 1:
         return 'I';
@@ -22,7 +24,7 @@ export class BaremoCalculatorService {
   /**
    * Calcula el promedio a partir de una lista de niveles (1-4).
    */
-  static calcularPromedio(niveles: number[]): number {
+  calcularPromedio(niveles: number[]): number {
     if (niveles.length === 0) return 0;
     const suma = niveles.reduce((acc, n) => acc + n, 0);
     return Number((suma / niveles.length).toFixed(2));
@@ -37,7 +39,7 @@ export class BaremoCalculatorService {
    *
    * Los gaps 1.5, 2.5, 3.5 son intencionales segun especificacion.
    */
-  static calcularNivelLogro(promedio: number): NivelLogro {
+  calcularNivelLogro(promedio: number): NivelLogro {
     if (promedio < 1.0 || promedio > 4.0) {
       throw new Error(`Promedio fuera de rango: ${promedio}. Debe estar entre 1.0 y 4.0.`);
     }
@@ -51,7 +53,7 @@ export class BaremoCalculatorService {
   /**
    * Calcula el resultado completo del baremo: puntaje, promedio, nivel.
    */
-  static calcularResultadoCompleto(niveles: number[]): {
+  calcularResultadoCompleto(niveles: number[]): {
     puntajeTotal: number;
     promedio: number;
     nivelLogro: NivelLogro;

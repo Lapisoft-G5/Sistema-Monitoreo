@@ -1,11 +1,11 @@
-export class Persona {
-  id!: string;
+import { BaseEntity } from '../../../shared/types/base.entity.js';
+
+export class Persona extends BaseEntity {
   dni!: string;
   nombres!: string;
   apellidos!: string;
   correo: string | null = null;
-  createdAt!: Date;
-  updatedAt!: Date;
+  telefono: string | null = null;
   docente?: {
     id: string;
     institucionId: string;

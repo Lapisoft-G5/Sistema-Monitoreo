@@ -1,3 +1,5 @@
+import { CargoNombre } from '../../../shared/auth/capability-map.js';
+
 export interface DocenteCargoRow {
   id: string;
   docenteId: string;
@@ -30,6 +32,7 @@ export abstract class DocentesCargosRepository {
   abstract findDocenteCargoWithCargo(id: string): Promise<DocenteCargoRow | null>;
   abstract findActiveDocenteCargosWithCargo(docenteId: string): Promise<DocenteCargoRow[]>;
   abstract findAllCargosByDocenteId(docenteId: string): Promise<DocenteCargoRow[]>;
+  abstract findActiveCargoNombresByDocenteId(docenteId: string): Promise<CargoNombre[]>;
   abstract findDocentePersonaInfo(docenteId: string): Promise<DocentePersonaInfo | null>;
   abstract findUserIdByDocenteId(docenteId: string): Promise<string | null>;
 

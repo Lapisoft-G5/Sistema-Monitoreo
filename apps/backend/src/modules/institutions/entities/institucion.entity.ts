@@ -1,5 +1,6 @@
-export class Institucion {
-  id!: string;
+import { BaseEntity } from '../../../shared/types/base.entity.js';
+
+export class Institucion extends BaseEntity {
   codigoModular!: string;
   codigoLocal!: string;
   nombre!: string;
@@ -11,8 +12,7 @@ export class Institucion {
   zona!: string;
   estado!: string;
   modalidad!: string | null;
-  createdAt!: Date;
-  updatedAt!: Date;
+  nivelEducativoId?: string | null;
   director?: string | null;
   directorTelefono?: string | null;
   directorCorreo?: string | null;

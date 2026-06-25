@@ -13,6 +13,9 @@ import { FichaRepository } from '../repositories/ficha.repository.js';
 import { STORAGE_SERVICE, type StorageService } from '../../../shared/storage/storage.constants.js';
 import { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
 import { ScopeFilter } from '../../../shared/auth/scope-filter.js';
+
+// Re-export for tests
+export { BaremoCalculatorService };
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import type {
@@ -28,6 +31,7 @@ export class FichaService {
   constructor(
     private readonly repository: FichaRepository,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
+    private readonly baremoService: BaremoCalculatorService,
     private readonly scopeFilter: ScopeFilter,
   ) {}
 
@@ -224,7 +228,7 @@ export class FichaService {
     }
 
     const niveles = ficha.respuestasDesempeno.map((r) => r.nivel);
-    const resultado = BaremoCalculatorService.calcularResultadoCompleto(niveles);
+    const resultado = this.baremoService.calcularResultadoCompleto(niveles);
 
     const result = await this.repository.finalizar(
       fichaId,
@@ -318,6 +322,4 @@ export class FichaService {
     return saved.url;
   }
 
-  // ============== Motor de baremo (expuesto para tests y reuso) ==============
-  static readonly baremo = BaremoCalculatorService;
 }

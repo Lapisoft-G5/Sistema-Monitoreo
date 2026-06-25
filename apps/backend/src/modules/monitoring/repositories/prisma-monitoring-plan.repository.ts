@@ -7,42 +7,14 @@ import type {
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreatePlanData, MonitoringPlanRepository } from './monitoring-plan.repository.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
+import { fromPrismaPlan } from './monitoring-plan.mapper.js';
 
 @Injectable()
 export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private async buildResponse(plan: any): Promise<IMonitoringPlanResponse> {
-    const cobertura = await this.prisma.planCoberturaIe.findMany({
-      where: { planId: plan.id },
-      include: {
-        institucion: {
-          select: { id: true, nombre: true, codigoModular: true },
-        },
-      },
-    });
-    const institucionesCubiertas: IPlanInstitucionCubierta[] = cobertura.map((c) => ({
-      institucionId: c.institucion.id,
-      institucionNombre: c.institucion.nombre,
-      institucionCodigoModular: c.institucion.codigoModular,
-    }));
-
-    return {
-      id: plan.id,
-      titulo: plan.titulo,
-      anioAcademico: plan.anioAcademico,
-      tipoEntidad: plan.tipoEntidad,
-      archivoUrl: plan.archivoUrl,
-      estado: plan.estado,
-      autorId: plan.autorId,
-      rolAutorAlCrear: plan.rolAutorAlCrear,
-      institucionId: plan.institucionId,
-      deleted: plan.deleted,
-      deletedAt: plan.deletedAt ? plan.deletedAt.toISOString() : null,
-      institucionesCubiertas,
-      createdAt: plan.createdAt.toISOString(),
-      updatedAt: plan.updatedAt.toISOString(),
-    };
+    return fromPrismaPlan(this.prisma, plan);
   }
 
   async findAll(filters?: QueryPlanDto): Promise<IMonitoringPlanResponse[]> {

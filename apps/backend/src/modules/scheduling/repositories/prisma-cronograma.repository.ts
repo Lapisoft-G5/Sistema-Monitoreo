@@ -1,12 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type {
-  IVisita,
-  ISolicitudReprogramacion,
-  EstadoVisita,
-  EstadoSolicitudReprogramacion,
-} from '@sistema-monitoreo/shared-contracts';
+import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
 import {
   CronogramaRepository,
   CreateVisitaData,
@@ -15,37 +10,14 @@ import {
   CreateSolicitudData,
   ResolverSolicitudData,
 } from './cronograma.repository.js';
+import { fromPrismaVisita, fromPrismaSolicitud } from './cronograma.mapper.js';
 
 @Injectable()
 export class PrismaCronogramaRepository implements CronogramaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private mapVisita(v: any): IVisita {
-    return {
-      id: v.id,
-      monitorId: v.monitorId,
-      institucionId: v.institucionId,
-      evaluadoId: v.evaluadoId,
-      planId: v.planId,
-      tipoMonitoreo: v.tipoMonitoreo,
-      numeroVisita: v.numeroVisita,
-      fechaProgramada: this.toDateOnly(v.fechaProgramada),
-      horaInicio: v.horaInicio,
-      detalles: v.detalles,
-      estado: v.estado as EstadoVisita,
-      modalidad: v.modalidad,
-      nivelEducativo: v.nivelEducativo,
-      creadoPorId: v.creadoPorId,
-      createdAt: v.createdAt.toISOString(),
-      updatedAt: v.updatedAt.toISOString(),
-    };
-  }
-
-  private toDateOnly(value: any): string {
-    if (value instanceof Date) {
-      return value.toISOString().slice(0, 10);
-    }
-    return String(value).slice(0, 10);
+    return fromPrismaVisita(v);
   }
 
   async findAll(filters?: any): Promise<IVisita[]> {
@@ -183,36 +155,7 @@ export class PrismaSolicitudReprogramacionRepository implements SolicitudReprogr
   constructor(private readonly prisma: PrismaService) {}
 
   private mapSolicitud(s: any): ISolicitudReprogramacion {
-    const aprobadorNombre = s.resueltoPor?.persona
-      ? `${s.resueltoPor.persona.nombres} ${s.resueltoPor.persona.apellidos}`
-      : null;
-    const aprobadorRol = s.resueltoPor?.rol?.nombre || null;
-
-    return {
-      id: s.id,
-      cronogramaId: s.cronogramaId,
-      solicitanteId: s.solicitanteId,
-      solicitanteRolAlCrear: s.solicitanteRolAlCrear,
-      fechaOriginal:
-        s.fechaOriginal instanceof Date
-          ? s.fechaOriginal.toISOString().slice(0, 10)
-          : String(s.fechaOriginal).slice(0, 10),
-      horaOriginal: s.horaOriginal,
-      fechaPropuesta:
-        s.fechaPropuesta instanceof Date
-          ? s.fechaPropuesta.toISOString().slice(0, 10)
-          : String(s.fechaPropuesta).slice(0, 10),
-      horaPropuesta: s.horaPropuesta,
-      justificacion: s.justificacion,
-      archivoSustentoUrl: s.archivoSustentoUrl,
-      estado: s.estado as EstadoSolicitudReprogramacion,
-      resueltoPorId: s.resueltoPorId,
-      resueltoPorNombre: aprobadorNombre,
-      resueltoPorRol: aprobadorRol,
-      comentarioResolucion: s.comentarioResolucion,
-      fechaResolucion: s.fechaResolucion ? s.fechaResolucion.toISOString() : null,
-      createdAt: s.createdAt.toISOString(),
-    };
+    return fromPrismaSolicitud(s);
   }
 
   async findAll(filters?: any): Promise<ISolicitudReprogramacion[]> {

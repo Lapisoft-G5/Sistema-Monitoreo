@@ -4,7 +4,6 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type {
   IFichaMonitoreo,
-  IFichaContexto,
   IFichaRespuestaDesempeno,
   IFichaRespuestaAspecto,
   IFichaRespuestaEjeItem,
@@ -19,22 +18,11 @@ import {
   CronogramaBasic,
   PlantillaBasic,
 } from './ficha.repository.js';
+import { fromPrismaFicha } from './ficha.mapper.js';
 
 @Injectable()
 export class PrismaFichaRepository implements FichaRepository {
   constructor(private readonly prisma: PrismaService) {}
-
-  private mapContexto(c: any): IFichaContexto {
-    return {
-      id: c.id,
-      areaCurricular: c.areaCurricular,
-      grado: c.grado,
-      seccion: c.seccion,
-      cantidadEstudiantes: c.cantidadEstudiantes,
-      cantidadEstudiantesNee: c.cantidadEstudiantesNee,
-      cursoId: c.cursoId,
-    };
-  }
 
   private async buildFicha(fichaId: string): Promise<IFichaMonitoreo> {
     const ficha = await this.prisma.fichaMonitoreo.findUnique({
@@ -48,51 +36,7 @@ export class PrismaFichaRepository implements FichaRepository {
       },
     });
     if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
-
-    const requiereMigracion = ficha.plantilla?.estado === 'Historico';
-
-    return {
-      id: ficha.id,
-      cronogramaId: ficha.cronogramaId,
-      plantillaId: ficha.plantillaId,
-      plantillaVersion: ficha.plantilla?.version ?? 0,
-      fichaContextoId: ficha.fichaContextoId,
-      anioAcademico: ficha.anioAcademico,
-      puntajeTotal: ficha.puntajeTotal,
-      promedio: Number(ficha.promedio),
-      nivelLogro: ficha.nivelLogro as any,
-      estado: ficha.estado as any,
-      contexto: this.mapContexto(ficha.fichaContexto),
-      respuestasDesempeno: ficha.respuestasDesempeno.map((r) => ({
-        id: r.id,
-        fichaId: r.fichaId,
-        desempenoId: r.desempenoId,
-        nivel: r.nivel,
-        observaciones: r.observaciones,
-      })),
-      respuestasAspecto: ficha.respuestasAspecto.map((r) => ({
-        id: r.id,
-        fichaId: r.fichaId,
-        aspectoId: r.aspectoId,
-        marcado: r.marcado,
-      })),
-      respuestasEjeItem: ficha.respuestasEjeItem.map((r) => ({
-        id: r.id,
-        fichaId: r.fichaId,
-        ejeItemId: r.ejeItemId,
-        nivel: r.nivel,
-        evidenciaUrl: r.evidenciaUrl,
-      })),
-      creadoPorId: ficha.creadoPorId,
-      finalizadaPorId: ficha.finalizadaPorId,
-      observaciones: ficha.observaciones,
-      sugerencias: (ficha as any).sugerencias || null,
-      compromisos: (ficha as any).compromisos || null,
-      requiereMigracion,
-      plantillaHistoricaId: requiereMigracion ? ficha.plantillaId : null,
-      createdAt: ficha.createdAt.toISOString(),
-      finalizadaAt: ficha.finalizadaAt ? ficha.finalizadaAt.toISOString() : null,
-    };
+    return fromPrismaFicha(ficha);
   }
 
   async findByVisitaId(cronogramaId: string): Promise<IFichaMonitoreo | null> {

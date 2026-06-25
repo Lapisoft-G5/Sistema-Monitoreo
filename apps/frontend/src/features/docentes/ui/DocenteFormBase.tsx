@@ -8,8 +8,8 @@ import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@share
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';
-import { useDniAutocomplete } from '@shared/hooks/useDniAutocomplete';
-import { checkRoleConflict } from '@shared/hooks/roleValidation';
+import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
+import { checkRoleConflict } from '@shared/constants/roleValidation';
 
 interface Props {
   onCancel: () => void;

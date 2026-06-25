@@ -44,16 +44,6 @@ export interface UseDniAutocompleteResult {
   message: string;
 }
 
-/**
- * Hook reutilizable para autocompletar datos personales a partir del DNI.
- *
- * - Cuando el DNI tiene 8 dígitos, consulta `GET /api/docentes/buscar/:dni`
- *   que devuelve la `persona` (y opcionalmente el `docente` vinculado).
- * - Si la persona existe, devuelve los datos y `isLocked = true` para que
- *   el formulario bloquee los campos personales (nombres, apellidos, correo, celular).
- * - Si no existe, devuelve `isFound = false` y permite llenado normal.
- * - Si el DNI tiene menos de 8 dígitos, no consulta.
- */
 export const useDniAutocomplete = (dni: string, enabled = true): UseDniAutocompleteResult => {
   const [data, setData] = useState<PersonaAutocompleteData | null>(null);
   const [isLoading, setIsLoading] = useState(false);

@@ -5,8 +5,8 @@ import type { DirectorFormData } from '@entities/model-docentes/validator';
 import { directorSchema } from '@entities/model-docentes/validator';
 import { SectionCard, TextField, SelectField, FormButton, twoCols } from '@shared/ui/form-controls';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { useDniAutocomplete } from '@shared/hooks/useDniAutocomplete';
-import { checkRoleConflict } from '@shared/hooks/roleValidation';
+import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
+import { checkRoleConflict } from '@shared/constants/roleValidation';
 
 const INITIAL: DirectorFormData = {
   nombres: '',

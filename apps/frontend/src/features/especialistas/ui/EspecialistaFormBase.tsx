@@ -5,8 +5,8 @@ import { especialistaSchema } from '@entities/model-especialistas/validator';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
-import { useDniAutocomplete } from '@shared/hooks/useDniAutocomplete';
-import { checkRoleConflict } from '@shared/hooks/roleValidation';
+import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
+import { checkRoleConflict } from '@shared/constants/roleValidation';
 
 interface Props {
   onCancel: () => void;

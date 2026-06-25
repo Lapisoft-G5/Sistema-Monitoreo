@@ -1,15 +1,11 @@
-import type { PersonaAutocompleteData, PersonaRoles } from '@shared/hooks/useDniAutocomplete';
+import type { PersonaAutocompleteData, PersonaRoles } from '@features/docentes/hooks/useDniAutocomplete';
 
 export type RolObjetivo = 'director' | 'docente' | 'especialista' | 'jefe_area' | 'jefe_gestion';
 
 export interface RoleCheckResult {
-  /** True si la persona ya tiene el rol exacto que se intenta crear → debe BLOQUEAR el submit. */
   bloquea: boolean;
-  /** True si la persona tiene al menos un rol distinto → advertencia informativa (no bloquea). */
   advierte: boolean;
-  /** Mensaje para mostrar al usuario (naranja si advierte, rojo si bloquea). */
   mensaje: string;
-  /** Texto de ayuda contextual (opcional). */
   detalle?: string;
 }
 
@@ -24,14 +20,6 @@ const tieneEspecialista = (r: PersonaRoles, cargoObjetivo?: string): boolean => 
   return r.especialistaCargoActivo === cargoObjetivo;
 };
 
-/**
- * Valida si la persona ya registrada puede recibir el rol que se intenta crear.
- *
- * Reglas:
- * - Si la persona ya tiene el rol objetivo → BLOQUEA.
- * - Si la persona tiene un rol distinto (ej. Especialista → Docente) → ADVIERTE.
- * - Si no tiene ningún rol → OK sin mensaje.
- */
 export const checkRoleConflict = (
   persona: PersonaAutocompleteData | null,
   rolObjetivo: RolObjetivo,

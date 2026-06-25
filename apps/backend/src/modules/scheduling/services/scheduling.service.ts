@@ -1,30 +1,31 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { STORAGE_SERVICE, type StorageService } from '../../../shared/storage/storage.constants.js';
 import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
 import {
   CronogramaRepository,
   SolicitudReprogramacionRepository,
 } from '../repositories/cronograma.repository.js';
-import type {
-  CreateVisitaData,
-  UpdateVisitaData,
-  CreateSolicitudData,
-  ResolverSolicitudData,
-} from '../repositories/cronograma.repository.js';
 import type { CreateVisitaDto, UpdateVisitaDto } from '../dto/create-visita.dto.js';
 import type {
   CreateSolicitudReprogramacionDto,
   ResolverSolicitudDto,
 } from '../dto/solicitud-reprogramacion.dto.js';
-import { RoleCode } from '../../../common/enums/role.enum.js';
-import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
+import { ScopeFilter } from '../../../shared/auth/scope-filter.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
+import {
+  findAllVisitas,
+  findVisitaById,
+  crearVisita,
+  actualizarVisita,
+  eliminarVisita,
+} from './scheduling-cronograma.helper.js';
+import {
+  findAllSolicitudes,
+  findSolicitudById,
+  crearSolicitud,
+  aprobarSolicitud,
+  rechazarSolicitud,
+} from './scheduling-solicitud.helper.js';
 
 @Injectable()
 export class SchedulingService {
@@ -35,182 +36,39 @@ export class SchedulingService {
     private readonly scopeFilter: ScopeFilter,
   ) {}
 
-  private toScopeContext(session: SessionUser): ScopeContext {
-    return {
-      userId: session.id,
-      role: session.role,
-      institucionId: session.institucionId,
-      especialistaNivel: session.especialistaNivel,
-      especialistaEspecialidades: session.especialistaEspecialidades,
-    };
-  }
-
-  // ============== Cronogramas ==============
-
-  async findAllVisitas(
-    filters?: Record<string, unknown>,
-    session?: SessionUser,
-  ): Promise<IVisita[]> {
-    const queryFilters: Record<string, unknown> = { ...filters };
-    if (session) {
-      const ctx = this.toScopeContext(session);
-      if (this.scopeFilter.isJefeAreaScope(ctx.role)) {
-        if (ctx.especialistaEspecialidades && ctx.especialistaEspecialidades.length > 0) {
-          queryFilters.monitorEspecialidades = ctx.especialistaEspecialidades;
-        }
-      }
-    }
-    const data = await this.cronogramaRepo.findAll(queryFilters);
-    return this.aplicarScopingVisitas(data, session);
+  async findAllVisitas(filters?: Record<string, unknown>, session?: SessionUser): Promise<IVisita[]> {
+    return findAllVisitas(this.cronogramaRepo, this.scopeFilter, filters, session);
   }
 
   async findVisitaById(id: string, session?: SessionUser): Promise<IVisita> {
-    const v = await this.cronogramaRepo.findById(id);
-    if (!v) throw new NotFoundException(`Visita ${id} no encontrada.`);
-    this.validarAccesoVisita(v, session);
-    return v;
+    return findVisitaById(this.cronogramaRepo, this.scopeFilter, id, session);
   }
 
   async crearVisita(dto: CreateVisitaDto, session: SessionUser): Promise<IVisita> {
-    if (session.role === RoleCode.JEFE_AREA) {
-      const jefeNivel = session.especialistaNivel;
-      const targetMod = dto.modalidad || 'EBR';
-      const targetNivel = dto.nivelEducativo;
-
-      if (jefeNivel === 'Inicial') {
-        const isValid = (targetMod === 'EBR' && targetNivel === 'Inicial') || targetMod === 'EBE';
-        if (!isValid) {
-          throw new ForbiddenException(
-            'Un Jefe de Área de nivel Inicial solo puede registrar visitas de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
-          );
-        }
-      } else if (jefeNivel === 'Primaria') {
-        const isValid = targetMod === 'EBR' && targetNivel === 'Primaria';
-        if (!isValid) {
-          throw new ForbiddenException(
-            'Un Jefe de Área de nivel Primaria solo puede registrar visitas de nivel Primaria (EBR).',
-          );
-        }
-      } else if (jefeNivel === 'Secundaria') {
-        const isValid =
-          (targetMod === 'EBR' && targetNivel === 'Secundaria') ||
-          targetMod === 'EBA' ||
-          targetMod === 'CEPTRO';
-        if (!isValid) {
-          throw new ForbiddenException(
-            'Un Jefe de Área de nivel Secundaria solo puede registrar visitas de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
-          );
-        }
-      }
-    }
-
-    // Candado operativo: debe existir un plan Activo que cubra la institucion
-    const anio = new Date(dto.fechaProgramada).getFullYear();
-    const planId = await this.cronogramaRepo.findPlanVigentePara(dto.institucionId, anio);
-    if (!planId) {
-      throw new BadRequestException(
-        `No existe Plan de Monitoreo Activo que habilite el registro de visitas para el anio ${anio}. ` +
-          'El Jefe de Gestion debe registrar y activar un plan antes de programar visitas (EDU-0002).',
-      );
-    }
-
-    const data: CreateVisitaData = {
-      monitorId: dto.monitorId,
-      institucionId: dto.institucionId,
-      evaluadoId: dto.evaluadoId,
-      tipoMonitoreo: dto.tipoMonitoreo,
-      numeroVisita: dto.numeroVisita,
-      fechaProgramada: new Date(dto.fechaProgramada),
-      horaInicio: dto.horaInicio,
-      modalidad: dto.modalidad,
-      nivelEducativo: dto.nivelEducativo,
-      detalles: dto.detalles,
-      creadoPorId: session.id,
-    };
-    const created = await this.cronogramaRepo.create(data);
-    // Actualizar planId en la fila creada (el repo no lo acepta en create para que sea null-safe)
-    return this.cronogramaRepo.findById(created.id) as Promise<IVisita>;
+    return crearVisita(this.cronogramaRepo, this.scopeFilter, dto, session);
   }
 
   async actualizarVisita(id: string, dto: UpdateVisitaDto, session: SessionUser): Promise<IVisita> {
-    const existing = await this.cronogramaRepo.findById(id);
-    if (!existing) throw new NotFoundException(`Visita ${id} no encontrada.`);
-    this.validarAccesoVisita(existing, session);
-    // Cambio de fecha/hora solo se hace via aprobacion de solicitud
-    if (dto.fechaProgramada || dto.horaInicio) {
-      throw new BadRequestException(
-        'fecha/hora solo se modifican aprobando una SolicitudReprogramacion. Use POST /solicitudes-reprogramacion.',
-      );
-    }
-    const data: UpdateVisitaData = {
-      detalles: dto.detalles,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      estado: dto.estado as any,
-    };
-    return this.cronogramaRepo.update(id, data);
+    return actualizarVisita(this.cronogramaRepo, this.scopeFilter, id, dto, session);
   }
 
   async eliminarVisita(id: string, session: SessionUser): Promise<void> {
-    const existing = await this.cronogramaRepo.findById(id);
-    if (!existing) throw new NotFoundException(`Visita ${id} no encontrada.`);
-    this.validarAccesoVisita(existing, session);
-    if (existing.estado === 'COMPLETADO') {
-      throw new BadRequestException(
-        'No se puede eliminar una visita en estado COMPLETADO (tiene ficha asociada).',
-      );
-    }
-    await this.cronogramaRepo.remove(id);
+    return eliminarVisita(this.cronogramaRepo, this.scopeFilter, id, session);
   }
 
-  // ============== Solicitudes ==============
-
   async findAllSolicitudes(filters?: any): Promise<ISolicitudReprogramacion[]> {
-    return this.solicitudRepo.findAll(filters);
+    return findAllSolicitudes(this.solicitudRepo, filters);
   }
 
   async findSolicitudById(id: string): Promise<ISolicitudReprogramacion> {
-    const s = await this.solicitudRepo.findById(id);
-    if (!s) throw new NotFoundException(`Solicitud ${id} no encontrada.`);
-    return s;
+    return findSolicitudById(this.solicitudRepo, id);
   }
 
   async crearSolicitud(
     dto: CreateSolicitudReprogramacionDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    const cronograma = await this.cronogramaRepo.findById(dto.cronogramaId);
-    if (!cronograma) throw new NotFoundException(`Visita ${dto.cronogramaId} no encontrada.`);
-
-    const pendiente = await this.solicitudRepo.findPendienteByCronograma(dto.cronogramaId);
-    if (pendiente) {
-      throw new BadRequestException(
-        `Ya existe una solicitud PENDIENTE para esta visita. Id: ${pendiente.id}.`,
-      );
-    }
-
-    let archivoSustentoUrl = '';
-    if (dto.archivoSustentoBase64) {
-      const buffer = Buffer.from(dto.archivoSustentoBase64, 'base64');
-      const stored = await this.storage.savePdf(
-        'reprogramaciones',
-        dto.archivoSustentoNombre ?? 'oficio.pdf',
-        buffer,
-      );
-      archivoSustentoUrl = stored.url;
-    }
-
-    const data: CreateSolicitudData = {
-      cronogramaId: dto.cronogramaId,
-      solicitanteId: session.id,
-      solicitanteRolAlCrear: session.role,
-      fechaOriginal: new Date(cronograma.fechaProgramada),
-      horaOriginal: cronograma.horaInicio,
-      fechaPropuesta: new Date(dto.fechaPropuesta),
-      horaPropuesta: dto.horaPropuesta,
-      justificacion: dto.justificacion,
-      archivoSustentoUrl,
-    };
-    return this.solicitudRepo.create(data);
+    return crearSolicitud(this.cronogramaRepo, this.solicitudRepo, this.storage, dto, session);
   }
 
   async aprobarSolicitud(
@@ -218,7 +76,7 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return this.resolverSolicitud(id, 'APROBADO', dto, session);
+    return aprobarSolicitud(this.cronogramaRepo, this.solicitudRepo, this.scopeFilter, id, dto, session);
   }
 
   async rechazarSolicitud(
@@ -226,126 +84,6 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return this.resolverSolicitud(id, 'RECHAZADO', dto, session);
-  }
-
-  private async resolverSolicitud(
-    id: string,
-    estado: 'APROBADO' | 'RECHAZADO',
-    dto: ResolverSolicitudDto,
-    session: SessionUser,
-  ): Promise<ISolicitudReprogramacion> {
-    const solicitud = await this.solicitudRepo.findById(id);
-    if (!solicitud) throw new NotFoundException(`Solicitud ${id} no encontrada.`);
-
-    const cronograma = await this.cronogramaRepo.findById(solicitud.cronogramaId);
-    if (!cronograma) throw new NotFoundException(`Cronograma asociado no encontrado.`);
-
-    const isAll = this.scopeFilter.isAllScope(session.role);
-    const isJefeArea = this.scopeFilter.isJefeAreaScope(session.role);
-    const isDirector = session.role === RoleCode.DIRECTOR_INSTITUCION;
-
-    if (!isAll) {
-      if (isJefeArea) {
-        if (cronograma.nivelEducativo !== session.especialistaNivel) {
-          throw new ForbiddenException(
-            'El Jefe de Area solo puede resolver solicitudes de su propio nivel educativo.',
-          );
-        }
-
-        if (
-          cronograma.nivelEducativo === 'Secundaria' &&
-          session.especialistaEspecialidades &&
-          session.especialistaEspecialidades.length > 0
-        ) {
-          const monitorEspecialidades =
-            await this.cronogramaRepo.findMonitorEspecialidades(cronograma.monitorId);
-          const monitorEspecs = monitorEspecialidades.map((e) => e.especialidad.nombre);
-          const hasOverlap = session.especialistaEspecialidades.some((e) =>
-            monitorEspecs.includes(e),
-          );
-          if (!hasOverlap && monitorEspecs.length > 0) {
-            throw new ForbiddenException(
-              'El Jefe de Area solo puede resolver solicitudes de especialistas de su misma especialidad.',
-            );
-          }
-        }
-      } else if (isDirector) {
-        if (cronograma.nivelEducativo !== 'Secundaria') {
-          throw new ForbiddenException(
-            'El Director IE solo puede resolver solicitudes de nivel Secundaria.',
-          );
-        }
-        if (cronograma.institucionId !== session.institucionId) {
-          throw new ForbiddenException(
-            'El Director IE solo puede resolver solicitudes de su propia institución.',
-          );
-        }
-      } else {
-        throw new ForbiddenException(
-          'Solo Jefe de Gestion, Jefe de Area o Directores IE pueden resolver solicitudes de reprogramacion.',
-        );
-      }
-    }
-
-    if (solicitud.estado !== 'PENDIENTE') {
-      throw new BadRequestException(
-        `La solicitud ya esta ${solicitud.estado}, no se puede ${estado.toLowerCase()}.`,
-      );
-    }
-
-    const data: ResolverSolicitudData = {
-      estado,
-      resueltoPorId: session.id,
-      comentarioResolucion: dto.comentario,
-    };
-    const resuelta = await this.solicitudRepo.resolver(id, data);
-
-    // Si se aprobo, mutamos el cronograma en la misma operacion
-    if (estado === 'APROBADO') {
-      await this.cronogramaRepo.applyReprogramacion(
-        solicitud.cronogramaId,
-        new Date(solicitud.fechaPropuesta),
-        solicitud.horaPropuesta,
-      );
-    }
-    return resuelta;
-  }
-
-  // ============== Helpers ==============
-
-  private esAutoridad(session: SessionUser): boolean {
-    // Equivale a "puede crear/editar cronogramas": ALL + INSTITUCION.
-    return (
-      this.scopeFilter.isAllScope(session.role) || this.scopeFilter.isInstitucionScope(session.role)
-    );
-  }
-
-  private aplicarScopingVisitas(visitas: IVisita[], session?: SessionUser): IVisita[] {
-    if (!session) return visitas;
-    const ctx = this.toScopeContext(session);
-    if (this.scopeFilter.isAllScope(ctx.role)) return visitas;
-    if (this.scopeFilter.isInstitucionScope(ctx.role)) {
-      return ctx.institucionId ? visitas.filter((v) => v.institucionId === ctx.institucionId) : [];
-    }
-    if (this.scopeFilter.isMonitorScope(ctx.role)) {
-      // Especialista: se filtra en repository por monitorId.
-      return visitas;
-    }
-    if (this.scopeFilter.isJefeAreaScope(ctx.role)) {
-      return visitas.filter((v) => v.nivelEducativo === ctx.especialistaNivel);
-    }
-    return [];
-  }
-
-  private validarAccesoVisita(visita: IVisita, session?: SessionUser): void {
-    if (!session) return;
-    const ctx = this.toScopeContext(session);
-    if (this.scopeFilter.isAllScope(ctx.role)) return;
-    if (this.scopeFilter.isInstitucionScope(ctx.role)) {
-      if (visita.institucionId !== ctx.institucionId) {
-        throw new ForbiddenException('No tiene acceso a esta visita (otra institucion).');
-      }
-    }
+    return rechazarSolicitud(this.cronogramaRepo, this.solicitudRepo, this.scopeFilter, id, dto, session);
   }
 }

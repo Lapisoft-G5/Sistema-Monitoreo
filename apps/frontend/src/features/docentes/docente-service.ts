@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CARGA_HORARIA } from '@shared/config/constants';
 import type { Docente, NivelEducativo } from '@entities/model-docentes';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { teachersApi } from '@shared/api/teachers.api';
@@ -86,7 +87,7 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
       ? 'Designado'
       : (apiDoc.condicionLaboral || 'Nombrado')) as Docente['condicion'],
     especialidad: apiDoc.cursoAsignado || 'General',
-    cargaHoraria: 30,
+    cargaHoraria: CARGA_HORARIA.DOCENTE,
     secciones:
       apiDoc.docenteSecciones?.map((ds) => ({
         id: ds.id,

@@ -5,6 +5,7 @@ import { type Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
+import { Spinner } from '@shared/ui/Spinner';
 import { fetchDocenteById } from '@features/docentes/docente-service';
 import { fetchInstitucionById } from '@features/institutions/institution-service';
 
@@ -48,7 +49,7 @@ export const DocenteDetailPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando ficha del director...</span>
       </div>
     );

@@ -10,7 +10,8 @@ import { Badge } from '@shared/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { useUser } from '@entities/model-user';
-import { useCronogramas, type Cronograma } from '@entities/model-cronogramas';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
+import type { Cronograma } from '@entities/model-cronogramas';
 import {
   ModalidadEducativa,
   MODALIDAD_NIVEL_MAP,
@@ -72,7 +73,7 @@ export const CronogramaPage = () => {
     createCronograma,
     updateCronograma,
     deleteCronograma: deleteFromContext,
-  } = useCronogramas();
+  } = useCronogramasData();
 
   // --- Estados de Filtro ---
   const [searchEsp, setSearchEsp] = useState('');

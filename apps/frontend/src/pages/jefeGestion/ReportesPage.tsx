@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Grid, List } from 'lucide-react';
-import { useCronogramas } from '@entities/model-cronogramas';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { usePlantillas } from '@entities/model-plantillas';
 import { useFichasCompletadas } from '@entities/model-reportes';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -61,7 +61,7 @@ export const ReportesPage = () => {
       user?.role === 'coordinador_pedagogico' ||
       user?.role === 'jefe_taller');
 
-  const { cronogramas } = useCronogramas();
+  const { cronogramas } = useCronogramasData();
   const { plantillas } = usePlantillas();
   const { data: fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
 

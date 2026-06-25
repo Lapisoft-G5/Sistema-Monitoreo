@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen } from 'lucide-react';
+import { CARGA_HORARIA } from '@shared/config/constants';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
+import { Spinner } from '@shared/ui/Spinner';
 import { fetchJefeAreaById } from '@features/jefes-area/jefe-area-service';
 import type { JefeArea } from '@entities/model-jefes-area';
 
@@ -35,7 +37,7 @@ export const JefeAreaDetailPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">
           Cargando ficha de jefe de área...
         </span>
@@ -161,7 +163,7 @@ export const JefeAreaDetailPage = () => {
                   Carga Horaria
                 </span>
                 <span className="text-sm font-semibold text-text">
-                  {jefe.cargaHoraria || 40} horas
+                  {jefe.cargaHoraria || CARGA_HORARIA.JEFE_AREA} horas
                 </span>
               </div>
               {jefe.especialidades && jefe.especialidades.length > 0 && (

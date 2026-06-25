@@ -9,6 +9,7 @@ import {
 import { type JefeArea } from '@entities/model-jefes-area';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
 import { Card } from '@shared/ui/card';
+import { Spinner } from '@shared/ui/Spinner';
 import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 
 export const EditJefeArea = () => {
@@ -43,7 +44,7 @@ export const EditJefeArea = () => {
   if (fetching) {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">
           Cargando datos del jefe de área...
         </span>

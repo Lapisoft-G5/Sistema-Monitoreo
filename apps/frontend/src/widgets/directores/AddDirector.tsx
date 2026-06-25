@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { Card } from '@shared/ui/card';
+import { Spinner } from '@shared/ui/Spinner';
 import { DirectorFormBase } from '@features/directores';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import type { Docente } from '@entities/model-docentes';
+import { PAGINATION, CARGA_HORARIA } from '@shared/config/constants';
 import { useDocenteService, mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 import { teachersApi } from '@shared/api/teachers.api';
 import { institutionsApi } from '@shared/api/institutions.api';
@@ -24,7 +26,7 @@ export const CreateDirectorCard = () => {
       setFetching(true);
       try {
         const [instsRes, teachersRes] = await Promise.all([
-          institutionsApi.findAll({ limit: 1000 }),
+          institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT }),
           teachersApi.findAll(),
         ]);
         if (instsRes.ok && instsRes.data) {
@@ -58,7 +60,7 @@ export const CreateDirectorCard = () => {
       nivelEducativo: data.nivelEducativo as DocenteFormData['nivelEducativo'],
       condicion: data.condicion as DocenteFormData['condicion'],
       especialidad: data.especialidad,
-      cargaHoraria: 40,
+      cargaHoraria: CARGA_HORARIA.JEFE_AREA,
       secciones: [],
       escala: data.escala,
       institucionId: data.institucionId,
@@ -75,7 +77,7 @@ export const CreateDirectorCard = () => {
   if (fetching) {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">
           Cargando instituciones disponibles...
         </span>

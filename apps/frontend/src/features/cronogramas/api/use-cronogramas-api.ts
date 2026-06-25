@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { STALE_TIMES } from '@shared/config/constants';
 import {
   cronogramasApi,
   type CreateVisitaInput,
@@ -24,7 +25,7 @@ export const useCronogramasList = (filters?: CronogramaFilters) =>
   useQuery({
     queryKey: ['cronogramas', filters],
     queryFn: () => cronogramasApi.findAll(filters),
-    staleTime: 30_000,
+    staleTime: STALE_TIMES.DEFAULT,
   });
 
 export const useCronograma = (id: string | undefined) =>
@@ -70,7 +71,7 @@ export const useSolicitudesList = (filters?: { cronogramaId?: string; estado?: E
   useQuery({
     queryKey: ['solicitudes', filters],
     queryFn: () => cronogramasApi.findAllSolicitudes(filters),
-    staleTime: 30_000,
+    staleTime: STALE_TIMES.DEFAULT,
   });
 
 export const useSolicitud = (id: string | undefined) =>

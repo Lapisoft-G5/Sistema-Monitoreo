@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { STALE_TIMES } from '@shared/config/constants';
 import { reportesApi } from '@shared/api/reportes.api';
 
 export const useFichasCompletadas = (filters?: {
@@ -13,7 +14,7 @@ export const useFichasCompletadas = (filters?: {
   useQuery({
     queryKey: ['reportes', 'fichas-completadas', filters],
     queryFn: () => reportesApi.fichasCompletadas(filters),
-    staleTime: 60_000,
+    staleTime: STALE_TIMES.REPORTES,
   });
 
 export const useResumenIE = (anio: number) =>
@@ -21,5 +22,5 @@ export const useResumenIE = (anio: number) =>
     queryKey: ['reportes', 'resumen-ie', anio],
     queryFn: () => reportesApi.resumenIE(anio),
     enabled: !!anio,
-    staleTime: 60_000,
+    staleTime: STALE_TIMES.REPORTES,
   });

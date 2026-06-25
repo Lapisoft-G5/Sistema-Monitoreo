@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { STALE_TIMES, PAGINATION } from '@shared/config/constants';
 import { cronogramasApi } from '@features/cronogramas/api/cronogramas.api';
 import { useCrearVisita, useActualizarVisita, useEliminarVisita } from '@features/cronogramas/api/use-cronogramas-api';
 import { especialistasApi } from '@shared/api/especialistas.api';
@@ -42,35 +43,35 @@ export const useCronogramasData = (enabled = true) => {
   const cronosQuery = useQuery({
     queryKey: ['cronogramas'],
     queryFn: () => cronogramasApi.findAll(),
-    staleTime: 30_000,
+    staleTime: STALE_TIMES.DEFAULT,
     enabled,
   });
 
   const espQuery = useQuery({
     queryKey: ['especialistas-lite'],
     queryFn: () => especialistasApi.findAll(),
-    staleTime: 60_000,
+    staleTime: STALE_TIMES.REPORTES,
     enabled,
   });
 
   const instQuery = useQuery({
     queryKey: ['instituciones-lite'],
-    queryFn: () => institutionsApi.findAll({ limit: 1000 }),
-    staleTime: 60_000,
+    queryFn: () => institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT }),
+    staleTime: STALE_TIMES.REPORTES,
     enabled,
   });
 
   const docQuery = useQuery({
     queryKey: ['docentes-lite'],
     queryFn: () => teachersApi.findAll(),
-    staleTime: 60_000,
+    staleTime: STALE_TIMES.REPORTES,
     enabled,
   });
 
   const solQuery = useQuery({
     queryKey: ['solicitudes-all'],
     queryFn: () => cronogramasApi.findAllSolicitudes(),
-    staleTime: 30_000,
+    staleTime: STALE_TIMES.DEFAULT,
     enabled,
   });
 
@@ -91,7 +92,8 @@ export const useCronogramasData = (enabled = true) => {
 
   const instituciones: InstitucionLite[] = useMemo(() => {
     if (!instQuery.data?.ok || !instQuery.data?.data) return [];
-    return instQuery.data.data.map((i: any) => ({
+    const raw = instQuery.data.data;
+    return (Array.isArray(raw) ? raw : raw.data ?? []).map((i: any) => ({
       id: i.id,
       nombre: i.nombre,
       modalidad: i.modalidad || 'EBR',

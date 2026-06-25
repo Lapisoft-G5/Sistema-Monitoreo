@@ -1,8 +1,10 @@
 import { useState, useRef, useMemo } from 'react';
 import { User, Briefcase, Check, Plus, X } from 'lucide-react';
+import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistaSchema } from '@entities/model-especialistas/validator';
-import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
+import { FormButton, SectionCard, SelectField, TextField } from '@shared/ui/form-controls';
+import { Spinner } from '@shared/ui/Spinner';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
@@ -29,7 +31,7 @@ const INITIAL_FORM: EspecialistaFormData = {
   cargo: 'Especialista',
   activo: true,
   condicionLaboral: 'Encargado',
-  cargaLaboral: 40,
+  cargaLaboral: CARGA_HORARIA.ESPECIALISTA,
   escalaMagisterial: undefined,
 };
 
@@ -167,12 +169,12 @@ export const EspecialistaFormBase = ({
               label="DNI (8 dígitos)"
               required
               value={form.dni}
-              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
+              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
               placeholder="Ej. 74859612"
               error={showError('dni')}
               adornment={
                 searchingDni ? (
-                  <div className="animate-spin rounded-full h-[18px] w-[18px] border-b-2 border-primary"></div>
+                  <Spinner size="sm" />
                 ) : dniOk ? (
                   <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
                 ) : undefined
@@ -228,7 +230,7 @@ export const EspecialistaFormBase = ({
           </div>
         )}
 
-        <div style={{ ...twoCols, marginTop: 18 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
           <TextField
             label="Correo Electrónico"
             value={form.correo || ''}
@@ -240,7 +242,7 @@ export const EspecialistaFormBase = ({
           <TextField
             label="Número de Celular"
             value={form.celular || ''}
-            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, 9))}
+            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
             placeholder="Ej. 987654321"
             error={showError('celular')}
             adornment={
@@ -257,7 +259,7 @@ export const EspecialistaFormBase = ({
         icon={<Briefcase className="w-5 h-5" />}
         title="Detalles Profesionales / Laborales"
       >
-        <div style={twoCols}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px]">
           <SelectField
             label="Cargo *"
             required
@@ -287,7 +289,7 @@ export const EspecialistaFormBase = ({
           />
         </div>
 
-        <div style={{ ...twoCols, marginTop: 18 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
           <SelectField
             label="Modalidad *"
             required
@@ -331,7 +333,7 @@ export const EspecialistaFormBase = ({
           />
         </div>
 
-        <div style={{ ...twoCols, marginTop: 18 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
           <SelectField
             label="Escala Magisterial"
             value={form.escalaMagisterial?.toString() || 'none'}
@@ -432,7 +434,7 @@ export const EspecialistaFormBase = ({
           </div>
         )}
 
-        <div style={{ marginTop: 18 }}>
+        <div className="mt-[18px]">
           <TextField
             label="Carga Laboral (Horas) *"
             required

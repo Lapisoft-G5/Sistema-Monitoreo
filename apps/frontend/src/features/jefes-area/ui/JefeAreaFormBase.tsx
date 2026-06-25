@@ -6,7 +6,8 @@ import type {
   JefeAreaEditFormData,
 } from '@entities/model-jefes-area/validator';
 import { jefeAreaCreateSchema, jefeAreaEditSchema } from '@entities/model-jefes-area/validator';
-import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
+import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
+import { FormButton, SectionCard, SelectField, TextField } from '@shared/ui/form-controls';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 
 interface Props {
@@ -39,7 +40,7 @@ export const JefeAreaFormBase = ({
     dni: initialData?.dni || '',
     correo: initialData?.correo || '',
     celular: initialData?.celular || '',
-    cargaHoraria: initialData?.cargaHoraria || 40,
+    cargaHoraria: initialData?.cargaHoraria || CARGA_HORARIA.JEFE_AREA,
     nivelEducativo: initialData?.nivelEducativo || 'Secundaria',
     activo: initialData?.activo ?? true,
   });
@@ -122,7 +123,7 @@ export const JefeAreaFormBase = ({
         apellidos: selectedSpecialist.persona.apellidos,
         correo: selectedSpecialist.persona.correo || undefined,
         celular: selectedSpecialist.persona.telefono || undefined,
-        cargaHoraria: 40, // Jefe de Área tiene carga laboral fija de 40 horas
+        cargaHoraria: CARGA_HORARIA.JEFE_AREA, // Jefe de Área tiene carga laboral fija de 40 horas
       });
     }
   };
@@ -197,7 +198,7 @@ export const JefeAreaFormBase = ({
             </div>
           </div>
 
-          <div style={{ ...twoCols, marginTop: 18 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
             <TextField
               label="Correo Electrónico"
               value={editForm.correo || ''}
@@ -208,7 +209,7 @@ export const JefeAreaFormBase = ({
             <TextField
               label="Número de Celular"
               value={editForm.celular || ''}
-              onChange={(v) => setEdit('celular', v.replace(/\D/g, '').slice(0, 9))}
+              onChange={(v) => setEdit('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
               placeholder="Celular"
               error={showError('celular')}
               adornment={
@@ -221,7 +222,7 @@ export const JefeAreaFormBase = ({
         </SectionCard>
 
         <SectionCard icon={<Briefcase className="w-5 h-5" />} title="Detalles del Puesto">
-          <div style={twoCols}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px]">
             <SelectField
               label="Nivel Educativo a Cargo"
               required

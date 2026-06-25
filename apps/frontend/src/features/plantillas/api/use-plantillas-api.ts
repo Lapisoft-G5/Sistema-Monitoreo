@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { STALE_TIMES } from '@shared/config/constants';
 import { plantillasApi, type CreatePlantillaInput, type UpdatePlantillaInput } from './plantillas.api.js';
 import type { IPlantilla, EstadoPlantilla, TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type { Plantilla } from '@entities/model-plantillas/model';
@@ -11,7 +12,7 @@ export const usePlantillasList = (filters?: { anioAcademico?: number; estado?: E
       const data = await plantillasApi.findAll(filters);
       return mapIPlantillaListToPlantillaList(data);
     },
-    staleTime: 5_000,
+    staleTime: STALE_TIMES.PLANTILLAS,
     refetchOnMount: true,
   });
 
@@ -85,5 +86,5 @@ export const useCountFichasPlantilla = (id: string | null) =>
     queryKey: ['plantilla', id, 'fichas-count'],
     queryFn: () => plantillasApi.countFichas(id!),
     enabled: !!id,
-    staleTime: 10_000,
+    staleTime: STALE_TIMES.PLANTILLAS_COUNT,
   });

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, Search, AlertCircle, Shield, Info } from 'lucide-react';
+import { CARGA_HORARIA } from '@shared/config/constants';
 import { fetchDocentes, fetchCargos, updateDocenteRaw } from '@features/docentes/docente-service';
 import type { Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
@@ -76,7 +77,7 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
       if (targetCargo === 'Coordinador Pedagógico') {
         setTimeout(() => setCargaLaboral(40), 0);
       } else {
-        setTimeout(() => setCargaLaboral(selectedDocente.cargaHoraria || 30), 0);
+        setTimeout(() => setCargaLaboral(selectedDocente.cargaHoraria || CARGA_HORARIA.DOCENTE), 0);
       }
     }
   }, [selectedDocente, targetCargo]);

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CARGA_HORARIA } from '@shared/config/constants';
 import type { JefeArea } from '@entities/model-jefes-area';
 import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
@@ -37,7 +38,7 @@ export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea =
     dni: apiJefe.persona.dni,
     correo: apiJefe.persona.correo || '',
     celular: apiJefe.persona.telefono || '',
-    cargaHoraria: apiJefe.cargaLaboral || 40,
+    cargaHoraria: apiJefe.cargaLaboral || CARGA_HORARIA.JEFE_AREA,
     nivelEducativo: normalizeNivel(apiJefe.nivelEducativo),
     activo: apiJefe.estado === 'Activo',
     fechaCreacion: apiJefe.createdAt
@@ -73,7 +74,7 @@ export const useJefeAreaService = () => {
         apellidos: formData.apellidos.trim(),
         correo: formData.correo?.trim() || undefined,
         telefono: formData.celular?.trim() || undefined,
-        cargaHoraria: 40, // Jefe de Área tiene carga laboral obligatoria de 40 horas
+        cargaHoraria: CARGA_HORARIA.JEFE_AREA, // Jefe de Área tiene carga laboral obligatoria de 40 horas
         nivelEducativo: formData.nivelEducativo,
         rolCode,
       };

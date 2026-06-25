@@ -11,12 +11,12 @@ import {
   RefreshCw,
   Copy,
   Edit,
-  Loader2,
 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
+import { Spinner } from '@shared/ui/Spinner';
 import { SelectField } from '@shared/ui/form-controls';
 import { type Plantilla } from '@entities/model-plantillas';
 import { useUser } from '@entities/model-user';
@@ -270,7 +270,7 @@ export const PlantillasCatalog = () => {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <Spinner />
           <span className="ml-3 text-sm text-text-muted">Cargando plantillas...</span>
         </div>
       ) : !isError && filteredPlantillas.length > 0 ? (

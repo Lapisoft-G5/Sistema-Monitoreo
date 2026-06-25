@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserProvider } from '@entities/model-user';
 import { setupFetchInterceptor } from '@shared/api/fetchInterceptor';
+import { STALE_TIMES } from '@shared/config/constants';
 
 // 1. Activamos el interceptor global de red de la capa shared
 setupFetchInterceptor();
@@ -12,7 +13,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 30_000,
+      staleTime: STALE_TIMES.DEFAULT,
     },
   },
 });

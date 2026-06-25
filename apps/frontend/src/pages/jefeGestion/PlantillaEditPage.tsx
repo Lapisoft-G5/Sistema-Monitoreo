@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
+import { Spinner } from '@shared/ui/Spinner';
 import { EditarPlantillaForm } from '@widgets/plantillas';
 import type { PlantillaFormState } from '@widgets/plantillas';
 import { usePlantilla, useActualizarPlantilla } from '@entities/model-plantillas/use-plantillas-api';
@@ -96,7 +97,7 @@ export const PlantillaEditPage = () => {
   if (isLoading || !initialData) {
     return (
       <div className="flex items-center justify-center py-24 gap-3">
-        <Loader2 className="h-6 w-6 text-primary animate-spin" />
+        <Spinner />
         <span className="text-sm text-text-muted">Cargando datos de la rúbrica...</span>
       </div>
     );

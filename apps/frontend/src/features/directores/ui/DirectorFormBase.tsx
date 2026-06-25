@@ -4,6 +4,8 @@ import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-doce
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import { directorSchema } from '@entities/model-docentes/validator';
 import { SectionCard, TextField, SelectField, FormButton, twoCols } from '@shared/ui/form-controls';
+import { Spinner } from '@shared/ui/Spinner';
+import { VALIDATION } from '@shared/config/constants';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
 
@@ -123,12 +125,12 @@ export const DirectorFormBase = ({
               label="DNI / Documento de Identidad"
               required
               value={form.dni}
-              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
+              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
               placeholder="8 dígitos"
               error={showError('dni')}
               adornment={
                 searchingDni ? (
-                  <div className="animate-spin rounded-full h-[18px] w-[18px] border-b-2 border-primary"></div>
+                  <Spinner size="sm" />
                 ) : dniOk ? (
                   <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
                 ) : undefined
@@ -139,7 +141,7 @@ export const DirectorFormBase = ({
             label="Número de Celular"
             required
             value={form.celular}
-            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, 9))}
+            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
             placeholder="999 999 999"
             error={showError('celular')}
             adornment={

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Calendar, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { useUser } from '@entities/model-user';
-import { useCronogramas } from '@entities/model-cronogramas';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { CalendarioGrid, CalendarioSidebar } from '@widgets/calendario';
 import { BandejaReprogramaciones } from '@widgets/reprogramaciones';
 
@@ -15,7 +15,7 @@ export const CalendarioPage = () => {
     user?.role === 'especialista' ||
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
-  const { cronogramas, reprogramaciones } = useCronogramas();
+  const { cronogramas, reprogramaciones } = useCronogramasData();
 
   // ── Estados de Navegación ──
   const [activeTab, setActiveTab] = useState<'CALENDARIO' | 'SOLICITUDES'>('CALENDARIO');

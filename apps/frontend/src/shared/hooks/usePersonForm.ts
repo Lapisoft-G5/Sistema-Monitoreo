@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { VALIDATION } from '@shared/config/constants';
 import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
 import { checkRoleConflict, type RolObjetivo } from '@shared/constants/roleValidation';
 import type { PersonaAutocompleteData } from '@features/docentes/hooks/useDniAutocomplete';
@@ -74,7 +75,7 @@ export function usePersonForm({
       }, 0);
       return () => clearTimeout(t);
     }
-    if (!searchingDni && dni.length === 8 && !persona) {
+    if (!searchingDni && dni.length === VALIDATION.DNI_LENGTH && !persona) {
       const t = setTimeout(() => {
         clearPersonaFields();
       }, 0);
@@ -98,7 +99,7 @@ export function usePersonForm({
     onValidSubmit();
   }, [onValidSubmit]);
 
-  const dniOk = /^\d{8}$/.test(dni);
+  const dniOk = dni.length === VALIDATION.DNI_LENGTH && /^\d+$/.test(dni);
 
   return {
     submitted,

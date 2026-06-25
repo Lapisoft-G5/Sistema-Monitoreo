@@ -5,6 +5,7 @@ import { type Especialista } from '@entities/model-especialistas';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
+import { Spinner } from '@shared/ui/Spinner';
 import { fetchEspecialistaById } from '@features/especialistas/especialista-service';
 
 export const EspecialistaDetailPage = () => {
@@ -29,7 +30,7 @@ export const EspecialistaDetailPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">
           Cargando ficha de especialista...
         </span>

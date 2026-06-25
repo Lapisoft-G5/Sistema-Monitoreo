@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { VALIDATION } from '@shared/config/constants';
 import { teachersApi } from '@shared/api/teachers.api';
 
 export interface PersonaRoles {
@@ -58,7 +59,7 @@ export const useDniAutocomplete = (dni: string, enabled = true): UseDniAutocompl
       }, 0);
       return () => clearTimeout(t);
     }
-    if (dni.length !== 8) {
+    if (dni.length !== VALIDATION.DNI_LENGTH) {
       const t = setTimeout(() => {
         setData(null);
         setIsFound(false);

@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
+import { PAGINATION } from '@shared/config/constants';
 import { PageHeader } from '@shared/ui/pageHeader';
+import { Spinner } from '@shared/ui/Spinner';
 
 import { FilterInstitutions } from '@features/institutions/ui/filter-institution';
 import { InstitutionsStatsWidget } from '@/widgets/institutions/institutions-stats';
@@ -17,7 +19,7 @@ export const InstitucionesPage = () => {
 
   const loadInstituciones = async () => {
     setLoading(true);
-    const mapped = await fetchInstituciones({ limit: 1000 });
+    const mapped = await fetchInstituciones({ limit: PAGINATION.MAX_LIMIT });
     setInstituciones(mapped);
     setLoading(false);
   };
@@ -34,7 +36,7 @@ export const InstitucionesPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando instituciones...</span>
       </div>
     );

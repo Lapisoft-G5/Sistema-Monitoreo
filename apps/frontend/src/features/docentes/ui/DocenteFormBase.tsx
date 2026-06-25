@@ -4,7 +4,9 @@ import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docent
 import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
+import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
+import { Spinner } from '@shared/ui/Spinner';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';
@@ -61,7 +63,7 @@ const INITIAL_FORM: DocenteFormData = {
   nivelEducativo: 'PRIMARIA',
   condicion: 'Nombrado',
   especialidad: '',
-  cargaHoraria: 30,
+  cargaHoraria: CARGA_HORARIA.DOCENTE,
   secciones: [],
   escala: 'I',
   institucionId: '',
@@ -202,12 +204,12 @@ export const DocenteFormBase = ({
               label="DNI (8 dígitos)"
               required
               value={form.dni}
-              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
+              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
               placeholder="Ej. 74859612"
               error={showError('dni')}
               adornment={
                 searchingDni ? (
-                  <div className="animate-spin rounded-full h-[18px] w-[18px] border-b-2 border-primary"></div>
+                  <Spinner size="sm" />
                 ) : dniOk ? (
                   <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
                 ) : undefined
@@ -277,7 +279,7 @@ export const DocenteFormBase = ({
             label="Número de Celular"
             required
             value={form.celular}
-            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, 9))}
+              onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
             placeholder="Ej. 987654321"
             error={showError('celular')}
             adornment={

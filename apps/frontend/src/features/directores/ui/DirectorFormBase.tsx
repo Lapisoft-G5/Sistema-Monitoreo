@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { User, Briefcase, Check } from 'lucide-react';
 import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
@@ -78,18 +78,18 @@ export const DirectorFormBase = ({
     onValidSubmit: () => onSubmit(form),
     isLoading,
     errors,
-    setPersonaFields: (persona) => {
+    setPersonaFields: useCallback((persona) => {
       set('nombres', persona.nombres);
       set('apellidos', persona.apellidos);
       set('correo', persona.correo ?? '');
       set('celular', persona.telefono ?? '');
-    },
-    clearPersonaFields: () => {
+    }, []),
+    clearPersonaFields: useCallback(() => {
       set('nombres', '');
       set('apellidos', '');
       set('correo', '');
       set('celular', '');
-    },
+    }, []),
   });
 
   const showError = (key: keyof DirectorFormData) => (submitted ? errors[key] : '');

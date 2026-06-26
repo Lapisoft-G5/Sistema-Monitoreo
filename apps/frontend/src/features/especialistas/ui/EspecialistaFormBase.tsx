@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { User, Briefcase, Check, Plus, X } from 'lucide-react';
 import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
@@ -125,18 +125,18 @@ export const EspecialistaFormBase = ({
     },
     isLoading,
     errors,
-    setPersonaFields: (persona) => {
+    setPersonaFields: useCallback((persona) => {
       set('nombres', persona.nombres);
       set('apellidos', persona.apellidos);
       set('correo', persona.correo ?? '');
       set('celular', persona.telefono ?? '');
-    },
-    clearPersonaFields: () => {
+    }, []),
+    clearPersonaFields: useCallback(() => {
       set('nombres', '');
       set('apellidos', '');
       set('correo', '');
       set('celular', '');
-    },
+    }, []),
   });
 
   const addEspecialidad = () => {

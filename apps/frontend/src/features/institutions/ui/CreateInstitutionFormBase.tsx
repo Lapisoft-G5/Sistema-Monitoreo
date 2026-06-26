@@ -140,6 +140,7 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
             onChange={(v) => set('codigoModular', v.replace(/\D/g, '').slice(0, 7))}
             placeholder="Ej. 0645213"
             error={showError('codigoModular')}
+            disabled={!!initialData}
             adornment={
               codigoOk ? (
                 <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />

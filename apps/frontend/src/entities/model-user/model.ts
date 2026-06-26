@@ -9,7 +9,9 @@ export interface User {
   institucion?: string;
   institucionNombre?: string;
   institucionNivel?: string;
+  especialistaId?: string;
   especialistaNivel?: string;
+  especialistaEspecialidades?: string[];
   especialistaModalidad?: string;
   distrito?: string;
   firstLogin: boolean;

@@ -39,7 +39,7 @@ export const PlantillaDesempenos = ({ desempenos, niveles, onChange }: Props) =>
         >
           <Plus className="h-5 w-5" strokeWidth={2.5} />
           <span className="text-sm font-semibold">Agregar Nuevo Desempeño</span>
-          <span className="text-xs">Haga clic para expandir la estructura de la rúbrica</span>
+          <span className="text-xs">Permite definir criterios, aspectos y rúbrica por niveles</span>
         </button>
       </div>
     </SectionCard>
@@ -75,7 +75,7 @@ const DesempenoCard = ({
 
   const setRubrica = (nivel: NivelRomano, descripcion: string) =>
     onChange({
-      rubrica: desempeno.rubrica.map((r) => (r.nivel === nivel ? { ...r, descripcion } : r)),
+      rubrica: (desempeno.rubrica ?? []).map((r) => (r.nivel === nivel ? { ...r, descripcion } : r)),
     });
 
   return (
@@ -118,9 +118,21 @@ const DesempenoCard = ({
           />
         </div>
 
-        {/* Aspectos evaluados (checklist) */}
+          {/* Pregunta Extra Sí/No */}
         <div className="flex flex-col gap-2">
-          <FieldLabel label="Aspectos Evaluados (Checklist)" />
+          <FieldLabel label="Pregunta Extra (Sí/No)" />
+          <textarea
+            value={desempeno.preguntaExtra}
+            onChange={(e) => onChange({ preguntaExtra: e.target.value })}
+            placeholder="Ej. ¿El docente faltó el respeto a los estudiantes? (opcional)"
+            className="w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+            rows={2}
+          />
+        </div>
+
+      {/* Aspectos evaluados */}
+        <div className="flex flex-col gap-2">
+          <FieldLabel label="Aspectos Evaluados" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {desempeno.aspectos.map((aspecto) => (
               <div key={aspecto.id} className="relative">
@@ -153,10 +165,10 @@ const DesempenoCard = ({
 
         {/* Detalle de rúbrica por niveles */}
         <div className="flex flex-col gap-2">
-          <FieldLabel label="Detalle de Rúbrica por Niveles" />
+          <FieldLabel label="Descripción de Niveles (Rúbrica)" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {niveles.map((nivel) => {
-              const entry = desempeno.rubrica.find((r) => r.nivel === nivel.nivel);
+              const entry = desempeno.rubrica?.find((r) => r.nivel === nivel.nivel);
               return (
                 <div
                   key={nivel.nivel}

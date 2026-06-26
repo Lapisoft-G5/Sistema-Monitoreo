@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { PlusCircle, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
+import { Spinner } from '@shared/ui/Spinner';
 import { useNavigate } from 'react-router-dom';
 
 import { FilterDirectores } from '@features/directores';
 import { DirectoresStatsWidget, DirectoresTableWidget } from '@widgets/directores';
-import { teachersApi } from '@shared/api/teachers.api';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
-import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import { fetchDocentes } from '@features/docentes/docente-service';
+import { fetchInstituciones } from '@features/institutions/institution-service';
 import type { Docente } from '@entities/model-docentes';
 import type { Institucion } from '@entities/model-instituciones';
 
@@ -22,22 +21,12 @@ export const DirectoresPage = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [teachersRes, instsRes] = await Promise.all([
-        teachersApi.findAll(),
-        institutionsApi.findAll({ limit: 1000 }),
+      const [docentesMapped, instMapped] = await Promise.all([
+        fetchDocentes(),
+        fetchInstituciones(),
       ]);
-
-      if (teachersRes.ok && teachersRes.data) {
-        setDirectores(teachersRes.data.map(mapApiDocenteToFrontend));
-      } else {
-        console.error('Error loading teachers:', teachersRes.error);
-      }
-
-      if (instsRes.ok && instsRes.data) {
-        setInstituciones(instsRes.data.data.map(mapApiInstitucionToFrontend));
-      } else {
-        console.error('Error loading institutions:', instsRes.error);
-      }
+      setDirectores(docentesMapped);
+      setInstituciones(instMapped);
     } catch (err) {
       console.error('Connection error loading directores data:', err);
     } finally {
@@ -52,7 +41,7 @@ export const DirectoresPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando directores...</span>
       </div>
     );

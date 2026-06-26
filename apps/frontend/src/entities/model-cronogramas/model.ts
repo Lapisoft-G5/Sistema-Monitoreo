@@ -11,4 +11,9 @@ export interface Cronograma {
   modalidad: string;
   nivel: string;
   observaciones?: string;
+  especialistaCargo?: string;
+  monitorId: string;
+  evaluadoId?: string;
+  institucionId: string;
+  monitorEspecialidades?: string[];
 }

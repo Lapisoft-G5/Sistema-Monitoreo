@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Compass, PlusCircle, Search, Trash2, Eye, Pencil, X, AlertCircle, Calendar, User, BookOpen, Layers, FileText } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -9,249 +10,70 @@ import { Badge } from '@shared/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { TablePagination } from '@shared/ui/table-pagination';
 import { useUser } from '@entities/model-user';
-import { MOCK_DOCENTES } from '@entities/model-docentes';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
+import type { Cronograma } from '@entities/model-cronogramas';
 import {
   ModalidadEducativa,
   MODALIDAD_NIVEL_MAP,
+  type EstadoVisita,
+  type IUpdateVisitaRequest,
+  type Modalidad,
 } from '@sistema-monitoreo/shared-contracts';
-
-// ── Tipos ──
-interface Cronograma {
-  id: string;
-  fechaHora: string; // ISO datetime
-  especialista: string;
-  especialistaInitials: string;
-  institucion: string;
-  docenteDirectivo: string;
-  tipo: 'DOCENTE' | 'DIRECTIVO';
-  nroVisita: string;
-  estado: 'PROGRAMADO' | 'EN PROCESO' | 'COMPLETADO' | 'REPROGRAMADO' | 'CANCELADO';
-  modalidad: string;
-  nivel: string;
-  observaciones?: string;
-}
-
-// ── Datos mock de Especialistas (con modalidad y nivel) ──
-interface MockEspecialista {
-  id: string;
-  nombre: string;
-  initials: string;
-  modalidad: string;
-  nivelEducativo: string;
-}
-
-const MOCK_ESPECIALISTAS: MockEspecialista[] = [
-  { id: 'e1', nombre: 'Juan Pérez', initials: 'JP', modalidad: 'EBR', nivelEducativo: 'Inicial' },
-  { id: 'e2', nombre: 'María García', initials: 'MG', modalidad: 'EBR', nivelEducativo: 'Primaria' },
-  { id: 'e3', nombre: 'Carlos Mendoza', initials: 'CM', modalidad: 'EBR', nivelEducativo: 'Secundaria' },
-  { id: 'e4', nombre: 'Ana Torres', initials: 'AT', modalidad: 'EBA', nivelEducativo: 'Inicial-Intermedio' },
-  { id: 'e5', nombre: 'Pedro Alvarado', initials: 'PA', modalidad: 'EBA', nivelEducativo: 'Avanzado' },
-  { id: 'e6', nombre: 'Rosa Quispe', initials: 'RQ', modalidad: 'EBE', nivelEducativo: 'CEBE' },
-  { id: 'e7', nombre: 'Luis Mamani', initials: 'LM', modalidad: 'EBE', nivelEducativo: 'PRITE' },
-  { id: 'e8', nombre: 'Sofía Ramos', initials: 'SR', modalidad: 'CEPTRO', nivelEducativo: 'Corte y Ensamblaje' },
-];
-
-// ── Datos mock de Instituciones (con modalidad y nivel) ──
-interface MockInstitucion {
-  id: string;
-  nombre: string;
-  modalidad: string;
-  nivelEducativo: string;
-}
-
-const MOCK_INSTITUCIONES: MockInstitucion[] = [
-  { id: 'i1', nombre: 'IE 1023 Santa Rosa', modalidad: 'EBR', nivelEducativo: 'Inicial' },
-  { id: 'i2', nombre: 'IE 4055 Libertador', modalidad: 'EBR', nivelEducativo: 'Primaria' },
-  { id: 'i3', nombre: 'IE 3022 Sagrado Corazón', modalidad: 'EBR', nivelEducativo: 'Secundaria' },
-  { id: 'i4', nombre: 'IE 5011 Fe y Alegría', modalidad: 'EBR', nivelEducativo: 'Primaria' },
-  { id: 'i5', nombre: 'IEI 70001 San Martín', modalidad: 'EBR', nivelEducativo: 'Inicial' },
-  { id: 'i6', nombre: 'CEBA Túpac Amaru', modalidad: 'EBA', nivelEducativo: 'Inicial-Intermedio' },
-  { id: 'i7', nombre: 'CEBA José Carlos Mariátegui', modalidad: 'EBA', nivelEducativo: 'Avanzado' },
-  { id: 'i8', nombre: 'CEBE San Juan de Dios', modalidad: 'EBE', nivelEducativo: 'CEBE' },
-  { id: 'i9', nombre: 'PRITE Virgen de la Candelaria', modalidad: 'EBE', nivelEducativo: 'PRITE' },
-  { id: 'i10', nombre: 'CETPRO Industrial Puno', modalidad: 'CEPTRO', nivelEducativo: 'Corte y Ensamblaje' },
-];
-
-// ── Datos mock de Cronogramas ──
-const MOCK_CRONOGRAMAS: Cronograma[] = [
-  {
-    id: '1',
-    fechaHora: '2023-10-15T09:00',
-    especialista: 'Juan Pérez',
-    especialistaInitials: 'JP',
-    institucion: 'IE 1023 Santa Rosa',
-    docenteDirectivo: 'Ana Miranda Ortiz',
-    tipo: 'DOCENTE',
-    nroVisita: '02',
-    estado: 'PROGRAMADO',
-    modalidad: 'EBR',
-    nivel: 'Inicial',
-  },
-  {
-    id: '2',
-    fechaHora: '2023-10-18T10:30',
-    especialista: 'María García',
-    especialistaInitials: 'MG',
-    institucion: 'IE 4055 Libertador',
-    docenteDirectivo: 'Roberto Sánchez',
-    tipo: 'DIRECTIVO',
-    nroVisita: '01',
-    estado: 'EN PROCESO',
-    modalidad: 'EBR',
-    nivel: 'Primaria',
-  },
-  {
-    id: '3',
-    fechaHora: '2023-10-20T08:00',
-    especialista: 'Carlos Mendoza',
-    especialistaInitials: 'CM',
-    institucion: 'IE 3022 Sagrado Corazón',
-    docenteDirectivo: 'Luis Alberto Arce',
-    tipo: 'DOCENTE',
-    nroVisita: '03',
-    estado: 'COMPLETADO',
-    modalidad: 'EBR',
-    nivel: 'Secundaria',
-  },
-  {
-    id: '4',
-    fechaHora: '2023-10-22T14:00',
-    especialista: 'Ana Torres',
-    especialistaInitials: 'AT',
-    institucion: 'CEBA Túpac Amaru',
-    docenteDirectivo: 'Carmen Rosa Díaz',
-    tipo: 'DOCENTE',
-    nroVisita: '01',
-    estado: 'REPROGRAMADO',
-    modalidad: 'EBA',
-    nivel: 'Inicial-Intermedio',
-  },
-  {
-    id: '5',
-    fechaHora: '2023-10-25T11:00',
-    especialista: 'Juan Pérez',
-    especialistaInitials: 'JP',
-    institucion: 'IEI 70001 San Martín',
-    docenteDirectivo: 'Sofía Ramos',
-    tipo: 'DIRECTIVO',
-    nroVisita: '02',
-    estado: 'CANCELADO',
-    modalidad: 'EBR',
-    nivel: 'Inicial',
-  },
-  {
-    id: '6',
-    fechaHora: '2023-10-28T08:30',
-    especialista: 'María García',
-    especialistaInitials: 'MG',
-    institucion: 'IE 5011 Fe y Alegría',
-    docenteDirectivo: 'Pedro Infante',
-    tipo: 'DOCENTE',
-    nroVisita: '01',
-    estado: 'PROGRAMADO',
-    modalidad: 'EBR',
-    nivel: 'Primaria',
-  },
-  {
-    id: '7',
-    fechaHora: '2023-11-02T15:00',
-    especialista: 'Rosa Quispe',
-    especialistaInitials: 'RQ',
-    institucion: 'CEBE San Juan de Dios',
-    docenteDirectivo: 'Juana de Arco',
-    tipo: 'DIRECTIVO',
-    nroVisita: '04',
-    estado: 'PROGRAMADO',
-    modalidad: 'EBE',
-    nivel: 'CEBE',
-  },
-  {
-    id: '8',
-    fechaHora: '2023-11-05T09:30',
-    especialista: 'Carlos Mendoza',
-    especialistaInitials: 'CM',
-    institucion: 'IE 3022 Sagrado Corazón',
-    docenteDirectivo: 'Julio César',
-    tipo: 'DOCENTE',
-    nroVisita: '02',
-    estado: 'EN PROCESO',
-    modalidad: 'EBR',
-    nivel: 'Secundaria',
-  },
-  {
-    id: '9',
-    fechaHora: '2023-11-10T10:00',
-    especialista: 'Juan Pérez',
-    especialistaInitials: 'JP',
-    institucion: 'IE 1023 Santa Rosa',
-    docenteDirectivo: 'Marco Aurelio',
-    tipo: 'DOCENTE',
-    nroVisita: '01',
-    estado: 'COMPLETADO',
-    modalidad: 'EBR',
-    nivel: 'Inicial',
-  },
-  {
-    id: '10',
-    fechaHora: '2023-11-12T13:00',
-    especialista: 'Pedro Alvarado',
-    especialistaInitials: 'PA',
-    institucion: 'CEBA José Carlos Mariátegui',
-    docenteDirectivo: 'Cleopatra Mendoza',
-    tipo: 'DIRECTIVO',
-    nroVisita: '03',
-    estado: 'PROGRAMADO',
-    modalidad: 'EBA',
-    nivel: 'Avanzado',
-  },
-  {
-    id: '11',
-    fechaHora: '2023-11-15T08:00',
-    especialista: 'María García',
-    especialistaInitials: 'MG',
-    institucion: 'IE 4055 Libertador',
-    docenteDirectivo: 'Simón Bolívar',
-    tipo: 'DOCENTE',
-    nroVisita: '02',
-    estado: 'REPROGRAMADO',
-    modalidad: 'EBR',
-    nivel: 'Primaria',
-  },
-  {
-    id: '12',
-    fechaHora: '2023-11-18T16:00',
-    especialista: 'Luis Mamani',
-    especialistaInitials: 'LM',
-    institucion: 'PRITE Virgen de la Candelaria',
-    docenteDirectivo: 'José de San Martín',
-    tipo: 'DIRECTIVO',
-    nroVisita: '01',
-    estado: 'COMPLETADO',
-    modalidad: 'EBE',
-    nivel: 'PRITE',
-  },
-];
 
 // ── Constantes de modalidades ──
 const MODALIDADES = Object.values(ModalidadEducativa);
 
+const getInitialsColor = (initials: string) => {
+  const colors: Record<string, string> = {
+    JP: 'bg-pink-100 text-pink-700 dark:bg-pink-950/30 dark:text-pink-400',
+    MG: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400',
+    CM: 'bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400',
+    AT: 'bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400',
+    PA: 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400',
+    RQ: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
+    LM: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-400',
+    SR: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',
+  };
+  return colors[initials] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+};
+
+// --- Formateador de Fecha y Hora ---
+const formatTableDateTime = (isoString: string) => {
+  try {
+    const date = new Date(isoString);
+    const datePart = date.toLocaleDateString('es-PE', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    const timePart = date.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    return { datePart, timePart };
+  } catch {
+    return { datePart: isoString, timePart: '' };
+  }
+};
+
 export const CronogramaPage = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
   const isDirector =
-    user?.role === 'director_ie' ||
     user?.role === 'director_institucion' ||
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
 
-  // --- Estados de Datos ---
-  const [cronogramas, setCronogramas] = useState<Cronograma[]>(() => {
-    const saved = localStorage.getItem('sistema-monitoreo:cronogramas');
-    return saved ? JSON.parse(saved) : MOCK_CRONOGRAMAS;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('sistema-monitoreo:cronogramas', JSON.stringify(cronogramas));
-  }, [cronogramas]);
+  const {
+    cronogramas,
+    especialistas,
+    instituciones,
+    docentes,
+    createCronograma,
+    updateCronograma,
+    deleteCronograma: deleteFromContext,
+  } = useCronogramasData();
 
   // --- Estados de Filtro ---
   const [searchEsp, setSearchEsp] = useState('');
@@ -277,29 +99,51 @@ export const CronogramaPage = () => {
   const [formNivel, setFormNivel] = useState('');
   const [formObservaciones, setFormObservaciones] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [showMaxVisitasModal, setShowMaxVisitasModal] = useState(false);
+
+  // Docente actualmente seleccionado en el formulario y sus visitas existentes
+  const selectedDocente = useMemo(() => {
+    if (!formDocente) return null;
+    return docentes.find(
+      (d) => `${d.nombres} ${d.apellidos}`.trim() === formDocente.trim(),
+    ) ?? null;
+  }, [formDocente, docentes]);
+
+  const visitasExistentesCount = useMemo(() => {
+    if (!selectedDocente || editCronogramaId) return 0;
+    return cronogramas.filter(
+      (c) => c.evaluadoId === selectedDocente.id && c.tipo === formTipo,
+    ).length;
+  }, [selectedDocente, formTipo, cronogramas, editCronogramaId]);
+
+  // --- Estados de Detalles / Ver ---
+  const [viewCronograma, setViewCronograma] = useState<Cronograma | null>(null);
+
+  // --- Estado de Eliminado / Desactivación ---
+  const [deleteCronogramaId, setDeleteCronogramaId] = useState<string | null>(null);
 
   const docentesDeLaInstitucion = useMemo(() => {
     if (isDirector) {
       if (!user || !user.institucion) return [];
-      return MOCK_DOCENTES.filter(
+      return docentes.filter(
         (doc) => doc.institucionId === user.institucion && doc.cargo !== 'Director'
       );
     }
 
     if (!formInstitucion) return [];
-    const matchInst = MOCK_INSTITUCIONES.find(
+    const matchInst = instituciones.find(
       (inst) => inst.nombre.toLowerCase() === formInstitucion.toLowerCase()
     );
     if (!matchInst) return [];
 
-    const dbId = matchInst.id.replace(/^i/, '');
-    return MOCK_DOCENTES.filter((doc) => {
-      const matchInstId = doc.institucionId === dbId;
+    return docentes.filter((doc) => {
+      const matchInstId = doc.institucionId === matchInst.id;
       const isDirectorCargo = doc.cargo === 'Director';
       const matchCargo = formTipo === 'DIRECTIVO' ? isDirectorCargo : !isDirectorCargo;
       return matchInstId && matchCargo;
     });
-  }, [isDirector, user, formInstitucion, formTipo]);
+  }, [isDirector, user, formInstitucion, formTipo, docentes, instituciones]);
 
   const docenteOptions = useMemo(() => {
     const list = docentesDeLaInstitucion.map((doc) => ({
@@ -318,30 +162,29 @@ export const CronogramaPage = () => {
     const targetInstName = isDirector ? user?.institucionNombre : formInstitucion;
     if (!targetInstName) return false;
 
-    const matchInst = MOCK_INSTITUCIONES.find(
+    const matchInst = instituciones.find(
       (inst) => inst.nombre.toLowerCase() === targetInstName.toLowerCase()
     );
     return matchInst?.nivelEducativo.toLowerCase() === 'secundaria';
-  }, [isDirector, user, formInstitucion]);
+  }, [isDirector, user, formInstitucion, instituciones]);
 
   const evaluadoresDeLaInstitucion = useMemo(() => {
     const targetInstName = isDirector ? user?.institucionNombre : formInstitucion;
     if (!targetInstName) return [];
 
-    const matchInst = MOCK_INSTITUCIONES.find(
+    const matchInst = instituciones.find(
       (inst) => inst.nombre.toLowerCase() === targetInstName.toLowerCase()
     );
     if (!matchInst) return [];
 
-    const dbId = matchInst.id.replace(/^i/, '');
-    return MOCK_DOCENTES.filter(
+    return docentes.filter(
       (doc) =>
-        doc.institucionId === dbId &&
+        doc.institucionId === matchInst.id &&
         (doc.cargo === 'Director' ||
           doc.cargo === 'Coordinador Pedagógico' ||
           doc.cargo === 'Jefe de Taller')
     );
-  }, [isDirector, user, formInstitucion]);
+  }, [isDirector, user, formInstitucion, docentes, instituciones]);
 
   const evaluadorOptions = useMemo(() => {
     const list = evaluadoresDeLaInstitucion.map((doc) => ({
@@ -356,33 +199,73 @@ export const CronogramaPage = () => {
     return list;
   }, [evaluadoresDeLaInstitucion, formEspecialista]);
 
-  // --- Estados de Detalles / Ver ---
-  const [viewCronograma, setViewCronograma] = useState<Cronograma | null>(null);
+  // Auto-calcula el numero de visita en base a las visitas existentes del
+  // docente/directivo seleccionado. Solo aplica al crear; en edicion se
+  // respeta el valor original (los botones son read-only en cualquier caso).
+  // El setTimeout(0) cumple con react-hooks/set-state-in-effect (AGENTS.md §6).
+  useEffect(() => {
+    if (editCronogramaId) return;
+    if (!formDocente) return;
+    const matchedDoc = docentes.find(
+      (d) => `${d.nombres} ${d.apellidos}`.trim() === formDocente.trim(),
+    );
+    if (!matchedDoc) return;
+    const visitasExistentes = cronogramas.filter(
+      (c) => c.evaluadoId === matchedDoc.id && c.tipo === formTipo,
+    ).length;
+    const next = Math.min(visitasExistentes + 1, 5);
+    const t = setTimeout(() => {
+      setFormVisita(String(next).padStart(2, '0'));
+    }, 0);
+    return () => clearTimeout(t);
+  }, [formDocente, formTipo, editCronogramaId, docentes, cronogramas]);
 
-  // --- Estado de Eliminado / Desactivación ---
-  const [deleteCronogramaId, setDeleteCronogramaId] = useState<string | null>(null);
+  const allowedModalidades = useMemo(() => {
+    if (user?.role !== 'jefe_area' || !user?.especialistaNivel) {
+      return MODALIDADES;
+    }
+    const list = [];
+    if (user.especialistaNivel === 'Inicial') {
+      list.push('EBR', 'EBE');
+    } else if (user.especialistaNivel === 'Primaria') {
+      list.push('EBR');
+    } else if (user.especialistaNivel === 'Secundaria') {
+      list.push('EBR', 'EBA', 'CEPTRO');
+    }
+    return list;
+  }, [user]);
 
   // ── Niveles filtrados por modalidad seleccionada ──
   const nivelesDisponibles = useMemo(() => {
     if (!formModalidad) return [];
-    return MODALIDAD_NIVEL_MAP[formModalidad] || [];
-  }, [formModalidad]);
+    const allNiveles = MODALIDAD_NIVEL_MAP[formModalidad] || [];
+    if (user?.role === 'jefe_area' && user?.especialistaNivel) {
+      if (formModalidad === 'EBR') {
+        return allNiveles.filter((n) => n === user.especialistaNivel);
+      }
+    }
+    return allNiveles;
+  }, [formModalidad, user]);
 
-  // ── Especialistas filtrados por modalidad + nivel ──
+  // ── Especialistas filtrados por modalidad + nivel + cargo monitor ──
+  const MONITOR_CARGOS = ['Especialista', 'Jefe de Área', 'Jefe de Gestión'];
   const especialistasFiltrados = useMemo(() => {
     if (!formModalidad || !formNivel) return [];
-    return MOCK_ESPECIALISTAS.filter(
-      (esp) => esp.modalidad === formModalidad && esp.nivelEducativo === formNivel
+    return especialistas.filter(
+      (esp) =>
+        esp.modalidad === formModalidad &&
+        esp.nivelEducativo === formNivel &&
+        MONITOR_CARGOS.includes(esp.cargo)
     );
-  }, [formModalidad, formNivel]);
+  }, [formModalidad, formNivel, especialistas]);
 
   // ── Instituciones filtradas por modalidad + nivel ──
   const institucionesFiltradas = useMemo(() => {
     if (!formModalidad || !formNivel) return [];
-    return MOCK_INSTITUCIONES.filter(
+    return instituciones.filter(
       (inst) => inst.modalidad === formModalidad && inst.nivelEducativo === formNivel
     );
-  }, [formModalidad, formNivel]);
+  }, [formModalidad, formNivel, instituciones]);
 
   const handleFormModalidadChange = (modalidad: string) => {
     setFormModalidad(modalidad);
@@ -408,65 +291,32 @@ export const CronogramaPage = () => {
     setPrevFilters(filters);
   }
 
-  // --- Procesamiento de Iniciales ---
-  const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
-  };
-
-  const getInitialsColor = (initials: string) => {
-    const colors: Record<string, string> = {
-      JP: 'bg-pink-100 text-pink-700 dark:bg-pink-950/30 dark:text-pink-400',
-      MG: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400',
-      CM: 'bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400',
-      AT: 'bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400',
-      PA: 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400',
-      RQ: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
-      LM: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-400',
-      SR: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',
-    };
-    return colors[initials] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
-  };
-
-  // --- Formateador de Fecha y Hora ---
-  const formatTableDateTime = (isoString: string) => {
-    try {
-      const date = new Date(isoString);
-      const datePart = date.toLocaleDateString('es-PE', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-      const timePart = date.toLocaleTimeString('es-PE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      });
-      return { datePart, timePart };
-    } catch {
-      return { datePart: isoString, timePart: '' };
-    }
-  };
-
   // --- Lógica de Filtro ---
   const filteredBaseCronogramas = useMemo(() => {
-    if (!isDirector || !user) return cronogramas;
+    if (!user) return cronogramas;
+    if (!isDirector && user.role !== 'jefe_area') return cronogramas;
+
     return cronogramas.filter((item) => {
-      const isSameSchool =
-        user.institucionNombre &&
-        item.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
+      if (isDirector) {
+        const isSameSchool =
+          user.institucionNombre &&
+          item.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
 
-      const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
-      const isDirectedToMe =
-        item.tipo === 'DIRECTIVO' &&
-        (item.docenteDirectivo.toLowerCase().includes(userFullName) ||
-          userFullName.includes(item.docenteDirectivo.toLowerCase()) ||
-          item.docenteDirectivo.toLowerCase().includes(user.nombres.toLowerCase()));
+        const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+        const isDirectedToMe =
+          item.tipo === 'DIRECTIVO' &&
+          (item.docenteDirectivo.toLowerCase().includes(userFullName) ||
+            userFullName.includes(item.docenteDirectivo.toLowerCase()) ||
+            item.docenteDirectivo.toLowerCase().includes(user.nombres.toLowerCase()));
 
-      return isSameSchool || isDirectedToMe;
+        if (!isSameSchool && !isDirectedToMe) return false;
+      }
+
+      if (user?.role === 'jefe_area') {
+        if (user.especialistaNivel && item.nivel !== user.especialistaNivel) return false;
+      }
+
+      return true;
     });
   }, [cronogramas, isDirector, user]);
 
@@ -514,22 +364,31 @@ export const CronogramaPage = () => {
     return `${year}-${month}-${day}T08:00`;
   };
 
-  // --- Abrir Modal de Registro ---
-  const handleOpenCreate = () => {
+  const resetForm = () => {
     setEditCronogramaId(null);
-    setFormFechaHora(getDefaultDateTime());
+    setFormFechaHora('');
+    setFormEspecialista('');
+    setFormInstitucion('');
     setFormDocente('');
     setFormTipo('DOCENTE');
     setFormVisita('01');
     setFormEstado('PROGRAMADO');
+    setFormModalidad('');
+    setFormNivel('');
     setFormObservaciones('');
     setFormError(null);
+  };
+
+  // --- Abrir Modal de Registro ---
+  const handleOpenCreate = () => {
+    resetForm();
+    setFormFechaHora(getDefaultDateTime());
 
     if (isDirector && user) {
       setFormInstitucion(user.institucionNombre || '');
       setFormEspecialista(`${user.nombres} ${user.apellidos}`);
-      
-      const matchInst = MOCK_INSTITUCIONES.find(
+
+      const matchInst = instituciones.find(
         (inst) => inst.nombre.toLowerCase() === user.institucionNombre?.toLowerCase()
       );
       if (matchInst) {
@@ -539,45 +398,30 @@ export const CronogramaPage = () => {
         setFormModalidad('EBR');
         setFormNivel(user.institucionNivel || 'Primaria');
       }
-    } else {
-      setFormModalidad('');
-      setFormNivel('');
-      setFormEspecialista('');
-      setFormInstitucion('');
     }
 
     setShowFormModal(true);
   };
 
-  // --- Abrir Modal de Edición ---
+  // --- Abrir Modal de Edición (síncrono: todos los setState se aplican en el mismo render) ---
   const handleOpenEdit = (item: Cronograma) => {
     setEditCronogramaId(item.id);
     setFormFechaHora(item.fechaHora);
     setFormModalidad(item.modalidad);
-    // nivel se setea después de que el efecto de modalidad se aplique
-    setTimeout(() => {
-      setFormNivel(item.nivel);
-      setTimeout(() => {
-        setFormDocente(item.docenteDirectivo);
-        setFormTipo(item.tipo);
-        setFormVisita(item.nroVisita);
-        setFormEstado(item.estado);
-        setFormObservaciones(item.observaciones || '');
-        if (isDirector && user) {
-          setFormInstitucion(user.institucionNombre || item.institucion);
-          setFormEspecialista(item.especialista);
-        } else {
-          setFormEspecialista(item.especialista);
-          setFormInstitucion(item.institucion);
-        }
-      }, 0);
-    }, 0);
+    setFormNivel(item.nivel);
+    setFormDocente(item.docenteDirectivo);
+    setFormTipo(item.tipo);
+    setFormVisita(item.nroVisita);
+    setFormEstado(item.estado);
+    setFormObservaciones(item.observaciones || '');
+    setFormEspecialista(item.especialista);
+    setFormInstitucion(item.institucion);
     setFormError(null);
     setShowFormModal(true);
   };
 
   // --- Guardar Formulario ---
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -586,52 +430,71 @@ export const CronogramaPage = () => {
       return;
     }
 
-    if (editCronogramaId) {
-      setCronogramas((prev) =>
-        prev.map((c) =>
-          c.id === editCronogramaId
-            ? {
-                ...c,
-                fechaHora: formFechaHora,
-                especialista: formEspecialista,
-                especialistaInitials: getInitials(formEspecialista),
-                institucion: formInstitucion,
-                docenteDirectivo: formDocente.trim(),
-                tipo: formTipo,
-                nroVisita: formVisita,
-                estado: formEstado,
-                modalidad: formModalidad,
-                nivel: formNivel,
-                observaciones: formObservaciones.trim(),
-              }
-            : c,
-        ),
-      );
-    } else {
-      const newCronograma: Cronograma = {
-        id: Date.now().toString(),
-        fechaHora: formFechaHora,
-        especialista: formEspecialista,
-        especialistaInitials: getInitials(formEspecialista),
-        institucion: formInstitucion,
-        docenteDirectivo: formDocente.trim(),
-        tipo: formTipo,
-        nroVisita: formVisita,
-        estado: 'PROGRAMADO',
-        modalidad: formModalidad,
-        nivel: formNivel,
-        observaciones: formObservaciones.trim(),
-      };
-      setCronogramas((prev) => [newCronograma, ...prev]);
+    const matchedEsp = especialistas.find(e => e.nombre === formEspecialista);
+    const matchedInst = instituciones.find(i => i.nombre === formInstitucion);
+    const matchedDoc = docentes.find(d => `${d.nombres} ${d.apellidos}` === formDocente.trim());
+
+    if (!matchedEsp || !matchedInst || !matchedDoc) {
+      setFormError('Error de resolución: No se encontraron los IDs correspondientes.');
+      return;
     }
 
-    setShowFormModal(false);
+    // Validar límite de 5 visitas por docente (solo al crear)
+    if (!editCronogramaId && visitasExistentesCount >= 5) {
+      setShowMaxVisitasModal(true);
+      return;
+    }
+
+    setFormSubmitting(true);
+    try {
+      if (editCronogramaId) {
+        const updatePayload: IUpdateVisitaRequest = {
+          detalles: formObservaciones.trim() || undefined,
+          estado: formEstado as EstadoVisita,
+        };
+        await updateCronograma(editCronogramaId, updatePayload);
+        setShowFormModal(false);
+        // Auto-navegar al calendario en la fecha del cronograma editado
+        const editedCronograma = cronogramas.find((c) => c.id === editCronogramaId);
+        if (editedCronograma) {
+          navigate('/monitoreo/calendario', {
+            state: { newDate: editedCronograma.fechaHora.substring(0, 10) },
+          });
+        }
+      } else {
+        const [datePart, timePart] = formFechaHora.split('T');
+        const horaInicio = timePart.length === 5 ? `${timePart}:00` : timePart;
+        await createCronograma({
+          monitorId: matchedEsp.id,
+          institucionId: matchedInst.id,
+          evaluadoId: matchedDoc.id,
+          tipoMonitoreo: formTipo,
+          numeroVisita: parseInt(formVisita, 10),
+          fechaProgramada: datePart,
+          horaInicio,
+          modalidad: formModalidad as Modalidad,
+          nivelEducativo: formNivel,
+          detalles: formObservaciones.trim() || undefined
+        });
+        setShowFormModal(false);
+        // Auto-navegar al calendario en la fecha del cronograma recién creado
+        navigate('/monitoreo/calendario', {
+          state: { newDate: datePart },
+        });
+      }
+    } catch (err) {
+      console.error('[Cronograma] Error guardando:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
+      setFormError(`Error al guardar: ${errorMsg}`);
+    } finally {
+      setFormSubmitting(false);
+    }
   };
 
   // --- Confirmar Eliminado ---
   const handleDeleteConfirm = () => {
     if (!deleteCronogramaId) return;
-    setCronogramas((prev) => prev.filter((c) => c.id !== deleteCronogramaId));
+    deleteFromContext(deleteCronogramaId);
     setDeleteCronogramaId(null);
   };
 
@@ -658,7 +521,7 @@ export const CronogramaPage = () => {
     }
   };
 
-  const visitaOptions = ['01', '02', '03', '04'];
+  const visitaOptions = ['01', '02', '03', '04', '05'];
 
   return (
     <div className="flex flex-col w-full gap-6 animate-in fade-in-0 duration-300">
@@ -935,9 +798,12 @@ export const CronogramaPage = () => {
             <form onSubmit={handleFormSubmit} className="flex flex-col overflow-y-auto flex-1">
               <div className="p-6 flex flex-col gap-5">
                 {formError && (
-                  <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3.5 text-destructive text-xs">
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div>{formError}</div>
+                  <div className="flex items-start gap-2 bg-rose-50 border-2 border-rose-300 rounded-xl p-4 text-rose-700 text-sm font-semibold shadow-sm">
+                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-rose-600" />
+                    <div className="flex-1">
+                      <p className="font-extrabold uppercase tracking-wide text-xs mb-1">No se pudo guardar el cronograma</p>
+                      <p className="font-normal">{formError}</p>
+                    </div>
                   </div>
                 )}
 
@@ -950,7 +816,7 @@ export const CronogramaPage = () => {
                         value={formModalidad}
                         onChange={handleFormModalidadChange}
                         placeholder="Seleccionar modalidad..."
-                        options={MODALIDADES.map((m) => ({ value: m, label: m }))}
+                        options={allowedModalidades.map((m) => ({ value: m, label: m }))}
                       />
                       <SelectField
                         label="Nivel Educativo *"
@@ -1133,7 +999,7 @@ export const CronogramaPage = () => {
                     />
                   </div>
 
-                  {/* Número de Visita - Botones numéricos */}
+                  {/* Número de Visita - read-only, auto-calculado */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-text-muted">Número de Visita *</label>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -1141,17 +1007,21 @@ export const CronogramaPage = () => {
                         <button
                           key={num}
                           type="button"
-                          onClick={() => setFormVisita(num)}
-                          className={`w-10 h-10 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border ${
+                          disabled
+                          aria-disabled
+                          className={`w-10 h-10 rounded-xl text-xs font-bold transition-all duration-200 border ${
                             formVisita === num
                               ? 'bg-primary text-white border-primary shadow-sm'
-                              : 'bg-surface text-text-muted border-border hover:bg-muted/60 hover:border-primary/40'
+                              : 'bg-surface text-text-muted border-border opacity-60'
                           }`}
                         >
                           {parseInt(num)}
                         </button>
                       ))}
                     </div>
+                    <span className="text-[10px] text-text-muted pl-1">
+                      Se asigna automaticamente segun las visitas previas del docente/directivo.
+                    </span>
                   </div>
                 </div>
 
@@ -1197,9 +1067,10 @@ export const CronogramaPage = () => {
                 </Button>
                 <Button
                   type="submit"
+                  disabled={formSubmitting}
                   className="bg-primary hover:bg-primary/95 text-white font-bold cursor-pointer transition-colors"
                 >
-                  Guardar Cronograma
+                  {formSubmitting ? 'Guardando…' : 'Guardar Cronograma'}
                 </Button>
               </div>
             </form>
@@ -1336,6 +1207,30 @@ export const CronogramaPage = () => {
           </div>
         );
       })()}
+
+      {/* ── Modal: Límite de 5 visitas por docente alcanzado ── */}
+      {showMaxVisitasModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <Card className="bg-surface w-full max-w-md border border-border rounded-2xl shadow-xl p-6 space-y-4">
+            <div className="flex items-center gap-2 text-amber-800">
+              <AlertCircle className="h-6 w-6 text-amber-600" />
+              <h3 className="text-base font-extrabold tracking-tight">Límite de Visitas Alcanzado</h3>
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              El docente <strong>{formDocente}</strong> ya tiene <strong>5 visitas</strong> de monitoreo programadas.
+              No es posible agregar más visitas para este docente.
+            </p>
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={() => setShowMaxVisitasModal(false)}
+                className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer"
+              >
+                Entendido
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* ── Modal de Confirmación para Eliminado ── */}
       {deleteCronogramaId && (

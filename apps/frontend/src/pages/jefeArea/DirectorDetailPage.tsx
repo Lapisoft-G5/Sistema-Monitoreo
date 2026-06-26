@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, User, Briefcase } from 'lucide-react';
-import { MOCK_DOCENTES, type Docente } from '@entities/model-docentes';
-import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
+import { type Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
+import { Spinner } from '@shared/ui/Spinner';
+import { fetchDocenteById } from '@features/docentes/docente-service';
+import { fetchInstitucionById } from '@features/institutions/institution-service';
 
 const nivelLabel = (n: string) => n.charAt(0) + n.slice(1).toLowerCase();
 
@@ -16,19 +18,40 @@ export const DirectorDetailPage = () => {
   const [director, setDirector] = useState<Docente | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [instName, setInstName] = useState('I.E. No Asignada');
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const found = MOCK_DOCENTES.find((d) => d.id === id);
-      setDirector(found || null);
-      setLoading(false);
-    }, 450);
-    return () => clearTimeout(timer);
+    const fetchDetail = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const found = await fetchDocenteById(id);
+        if (found) {
+          setDirector(found);
+          if (found.institucionId) {
+            const inst = await fetchInstitucionById(found.institucionId);
+            if (inst) {
+              setInstName(inst.nombre);
+            }
+          }
+        } else {
+          setDirector(null);
+        }
+      } catch (err) {
+        console.error('Error fetching director details:', err);
+        setDirector(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetail();
   }, [id]);
 
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando ficha del director...</span>
       </div>
     );
@@ -50,9 +73,6 @@ export const DirectorDetailPage = () => {
       </div>
     );
   }
-
-  const instName =
-    MOCK_INSTITUCIONES.find((i) => i.id === director.institucionId)?.nombre ?? 'I.E. No Asignada';
 
   return (
     <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300">

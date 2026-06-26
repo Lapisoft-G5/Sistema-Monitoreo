@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Sparkles,
   X,
@@ -15,10 +16,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import { useCronogramas, type Cronograma } from '@/entities/model-cronogramas';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
+import type { Cronograma } from '@entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
-import { usePlantillas } from '@/entities/model-plantillas';
-import { LlenarFichaForm } from '@/features/monitoreos';
+import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
+import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
+import { FEATURES } from '@shared/config/features';
 import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm
@@ -87,25 +90,36 @@ export const CalendarioSidebar = ({
   filteredVisits,
 }: CalendarioSidebarProps) => {
   const { user } = useUser();
-  const isEspecialista = user?.role === 'especialista';
-  const {
-    cronogramas,
-    setCronogramas,
-    reprogramaciones,
-    submitRescheduleRequest,
-    approveRescheduleRequest,
-    rejectRescheduleRequest,
-    deleteCronograma,
-  } = useCronogramas();
+  const isEspecialista =
+    user?.role === 'especialista' ||
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
+
+const qc = useQueryClient();
+
+const {
+  cronogramas,
+  reprogramaciones,
+  submitRescheduleRequest,
+  approveRescheduleRequest,
+  rejectRescheduleRequest,
+  deleteCronograma,
+} = useCronogramasData();
 
   // Modales locales
   const [showFichaModal, setShowFichaModal] = useState<boolean>(false);
   const [showSolicitarReprogramarModal, setShowSolicitarReprogramarModal] = useState<boolean>(false);
   const [showReprogramarModal, setShowReprogramarModal] = useState<boolean>(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showMigracionModal, setShowMigracionModal] = useState<boolean>(false);
+  const [migracionContext, setMigracionContext] = useState<{
+    visitId: string;
+    plantillaVigenteId: string | null;
+    plantillaVigenteNombre: string;
+  } | null>(null);
 
-  // Plantillas cargadas de la entidad
-  const { plantillas } = usePlantillas();
+  // Plantillas cargadas de la API (ya vienen mapeadas al modelo Plantilla del frontend)
+  const { data: plantillas = [] } = usePlantillasList();
 
   const selectedVisit = useMemo(() => {
     if (!selectedVisitId) return null;
@@ -117,58 +131,87 @@ export const CalendarioSidebar = ({
     return reprogramaciones[selectedVisit.id] || null;
   }, [reprogramaciones, selectedVisit]);
 
+  const canDecide = useMemo(() => {
+    if (!selectedVisit || !user) return false;
+    if (isEspecialista) return false;
+    if (user.role === 'jefe_gestion') return true;
+    if (user.role === 'jefe_area') {
+      if (user.especialistaNivel && selectedVisit.nivel !== user.especialistaNivel) return false;
+      return true;
+    }
+    if (user.role === 'director_institucion') {
+      if (selectedVisit.nivel !== 'Secundaria') return false;
+      const isSameSchool = !!(
+        user.institucionNombre &&
+        selectedVisit.institucion.toLowerCase() === user.institucionNombre.toLowerCase()
+      );
+      return isSameSchool;
+    }
+    return false;
+  }, [selectedVisit, user, isEspecialista]);
+
   const visitsOnSelectedDate = useMemo(() => {
     return filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === selectedDateStr);
   }, [filteredVisits, selectedDateStr]);
 
   const activeTemplate = useMemo(() => {
-    if (!selectedVisit) return null;
+    if (!selectedVisit || !user) return null;
     const searchType = selectedVisit.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+    const isInstitucionRole =
+      user.role === 'director_institucion' ||
+      user.role === 'coordinador_pedagogico' ||
+      user.role === 'jefe_taller';
 
-    const matchedTemplate = plantillas.find((p) => {
-      if (p.tipoMonitoreo !== searchType || p.estado !== 'Vigente') return false;
-      if (isDirector) {
-        return p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion;
-      } else {
-        return !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion';
-      }
-    });
+    const matchTypeAndEstado = (p: (typeof plantillas)[number]) =>
+      p.tipoMonitoreo === searchType && p.estado === 'Vigente';
 
-    if (!matchedTemplate) {
-      // Fallback a cualquier plantilla general vigente de ese tipo
-      return plantillas.find((p) => p.tipoMonitoreo === searchType && p.estado === 'Vigente') || plantillas[0];
-    }
-
-    return matchedTemplate;
-  }, [selectedVisit, plantillas, user]);
-
-  // Determinar si el usuario actual es el evaluador autorizado para iniciar esta visita
-  const isEvaluadorAutorizado = useMemo(() => {
-    if (!selectedVisit || !user) return false;
-
-    // Caso 1: Visita con plantilla de la I.E. (creada por un Director)
-    if (activeTemplate?.creadoPorRole === 'director_ie') {
-      const isDirector = user.role === 'director_ie' || user.role === 'director_institucion';
-      const isSameSchool =
-        user.institucion === activeTemplate.ieId ||
-        user.institucionNombre?.toLowerCase() === selectedVisit.institucion.toLowerCase();
-      return isDirector && isSameSchool;
-    }
-
-    // Caso 2: Visita con plantilla de la UGEL (creada por el Jefe de Gestión)
-    // Solo el especialista asignado a la visita puede completarla
-    if (user.role === 'especialista') {
-      const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
-      const visitEspecialista = selectedVisit.especialista.toLowerCase();
-      return (
-        userFullName.includes(visitEspecialista) ||
-        visitEspecialista.includes(userFullName) ||
-        visitEspecialista.includes(user.nombres.toLowerCase())
+    // Priority 1: plantilla de la IE (para roles institucionales)
+    let matchedTemplate: (typeof plantillas)[number] | undefined;
+    if (isInstitucionRole && user.institucion) {
+      matchedTemplate = plantillas.find(
+        (p) => matchTypeAndEstado(p) && p.creadoPorRole === 'director_ie' && p.ieId === user.institucion,
       );
     }
 
-    return false;
+    // Priority 2: plantilla UGEL
+    if (!matchedTemplate) {
+      matchedTemplate = plantillas.find(
+        (p) => matchTypeAndEstado(p) && (!p.creadoPorRole || p.creadoPorRole === 'jefe_gestion'),
+      );
+    }
+
+    // Ultimate fallback
+    return matchedTemplate ?? plantillas.find((p) => p.tipoMonitoreo === searchType && p.estado === 'Vigente') ?? plantillas[0] ?? null;
+  }, [selectedVisit, plantillas, user]);
+
+  // Determinar si el usuario actual es el evaluador autorizado para iniciar esta visita
+  // Solo la persona asignada como especialista/coordinador/jefe de taller/director puede llenar la ficha.
+  const isEvaluadorAutorizado = useMemo(() => {
+    if (!selectedVisit || !user) return false;
+
+    // Roles que pueden evaluar (deben coincidir con el asignado a la visita)
+    const allowedRoles = [
+      'especialista',
+      'coordinador_pedagogico',
+      'jefe_taller',
+      'jefe_gestion',
+      'jefe_area',
+      'director_institucion',
+    ];
+    if (!allowedRoles.includes(user.role)) return false;
+
+    // Si el usuario tiene Especialista vinculado, comparar por id
+    if (user.especialistaId && selectedVisit.monitorId) {
+      return user.especialistaId === selectedVisit.monitorId;
+    }
+    // Fallback: coincidencia por nombre (legacy)
+    const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+    const visitEspecialista = selectedVisit.especialista.toLowerCase();
+    return (
+      userFullName.includes(visitEspecialista) ||
+      visitEspecialista.includes(userFullName) ||
+      visitEspecialista.includes(user.nombres.toLowerCase())
+    );
   }, [selectedVisit, user, activeTemplate]);
 
   // Determinar si el día actual coincide con la fecha programada
@@ -213,38 +256,156 @@ export const CalendarioSidebar = ({
       selectedLevels: levels,
       generalComments:
         'El monitoreo se desarrolló conforme a los compromisos de gestión. Se observa una adecuada planificación didáctica, alta concentración de alumnos en tareas significativas y un clima de aula respetuoso y participativo. Se recomienda continuar con las jornadas de reflexión interna.',
+      sugerencias: 'Continuar fortaleciendo las competencias pedagógicas y de liderazgo directivo.',
+      compromisos: 'El directivo se compromete a realizar un seguimiento mensual a las sugerencias brindadas.',
+      rubricComments: {},
+      respuestasEjeItem: {},
+      evidenciaUrls: {},
     };
-    localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+    if (!FEATURES.apiOnly) {
+      localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+    }
   };
 
-  const handleSaveBorrador = (
+  const handleSaveBorrador = async (
     visitId: string,
     data: {
       checkedAspects: Record<string, boolean>;
       selectedLevels: Record<string, string>;
       generalComments: string;
+      sugerencias?: string;
+      compromisos?: string;
+      rubricComments?: Record<string, string>;
+      preguntaExtraAnswers?: Record<string, boolean>;
+      respuestasEjeItem?: Record<string, number>;
+      evidenciaUrls?: Record<string, string>;
     }
   ) => {
-    localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
-    setCronogramas((prev) =>
-      prev.map((c) => (c.id === visitId ? { ...c, estado: 'EN PROCESO' } : c))
+    // Persistir localmente (UX inmediata)
+    if (!FEATURES.apiOnly) {
+      localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+    }
+    qc.setQueryData(['cronogramas'], (prev: any) =>
+      Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'EN PROCESO' } : c)) : prev
     );
+
+    // Persistir en backend (best-effort, no bloquea la UI)
+    try {
+      const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+      let ficha = await fichasApi.findByVisita(visitId);
+      if (!ficha) {
+        ficha = await fichasApi.create({
+          cronogramaId: visitId,
+          areaCurricular: selectedVisit?.tipo === 'DOCENTE' ? 'Matematica' : undefined,
+          grado: selectedVisit?.tipo === 'DOCENTE' ? '5to' : undefined,
+          seccion: selectedVisit?.tipo === 'DOCENTE' ? 'A' : undefined,
+          cantidadEstudiantes: selectedVisit?.tipo === 'DOCENTE' ? 30 : undefined,
+          cantidadEstudiantesNee: selectedVisit?.tipo === 'DOCENTE' ? 2 : undefined,
+          cursoId: selectedVisit?.tipo === 'DOCENTE' ? '1f480ae6-cd7a-40f7-beac-108c05af771e' : undefined,
+        });
+      }
+      // Guardar respuestas de desempeno (1-4)
+      const desempenoMap = data.selectedLevels;
+      for (const [desempenoId, nivelRoman] of Object.entries(desempenoMap)) {
+        const obs = data.rubricComments?.[desempenoId];
+        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman), obs);
+      }
+      // Guardar respuestas de aspecto
+      for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
+        await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
+      }
+      // Guardar respuestas de eje item
+      if (data.respuestasEjeItem) {
+        for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
+          const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
+          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
+        }
+      }
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string } } };
+      if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
+        // ILA-0046: la plantilla paso a Historico, abrir modal de migracion
+        setMigracionContext({
+          visitId,
+          plantillaVigenteId: apiErr.response.data.plantillaVigenteId ?? null,
+          plantillaVigenteNombre: apiErr.response.data.plantillaVigenteNombre ?? 'Plantilla vigente',
+        });
+        setShowMigracionModal(true);
+        return;
+      }
+      console.warn('No se pudo persistir la ficha en backend:', err);
+    }
+
     setShowFichaModal(false);
   };
 
-  const handleFinalizeMonitoreo = (
+  const handleFinalizeMonitoreo = async (
     visitId: string,
     data: {
       checkedAspects: Record<string, boolean>;
       selectedLevels: Record<string, string>;
       generalComments: string;
+      sugerencias?: string;
+      compromisos?: string;
+      rubricComments?: Record<string, string>;
+      preguntaExtraAnswers?: Record<string, boolean>;
+      respuestasEjeItem?: Record<string, number>;
+      evidenciaUrls?: Record<string, string>;
     }
   ) => {
     localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
-    setCronogramas((prev) =>
-      prev.map((c) => (c.id === visitId ? { ...c, estado: 'COMPLETADO' } : c))
+    qc.setQueryData(['cronogramas'], (prev: any) =>
+      Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'COMPLETADO' } : c)) : prev
     );
+
+    try {
+      const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+      let ficha = await fichasApi.findByVisita(visitId);
+      if (!ficha) {
+        ficha = await fichasApi.create({
+          cronogramaId: visitId,
+          areaCurricular: selectedVisit?.tipo === 'DOCENTE' ? 'Matematica' : undefined,
+          grado: selectedVisit?.tipo === 'DOCENTE' ? '5to' : undefined,
+          seccion: selectedVisit?.tipo === 'DOCENTE' ? 'A' : undefined,
+          cantidadEstudiantes: selectedVisit?.tipo === 'DOCENTE' ? 30 : undefined,
+          cantidadEstudiantesNee: selectedVisit?.tipo === 'DOCENTE' ? 2 : undefined,
+          cursoId: selectedVisit?.tipo === 'DOCENTE' ? '1f480ae6-cd7a-40f7-beac-108c05af771e' : undefined,
+        });
+      }
+      for (const [desempenoId, nivelRoman] of Object.entries(data.selectedLevels)) {
+        const obs = data.rubricComments?.[desempenoId];
+        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman), obs);
+      }
+      for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
+        await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
+      }
+      if (data.respuestasEjeItem) {
+        for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
+          const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
+          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
+        }
+      }
+      await fichasApi.finalizar(ficha.id, data.generalComments, data.sugerencias, data.compromisos);
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string } } };
+      if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
+        setMigracionContext({
+          visitId,
+          plantillaVigenteId: apiErr.response.data.plantillaVigenteId ?? null,
+          plantillaVigenteNombre: apiErr.response.data.plantillaVigenteNombre ?? 'Plantilla vigente',
+        });
+        setShowMigracionModal(true);
+        return;
+      }
+      console.warn('No se pudo finalizar la ficha en backend:', err);
+    }
+
     setShowFichaModal(false);
+  };
+
+  const romanToNumber = (roman: string): number => {
+    const map: Record<string, number> = { I: 1, II: 2, III: 3, IV: 4 };
+    return map[roman] || 1;
   };
 
   const handleDeleteConfirm = () => {
@@ -296,7 +457,7 @@ export const CalendarioSidebar = ({
           )}
 
           {/* Badge de Solicitud de Cambio Pendiente (Para el Jefe de Gestión) */}
-          {activeRequest && activeRequest.estado === 'PENDIENTE' && !isEspecialista && (
+          {activeRequest && activeRequest.estado === 'PENDIENTE' && canDecide && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-bold flex items-start gap-2 shadow-sm animate-pulse">
               <AlertCircle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
               <span>Solicitud de Reprogramación Pendiente</span>
@@ -394,16 +555,31 @@ export const CalendarioSidebar = ({
                 {selectedVisit.observaciones || 'Sin indicaciones o detalles adicionales registrados.'}
               </div>
             </div>
+
+            {selectedVisit.estado === 'REPROGRAMADO' && activeRequest?.aprobador && (
+              <div className="p-3.5 bg-emerald-50/60 border border-emerald-100 rounded-xl text-emerald-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200 mt-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                <span>
+                  <strong>Reprogramación Autorizada:</strong> Cambio aprobado por{' '}
+                  <strong>{activeRequest.aprobador}</strong>.
+                  {activeRequest.aprobadorComentario && (
+                    <span className="block mt-1 font-normal italic text-slate-600">
+                      "{activeRequest.aprobadorComentario}"
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* BOTONES DE ACCIÓN */}
           <div className="space-y-2 pt-4 border-t border-border mt-6">
             {isEvaluadorAutorizado ? (
               <>
-                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO') && (
+                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO' || selectedVisit.estado === 'REPROGRAMADO') && (
                   <div className="flex flex-col gap-2.5">
                     {/* Advertencia si no es la fecha programada */}
-                    {selectedVisit.estado === 'PROGRAMADO' && !isFechaCoincidente && (
+                    {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'REPROGRAMADO') && !isFechaCoincidente && (
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                         <AlertTriangle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
                         <span>
@@ -415,18 +591,20 @@ export const CalendarioSidebar = ({
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        disabled={selectedVisit.estado === 'PROGRAMADO' && !isFechaCoincidente}
+                        disabled={(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'REPROGRAMADO') && !isFechaCoincidente}
                         onClick={() => setShowFichaModal(true)}
                         className="flex-1 justify-center border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors font-bold text-xs py-2.5 h-10 flex items-center gap-2 cursor-pointer"
                       >
                         <PlayCircle className="h-4.5 w-4.5" />
                         <span>
-                          {selectedVisit.estado === 'PROGRAMADO' ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}
+                          {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'REPROGRAMADO') ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}
                         </span>
                       </Button>
 
-                      {/* Reprogramar: solo para el Especialista (solicitar reprogramación) */}
-                      {user?.role === 'especialista' && (
+                      {/* Reprogramar: para el Especialista, Coordinador Pedagógico o Jefe de Taller */}
+                      {(user?.role === 'especialista' ||
+                        user?.role === 'coordinador_pedagogico' ||
+                        user?.role === 'jefe_taller') && (
                         <Button
                           variant="outline"
                           onClick={() => {
@@ -448,26 +626,17 @@ export const CalendarioSidebar = ({
               </>
             ) : (
               <>
-                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO') && (
+                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO' || selectedVisit.estado === 'REPROGRAMADO') && (
                   <div className="flex flex-col gap-2">
                     <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                       <Clock className="h-4.5 w-4.5 text-blue-500 mt-0.5 shrink-0" />
                       <span>
-                        {activeTemplate?.creadoPorRole === 'director_ie' ? (
-                          <>
-                            <strong>Visita de I.E.:</strong> Solo el Director correspondiente a la institución{' '}
-                            <strong>{selectedVisit.institucion}</strong> tiene permisos para ejecutar esta ficha.
-                          </>
-                        ) : (
-                          <>
-                            <strong>Visita de UGEL:</strong> Solo el especialista asignado ({' '}
-                            <strong>{selectedVisit.especialista}</strong>) tiene permisos para ejecutar esta ficha.
-                          </>
-                        )}
+                        <strong>Acceso Restringido:</strong> Solo la persona asignada ({' '}
+                        <strong>{selectedVisit.especialista}</strong>) puede ejecutar esta ficha de monitoreo.
                       </span>
                     </div>
 
-                    {activeRequest && (
+                    {activeRequest && selectedVisit.estado !== 'REPROGRAMADO' && (
                       <Button
                         variant="outline"
                         onClick={() => setShowReprogramarModal(true)}
@@ -491,10 +660,50 @@ export const CalendarioSidebar = ({
 
                 <Button
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
                     const saved = localStorage.getItem(`sistema-monitoreo:ficha-state:${selectedVisit.id}`);
                     if (!saved) {
-                      simulateFichaLlena(selectedVisit.id);
+                      try {
+                        const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+                        const ficha = await fichasApi.findByVisita(selectedVisit.id);
+                        if (ficha) {
+                          const checkedAspects: Record<string, boolean> = {};
+                          for (const r of ficha.respuestasAspecto) {
+                            checkedAspects[r.aspectoId] = r.marcado;
+                          }
+                          const selectedLevels: Record<string, string> = {};
+                          const rubricComments: Record<string, string> = {};
+                          const romanMap = ['I', 'II', 'III', 'IV'];
+                          for (const r of ficha.respuestasDesempeno) {
+                            selectedLevels[r.desempenoId] = romanMap[r.nivel - 1] || 'I';
+                            if (r.observaciones) {
+                              rubricComments[r.desempenoId] = r.observaciones;
+                            }
+                          }
+                          const respuestasEjeItem: Record<string, number> = {};
+                          const evidenciaUrls: Record<string, string> = {};
+                          for (const r of ficha.respuestasEjeItem || []) {
+                            respuestasEjeItem[r.ejeItemId] = r.nivel;
+                            if (r.evidenciaUrl) evidenciaUrls[r.ejeItemId] = r.evidenciaUrl;
+                          }
+                          const mappedData = {
+                            checkedAspects,
+                            selectedLevels,
+                            generalComments: ficha.observaciones || '',
+                            sugerencias: ficha.sugerencias || '',
+                            compromisos: ficha.compromisos || '',
+                            rubricComments,
+                            respuestasEjeItem,
+                            evidenciaUrls,
+                          };
+                          localStorage.setItem(`sistema-monitoreo:ficha-state:${selectedVisit.id}`, JSON.stringify(mappedData));
+                        } else {
+                          simulateFichaLlena(selectedVisit.id);
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        simulateFichaLlena(selectedVisit.id);
+                      }
                     }
                     setShowFichaModal(true);
                   }}
@@ -516,7 +725,7 @@ export const CalendarioSidebar = ({
               </div>
             )}
 
-            {selectedVisit.estado === 'REPROGRAMADO' && (
+            {selectedVisit.estado === 'REPROGRAMADO' && !isEvaluadorAutorizado && (
               <div className="flex flex-col gap-2">
                 <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl text-amber-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                   <AlertTriangle className="h-4.5 w-4.5 text-amber-500 mt-0.5 shrink-0" />
@@ -569,7 +778,6 @@ export const CalendarioSidebar = ({
               fechaOriginal: selectedVisit.fechaHora,
               fechaNueva: data.fechaNueva,
               motivo: data.motivo,
-              archivoNombre: data.archivoNombre,
             });
             setShowSolicitarReprogramarModal(false);
           }}
@@ -582,7 +790,7 @@ export const CalendarioSidebar = ({
           onClose={() => setShowReprogramarModal(false)}
           visit={selectedVisit}
           request={activeRequest}
-          isEspecialista={isEspecialista}
+          canDecide={canDecide}
           onApprove={(visitId, comment) => {
             approveRescheduleRequest(
               visitId,
@@ -614,6 +822,35 @@ export const CalendarioSidebar = ({
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteConfirmId(null)}
           danger
+        />
+      )}
+
+      {migracionContext && (
+        <ModalMigracionPlantilla
+          isOpen={showMigracionModal}
+          onClose={() => {
+            setShowMigracionModal(false);
+            setMigracionContext(null);
+          }}
+          fichaId={migracionContext.visitId}
+          plantillaActualId=""
+          plantillaNuevaId={migracionContext.plantillaVigenteId ?? ''}
+          plantillaNuevaNombre={migracionContext.plantillaVigenteNombre}
+          onMigrar={async () => {
+            const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+            const ficha = await fichasApi.findByVisita(migracionContext.visitId);
+            if (ficha && migracionContext.plantillaVigenteId) {
+              await fichasApi.migrarPlantilla(ficha.id, migracionContext.plantillaVigenteId);
+            }
+            setShowMigracionModal(false);
+            setMigracionContext(null);
+            setShowFichaModal(false);
+          }}
+          onFinalizarConV1={async () => {
+            setShowMigracionModal(false);
+            setMigracionContext(null);
+            setShowFichaModal(false);
+          }}
         />
       )}
     </div>

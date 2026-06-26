@@ -1,4 +1,4 @@
-import type { AspectoEvaluado, Desempeno } from './model';
+import type { AspectoEvaluado, Desempeno, EjeItem } from './model';
 import { NIVELES_ROMANOS } from './constants';
 
 const uid = () => globalThis.crypto?.randomUUID?.() ?? String(Math.random());
@@ -14,6 +14,13 @@ export const crearDesempenoVacio = (): Desempeno => ({
   id: uid(),
   nombre: '',
   descripcionCorta: '',
+  preguntaExtra: '',
   aspectos: [crearAspectoVacio()],
   rubrica: NIVELES_ROMANOS.map((nivel) => ({ nivel, descripcion: '' })),
+});
+
+export const crearEjeItemVacio = (): EjeItem => ({
+  id: uid(),
+  numero: 1,
+  descripcion: '',
 });

@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { User, Briefcase, Plus, Trash2, Check, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
+import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
+import { Spinner } from '@shared/ui/Spinner';
+import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';
+import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
 
 interface Props {
   onCancel: () => void;
@@ -43,6 +47,7 @@ const CURSOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> 
   ],
 };
 
+/* eslint-disable-next-line react-refresh/only-export-components */
 export const GRADOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> = {
   INICIAL: ['3 años', '4 años', '5 años'],
   PRIMARIA: ['1°', '2°', '3°', '4°', '5°', '6°'],
@@ -58,7 +63,7 @@ const INITIAL_FORM: DocenteFormData = {
   nivelEducativo: 'PRIMARIA',
   condicion: 'Nombrado',
   especialidad: '',
-  cargaHoraria: 30,
+  cargaHoraria: CARGA_HORARIA.DOCENTE,
   secciones: [],
   escala: 'I',
   institucionId: '',
@@ -77,7 +82,7 @@ export const DocenteFormBase = ({
 }: Props) => {
   const { user } = useUser();
   console.log('User context in DocenteFormBase:', user);
-  const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  const isDirectorIe = user?.role === 'director_institucion';
 
   const [form, setForm] = useState<DocenteFormData>(() => {
     if (initialData) return initialData;
@@ -101,7 +106,6 @@ export const DocenteFormBase = ({
     };
   });
 
-  const [submitted, setSubmitted] = useState(false);
   const [selectedGrado, setSelectedGrado] = useState(() => {
     const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
     return defaultGrados[0] || '';
@@ -110,24 +114,47 @@ export const DocenteFormBase = ({
 
   useEffect(() => {
     const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
-    setSelectedGrado(defaultGrados[0] || '');
+    setTimeout(() => setSelectedGrado(defaultGrados[0] || ''), 0);
   }, [form.nivelEducativo]);
 
   const set = <K extends keyof DocenteFormData>(key: K, value: DocenteFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  // Validación rápida con Zod para mostrar errores en tiempo real
-  const validationResult = docenteSchema.safeParse(form);
-  const errors: Record<string, string> = {};
+  const errors = useMemo(() => extractErrors(docenteSchema.safeParse(form)), [form]);
 
-  if (!validationResult.success) {
-    validationResult.error.issues.forEach((issue) => {
-      const path = issue.path[0] as string;
-      if (!errors[path]) {
-        errors[path] = issue.message;
-      }
-    });
-  }
+  const {
+    submitted,
+    persona,
+    searchingDni,
+    isDniLocked,
+    dniMessage,
+    dniBloqueadoPorRol,
+    showRoleConfirm,
+    setShowRoleConfirm,
+    handleSubmit,
+    handleConfirmRole,
+    dniOk,
+    roleCheck,
+  } = usePersonForm({
+    dni: form.dni,
+    isNew: !initialData,
+    rolObjetivo: form.cargo === 'Director' ? 'director' : 'docente',
+    onValidSubmit: () => onSubmit(form),
+    isLoading,
+    errors,
+    setPersonaFields: (persona) => {
+      set('nombres', persona.nombres);
+      set('apellidos', persona.apellidos);
+      set('correo', persona.correo ?? '');
+      set('celular', persona.telefono ?? '');
+    },
+    clearPersonaFields: () => {
+      set('nombres', '');
+      set('apellidos', '');
+      set('correo', '');
+      set('celular', '');
+    },
+  });
 
   const showError = (key: keyof DocenteFormData) => (submitted ? errors[key] : '');
 
@@ -165,13 +192,6 @@ export const DocenteFormBase = ({
     );
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    if (!validationResult.success || isLoading) return;
-    onSubmit(form);
-  };
-
-  const dniOk = /^\d{8}$/.test(form.dni);
   const celularOk = /^9\d{8}$/.test(form.celular);
 
   return (
@@ -184,11 +204,13 @@ export const DocenteFormBase = ({
               label="DNI (8 dígitos)"
               required
               value={form.dni}
-              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
+              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
               placeholder="Ej. 74859612"
               error={showError('dni')}
               adornment={
-                dniOk ? (
+                searchingDni ? (
+                  <Spinner size="sm" />
+                ) : dniOk ? (
                   <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
                 ) : undefined
               }
@@ -202,6 +224,7 @@ export const DocenteFormBase = ({
               onChange={(v) => set('nombres', v)}
               placeholder="Ej. Rosa Elena"
               error={showError('nombres')}
+              disabled={isDniLocked}
             />
           </div>
           <div className="md:col-span-2">
@@ -212,9 +235,36 @@ export const DocenteFormBase = ({
               onChange={(v) => set('apellidos', v)}
               placeholder="Ej. Mamani Ccopa"
               error={showError('apellidos')}
+              disabled={isDniLocked}
             />
           </div>
         </div>
+
+        {dniMessage && !searchingDni && (
+          <div className="mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-2">
+            <Check className="h-4 w-4" strokeWidth={2.5} />
+            {dniMessage}
+          </div>
+        )}
+
+        {persona && roleCheck.mensaje && (
+          <div
+            className={`mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border ${
+              roleCheck.bloquea
+                ? 'bg-rose-50 text-rose-700 border-rose-300'
+                : 'bg-amber-50 text-amber-800 border-amber-300'
+            }`}
+          >
+            <span className="font-extrabold uppercase tracking-wide text-[0.72rem]">
+              {roleCheck.bloquea ? 'Bloqueado' : 'Advertencia'}:
+            </span>{' '}
+            {roleCheck.mensaje}
+            {roleCheck.detalle && (
+              <span className="block mt-1 font-normal text-[0.72rem]">{roleCheck.detalle}</span>
+            )}
+          </div>
+        )}
+
         <div style={{ ...twoCols, marginTop: 18 }}>
           <TextField
             label="Correo Electrónico"
@@ -223,12 +273,13 @@ export const DocenteFormBase = ({
             onChange={(v) => set('correo', v)}
             placeholder="Ej. director@ie.edu.pe"
             error={showError('correo')}
+            disabled={isDniLocked}
           />
           <TextField
             label="Número de Celular"
             required
             value={form.celular}
-            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, 9))}
+              onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
             placeholder="Ej. 987654321"
             error={showError('celular')}
             adornment={
@@ -455,10 +506,43 @@ export const DocenteFormBase = ({
         <FormButton variant="secondary" onClick={onCancel} disabled={isLoading}>
           Cancelar
         </FormButton>
-        <FormButton onClick={handleSubmit} disabled={isLoading}>
+        <FormButton
+          onClick={handleSubmit}
+          disabled={isLoading || dniBloqueadoPorRol}
+        >
           {isLoading ? 'Guardando...' : submitLabel || 'Guardar Director/Docente'}
         </FormButton>
       </div>
+
+      {showRoleConfirm && persona && (
+        <ConfirmModal
+          title="Confirmar creación con rol adicional"
+          message={
+            <div className="text-xs text-slate-600 leading-relaxed space-y-2">
+              <p>
+                La persona <strong>{persona.nombres} {persona.apellidos}</strong> (DNI {persona.dni}) ya está registrada en el sistema.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-2.5 text-amber-800">
+                <p className="font-semibold">Roles actuales:</p>
+                <ul className="list-disc list-inside mt-1 text-[0.72rem]">
+                  {persona.roles.esDirector && <li>Director de I.E.</li>}
+                  {persona.roles.esCoordinadorPedagogico && <li>Coordinador Pedagógico</li>}
+                  {persona.roles.esJefeTaller && <li>Jefe de Taller</li>}
+                  {persona.roles.esDocenteAula && <li>Docente de Aula</li>}
+                  {persona.roles.esEspecialista && <li>{persona.roles.especialistaCargoActivo} ({persona.roles.especialistaNivelEducativo})</li>}
+                </ul>
+              </div>
+              <p>
+                Se creará un nuevo registro como <strong>{form.cargo}</strong> además de los roles existentes. ¿Desea continuar?
+              </p>
+            </div>
+          }
+          confirmLabel="Sí, crear con rol adicional"
+          cancelLabel="Cancelar"
+          onConfirm={handleConfirmRole}
+          onCancel={() => setShowRoleConfirm(false)}
+        />
+      )}
     </div>
   );
 };

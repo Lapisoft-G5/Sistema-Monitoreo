@@ -10,7 +10,8 @@ import {
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
-import { useCronogramas, type Cronograma } from '@/entities/model-cronogramas';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
+import type { Cronograma } from '@entities/model-cronogramas';
 import type { SolicitudReprogramacion } from '@/entities/model-reprogramaciones';
 import { useUser } from '@/entities/model-user';
 import {
@@ -37,13 +38,32 @@ export const BandejaReprogramaciones = () => {
     user?.role === 'especialista' ||
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
+
+  const canDecideRequest = (visit: Cronograma) => {
+    if (isEspecialista) return false;
+    if (user?.role === 'jefe_gestion') return true;
+    if (user?.role === 'jefe_area') {
+      if (user.especialistaNivel && visit.nivel !== user.especialistaNivel) return false;
+      return true;
+    }
+    if (user?.role === 'director_institucion') {
+      if (visit.nivel !== 'Secundaria') return false;
+      const isSameSchool = !!(
+        user.institucionNombre &&
+        visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase()
+      );
+      return isSameSchool;
+    }
+    return false;
+  };
+
   const {
     cronogramas,
     reprogramaciones,
     submitRescheduleRequest,
     approveRescheduleRequest,
     rejectRescheduleRequest,
-  } = useCronogramas();
+  } = useCronogramasData();
 
   // Filtro local de estado de solicitud
   const [filterRequestStatus, setFilterRequestStatus] = useState<'Todos' | 'PENDIENTE' | 'APROBADO' | 'RECHAZADO'>('Todos');
@@ -54,24 +74,9 @@ export const BandejaReprogramaciones = () => {
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
 
   const specialistFilterName = useMemo(() => {
-    if (!isEspecialista || !user) return '';
-    if (user.role === 'coordinador_pedagogico' || user.role === 'jefe_taller') {
-      return `${user.nombres} ${user.apellidos}`;
-    }
-    const firstName = user.nombres.split(' ')[0].toLowerCase();
-    
-    if (firstName.startsWith('juan')) return 'Juan Pérez';
-    if (firstName.startsWith('maría') || firstName.startsWith('maria')) return 'María García';
-    if (firstName.startsWith('ana')) return 'Ana Torres';
-    if (firstName.startsWith('pedro')) return 'Pedro Alvarado';
-    if (firstName.startsWith('rosa')) return 'Rosa Quispe';
-    if (firstName.startsWith('luis')) return 'Luis Mamani';
-    if (firstName.startsWith('sofía') || firstName.startsWith('sofia')) return 'Sofía Ramos';
-    if (firstName.startsWith('klisman')) return 'Klisman Condori';
-    if (firstName.startsWith('jean')) return 'Jean Carlos Choque';
-    
-    return 'Juan Pérez'; // fallback
-  }, [isEspecialista, user]);
+    if (!user) return '';
+    return `${user.nombres} ${user.apellidos}`;
+  }, [user]);
 
   // Obtener todas las solicitudes
   const allRequests = useMemo(() => {
@@ -99,7 +104,7 @@ export const BandejaReprogramaciones = () => {
 
       // 2. Deciders filter:
       if (!isEspecialista) {
-        const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+        const isDirector = user?.role === 'director_institucion';
         if (isDirector) {
           // Director only sees requests from their own school
           const isSameSchool =
@@ -107,37 +112,25 @@ export const BandejaReprogramaciones = () => {
             req.visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
           
           // And the requester must be CP or JT (not UGEL specialist)
-          const isCPorJT =
-            req.visit.especialista !== 'Juan Pérez' &&
-            req.visit.especialista !== 'María García' &&
-            req.visit.especialista !== 'Carlos Mendoza' &&
-            req.visit.especialista !== 'Ana Torres' &&
-            req.visit.especialista !== 'Pedro Alvarado' &&
-            req.visit.especialista !== 'Rosa Quispe' &&
-            req.visit.especialista !== 'Luis Mamani' &&
-            req.visit.especialista !== 'Sofía Ramos' &&
-            req.visit.especialista !== 'Klisman Condori' &&
-            req.visit.especialista !== 'Jean Carlos Choque';
+          const isCPorJT = req.visit.especialistaCargo !== 'Especialista';
 
           if (!isSameSchool || !isCPorJT) {
             return false;
           }
         } else {
-          // Jefe de Gestión / Admin only see requests from Specialists (UGEL)
+          // Jefe de Gestión / Admin / Jefe de Área only see requests from Specialists (UGEL)
           const isSpecialistEvaluator =
-            req.visit.especialista === 'Juan Pérez' ||
-            req.visit.especialista === 'María García' ||
-            req.visit.especialista === 'Carlos Mendoza' ||
-            req.visit.especialista === 'Ana Torres' ||
-            req.visit.especialista === 'Pedro Alvarado' ||
-            req.visit.especialista === 'Rosa Quispe' ||
-            req.visit.especialista === 'Luis Mamani' ||
-            req.visit.especialista === 'Sofía Ramos' ||
-            req.visit.especialista === 'Klisman Condori' ||
-            req.visit.especialista === 'Jean Carlos Choque';
+            req.visit.especialistaCargo === 'Especialista' ||
+            req.visit.especialistaCargo === 'Jefe de Área' ||
+            req.visit.especialistaCargo === 'Jefe de Gestión';
 
           if (!isSpecialistEvaluator) {
             return false;
+          }
+
+          // Filtro adicional para Jefe de Área: solo ver de su nivel
+          if (user?.role === 'jefe_area') {
+            if (user.especialistaNivel && req.visit.nivel !== user.especialistaNivel) return false;
           }
         }
       }
@@ -158,12 +151,15 @@ export const BandejaReprogramaciones = () => {
     return reprogramaciones[selectedVisitId] || null;
   }, [reprogramaciones, selectedVisitId]);
 
+  const [futureVisits, setFutureVisits] = useState<Cronograma[]>([]);
+
   const handleNewRequestClick = () => {
-    const futureVisits = cronogramas.filter(
+    const visits = cronogramas.filter(
       (v) => v.especialista === specialistFilterName && v.estado === 'PROGRAMADO'
     );
-    if (futureVisits.length > 0) {
-      setSelectedVisitId(futureVisits[0].id);
+    if (visits.length > 0) {
+      setFutureVisits(visits);
+      setSelectedVisitId(visits[0].id);
       setShowSolicitarReprogramarModal(true);
     } else {
       alert('No tienes visitas programadas a futuro disponibles para reprogramar.');
@@ -186,7 +182,7 @@ export const BandejaReprogramaciones = () => {
           <p className="text-xs text-text-muted mt-1">
             {isEspecialista
               ? 'Revisa el estado de tus solicitudes enviadas o registra una nueva reprogramación para tus visitas a futuro.'
-              : user?.role === 'director_ie' || user?.role === 'director_institucion'
+              : user?.role === 'director_institucion'
                 ? 'Audita y aprueba o rechaza los cambios de fecha propuestos por los coordinadores pedagógicos y jefes de taller.'
                 : 'Audita y aprueba o rechaza los cambios de fecha propuestos por los especialistas de monitoreo.'}
           </p>
@@ -308,7 +304,7 @@ export const BandejaReprogramaciones = () => {
                   Solicitado el: {req.fechaRegistro}
                 </span>
 
-                {req.estado === 'PENDIENTE' && !isEspecialista ? (
+                {req.estado === 'PENDIENTE' && canDecideRequest(req.visit) ? (
                   <Button
                     onClick={() => handleOpenReview(req.visit.id)}
                     className="bg-primary hover:bg-primary-hover text-white text-[11px] font-black h-8 px-4 rounded-lg flex items-center gap-1 shadow-sm cursor-pointer"
@@ -345,12 +341,12 @@ export const BandejaReprogramaciones = () => {
           isOpen={showSolicitarReprogramarModal}
           onClose={() => setShowSolicitarReprogramarModal(false)}
           visit={selectedVisit}
+          availableVisits={futureVisits}
           onSubmit={(data) => {
-            submitRescheduleRequest(selectedVisit.id, {
-              fechaOriginal: selectedVisit.fechaHora,
+            submitRescheduleRequest(data.visitId, {
+              fechaOriginal: data.fechaOriginal,
               fechaNueva: data.fechaNueva,
               motivo: data.motivo,
-              archivoNombre: data.archivoNombre,
             });
             setShowSolicitarReprogramarModal(false);
           }}
@@ -363,7 +359,7 @@ export const BandejaReprogramaciones = () => {
           onClose={() => setShowReprogramarModal(false)}
           visit={selectedVisit}
           request={activeRequest}
-          isEspecialista={isEspecialista}
+          canDecide={canDecideRequest(selectedVisit)}
           onApprove={(visitId, comment) => {
             approveRescheduleRequest(visitId, user ? `${user.nombres} ${user.apellidos}` : 'Carlos Mendoza', comment);
             setShowReprogramarModal(false);

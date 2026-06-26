@@ -10,72 +10,87 @@ import {
   FileText,
   RefreshCw,
   Copy,
-  Edit
+  Edit,
 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
+import { Spinner } from '@shared/ui/Spinner';
 import { SelectField } from '@shared/ui/form-controls';
-import { usePlantillas, type Plantilla } from '@entities/model-plantillas';
+import { type Plantilla } from '@entities/model-plantillas';
 import { useUser } from '@entities/model-user';
+import {
+  usePlantillasList,
+  useCambiarEstadoPlantilla,
+  useEliminarPlantilla,
+  useDuplicarPlantilla,
+  useCountFichasPlantilla,
+} from '@entities/model-plantillas/use-plantillas-api';
 import { PlantillaPreviewModal } from './PlantillaPreviewModal';
 
-const createCopiedPlantilla = (plantilla: Plantilla, userId: string, userInstitucion: string): Plantilla => {
-  return {
-    ...plantilla,
-    id: 'pl-copia-' + Date.now(),
-    creadoPorRole: 'director_ie',
-    creadoPorId: userId,
-    ieId: userInstitucion,
-    estado: 'Borrador',
-    fechaCreacion: new Date().toISOString().split('T')[0],
-    descripcion: `Copia personalizada para mi I.E. basada en la ficha general de ${plantilla.tipoMonitoreo}.`,
-  };
-};
+const TIPO_OPTIONS = [
+  { value: 'Todos', label: 'Todos los tipos' },
+  { value: 'Monitoreo Docente', label: 'Monitoreo Docente' },
+  { value: 'Monitoreo Directivo', label: 'Monitoreo Directivo' },
+];
+
+const ESTADO_OPTIONS = [
+  { value: 'Todos', label: 'Todos los estados' },
+  { value: 'Vigente', label: 'Vigente' },
+  { value: 'Borrador', label: 'Borrador' },
+  { value: 'Historico', label: 'Histórico' },
+];
 
 export const PlantillasCatalog = () => {
-  const { plantillas, addPlantilla, deletePlantilla, togglePlantillaEstado } = usePlantillas();
   const navigate = useNavigate();
   const { user } = useUser();
+  const isDirector = user?.role === 'director_institucion';
 
-  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+  const { data: plantillas = [], isLoading, isError, error, refetch } = usePlantillasList();
+  const cambiarEstado = useCambiarEstadoPlantilla();
+  const eliminar = useEliminarPlantilla();
+  const duplicar = useDuplicarPlantilla();
 
-  // Filtrado inicial de plantillas basado en visibilidad según el rol
   const visiblePlantillas = useMemo(() => {
     if (isDirector) {
-      // El director ve las plantillas generales de la UGEL y las propias de su institución
       return plantillas.filter(
         (p) =>
           !p.creadoPorRole ||
           p.creadoPorRole === 'jefe_gestion' ||
-          (p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion)
+          (p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion),
       );
     }
-    // El jefe de gestión y otros ven solo las generales (UGEL)
     return plantillas.filter((p) => !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion');
   }, [plantillas, isDirector, user]);
 
-  // ── Estados de Filtro ──
   const [searchText, setSearchText] = useState('');
   const [filterTipo, setFilterTipo] = useState('Todos');
   const [filterEstado, setFilterEstado] = useState('Todos');
   const [filterAnio, setFilterAnio] = useState('Todos');
 
-  // ── Estados de Modales ──
   const [previewTemplate, setPreviewTemplate] = useState<Plantilla | null>(null);
   const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
-  // Años disponibles en el catálogo
+  const { data: deleteInfo, isLoading: isLoadingDeleteInfo } = useCountFichasPlantilla(deleteTemplateId);
+
+  const deleteTarget = useMemo(
+    () => (deleteTemplateId ? plantillas.find((p) => p.id === deleteTemplateId) ?? null : null),
+    [deleteTemplateId, plantillas],
+  );
+
+  const isDeleteDestructive =
+    deleteTarget?.estado === 'Historico' && (deleteInfo?.count ?? 0) > 0;
+
   const aniosDisponibles = useMemo(() => {
     const years = new Set(visiblePlantillas.map((p) => p.anioAcademico));
     return Array.from(years).sort((a, b) => b - a);
   }, [visiblePlantillas]);
 
-  // ── Filtrado de Plantillas ──
   const filteredPlantillas = useMemo(() => {
     return visiblePlantillas.filter((p) => {
-      // Texto (Título o descripción)
       if (
         searchText &&
         !p.tipoMonitoreo.toLowerCase().includes(searchText.toLowerCase()) &&
@@ -83,15 +98,12 @@ export const PlantillasCatalog = () => {
       ) {
         return false;
       }
-      // Tipo Monitoreo
       if (filterTipo !== 'Todos' && p.tipoMonitoreo !== filterTipo) {
         return false;
       }
-      // Estado
       if (filterEstado !== 'Todos' && p.estado !== filterEstado) {
         return false;
       }
-      // Año
       if (filterAnio !== 'Todos' && p.anioAcademico !== Number(filterAnio)) {
         return false;
       }
@@ -99,7 +111,6 @@ export const PlantillasCatalog = () => {
     });
   }, [visiblePlantillas, searchText, filterTipo, filterEstado, filterAnio]);
 
-  // Limpiar filtros
   const handleClearFilters = () => {
     setSearchText('');
     setFilterTipo('Todos');
@@ -107,23 +118,56 @@ export const PlantillasCatalog = () => {
     setFilterAnio('Todos');
   };
 
-  const isAnyFilterActive = searchText !== '' || filterTipo !== 'Todos' || filterEstado !== 'Todos' || filterAnio !== 'Todos';
+  const isAnyFilterActive =
+    searchText !== '' || filterTipo !== 'Todos' || filterEstado !== 'Todos' || filterAnio !== 'Todos';
 
-  // ── Acciones de Plantilla ──
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTemplateId) return;
-    deletePlantilla(deleteTemplateId);
-    setDeleteTemplateId(null);
+    setDeleteError(null);
+    setDeleteSuccess(null);
+    try {
+      const result = await eliminar.mutateAsync(deleteTemplateId);
+      setDeleteSuccess(
+        `Plantilla eliminada. Fichas removidas: ${result.deletedFichas}. Evidencias removidas: ${result.deletedEvidencias}.`,
+      );
+      setDeleteTemplateId(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al eliminar la plantilla.';
+      setDeleteError(msg);
+    }
   };
 
   const handleDuplicate = (plantilla: Plantilla) => {
     if (!isDirector || !user) return;
-    const copied = createCopiedPlantilla(plantilla, user.id, user.institucion || '');
-    addPlantilla(copied);
+    duplicar.mutate(
+      { id: plantilla.id },
+      {
+        onError: (err) => {
+          setDeleteError(err instanceof Error ? err.message : 'Error al duplicar la plantilla.');
+        },
+      },
+    );
   };
 
-  // Helper para formatear fecha corta en español
+  const handleToggleEstado = (plantilla: Plantilla) => {
+    const nextEstado: Plantilla['estado'] =
+      plantilla.estado === 'Borrador'
+        ? 'Vigente'
+        : plantilla.estado === 'Vigente'
+          ? 'Historico'
+          : 'Borrador';
+    cambiarEstado.mutate(
+      { id: plantilla.id, estado: nextEstado },
+      {
+        onError: (err) => {
+          setDeleteError(err instanceof Error ? err.message : 'Error al cambiar el estado.');
+        },
+      },
+    );
+  };
+
   const formatShortDate = (dateStr: string) => {
+    if (!dateStr) return '—';
     try {
       const [y, m, d] = dateStr.split('-');
       const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -135,10 +179,8 @@ export const PlantillasCatalog = () => {
 
   return (
     <div className="flex flex-col w-full gap-6 animate-in fade-in duration-300">
-      {/* ── Barra de Filtros ── */}
       <Card className="p-4 border border-border bg-surface shadow-sm">
         <div className="flex flex-col md:flex-row md:items-end gap-4">
-          {/* Buscador de Texto */}
           <div className="flex-1 space-y-1">
             <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
               Buscar Plantilla
@@ -155,38 +197,26 @@ export const PlantillasCatalog = () => {
             </div>
           </div>
 
-          {/* Tipo de Monitoreo (Directores sólo pueden crear/filtrar docente, pero ven generales directivo) */}
           <div className="w-full md:w-60">
             <SelectField
               label="Tipo de Ficha"
               value={filterTipo}
               onChange={(val) => setFilterTipo(val)}
               placeholder="Todos los tipos"
-              options={[
-                { value: 'Todos', label: 'Todos los tipos' },
-                { value: 'Monitoreo Docente', label: 'Monitoreo Docente' },
-                { value: 'Monitoreo Directivo', label: 'Monitoreo Directivo' },
-              ]}
+              options={TIPO_OPTIONS}
             />
           </div>
 
-          {/* Estado */}
           <div className="w-full md:w-44">
             <SelectField
               label="Estado"
               value={filterEstado}
               onChange={(val) => setFilterEstado(val)}
               placeholder="Todos los estados"
-              options={[
-                { value: 'Todos', label: 'Todos los estados' },
-                { value: 'Vigente', label: 'Vigente' },
-                { value: 'Borrador', label: 'Borrador' },
-                { value: 'Histórico', label: 'Histórico' },
-              ]}
+              options={ESTADO_OPTIONS}
             />
           </div>
 
-          {/* Año Académico */}
           <div className="w-full md:w-36">
             <SelectField
               label="Año Académico"
@@ -200,7 +230,6 @@ export const PlantillasCatalog = () => {
             />
           </div>
 
-          {/* Botón de limpiar */}
           {isAnyFilterActive && (
             <Button
               variant="outline"
@@ -210,22 +239,51 @@ export const PlantillasCatalog = () => {
               Limpiar
             </Button>
           )}
+
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            className="text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50 h-10 w-full md:w-auto cursor-pointer"
+            title="Recargar plantillas"
+          >
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            Recargar
+          </Button>
         </div>
       </Card>
 
-      {/* ── Cuadrícula de Plantillas ── */}
-      {filteredPlantillas.length > 0 ? (
+      {isError && (
+        <div className="text-center py-12 border border-rose-200 rounded-2xl bg-rose-50/50">
+          <p className="text-rose-700 font-semibold text-sm">
+            No se pudieron cargar las plantillas: {error instanceof Error ? error.message : 'Error desconocido'}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            className="mt-3 text-xs"
+          >
+            Reintentar
+          </Button>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-24">
+          <Spinner />
+          <span className="ml-3 text-sm text-text-muted">Cargando plantillas...</span>
+        </div>
+      ) : !isError && filteredPlantillas.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPlantillas.map((plantilla) => {
             const isDocente = plantilla.tipoMonitoreo === 'Monitoreo Docente';
             const isGeneral = !plantilla.creadoPorRole || plantilla.creadoPorRole === 'jefe_gestion';
+            const canManage = !isDirector || (plantilla.creadoPorRole === 'director_ie' && plantilla.ieId === user?.institucion);
 
             return (
               <Card
                 key={plantilla.id}
                 className="bg-surface border border-border rounded-2xl p-5 hover:shadow-md transition-all duration-300 flex flex-col justify-between gap-5 group relative"
               >
-                {/* Cabecera de la Tarjeta */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-1.5">
@@ -271,7 +329,6 @@ export const PlantillasCatalog = () => {
                   </p>
                 </div>
 
-                {/* Metadata Técnica */}
                 <div className="border-t border-slate-100 pt-3.5 space-y-2 text-[11px] text-slate-500 font-semibold">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1">
@@ -300,56 +357,58 @@ export const PlantillasCatalog = () => {
                   </div>
                 </div>
 
-                {/* Botones de Acción */}
                 <div className="space-y-2 pt-2">
                   <Button
                     onClick={() => setPreviewTemplate(plantilla)}
                     className="w-full justify-center bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                   >
                     <Eye className="h-4 w-4" />
-                    <span>Ver Estructura (Mockup)</span>
+                    <span>Ver Estructura</span>
                   </Button>
 
                   {isDirector && isGeneral ? (
-                    /* Director de IE ve plantillas UGEL en sólo lectura, pero puede duplicarlas */
                     <button
                       onClick={() => handleDuplicate(plantilla)}
-                      className="w-full justify-center border border-dashed border-primary text-primary hover:bg-primary-light text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                      disabled={duplicar.isPending}
+                      className="w-full justify-center border border-dashed border-primary text-primary hover:bg-primary-light text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                       title="Copiar y personalizar para mi I.E."
                     >
                       <Copy className="h-3.5 w-3.5" />
                       <span>Copiar para mi I.E.</span>
                     </button>
                   ) : (
-                    /* Creador de la plantilla puede cambiar su estado o eliminarla */
-                    <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => navigate(`/plantillas/${plantilla.id}/editar`)}
-                        className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title="Modificar contenido"
-                      >
-                        <Edit className="h-3.5 w-3.5 text-primary" />
-                        <span>Modificar Plantilla</span>
-                      </button>
-                      <div className="flex items-center gap-2">
+                    canManage && (
+                      <div className="flex flex-col gap-2">
                         <button
-                          onClick={() => togglePlantillaEstado(plantilla.id)}
-                          className="flex-1 justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
-                          title="Cambiar Estado"
+                          onClick={() => navigate(`/plantillas/${plantilla.id}/editar`)}
+                          className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Modificar contenido"
                         >
-                          <RefreshCw className="h-3 w-3 text-primary animate-hover" />
-                          <span>Cambiar Estado</span>
+                          <Edit className="h-3.5 w-3.5 text-primary" />
+                          <span>Modificar Plantilla</span>
                         </button>
-                        
+                        {plantilla.estado !== 'Historico' && (
+                          <button
+                            onClick={() => handleToggleEstado(plantilla)}
+                            disabled={cambiarEstado.isPending}
+                            className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                            title="Cambiar Estado"
+                          >
+                            <RefreshCw className="h-3 w-3 text-primary" />
+                            <span>Cambiar Estado</span>
+                          </button>
+                        )}
+
                         <button
                           onClick={() => setDeleteTemplateId(plantilla.id)}
-                          className="p-2 border border-rose-100 text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition-colors cursor-pointer"
+                          className="w-full justify-center border border-rose-100 text-rose-600 hover:bg-rose-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
                           title="Eliminar Plantilla"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Eliminar Plantilla</span>
                         </button>
                       </div>
-                    </div>
+                    )
                   )}
                 </div>
               </Card>
@@ -357,16 +416,17 @@ export const PlantillasCatalog = () => {
           })}
         </div>
       ) : (
-        <div className="text-center py-24 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-          <FileText className="h-14 w-14 text-slate-300 mx-auto stroke-1 mb-4" />
-          <h3 className="text-slate-700 font-bold text-base">No se encontraron plantillas</h3>
-          <p className="text-text-muted text-xs mt-1.5 max-w-sm mx-auto leading-relaxed">
-            No existen plantillas de monitoreo que coincidan con los filtros seleccionados en este momento. Intente modificando los parámetros.
-          </p>
-        </div>
+        !isError && (
+          <div className="text-center py-24 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+            <FileText className="h-14 w-14 text-slate-300 mx-auto stroke-1 mb-4" />
+            <h3 className="text-slate-700 font-bold text-base">No se encontraron plantillas</h3>
+            <p className="text-text-muted text-xs mt-1.5 max-w-sm mx-auto leading-relaxed">
+              No existen plantillas de monitoreo que coincidan con los filtros seleccionados en este momento. Intente modificando los parámetros.
+            </p>
+          </div>
+        )
       )}
 
-      {/* ── Modal Vista Previa de Estructura de Plantilla (Mockup) ── */}
       {previewTemplate && (
         <PlantillaPreviewModal
           plantilla={previewTemplate}
@@ -374,18 +434,64 @@ export const PlantillasCatalog = () => {
         />
       )}
 
-      {/* ── Modal de Confirmación para Eliminado ── */}
+      {deleteSuccess && (
+        <div className="border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-xl p-3 animate-in fade-in">
+          {deleteSuccess}
+        </div>
+      )}
+
       {deleteTemplateId && (
         <ConfirmModal
-          title="¿Desea eliminar esta plantilla?"
-          message={
-            <span className="text-xs text-slate-600 leading-relaxed block">
-              Esta acción eliminará de forma lógica la plantilla seleccionada del catálogo. No se podrán programar nuevos monitoreos asociados a esta ficha, aunque las visitas históricas completadas conservarán su información.
-            </span>
+          title={
+            isDeleteDestructive
+              ? 'Eliminar plantilla histórica y todos sus monitoreos'
+              : 'Eliminar plantilla de monitoreo'
           }
-          confirmLabel="Eliminar Plantilla"
+          message={
+            <div className="text-xs text-slate-600 leading-relaxed block space-y-2">
+              {isLoadingDeleteInfo ? (
+                <p>Cargando información de monitoreos asociados...</p>
+              ) : isDeleteDestructive ? (
+                <>
+                  <p>
+                    La plantilla <strong>{deleteTarget?.tipoMonitoreo} {deleteTarget?.anioAcademico}</strong> está en estado{' '}
+                    <strong>Histórico</strong> y tiene <strong>{deleteInfo?.count}</strong> ficha(s) de monitoreo asociada(s).
+                  </p>
+                  <p>
+                    Al confirmar, se eliminarán <strong>permanentemente</strong>:
+                  </p>
+                  <ul className="list-disc list-inside pl-2 text-slate-700">
+                    <li>La plantilla de monitoreo</li>
+                    <li>{deleteInfo?.count} ficha(s) de monitoreo y todas sus respuestas (desempeños, aspectos, ejes/items)</li>
+                    <li>Los archivos de evidencia asociados</li>
+                  </ul>
+                  <p className="text-rose-600 font-semibold pt-1">
+                    Esta acción no se puede deshacer.
+                  </p>
+                </>
+              ) : (
+                <p>
+                  Esta acción eliminará de forma lógica la plantilla seleccionada del catálogo. No se podrán programar nuevos
+                  monitoreos asociados a esta ficha.
+                </p>
+              )}
+              {deleteError && (
+                <p className="text-rose-600 font-semibold">{deleteError}</p>
+              )}
+            </div>
+          }
+          confirmLabel={
+            eliminar.isPending
+              ? 'Eliminando...'
+              : isDeleteDestructive
+                ? 'Sí, eliminar todo'
+                : 'Eliminar plantilla'
+          }
           onConfirm={handleDeleteConfirm}
-          onCancel={() => setDeleteTemplateId(null)}
+          onCancel={() => {
+            setDeleteTemplateId(null);
+            setDeleteError(null);
+          }}
           danger
         />
       )}

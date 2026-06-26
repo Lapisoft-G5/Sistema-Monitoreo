@@ -5,11 +5,15 @@ import {
   X,
   Check,
   CheckCircle2,
-  Clock
+  Clock,
+  Trophy,
+  Upload,
+  Eye,
+  Trash2
 } from 'lucide-react';
+import { API_BASE_URL } from '@shared/config/api';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
-import { Badge } from '@/shared/ui/badge';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 
@@ -18,22 +22,45 @@ interface LlenarFichaFormProps {
   onClose: () => void;
   visit: Cronograma;
   template: Plantilla;
-  onSave: (
+  onSave?: (
     visitId: string,
     data: {
       checkedAspects: Record<string, boolean>;
       selectedLevels: Record<string, string>;
       generalComments: string;
+      sugerencias?: string;
+      compromisos?: string;
+      rubricComments?: Record<string, string>;
+      preguntaExtraAnswers?: Record<string, boolean>;
+      respuestasEjeItem?: Record<string, number>;
+      evidenciaUrls?: Record<string, string>;
     }
   ) => void;
-  onFinalize: (
+  onFinalize?: (
     visitId: string,
     data: {
       checkedAspects: Record<string, boolean>;
       selectedLevels: Record<string, string>;
       generalComments: string;
+      sugerencias?: string;
+      compromisos?: string;
+      rubricComments?: Record<string, string>;
+      preguntaExtraAnswers?: Record<string, boolean>;
+      respuestasEjeItem?: Record<string, number>;
+      evidenciaUrls?: Record<string, string>;
     }
   ) => void;
+  initialState?: {
+    checkedAspects: Record<string, boolean>;
+    selectedLevels: Record<string, string>;
+    generalComments: string;
+    sugerencias?: string;
+    compromisos?: string;
+    rubricComments?: Record<string, string>;
+    preguntaExtraAnswers?: Record<string, boolean>;
+    respuestasEjeItem?: Record<string, number>;
+    evidenciaUrls?: Record<string, string>;
+  };
 }
 
 const formatVisitTime = (fechaHoraStr: string) => {
@@ -76,37 +103,82 @@ export const LlenarFichaForm = ({
   template,
   onSave,
   onFinalize,
+  initialState,
 }: LlenarFichaFormProps) => {
   const [checkedAspects, setCheckedAspects] = useState<Record<string, boolean>>({});
   const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({});
   const [generalComments, setGeneralComments] = useState('');
+  const [sugerencias, setSugerencias] = useState('');
+  const [compromisos, setCompromisos] = useState('');
+  const [rubricComments, setRubricComments] = useState<Record<string, string>>({});
+  const [preguntaExtraAnswers, setPreguntaExtraAnswers] = useState<Record<string, boolean>>({});
   const [fichaSelectedDesempenoId, setFichaSelectedDesempenoId] = useState<string>('');
+  const [respuestasEjeItem, setRespuestasEjeItem] = useState<Record<string, number>>({});
+  const [evidenciaUrls, setEvidenciaUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen && visit) {
-      const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
-      if (savedState) {
-        try {
-          const parsed = JSON.parse(savedState);
-          setCheckedAspects(parsed.checkedAspects || {});
-          setSelectedLevels(parsed.selectedLevels || {});
-          setGeneralComments(parsed.generalComments || '');
-        } catch {
-          setCheckedAspects({});
-          setSelectedLevels({});
-          setGeneralComments('');
-        }
+      if (initialState) {
+        setTimeout(() => {
+          setCheckedAspects(initialState.checkedAspects || {});
+          setSelectedLevels(initialState.selectedLevels || {});
+          setGeneralComments(initialState.generalComments || '');
+          setSugerencias(initialState.sugerencias || '');
+          setCompromisos(initialState.compromisos || '');
+          setRubricComments(initialState.rubricComments || {});
+          setPreguntaExtraAnswers(initialState.preguntaExtraAnswers || {});
+          setRespuestasEjeItem(initialState.respuestasEjeItem || {});
+          setEvidenciaUrls(initialState.evidenciaUrls || {});
+        }, 0);
       } else {
-        setCheckedAspects({});
-        setSelectedLevels({});
-        setGeneralComments('');
+        const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
+        if (savedState) {
+          try {
+            const parsed = JSON.parse(savedState);
+            setTimeout(() => {
+              setCheckedAspects(parsed.checkedAspects || {});
+              setSelectedLevels(parsed.selectedLevels || {});
+              setGeneralComments(parsed.generalComments || '');
+              setSugerencias(parsed.sugerencias || '');
+              setCompromisos(parsed.compromisos || '');
+              setRubricComments(parsed.rubricComments || {});
+              setPreguntaExtraAnswers(parsed.preguntaExtraAnswers || {});
+              setRespuestasEjeItem(parsed.respuestasEjeItem || {});
+              setEvidenciaUrls(parsed.evidenciaUrls || {});
+            }, 0);
+          } catch {
+            setTimeout(() => {
+              setCheckedAspects({});
+              setSelectedLevels({});
+              setGeneralComments('');
+              setSugerencias('');
+              setCompromisos('');
+              setRubricComments({});
+              setPreguntaExtraAnswers({});
+              setRespuestasEjeItem({});
+              setEvidenciaUrls({});
+            }, 0);
+          }
+        } else {
+          setTimeout(() => {
+            setCheckedAspects({});
+            setSelectedLevels({});
+            setGeneralComments('');
+            setSugerencias('');
+            setCompromisos('');
+            setRubricComments({});
+            setPreguntaExtraAnswers({});
+            setRespuestasEjeItem({});
+            setEvidenciaUrls({});
+          }, 0);
+        }
       }
 
       if (template && template.desempenos.length > 0) {
-        setFichaSelectedDesempenoId(template.desempenos[0].id);
+        setTimeout(() => setFichaSelectedDesempenoId(template.desempenos[0].id), 0);
       }
     }
-  }, [isOpen, visit, template]);
+  }, [isOpen, visit, template, initialState]);
 
   const activeFichaDesempeno = useMemo(() => {
     if (!template) return null;
@@ -116,9 +188,20 @@ export const LlenarFichaForm = ({
   if (!isOpen || !visit || !template) return null;
 
   const isCompleted = visit.estado === 'COMPLETADO';
+  const isDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
 
   const handleSaveClick = () => {
-    onSave(visit.id, { checkedAspects, selectedLevels, generalComments });
+    onSave?.(visit.id, {
+      checkedAspects,
+      selectedLevels,
+      generalComments,
+      sugerencias,
+      compromisos,
+      rubricComments,
+      preguntaExtraAnswers,
+      respuestasEjeItem,
+      evidenciaUrls,
+    });
   };
 
   const handleFinalizeClick = () => {
@@ -132,8 +215,78 @@ export const LlenarFichaForm = ({
       );
       return;
     }
-    onFinalize(visit.id, { checkedAspects, selectedLevels, generalComments });
+    onFinalize?.(visit.id, {
+      checkedAspects,
+      selectedLevels,
+      generalComments,
+      sugerencias,
+      compromisos,
+      rubricComments,
+      preguntaExtraAnswers,
+      respuestasEjeItem,
+      evidenciaUrls,
+    });
   };
+
+  // Calificación consolidada
+  const romanToNum = (r: string) => ({ I: 1, II: 2, III: 3, IV: 4 }[r] ?? 0);
+
+  const calcularCalificacion = () => {
+    const numDesempenos = template.desempenos.length;
+    const puntajeMax = numDesempenos * 4;
+    const puntajeMin = numDesempenos * 1;
+    const puntajeTotal = template.desempenos.reduce(
+      (acc, d) => acc + romanToNum(selectedLevels[d.id] || ''),
+      0
+    );
+    const porcentaje = puntajeMax > 0 ? Math.round((puntajeTotal / puntajeMax) * 100) : 0;
+
+    let nivel: string;
+    let nivelColor: string;
+    let nivelBg: string;
+
+    if (numDesempenos === 5) {
+      if (puntajeTotal >= 5 && puntajeTotal <= 7) {
+        nivel = 'INICIO';
+        nivelColor = '#ef4444';
+        nivelBg = '#fef2f2';
+      } else if (puntajeTotal >= 8 && puntajeTotal <= 12) {
+        nivel = 'EN PROCESO';
+        nivelColor = '#f59e0b';
+        nivelBg = '#fffbeb';
+      } else if (puntajeTotal >= 13 && puntajeTotal <= 17) {
+        nivel = 'LOGRO ESPERADO';
+        nivelColor = '#10b981';
+        nivelBg = '#ecfdf5';
+      } else {
+        nivel = 'LOGRO DESTACADO';
+        nivelColor = '#6366f1';
+        nivelBg = '#eef2ff';
+      }
+    } else {
+      if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.25)) {
+        nivel = 'INICIO';
+        nivelColor = '#ef4444';
+        nivelBg = '#fef2f2';
+      } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.50)) {
+        nivel = 'EN PROCESO';
+        nivelColor = '#f59e0b';
+        nivelBg = '#fffbeb';
+      } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.75)) {
+        nivel = 'LOGRO ESPERADO';
+        nivelColor = '#10b981';
+        nivelBg = '#ecfdf5';
+      } else {
+        nivel = 'LOGRO DESTACADO';
+        nivelColor = '#6366f1';
+        nivelBg = '#eef2ff';
+      }
+    }
+
+    return { puntajeTotal, puntajeMax, porcentaje, nivel, nivelColor, nivelBg };
+  };
+
+  const calificacion = isCompleted ? calcularCalificacion() : null;
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-200">
@@ -164,7 +317,9 @@ export const LlenarFichaForm = ({
           <div>Fecha Programada: <span className="text-slate-800">{formatVisitDate(visit.fechaHora)} - {formatVisitTime(visit.fechaHora)}</span></div>
         </div>
 
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        {/* Contenedor con scroll interno — engloba cuerpo + comentarios + calificación */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex flex-col md:flex-row min-h-[300px]">
           {/* Sidebar: Desempeños */}
           <div className="w-full md:w-80 border-r border-border p-4 overflow-y-auto space-y-2 bg-slate-50/50">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">
@@ -222,53 +377,29 @@ export const LlenarFichaForm = ({
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                    Aspectos a Evaluar / Checklist de Verificación
-                  </span>
-                  <div className="grid grid-cols-1 gap-2.5">
-                    {activeFichaDesempeno.aspectos.map((asp, idx) => {
-                      const isChecked = !!checkedAspects[asp.id];
-                      return (
-                        <label
-                          key={asp.id}
-                          className={`border rounded-xl p-3.5 flex items-start gap-3.5 shadow-sm transition-all select-none ${
-                            isCompleted ? 'cursor-default' : 'cursor-pointer'
-                          } ${
-                            isChecked
-                              ? 'border-emerald-200 bg-emerald-50/20'
-                              : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            disabled={isCompleted}
-                            onChange={(e) => {
-                              setCheckedAspects((prev) => ({
-                                ...prev,
-                                [asp.id]: e.target.checked,
-                              }));
-                            }}
-                            className="h-4.5 w-4.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mt-0.5 shrink-0"
-                          />
-                          <div className="pt-0.5 leading-relaxed text-xs text-slate-700">
-                            <strong>Aspecto {idx + 1}:</strong> {asp.descripcion}
-                          </div>
-                        </label>
-                      );
-                    })}
+                {!isDirectivo && activeFichaDesempeno.aspectos && activeFichaDesempeno.aspectos.length > 0 && (
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                      Aspectos a Considerar
+                    </span>
+                    <ul className="list-disc list-inside text-xs text-slate-700 space-y-1 bg-slate-50/50 border border-slate-100 rounded-xl p-3.5">
+                      {activeFichaDesempeno.aspectos.map((asp, idx) => (
+                        <li key={asp.id}>
+                          <strong>Aspecto {idx + 1}:</strong> {asp.descripcion}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
+                )}
 
                 <div className="space-y-3.5 pt-1">
                   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                    Rubrica de Calificación (Haz clic en un nivel para seleccionar)
+                    Descripción de Niveles (Haz clic en un nivel para seleccionar)
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {template.niveles.map((niv) => {
-                      const rubDetail = activeFichaDesempeno.rubrica.find((r) => r.nivel === niv.nivel);
+                      const rubDetail = activeFichaDesempeno.rubrica?.find((r) => r.nivel === niv.nivel);
                       const isSelected = selectedLevels[activeFichaDesempeno.id] === niv.nivel;
                       return (
                         <div
@@ -298,32 +429,89 @@ export const LlenarFichaForm = ({
                             style={{ backgroundColor: niv.color }}
                           />
 
-                          <div className="pl-2 flex items-center justify-between">
+                          <div className="pl-2 flex flex-col gap-1">
                             <span
                               className="text-xs font-black uppercase tracking-wider"
                               style={{ color: niv.color }}
                             >
                               Nivel {niv.nivel}
                             </span>
-                            <Badge
-                              style={{
-                                backgroundColor: niv.color + '15',
-                                color: niv.color,
-                                borderColor: niv.color + '20',
-                              }}
+                            <span
                               className="text-[10px] font-bold"
+                              style={{ color: niv.color }}
                             >
                               {niv.denominacion}
-                            </Badge>
+                            </span>
                           </div>
 
-                          <p className="pl-2 text-[11px] text-slate-600 font-medium leading-relaxed">
-                            {rubDetail ? rubDetail.descripcion : 'Sin descripción registrada.'}
+                          <p className="pl-2 text-[11px] text-slate-700 font-medium leading-relaxed">
+                            {rubDetail?.descripcion || 'Sin descripción registrada.'}
                           </p>
                         </div>
                       );
                     })}
                   </div>
+                </div>
+
+                {activeFichaDesempeno.preguntaExtra && (
+                  <div className="space-y-2 mt-4 p-4 border border-slate-200 rounded-xl bg-amber-50/30">
+                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block">
+                      Pregunta Extra
+                    </span>
+                    <p className="text-sm font-medium text-slate-700">{activeFichaDesempeno.preguntaExtra}</p>
+                    <div className="flex gap-4 mt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`pregunta-${activeFichaDesempeno.id}`}
+                          checked={preguntaExtraAnswers[activeFichaDesempeno.id] === true}
+                          onChange={() =>
+                            setPreguntaExtraAnswers((prev) => ({
+                              ...prev,
+                              [activeFichaDesempeno.id]: true,
+                            }))
+                          }
+                          disabled={isCompleted}
+                          className="accent-emerald-600"
+                        />
+                        <span className="text-xs font-bold text-emerald-700">SÍ</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`pregunta-${activeFichaDesempeno.id}`}
+                          checked={preguntaExtraAnswers[activeFichaDesempeno.id] === false}
+                          onChange={() =>
+                            setPreguntaExtraAnswers((prev) => ({
+                              ...prev,
+                              [activeFichaDesempeno.id]: false,
+                            }))
+                          }
+                          disabled={isCompleted}
+                          className="accent-red-600"
+                        />
+                        <span className="text-xs font-bold text-red-600">NO</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2 mt-4">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                    Observaciones para esta Rúbrica
+                  </span>
+                  <textarea
+                    value={rubricComments[activeFichaDesempeno.id] || ''}
+                    onChange={(e) => {
+                      setRubricComments((prev) => ({
+                        ...prev,
+                        [activeFichaDesempeno.id]: e.target.value,
+                      }));
+                    }}
+                    disabled={isCompleted}
+                    placeholder="Escriba observaciones o evidencias encontradas para esta rúbrica específica..."
+                    className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
+                  />
                 </div>
               </div>
             ) : (
@@ -335,19 +523,308 @@ export const LlenarFichaForm = ({
           </div>
         </div>
 
-        {/* Comentarios Generales */}
-        <div className="p-5 border-t border-border bg-slate-50/50 space-y-2">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-            Observaciones y Compromisos de Mejora Generales
-          </span>
-          <textarea
-            value={generalComments}
-            onChange={(e) => setGeneralComments(e.target.value)}
-            disabled={isCompleted}
-            placeholder="Escriba aquí los compromisos acordados con el evaluado, fortalezas observadas y puntos clave de mejora formativa..."
-            className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-20 resize-none leading-relaxed"
-          />
+        {template.ejesItems && template.ejesItems.length > 0 && (
+          <div className="border-t border-border pt-6 mt-6 px-5 space-y-4">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              EJES E ITEMS
+            </span>
+            
+            {template.ejesItems.map((item) => (
+              <div key={item.id} className="bg-slate-50/30 border border-slate-200/60 rounded-2xl p-5 space-y-4 hover:border-slate-300 hover:bg-slate-50/50 transition-all duration-200">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs font-black text-primary border border-primary/20 shadow-inner">
+                    {item.numero}
+                  </span>
+                  <p className="text-sm text-slate-800 font-semibold leading-relaxed">{item.descripcion}</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pl-10">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                      Nivel de Logro
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {['I', 'II', 'III', 'IV'].map((nivel) => {
+                        const numVal = romanToNum(nivel);
+                        const levelConfig = template.niveles.find((n) => n.nivel === nivel);
+                        const color = levelConfig?.color || '#3b82f6';
+                        const isSelected = respuestasEjeItem[item.id] === numVal;
+
+                        return (
+                          <button
+                            key={nivel}
+                            type="button"
+                            onClick={() => {
+                              if (!isCompleted) {
+                                setRespuestasEjeItem((prev) => ({ ...prev, [item.id]: numVal }));
+                              }
+                            }}
+                            disabled={isCompleted}
+                            className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all border cursor-pointer select-none flex items-center justify-center min-w-[45px] h-8 ${
+                              isCompleted ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.03] active:scale-[0.98]'
+                            }`}
+                            style={{
+                              backgroundColor: isSelected ? color : `${color}08`,
+                              borderColor: isSelected ? color : `${color}30`,
+                              color: isSelected ? '#ffffff' : color,
+                              boxShadow: isSelected ? `0 4px 10px ${color}35` : undefined,
+                            }}
+                          >
+                            {nivel}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                      Evidencias
+                    </span>
+                    {evidenciaUrls[item.id] ? (
+                      <div className="flex items-center gap-3 p-2 bg-white border border-slate-200 rounded-xl shadow-xs">
+                        <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10 text-primary">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black text-slate-700 truncate">
+                            Evidencia Cargada
+                          </p>
+                          <p className="text-[9px] text-slate-400 font-bold truncate">
+                            {evidenciaUrls[item.id].split('/').pop() || 'evidencia.bin'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <a
+                            href={
+                              evidenciaUrls[item.id]?.startsWith('http')
+                                ? evidenciaUrls[item.id]
+                                : `${API_BASE_URL}${evidenciaUrls[item.id]}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[10px] font-extrabold text-slate-600 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all shadow-sm cursor-pointer"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Ver
+                          </a>
+                          {!isCompleted && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEvidenciaUrls((prev) => {
+                                  const next = { ...prev };
+                                  delete next[item.id];
+                                  localStorage.setItem(
+                                    `sistema-monitoreo:ficha-state:${visit.id}`,
+                                    JSON.stringify({
+                                      checkedAspects,
+                                      selectedLevels,
+                                      generalComments,
+                                      sugerencias,
+                                      compromisos,
+                                      rubricComments,
+                                      preguntaExtraAnswers,
+                                      respuestasEjeItem,
+                                      evidenciaUrls: next,
+                                    })
+                                  );
+                                  return next;
+                                });
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-red-100 text-[10px] font-extrabold text-red-600 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Eliminar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : !isCompleted ? (
+                      <label className="inline-flex items-center justify-center gap-2 w-full max-w-[240px] h-[36px] rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-bold cursor-pointer hover:border-primary hover:text-primary hover:bg-primary/3 transition-all duration-150">
+                        <Upload className="h-4 w-4" />
+                        Subir archivo de sustento
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+                              let ficha = await fichasApi.findByVisita(visit.id);
+                              if (!ficha) {
+                                ficha = await fichasApi.create({
+                                  cronogramaId: visit.id,
+                                  areaCurricular: visit.tipo === 'DOCENTE' ? 'Matematica' : undefined,
+                                  grado: visit.tipo === 'DOCENTE' ? '5to' : undefined,
+                                  seccion: visit.tipo === 'DOCENTE' ? 'A' : undefined,
+                                  cantidadEstudiantes: visit.tipo === 'DOCENTE' ? 30 : undefined,
+                                  cantidadEstudiantesNee: visit.tipo === 'DOCENTE' ? 2 : undefined,
+                                  cursoId: visit.tipo === 'DOCENTE' ? '1f480ae6-cd7a-40f7-beac-108c05af771e' : undefined,
+                                });
+                              }
+                              const result = await fichasApi.subirEvidenciaEjeItem(ficha.id, item.id, file);
+                              setEvidenciaUrls((prev) => {
+                                const next = { ...prev, [item.id]: result.evidenciaUrl };
+                                localStorage.setItem(
+                                  `sistema-monitoreo:ficha-state:${visit.id}`,
+                                  JSON.stringify({
+                                    checkedAspects,
+                                    selectedLevels,
+                                    generalComments,
+                                    sugerencias,
+                                    compromisos,
+                                    rubricComments,
+                                    preguntaExtraAnswers,
+                                    respuestasEjeItem,
+                                    evidenciaUrls: next,
+                                  })
+                                );
+                                return next;
+                              });
+                            } catch (err) {
+                              console.error('Error uploading evidence:', err);
+                            }
+                          }}
+                        />
+                      </label>
+                    ) : (
+                      <span className="text-[11px] text-slate-300 italic block pt-1">— Sin evidencias cargadas</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Sugerencias y Compromisos */}
+        <div className="p-5 border-t border-border bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+              Sugerencias
+            </span>
+            <textarea
+              value={sugerencias}
+              onChange={(e) => setSugerencias(e.target.value)}
+              disabled={isCompleted}
+              placeholder="Escriba aquí las sugerencias..."
+              className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
+            />
+          </div>
+          <div className="space-y-2">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+              Compromisos
+            </span>
+            <textarea
+              value={compromisos}
+              onChange={(e) => setCompromisos(e.target.value)}
+              disabled={isCompleted}
+              placeholder="Escriba aquí los compromisos..."
+              className="w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed"
+            />
+          </div>
         </div>
+
+        {/* CONSOLIDADO DE NIVELES DE LOGRO */}
+        {calificacion && (
+          <div className="p-5 border-t border-border" style={{ backgroundColor: calificacion.nivelBg + 'cc' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="h-4.5 w-4.5" style={{ color: calificacion.nivelColor }} />
+              <span className="text-[11px] font-extrabold uppercase tracking-widest" style={{ color: calificacion.nivelColor }}>
+                CONSOLIDADO DE NIVELES DE LOGRO
+              </span>
+            </div>
+
+            <div className="bg-white/80 rounded-xl border border-white shadow-sm overflow-hidden">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="text-left p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px]">N°</th>
+                    <th className="text-left p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px]">ASPECTOS (Desempeños)</th>
+                    <th className="text-center p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px] w-20">NIVEL</th>
+                    <th className="text-center p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px] w-16">PUNTAJE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {template.desempenos.map((des, idx) => {
+                    const nivel = selectedLevels[des.id];
+                    const pts = romanToNum(nivel || '');
+                    const nivelObj = template.niveles.find((n) => n.nivel === nivel);
+                    return (
+                      <tr key={des.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                        <td className="p-3 text-slate-400 font-bold text-center w-8">D{idx + 1}</td>
+                        <td className="p-3 text-slate-700 font-medium leading-snug">{des.nombre}</td>
+                        <td className="p-3 text-center">
+                          {nivel ? (
+                            <span
+                              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black"
+                              style={{ backgroundColor: (nivelObj?.color ?? '#94a3b8') + '20', color: nivelObj?.color ?? '#94a3b8' }}
+                            >
+                              Nivel {nivel}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 italic text-[10px]">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center font-black text-slate-700">
+                          {pts > 0 ? pts : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {template.ejesItems && template.ejesItems.map((item, idx) => {
+                    const numVal = respuestasEjeItem[item.id];
+                    const nivel = numVal ? ['I', 'II', 'III', 'IV'][numVal - 1] : null;
+                    const nivelObj = nivel ? template.niveles.find((n) => n.nivel === nivel) : null;
+                    return (
+                      <tr key={item.id} className={(template.desempenos.length + idx) % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                        <td className="p-3 text-slate-400 font-bold text-center w-8">R{item.numero}</td>
+                        <td className="p-3 text-slate-700 font-medium leading-snug">{item.descripcion}</td>
+                        <td className="p-3 text-center">
+                          {nivel ? (
+                            <span
+                              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black"
+                              style={{ backgroundColor: (nivelObj?.color ?? '#94a3b8') + '20', color: nivelObj?.color ?? '#94a3b8' }}
+                            >
+                              Nivel {nivel}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 italic text-[10px]">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center font-black text-slate-700">
+                          {numVal > 0 ? numVal : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="border-t border-slate-200 bg-slate-50/50">
+                    <td colSpan={3} className="p-3 font-bold text-slate-500 text-[11px] text-right uppercase tracking-wider">
+                      TOTAL (Desempeños D1-D5)
+                    </td>
+                    <td className="p-3 text-center font-black text-base" style={{ color: calificacion.nivelColor }}>
+                      {calificacion.puntajeTotal} / {calificacion.puntajeMax}
+                    </td>
+                  </tr>
+                  <tr style={{ backgroundColor: calificacion.nivelColor + '10' }}>
+                    <td colSpan={3} className="p-3 font-black text-slate-700 text-xs text-right uppercase tracking-wider">
+                      NIVEL DE LOGRO ALCANZADO
+                    </td>
+                    <td className="p-3 text-center font-black text-sm" style={{ color: calificacion.nivelColor }}>
+                      {calificacion.nivel} ({calificacion.porcentaje}%)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        </div> {/* fin scroll interno */}
 
         {/* Pie del Modal */}
         <div className="p-4 border-t border-border bg-slate-50 flex justify-between items-center">

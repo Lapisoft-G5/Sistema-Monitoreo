@@ -1,9 +1,39 @@
 import { useState } from 'react';
+import { CARGA_HORARIA } from '@shared/config/constants';
 import type { Docente, NivelEducativo } from '@entities/model-docentes';
-import { MOCK_DOCENTES } from '@entities/model-docentes';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { teachersApi } from '@shared/api/teachers.api';
 import type { IDocenteResponse } from '@sistema-monitoreo/shared-contracts';
+
+export const fetchDocentes = async (): Promise<Docente[]> => {
+  const res = await teachersApi.findAll();
+  if (res.ok && res.data) {
+    return res.data.map(mapApiDocenteToFrontend);
+  }
+  return [];
+};
+
+export const fetchCargos = async () => {
+  return teachersApi.getCargos();
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const updateDocenteRaw = async (id: string, dto: any) => {
+  return teachersApi.update(id, dto);
+};
+
+export const fetchDocenteByDni = async (dni: string): Promise<Docente | null> => {
+  const res = await teachersApi.findByDni(dni);
+  if (res.ok && res.data) {
+    return mapApiDocenteToFrontend(res.data as IDocenteResponse);
+  }
+  return null;
+};
+
+export const fetchDocenteById = async (id: string): Promise<Docente | null> => {
+  const docentes = await fetchDocentes();
+  return docentes.find((d) => d.id === id) ?? null;
+};
 
 const MAP_ROMAN_TO_INT: Record<string, number> = {
   I: 1,
@@ -33,7 +63,17 @@ const toTitleCase = (str: string): string => {
 };
 
 export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
-  const cargoName = apiDoc.docenteCargos?.[0]?.cargo?.nombre || 'Docente de Aula';
+  const cargosList = apiDoc.docenteCargos?.map((dc) => ({
+    id: dc.id,
+    nombre: dc.cargo?.nombre || 'Docente de Aula',
+    fechaInicio: dc.fechaInicio ? new Date(dc.fechaInicio).toISOString().split('T')[0] : '',
+    fechaFin: dc.fechaFin ? new Date(dc.fechaFin).toISOString().split('T')[0] : null,
+    esPrincipal: dc.esPrincipal || false,
+  })) || [];
+
+  const activeCargo = cargosList.find((c) => c.fechaFin === null && c.esPrincipal) ||
+                      cargosList.find((c) => c.fechaFin === null);
+  const cargoName = activeCargo?.nombre || 'Docente de Aula';
 
   return {
     id: apiDoc.id,
@@ -43,9 +83,11 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
     correo: apiDoc.persona.correo || '',
     celular: apiDoc.persona.telefono || '',
     nivelEducativo: (apiDoc.nivelEducativo?.toUpperCase() || 'PRIMARIA') as NivelEducativo,
-    condicion: (apiDoc.condicionLaboral || 'Nombrado') as Docente['condicion'],
+    condicion: (cargoName === 'Director' && (!apiDoc.condicionLaboral || apiDoc.condicionLaboral === 'Nombrado')
+      ? 'Designado'
+      : (apiDoc.condicionLaboral || 'Nombrado')) as Docente['condicion'],
     especialidad: apiDoc.cursoAsignado || 'General',
-    cargaHoraria: 30,
+    cargaHoraria: CARGA_HORARIA.DOCENTE,
     secciones:
       apiDoc.docenteSecciones?.map((ds) => ({
         id: ds.id,
@@ -61,6 +103,7 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
       ? new Date(apiDoc.createdAt).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
     cargo: cargoName as Docente['cargo'],
+    cargosList,
   };
 };
 
@@ -105,7 +148,6 @@ export const useDocenteService = () => {
       const res = await teachersApi.create(dto);
       if (res.ok && res.data) {
         const mapped = mapApiDocenteToFrontend(res.data);
-        MOCK_DOCENTES.push(mapped);
         return { success: true, data: mapped };
       } else {
         const errMsg =
@@ -158,10 +200,6 @@ export const useDocenteService = () => {
       const res = await teachersApi.update(id, dto);
       if (res.ok && res.data) {
         const mapped = mapApiDocenteToFrontend(res.data);
-        const index = MOCK_DOCENTES.findIndex((d) => d.id === id);
-        if (index !== -1) {
-          MOCK_DOCENTES[index] = mapped;
-        }
         return { success: true, data: mapped };
       } else {
         const errMsg =

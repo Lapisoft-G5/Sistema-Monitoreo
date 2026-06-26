@@ -5,8 +5,8 @@ import { type Especialista } from '@entities/model-especialistas';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
-import { especialistasApi } from '@shared/api/especialistas.api';
-import { mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
+import { Spinner } from '@shared/ui/Spinner';
+import { fetchEspecialistaById } from '@features/especialistas/especialista-service';
 
 export const EspecialistaDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,13 +19,8 @@ export const EspecialistaDetailPage = () => {
     const fetchDetail = async () => {
       if (!id) return;
       setLoading(true);
-      const res = await especialistasApi.findById(id);
-      if (res.ok && res.data) {
-        setEspecialista(mapApiEspecialistaToFrontend(res.data));
-      } else {
-        console.error('Error fetching specialist details:', res.error);
-        setEspecialista(null);
-      }
+      const esp = await fetchEspecialistaById(id);
+      setEspecialista(esp);
       setLoading(false);
     };
 
@@ -35,7 +30,7 @@ export const EspecialistaDetailPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">
           Cargando ficha de especialista...
         </span>
@@ -190,13 +185,39 @@ export const EspecialistaDetailPage = () => {
                 )}
 
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
-                  Especialidad
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
+                  Especialidad Principal
                 </span>
-                <span className="text-sm font-semibold text-text">
-                  {especialista.especialidad || 'No especificada'}
-                </span>
+                {especialista.especialidad ? (
+                  <Badge
+                    variant="default"
+                    className="text-xs px-2.5 py-0.5 uppercase font-bold bg-primary/10 text-primary border border-primary/20"
+                  >
+                    {especialista.especialidad}
+                  </Badge>
+                ) : (
+                  <span className="text-sm font-semibold text-text">No especificada</span>
+                )}
               </div>
+
+              {especialista.nivelEducativo === 'Secundaria' && especialista.especialidadesExtras && especialista.especialidadesExtras.length > 0 && (
+                <div>
+                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
+                    Especialidades Extras / Temporales
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {especialista.especialidadesExtras.map((esp) => (
+                      <Badge
+                        key={esp}
+                        variant="secondary"
+                        className="text-[0.65rem] px-2 py-0 uppercase font-bold"
+                      >
+                        {esp}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">

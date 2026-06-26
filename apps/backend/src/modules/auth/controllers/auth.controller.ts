@@ -1,6 +1,7 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { AuthSessionService } from '../services/auth-session.service.js';
 import { AuthPasswordService } from '../services/auth-password.service.js';
 import { LoginDto } from '../dto/login.dto.js';
@@ -8,7 +9,6 @@ import { ChangePasswordDto } from '../dto/change-password.dto.js';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
 import { AuthGuard } from '../guards/auth.guard.js';
-import { RolesGuard } from '../guards/roles.guard.js';
 import { AllowFirstLogin } from '../decorators/allow-first-login.decorator.js';
 import {
   ILoginResponse,
@@ -31,6 +31,7 @@ export class AuthController {
   constructor(
     private readonly authSessionService: AuthSessionService,
     private readonly authPasswordService: AuthPasswordService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
   ) {}
 
   @Post('login')
@@ -73,7 +74,7 @@ export class AuthController {
   }
 
   @Post('change-password')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
   async changePassword(
@@ -122,7 +123,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @AllowFirstLogin()
   @HttpCode(HttpStatus.OK)
   async logout(
@@ -144,7 +145,7 @@ export class AuthController {
   }
 
   private getCookieOptions(maxAge?: number) {
-    const isProd = process.env.NODE_ENV === 'production';
+    const isProd = this.configService.get<string>('NODE_ENV') === 'production';
     return {
       httpOnly: true,
       secure: isProd,
@@ -154,12 +155,15 @@ export class AuthController {
   }
 
   private setAuthCookies(res: Response, accessToken?: string, refreshToken?: string) {
+    const accessMaxAge = this.configService.get<number>('COOKIE_ACCESS_TOKEN_MAX_AGE_MS') ?? 15 * 60 * 1000;
+    const refreshMaxAge = this.configService.get<number>('COOKIE_REFRESH_TOKEN_MAX_AGE_MS') ?? 7 * 24 * 60 * 60 * 1000;
+
     if (accessToken) {
-      res.cookie('accessToken', accessToken, this.getCookieOptions(15 * 60 * 1000));
+      res.cookie('accessToken', accessToken, this.getCookieOptions(accessMaxAge));
     }
 
     if (refreshToken) {
-      res.cookie('refreshToken', refreshToken, this.getCookieOptions(7 * 24 * 60 * 60 * 1000));
+      res.cookie('refreshToken', refreshToken, this.getCookieOptions(refreshMaxAge));
     }
   }
 }

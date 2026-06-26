@@ -56,4 +56,16 @@ export class PrismaSessionRepository implements SessionRepository {
     });
     return !!session;
   }
+
+  async invalidateAllUserSessions(userId: string, reason: string): Promise<number> {
+    const result = await this.prisma.sesionAuth.updateMany({
+      where: { usuarioId: userId, isActive: true },
+      data: {
+        isActive: false,
+        loggedOutAt: new Date(),
+        terminatedReason: reason,
+      },
+    });
+    return result.count;
+  }
 }

@@ -19,8 +19,8 @@ import { PrismaAuditRepository } from './repositories/prisma-audit.repository.js
 
 import { PrismaModule } from '../../shared/prisma/prisma.module.js';
 import { MailerModule } from '../../shared/mailer/mailer.module.js';
+import { RlsGucService } from './services/rls-guc.service.js';
 import { AuthGuard } from './guards/auth.guard.js';
-import { RolesGuard } from './guards/roles.guard.js';
 import { PermissionsGuard } from './guards/permissions.guard.js';
 
 @Module({
@@ -44,22 +44,22 @@ import { PermissionsGuard } from './guards/permissions.guard.js';
     AuthSessionService,
     AuthTokenService,
     AuthPasswordService,
+    RlsGucService,
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: SessionRepository, useClass: PrismaSessionRepository },
     { provide: PasswordTokenRepository, useClass: PrismaPasswordTokenRepository },
     { provide: AuditRepository, useClass: PrismaAuditRepository },
     AuthGuard,
-    RolesGuard,
     PermissionsGuard,
   ],
   exports: [
     AuthSessionService,
     AuthTokenService,
     AuthPasswordService,
+    RlsGucService,
     UserRepository,
     SessionRepository,
     AuthGuard,
-    RolesGuard,
     PermissionsGuard,
     JwtModule,
   ],

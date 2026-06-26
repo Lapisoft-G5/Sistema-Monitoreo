@@ -1,17 +1,22 @@
 import { useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Grid, List } from 'lucide-react';
-import { useCronogramas } from '@entities/model-cronogramas';
-import { usePlantillas } from '@entities/model-plantillas';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
+import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api';
+import { useFichasCompletadas } from '@entities/model-reportes';
 import { PageHeader } from '@shared/ui/pageHeader';
-import { ReportesStats, ReportesGrid } from '@widgets/reportes';
+import { ReportesStats, ReportesGrid, type BackendReportVisit } from '@widgets/reportes';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
+import { useUser } from '@entities/model-user';
 
 const getFichaState = (visitId: string) => {
   const saved = localStorage.getItem(`sistema-monitoreo:ficha-state:${visitId}`);
   if (saved) {
     try {
       return JSON.parse(saved);
-    } catch {}
+    } catch (err) {
+      console.warn('Invalid JSON in localStorage', err);
+    }
   }
   
   // Mock pre-filled state for completed mock visits
@@ -46,8 +51,19 @@ const getFichaState = (visitId: string) => {
 };
 
 export const ReportesPage = () => {
-  const { cronogramas } = useCronogramas();
-  const { plantillas } = usePlantillas();
+  const location = useLocation();
+  const isMyReportsPath = location.pathname === '/reportes';
+  const { user } = useUser();
+  const isEvaluatedView =
+    isMyReportsPath &&
+    (user?.role === 'docente' ||
+      user?.role === 'director_institucion' ||
+      user?.role === 'coordinador_pedagogico' ||
+      user?.role === 'jefe_taller');
+
+  const { cronogramas } = useCronogramasData();
+  const { data: plantillas = [] } = usePlantillasList();
+  const { data: fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
 
   // ── Estados de Vista e Interacción ──
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
@@ -56,7 +72,7 @@ export const ReportesPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
-  const [filterTipo, setFilterTipo] = useState('Todos');
+  const [filterAnio, setFilterAnio] = useState('Todos');
 
   // Cascading Nivel
   const nivelesDisponibles = useMemo(() => {
@@ -69,10 +85,89 @@ export const ReportesPage = () => {
     setFilterNivel('Todos');
   };
 
-  // ── Filtrado de Fichas Completadas ──
-  const completedVisits = useMemo(() => {
-    return cronogramas.filter((c) => c.estado === 'COMPLETADO');
-  }, [cronogramas]);
+  // ── Filtrado de Fichas Completadas (Backend con Fallback Local) ──
+  const completedVisits = useMemo<BackendReportVisit[]>(() => {
+    if (fichasCompletadasData?.data && fichasCompletadasData.data.length > 0) {
+      return fichasCompletadasData.data.map((f) => ({
+        id: f.id, // Ficha ID
+        cronogramaId: f.cronogramaId,
+        fechaHora: f.fechaEjecucion,
+        especialista: f.especialistaNombre,
+        especialistaInitials: f.especialistaNombre
+          .split(' ')
+          .map((n) => n[0] || '')
+          .join('')
+          .toUpperCase(),
+        institucion: `${f.institucionNombre} - ${f.institucionCodigoModular}`,
+        docenteDirectivo: f.evaluadoNombre,
+        tipo: f.tipoMonitoreo,
+        nroVisita: '1',
+        estado: 'COMPLETADO' as const,
+        modalidad: f.modalidad,
+        nivel: f.nivel,
+        promedio: f.promedio,
+        puntajeTotal: f.puntajeTotal,
+        nivelLogro: f.nivelLogro,
+        monitorId: f.especialistaId,
+        institucionId: f.institucionId,
+        evaluadoId: f.evaluadoId,
+      }));
+    }
+
+    let list = cronogramas.filter((c) => c.estado === 'COMPLETADO');
+    if (isEvaluatedView) {
+      const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
+      list = list.filter((v) => {
+        const visitDocente = v.docenteDirectivo.toLowerCase();
+        return (
+          userFullName.includes(visitDocente) ||
+          visitDocente.includes(userFullName)
+        );
+      });
+    } else if (
+      user?.role === 'especialista' ||
+      user?.role === 'jefe_area' ||
+      user?.role === 'coordinador_pedagogico' ||
+      user?.role === 'jefe_taller'
+    ) {
+      const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+      list = list.filter((v) => {
+        const visitEspecialista = v.especialista.toLowerCase();
+        return (
+          userFullName.includes(visitEspecialista) ||
+          visitEspecialista.includes(userFullName) ||
+          visitEspecialista.includes(user.nombres.toLowerCase())
+        );
+      });
+    } else if (user?.role === 'director_institucion') {
+      list = list.filter((v) => {
+        const userSchool = (user.institucionNombre || '').toLowerCase();
+        const visitSchool = v.institucion.toLowerCase();
+        return visitSchool.includes(userSchool) || userSchool.includes(visitSchool);
+      });
+    }
+    return list;
+  }, [fichasCompletadasData, cronogramas, user, isEvaluatedView]);
+
+  const añosDisponibles = useMemo(() => {
+    const yearsSet = new Set<string>();
+    completedVisits.forEach((v) => {
+      try {
+        const d = new Date(v.fechaHora);
+        if (!isNaN(d.getTime())) {
+          yearsSet.add(d.getFullYear().toString());
+        } else {
+          const yearPart = v.fechaHora.split('-')[0];
+          if (yearPart && yearPart.length === 4 && !isNaN(Number(yearPart))) {
+            yearsSet.add(yearPart);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    });
+    return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+  }, [completedVisits]);
 
   const filteredVisits = useMemo(() => {
     return completedVisits.filter((visit) => {
@@ -87,21 +182,38 @@ export const ReportesPage = () => {
 
       if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
       if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
-      if (filterTipo !== 'Todos' && visit.tipo !== filterTipo) return false;
+
+      if (filterAnio !== 'Todos') {
+        let visitYear = '';
+        try {
+          const d = new Date(visit.fechaHora);
+          if (!isNaN(d.getTime())) {
+            visitYear = d.getFullYear().toString();
+          } else {
+            const yearPart = visit.fechaHora.split('-')[0];
+            if (yearPart && yearPart.length === 4 && !isNaN(Number(yearPart))) {
+              visitYear = yearPart;
+            }
+          }
+        } catch {
+          // ignore
+        }
+        if (visitYear !== filterAnio) return false;
+      }
 
       return true;
     });
-  }, [completedVisits, searchQuery, filterModalidad, filterNivel, filterTipo]);
+  }, [completedVisits, searchQuery, filterModalidad, filterNivel, filterAnio]);
 
   const handleClearFilters = () => {
     setSearchQuery('');
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
-    setFilterTipo('Todos');
+    setFilterAnio('Todos');
   };
 
   const isAnyFilterActive =
-    searchQuery !== '' || filterModalidad !== 'Todos' || filterNivel !== 'Todos' || filterTipo !== 'Todos';
+    searchQuery !== '' || filterModalidad !== 'Todos' || filterNivel !== 'Todos' || filterAnio !== 'Todos';
 
   // ── Métricas Estadísticas (KPIs) ──
   const stats = useMemo(() => {
@@ -129,12 +241,36 @@ export const ReportesPage = () => {
     // Contar IEs únicas
     const uniqueIEs = new Set(completedVisits.map((v) => v.institucion.split(' - ')[0])).size;
 
+    // ── Métricas exclusivas para vista de evaluado (docente) ──
+    const promedioGeneral =
+      total > 0
+        ? Number(
+            (
+              completedVisits.reduce((acc, v) => acc + (v.promedio ?? 0), 0) / total
+            ).toFixed(2),
+          )
+        : undefined;
+
+    // Nivel logro más reciente (último por fechaHora)
+    const sorted = [...completedVisits].sort(
+      (a, b) => new Date(b.fechaHora).getTime() - new Date(a.fechaHora).getTime(),
+    );
+    const nivelLogroMasFrecuente = sorted[0]?.nivelLogro ?? undefined;
+
+    // Especialistas únicos que evaluaron al docente
+    const uniqueEspecialistas = new Set(
+      completedVisits.map((v) => v.especialista).filter(Boolean),
+    ).size;
+
     return {
       total,
       docentes,
       directivos,
       satisfactionPercent,
       uniqueIEs,
+      promedioGeneral,
+      nivelLogroMasFrecuente,
+      uniqueEspecialistas,
     };
   }, [completedVisits]);
 
@@ -144,8 +280,20 @@ export const ReportesPage = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <PageHeader
-            title="Fichas Completadas en Cuadrícula"
-            description="Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por los especialistas."
+            title={
+              isMyReportsPath
+                ? 'Mis Reportes de Monitoreo'
+                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller'
+                  ? 'Fichas de Monitoreo Completadas'
+                  : 'Fichas Completadas en Cuadrícula'
+            }
+            description={
+              isMyReportsPath
+                ? 'Bandeja para visualizar y descargar las fichas técnicas de los monitoreos realizados a su persona.'
+                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller'
+                  ? 'Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por usted.'
+                  : 'Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por los especialistas.'
+            }
           />
         </div>
 
@@ -177,7 +325,7 @@ export const ReportesPage = () => {
       </div>
 
       {/* ── Módulos de KPIs ── */}
-      <ReportesStats stats={stats} />
+      <ReportesStats stats={stats} isEvaluatedView={isEvaluatedView} />
 
       {/* ── Listado Principal con Filtros ── */}
       <ReportesGrid
@@ -189,12 +337,14 @@ export const ReportesPage = () => {
         setFilterModalidad={handleModalidadChange}
         filterNivel={filterNivel}
         setFilterNivel={setFilterNivel}
-        filterTipo={filterTipo}
-        setFilterTipo={setFilterTipo}
+        filterAnio={filterAnio}
+        setFilterAnio={setFilterAnio}
         nivelesDisponibles={nivelesDisponibles}
+        añosDisponibles={añosDisponibles}
         isAnyFilterActive={isAnyFilterActive}
         handleClearFilters={handleClearFilters}
         plantillas={plantillas}
+        isEvaluatedView={isEvaluatedView}
       />
     </div>
   );

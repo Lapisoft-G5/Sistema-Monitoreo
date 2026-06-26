@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
-import { Badge } from '@shared/ui/badge';
 import type { Plantilla } from '@entities/model-plantillas';
 
 interface PlantillaPreviewModalProps {
@@ -138,7 +137,7 @@ export const PlantillaPreviewModal = ({ plantilla, onClose }: PlantillaPreviewMo
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {plantilla.niveles.map((niv) => {
-                      const rubDetail = activeDesempeno.rubrica.find((r) => r.nivel === niv.nivel);
+                      const rubDetail = activeDesempeno.rubrica?.find((r) => r.nivel === niv.nivel);
                       return (
                         <div
                           key={niv.nivel}
@@ -149,28 +148,17 @@ export const PlantillaPreviewModal = ({ plantilla, onClose }: PlantillaPreviewMo
                             style={{ backgroundColor: niv.color }}
                           />
                           
-                          <div className="pl-2 flex items-center justify-between">
+                          <div className="pl-2 flex flex-col gap-1.5">
                             <span
                               className="text-xs font-black uppercase tracking-wider"
                               style={{ color: niv.color }}
                             >
                               Nivel {niv.nivel}
                             </span>
-                            <Badge
-                              style={{
-                                backgroundColor: niv.color + '15',
-                                color: niv.color,
-                                borderColor: niv.color + '20',
-                              }}
-                              className="text-[10px] font-bold"
-                            >
-                              {niv.denominacion}
-                            </Badge>
+                            <p className="pl-2 text-[11px] text-slate-700 font-medium leading-relaxed">
+                              {rubDetail?.descripcion || 'Sin descripción registrada para este nivel.'}
+                            </p>
                           </div>
-
-                          <p className="pl-2 text-[11px] text-slate-600 font-medium leading-relaxed">
-                            {rubDetail ? rubDetail.descripcion : 'Sin descripción registrada para este nivel.'}
-                          </p>
                         </div>
                       );
                     })}

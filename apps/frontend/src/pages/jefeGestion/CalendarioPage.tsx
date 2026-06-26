@@ -1,29 +1,57 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Calendar, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { useUser } from '@entities/model-user';
-import { useCronogramas } from '@entities/model-cronogramas';
+import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { CalendarioGrid, CalendarioSidebar } from '@widgets/calendario';
 import { BandejaReprogramaciones } from '@widgets/reprogramaciones';
-import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 
 export const CalendarioPage = () => {
   const { user } = useUser();
+  const location = useLocation();
+  const navigate = useNavigate();
   const isEspecialista =
     user?.role === 'especialista' ||
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
-  const { cronogramas, reprogramaciones } = useCronogramas();
+  const { cronogramas, reprogramaciones } = useCronogramasData();
 
   // ── Estados de Navegación ──
   const [activeTab, setActiveTab] = useState<'CALENDARIO' | 'SOLICITUDES'>('CALENDARIO');
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2023, 9, 15, 12, 0, 0));
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [activeView, setActiveView] = useState<'MENSUAL' | 'SEMANAL' | 'DIARIO' | 'ANUAL' | 'LISTA'>('MENSUAL');
 
   // ── Selección activa de fecha y visita ──
-  const [selectedDateStr, setSelectedDateStr] = useState<string>('2023-10-12');
-  const [selectedVisitId, setSelectedVisitId] = useState<string | null>('13');
+  const [selectedDateStr, setSelectedDateStr] = useState<string>(() => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [showDetailsPanel, setShowDetailsPanel] = useState<boolean>(true);
+
+  // ── Auto-navegación tras crear/editar cronograma ──
+  // Si llegamos desde CronogramaPage con state.newDate (YYYY-MM-DD),
+  // navegamos el calendario a esa fecha y limpiamos el state.
+  useEffect(() => {
+    const newDate = (location.state as { newDate?: string } | null)?.newDate;
+    if (newDate) {
+      const parts = newDate.split('-');
+      if (parts.length === 3) {
+        const [y, m, d] = parts.map(Number);
+        const target = new Date(y, m - 1, d, 12);
+        if (!isNaN(target.getTime())) {
+          setTimeout(() => setCurrentDate(target), 0);
+          setTimeout(() => setSelectedDateStr(newDate), 0);
+        }
+      }
+      // Limpia el state para no re-navegar al refrescar la página
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   // ── Filtros del Calendario ──
   const [filterModalidad, setFilterModalidad] = useState('Todos');
@@ -33,13 +61,53 @@ export const CalendarioPage = () => {
   const [filterNroVisita, setFilterNroVisita] = useState('Todos');
   const [filterEstado, setFilterEstado] = useState('Todos');
 
-  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+  const isDirector = user?.role === 'director_institucion';
+
+  const showBandeja = useMemo(() => {
+    if (isDirector) {
+      return user?.institucionNivel === 'Secundaria';
+    }
+    return true;
+  }, [isDirector, user]);
+
+  // Nombre del especialista logueado para filtro
+  const specialistFilterName = useMemo(() => {
+    if (!isEspecialista || !user) return '';
+    return `${user.nombres} ${user.apellidos}`;
+  }, [isEspecialista, user]);
+
+  // Base visits for the user
+  const filterBaseVisits = useMemo(() => {
+    return cronogramas.filter((visit) => {
+      if (isEspecialista && specialistFilterName) {
+        return visit.especialista === specialistFilterName;
+      }
+      return true;
+    });
+  }, [cronogramas, isEspecialista, specialistFilterName]);
+
+  const modalidadesUnicas = useMemo(() => {
+    const list = new Set<string>();
+    filterBaseVisits.forEach((c) => {
+      if (c.modalidad) list.add(c.modalidad);
+    });
+    return Array.from(list);
+  }, [filterBaseVisits]);
 
   // Cascading Nivel Options
   const nivelesDisponibles = useMemo(() => {
-    if (filterModalidad === 'Todos') return [];
-    return MODALIDAD_NIVEL_MAP[filterModalidad as keyof typeof MODALIDAD_NIVEL_MAP] || [];
-  }, [filterModalidad]);
+    const list = new Set<string>();
+    if (filterModalidad === 'Todos') {
+      filterBaseVisits.forEach((c) => {
+        if (c.nivel) list.add(c.nivel);
+      });
+    } else {
+      filterBaseVisits.forEach((c) => {
+        if (c.modalidad === filterModalidad && c.nivel) list.add(c.nivel);
+      });
+    }
+    return Array.from(list);
+  }, [filterBaseVisits, filterModalidad]);
 
   const handleModalidadChange = (modalidad: string) => {
     setFilterModalidad(modalidad);
@@ -65,26 +133,7 @@ export const CalendarioPage = () => {
     setFilterEstado('Todos');
   };
 
-  // Nombre del especialista logueado para filtro
-  const specialistFilterName = useMemo(() => {
-    if (!isEspecialista || !user) return '';
-    if (user.role === 'coordinador_pedagogico' || user.role === 'jefe_taller') {
-      return `${user.nombres} ${user.apellidos}`;
-    }
-    const firstName = user.nombres.split(' ')[0].toLowerCase();
-    
-    if (firstName.startsWith('juan')) return 'Juan Pérez';
-    if (firstName.startsWith('maría') || firstName.startsWith('maria')) return 'María García';
-    if (firstName.startsWith('ana')) return 'Ana Torres';
-    if (firstName.startsWith('pedro')) return 'Pedro Alvarado';
-    if (firstName.startsWith('rosa')) return 'Rosa Quispe';
-    if (firstName.startsWith('luis')) return 'Luis Mamani';
-    if (firstName.startsWith('sofía') || firstName.startsWith('sofia')) return 'Sofía Ramos';
-    if (firstName.startsWith('klisman')) return 'Klisman Condori';
-    if (firstName.startsWith('jean')) return 'Jean Carlos Choque';
-    
-    return 'Juan Pérez'; // fallback
-  }, [isEspecialista, user]);
+
 
   // Obtener lista única de especialistas
   const listaEspecialistas = useMemo(() => {
@@ -116,8 +165,9 @@ export const CalendarioPage = () => {
       }
       if (isDirector && user) {
         const isSameSchool =
-          user.institucionNombre &&
-          visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
+          (user.institucion && visit.institucionId === user.institucion) ||
+          (user.institucionNombre &&
+            visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase());
 
         const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
         const isDirectedToMe =
@@ -129,6 +179,10 @@ export const CalendarioPage = () => {
         if (!isSameSchool && !isDirectedToMe) {
           return false;
         }
+      }
+
+      if (user?.role === 'jefe_area') {
+        if (user.especialistaNivel && visit.nivel !== user.especialistaNivel) return false;
       }
 
       // Filtros específicos de Director
@@ -225,22 +279,24 @@ export const CalendarioPage = () => {
           <Calendar className="h-4 w-4" />
           <span>Calendario de Monitoreos</span>
         </button>
-        <button
-          onClick={() => setActiveTab('SOLICITUDES')}
-          className={`pb-3 font-bold text-sm border-b-2 transition-all flex items-center gap-2 relative cursor-pointer ${
-            activeTab === 'SOLICITUDES'
-              ? 'border-primary text-primary font-extrabold'
-              : 'border-transparent text-text-muted hover:text-text'
-          }`}
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>Bandeja de Reprogramaciones</span>
-          {pendingCount > 0 && (
-            <span className="absolute -top-1.5 -right-3.5 bg-amber-500 text-white font-extrabold text-[9px] h-4.5 min-w-4.5 px-1.5 rounded-full flex items-center justify-center border border-surface shadow-sm animate-pulse">
-              {pendingCount}
-            </span>
-          )}
-        </button>
+        {showBandeja && (
+          <button
+            onClick={() => setActiveTab('SOLICITUDES')}
+            className={`pb-3 font-bold text-sm border-b-2 transition-all flex items-center gap-2 relative cursor-pointer ${
+              activeTab === 'SOLICITUDES'
+                ? 'border-primary text-primary font-extrabold'
+                : 'border-transparent text-text-muted hover:text-text'
+            }`}
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Bandeja de Reprogramaciones</span>
+            {pendingCount > 0 && (
+              <span className="absolute -top-1.5 -right-3.5 bg-amber-500 text-white font-extrabold text-[9px] h-4.5 min-w-4.5 px-1.5 rounded-full flex items-center justify-center border border-surface shadow-sm animate-pulse">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {activeTab === 'CALENDARIO' ? (
@@ -272,6 +328,7 @@ export const CalendarioPage = () => {
               filterEstado={filterEstado}
               setFilterEstado={setFilterEstado}
               listaEspecialistas={listaEspecialistas}
+              modalidadesDisponibles={modalidadesUnicas}
               nivelesDisponibles={nivelesDisponibles}
               isAnyFilterActive={isAnyFilterActive}
               handleClearFilters={handleClearFilters}

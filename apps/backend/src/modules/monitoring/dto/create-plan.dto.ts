@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsInt, IsIn, MaxLength, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreatePlanDto {
@@ -12,8 +12,17 @@ export class CreatePlanDto {
   @Min(2000)
   anioAcademico!: number;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @IsIn(['UGEL', 'IE'])
-  tipoEntidad!: string;
+  @MaxLength(255)
+  archivoUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  tipoEntidad?: string;
+
+  @IsOptional()
+  @IsUUID()
+  institucionId?: string;
 }

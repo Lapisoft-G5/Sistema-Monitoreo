@@ -9,6 +9,7 @@ import {
 } from '@features/especialistas/especialista-service';
 import { especialistasApi } from '@shared/api/especialistas.api';
 import { Card } from '@shared/ui/card';
+import { Spinner } from '@shared/ui/Spinner';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 
 export const EditEspecialistaCard = () => {
@@ -43,7 +44,7 @@ export const EditEspecialistaCard = () => {
   if (fetching) {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">
           Cargando datos del especialista...
         </span>
@@ -65,7 +66,7 @@ export const EditEspecialistaCard = () => {
     dni: especialista.dni,
     correo: especialista.correo,
     celular: especialista.celular,
-    especialidad: especialista.especialidad || undefined,
+    especialidades: especialista.especialidades || undefined,
     nivelEducativo: especialista.nivelEducativo,
     modalidad: (especialista.modalidad as EspecialistaFormData['modalidad']) || 'EBR',
     cargo: (especialista.cargo as EspecialistaFormData['cargo']) || 'Especialista',

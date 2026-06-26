@@ -10,4 +10,6 @@ export interface JefeArea {
   nivelEducativo: 'Inicial' | 'Primaria' | 'Secundaria';
   activo: boolean;
   fechaCreacion: string;
+  cargo: string;
+  especialidades: string[];
 }

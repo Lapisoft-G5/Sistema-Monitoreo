@@ -15,9 +15,9 @@ import { type Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
-import { teachersApi } from '@shared/api/teachers.api';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import { Spinner } from '@shared/ui/Spinner';
+import { fetchDocenteById } from '@features/docentes/docente-service';
+import { fetchInstitucionById } from '@features/institutions/institution-service';
 
 export const DocenteDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,20 +32,17 @@ export const DocenteDetailPage = () => {
       if (!id) return;
       setLoading(true);
       try {
-        const res = await teachersApi.findAll();
-        if (res.ok && res.data) {
-          const found = res.data.find((d) => d.id === id);
-          if (found) {
-            const mapped = mapApiDocenteToFrontend(found);
-            setDocente(mapped);
-            // Fetch institution name
-            const instRes = await institutionsApi.findById(found.institucionId);
-            if (instRes.ok && instRes.data) {
-              setInstName(instRes.data.nombre);
+        const found = await fetchDocenteById(id);
+        if (found) {
+          setDocente(found);
+          if (found.institucionId) {
+            const inst = await fetchInstitucionById(found.institucionId);
+            if (inst) {
+              setInstName(inst.nombre);
             }
-          } else {
-            setDocente(null);
           }
+        } else {
+          setDocente(null);
         }
       } catch (err) {
         console.error('Error fetching teacher detail:', err);
@@ -60,7 +57,7 @@ export const DocenteDetailPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando ficha de docente...</span>
       </div>
     );

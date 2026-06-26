@@ -1,5 +1,5 @@
 import { registerDecorator, ValidationOptions, ValidationArguments } from 'class-validator';
-import { NivelEducativoEBR, EspecialidadPrimaria } from '@sistema-monitoreo/shared-contracts';
+import { NivelEducativoEBR } from '@sistema-monitoreo/shared-contracts';
 
 export function IsValidEspecialidadForNivel(
   propertyNivel: string,

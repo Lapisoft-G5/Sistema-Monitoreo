@@ -10,16 +10,35 @@ import {
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
 import { SelectField } from '@/shared/ui/form-controls';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { FichaAuditorModal } from './FichaAuditorModal';
+import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
+import { LlenarFichaForm } from '@/features/monitoreos';
+import { fichasApi } from '@/features/monitoreos/api/fichas.api';
+import { reportesApi } from '@/shared/api/reportes.api';
+
+interface IFichaRespuestaDesempenoConPreguntaExtra {
+  id: string;
+  fichaId: string;
+  desempenoId: string;
+  nivel: number;
+  observaciones: string | null;
+  preguntaExtraRespuesta?: boolean;
+}
+
+export interface BackendReportVisit extends Cronograma {
+  nivelLogro?: string;
+  promedio?: number;
+  puntajeTotal?: number;
+}
 
 interface ReportesGridProps {
-  filteredVisits: Cronograma[];
+  filteredVisits: BackendReportVisit[];
   viewMode: 'GRID' | 'TABLE';
   searchQuery: string;
   setSearchQuery: (q: string) => void;
@@ -27,12 +46,15 @@ interface ReportesGridProps {
   setFilterModalidad: (m: string) => void;
   filterNivel: string;
   setFilterNivel: (n: string) => void;
-  filterTipo: string;
-  setFilterTipo: (t: string) => void;
+  filterAnio: string;
+  setFilterAnio: (a: string) => void;
   nivelesDisponibles: string[];
+  añosDisponibles: string[];
   isAnyFilterActive: boolean;
   handleClearFilters: () => void;
   plantillas: Plantilla[];
+  /** Cuando true, ajusta filtros y tarjetas para la perspectiva del docente evaluado */
+  isEvaluatedView?: boolean;
 }
 
 const MODALIDADES = ['EBR', 'EBA', 'EBE', 'CEPTRO'];
@@ -46,7 +68,9 @@ const getFichaState = (visitId: string) => {
   if (saved) {
     try {
       return JSON.parse(saved);
-    } catch {}
+    } catch (err) {
+      console.warn('Invalid JSON in localStorage', err);
+    }
   }
   
   // Mock pre-filled state for completed mock visits
@@ -101,36 +125,106 @@ export const ReportesGrid = ({
   setFilterModalidad,
   filterNivel,
   setFilterNivel,
-  filterTipo,
-  setFilterTipo,
+  filterAnio,
+  setFilterAnio,
   nivelesDisponibles,
+  añosDisponibles,
   isAnyFilterActive,
   handleClearFilters,
   plantillas,
+  isEvaluatedView = false,
 }: ReportesGridProps) => {
   // Modal details
-  const [selectedVisit, setSelectedVisit] = useState<Cronograma | null>(null);
+  const [selectedVisit, setSelectedVisit] = useState<BackendReportVisit | null>(null);
   const [showFichaModal, setShowFichaModal] = useState<boolean>(false);
 
   // PDF download mock triggers
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  const { data: backendFicha } = useQuery({
+    queryKey: ['ficha-completada', selectedVisit?.id],
+    queryFn: () => {
+      if (!selectedVisit) return null;
+      const hasBackendData = 'nivelLogro' in selectedVisit;
+      return hasBackendData
+        ? fichasApi.findById(selectedVisit.id)
+        : fichasApi.findByVisita(selectedVisit.id);
+    },
+    enabled: !!selectedVisit,
+  });
+
+  // Carga la plantilla específica de la ficha por ID (funciona con monitoreo:read,
+  // disponible para todos los roles incluyendo docente).
+  const { data: fichaPlantilla } = usePlantilla(backendFicha?.plantillaId);
+
   const activeTemplate = useMemo(() => {
     if (!selectedVisit) return null;
+    // Prioridad 1: plantilla cargada por ID (docente y cualquier rol con monitoreo:read)
+    if (fichaPlantilla) return fichaPlantilla;
+    // Prioridad 2: plantillas de prop (especialista con lista completa ya mapeada)
     const searchType = selectedVisit.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    return plantillas.find((p) => p.tipoMonitoreo === searchType) || plantillas[0];
-  }, [selectedVisit, plantillas]);
+    return plantillas.find((p) => p.tipoMonitoreo === searchType) || plantillas[0] || null;
+  }, [fichaPlantilla, selectedVisit, plantillas]);
 
   const activeFichaState = useMemo(() => {
     if (!selectedVisit) return null;
-    return getFichaState(selectedVisit.id);
-  }, [selectedVisit]);
+    const hasBackendData = 'nivelLogro' in selectedVisit;
 
-  const handleDownloadPDF = (visit: Cronograma, e: React.MouseEvent) => {
+    if (hasBackendData && backendFicha) {
+      const checkedAspects: Record<string, boolean> = {};
+      (backendFicha.respuestasAspecto || []).forEach((ra) => {
+        checkedAspects[ra.aspectoId] = true;
+      });
+
+      const selectedLevels: Record<string, string> = {};
+      const numToRoman = ['', 'I', 'II', 'III', 'IV'];
+      (backendFicha.respuestasDesempeno || []).forEach((rd) => {
+        selectedLevels[rd.desempenoId] = numToRoman[rd.nivel] || 'I';
+      });
+
+      const preguntaExtraAnswers: Record<string, boolean> = {};
+      (backendFicha.respuestasDesempeno || []).forEach((rd) => {
+        const extraRes = (rd as IFichaRespuestaDesempenoConPreguntaExtra).preguntaExtraRespuesta;
+        if (extraRes !== null && extraRes !== undefined) {
+          preguntaExtraAnswers[rd.desempenoId] = extraRes;
+        }
+      });
+
+      const respuestasEjeItem: Record<string, number> = {};
+      const evidenciaUrls: Record<string, string> = {};
+      (backendFicha.respuestasEjeItem || []).forEach((re) => {
+        respuestasEjeItem[re.ejeItemId] = re.nivel;
+        if (re.evidenciaUrl) {
+          evidenciaUrls[re.ejeItemId] = re.evidenciaUrl;
+        }
+      });
+
+      return {
+        checkedAspects,
+        selectedLevels,
+        generalComments: backendFicha.observaciones || '',
+        sugerencias: backendFicha.sugerencias || '',
+        compromisos: backendFicha.compromisos || '',
+        preguntaExtraAnswers,
+        respuestasEjeItem,
+        evidenciaUrls,
+      };
+    }
+
+    return getFichaState(selectedVisit.id);
+  }, [selectedVisit, backendFicha]);
+
+  const handleDownloadPDF = (visit: BackendReportVisit, e: React.MouseEvent) => {
     e.stopPropagation();
+    const hasBackendData = 'nivelLogro' in visit;
+    if (hasBackendData) {
+      const exportUrl = reportesApi.fichaHTMLUrl(visit.id);
+      window.open(exportUrl, '_blank');
+      return;
+    }
+
     setDownloadingId(visit.id);
-    
     setTimeout(() => {
       setDownloadingId(null);
       setToastMessage(`Ficha de Monitoreo - ${visit.institucion.split(' - ')[0]} descargada con éxito en PDF.`);
@@ -167,58 +261,89 @@ export const ReportesGrid = ({
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="space-y-1">
-            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block pb-0.5">
-              Búsqueda Rápida
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="IE, especialista o docente..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 text-xs leading-none h-9 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
-              />
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+        {isEvaluatedView ? (
+          /* Vista simplificada para el docente evaluado */
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block pb-0.5">
+                Buscar por IE o Especialista
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Nombre de la IE o del especialista..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 text-xs leading-none h-9 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              </div>
             </div>
+            <SelectField
+              label="Año"
+              value={filterAnio}
+              onChange={(val) => setFilterAnio(val)}
+              placeholder="Todos los años"
+              options={[
+                { value: 'Todos', label: 'Todos los años' },
+                ...añosDisponibles.map((a) => ({ value: a, label: a })),
+              ]}
+            />
           </div>
+        ) : (
+          /* Vista completa para especialista/jefe */
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block pb-0.5">
+                Búsqueda Rápida
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="IE, especialista o docente..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 text-xs leading-none h-9 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              </div>
+            </div>
 
-          <SelectField
-            label="Modalidad"
-            value={filterModalidad}
-            onChange={(val) => setFilterModalidad(val)}
-            placeholder="Todas las modalidades"
-            options={[
-              { value: 'Todos', label: 'Todas las modalidades' },
-              ...MODALIDADES.map((m) => ({ value: m, label: m })),
-            ]}
-          />
+            <SelectField
+              label="Modalidad"
+              value={filterModalidad}
+              onChange={(val) => setFilterModalidad(val)}
+              placeholder="Todas las modalidades"
+              options={[
+                { value: 'Todos', label: 'Todas las modalidades' },
+                ...MODALIDADES.map((m) => ({ value: m, label: m })),
+              ]}
+            />
 
-          <SelectField
-            label="Nivel Educativo"
-            value={filterNivel}
-            onChange={(val) => setFilterNivel(val)}
-            disabled={filterModalidad === 'Todos'}
-            placeholder="Todos los niveles"
-            options={[
-              { value: 'Todos', label: 'Todos los niveles' },
-              ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
-            ]}
-          />
+            <SelectField
+              label="Nivel Educativo"
+              value={filterNivel}
+              onChange={(val) => setFilterNivel(val)}
+              disabled={filterModalidad === 'Todos'}
+              placeholder="Todos los niveles"
+              options={[
+                { value: 'Todos', label: 'Todos los niveles' },
+                ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
+              ]}
+            />
 
-          <SelectField
-            label="Tipo de Ficha"
-            value={filterTipo}
-            onChange={(val) => setFilterTipo(val)}
-            placeholder="Todos los tipos"
-            options={[
-              { value: 'Todos', label: 'Todos los tipos' },
-              { value: 'DOCENTE', label: 'Docente (Acompañamiento en aula)' },
-              { value: 'DIRECTIVO', label: 'Directivo (Gestión escolar)' },
-            ]}
-          />
-        </div>
+            <SelectField
+              label="Año"
+              value={filterAnio}
+              onChange={(val) => setFilterAnio(val)}
+              placeholder="Todos los años"
+              options={[
+                { value: 'Todos', label: 'Todos los años' },
+                ...añosDisponibles.map((a) => ({ value: a, label: a })),
+              ]}
+            />
+          </div>
+        )}
       </Card>
 
       {/* Listado Principal */}
@@ -229,15 +354,26 @@ export const ReportesGrid = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredVisits.map((visit) => {
                 const fichaState = getFichaState(visit.id);
-                const totalAspects = Object.keys(fichaState.checkedAspects).length;
-                const checkedCount = Object.values(fichaState.checkedAspects).filter(Boolean).length;
-                const levels = Object.values(fichaState.selectedLevels) as string[];
-                const mostFrequentLevel =
-                  levels.length > 0
-                    ? levels.reduce((a, b, _, arr) =>
-                        arr.filter((v) => v === a).length >= arr.filter((v) => v === b).length ? a : b
-                      )
-                    : 'III';
+                const hasBackendData = visit.nivelLogro !== undefined;
+                const totalAspects = hasBackendData ? 0 : Object.keys(fichaState.checkedAspects).length;
+                const checkedCount = hasBackendData ? 0 : Object.values(fichaState.checkedAspects).filter(Boolean).length;
+                
+                const levelLogroMap: Record<string, string> = {
+                  'INICIO': 'I',
+                  'EN_PROCESO': 'II',
+                  'LOGRO_ESPERADO': 'III',
+                  'LOGRO_DESTACADO': 'IV'
+                };
+                const mostFrequentLevel = hasBackendData
+                  ? (levelLogroMap[visit.nivelLogro || ''] || 'III')
+                  : (() => {
+                      const levels = Object.values(fichaState.selectedLevels) as string[];
+                      return levels.length > 0
+                        ? levels.reduce((a, b, _, arr) =>
+                            arr.filter((v) => v === a).length >= arr.filter((v) => v === b).length ? a : b
+                          )
+                        : 'III';
+                    })();
 
                 return (
                   <Card
@@ -275,28 +411,37 @@ export const ReportesGrid = ({
                         <h3 className="text-sm font-black text-slate-800 tracking-tight leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                           {visit.institucion}
                         </h3>
-                        <div className="text-[11px] text-slate-600 font-bold flex items-center gap-1">
-                          <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
-                          <span className="truncate">Evaluado: {visit.docenteDirectivo}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                          <User className="h-3 w-3 text-slate-400 shrink-0" />
-                          <span className="truncate">Esp: {visit.especialista}</span>
+                        {!isEvaluatedView && (
+                          <div className="text-[11px] text-slate-600 font-bold flex items-center gap-1">
+                            <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <span className="truncate">Evaluado: {visit.docenteDirectivo}</span>
+                          </div>
+                        )}
+                        <div className={`flex items-center gap-1 ${isEvaluatedView ? 'text-[11px] text-slate-600 font-bold' : 'text-[10px] text-slate-400 font-semibold'}`}>
+                          <User className={`h-3 w-3 shrink-0 ${isEvaluatedView ? 'text-primary' : 'text-slate-400'}`} />
+                          <span className="truncate">
+                            {isEvaluatedView ? 'Evaluado por: ' : 'Esp: '}
+                            {visit.especialista}
+                          </span>
                         </div>
                       </div>
 
                       <div className="space-y-1.5 border-t border-slate-100 pt-3">
                         <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
-                          <span>Aspectos Cumplidos:</span>
+                          <span>{hasBackendData ? 'Promedio / Puntaje:' : 'Aspectos Cumplidos:'}</span>
                           <span className="text-slate-800">
-                            {checkedCount} / {totalAspects}
+                            {hasBackendData
+                              ? `Promedio ${(visit.promedio ?? 0).toFixed(2)} (${visit.puntajeTotal ?? 0} pts)`
+                              : `${checkedCount} / ${totalAspects}`}
                           </span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
                           <div
                             className="h-full bg-emerald-500 rounded-full"
                             style={{
-                              width: `${totalAspects > 0 ? (checkedCount / totalAspects) * 100 : 80}%`,
+                              width: `${hasBackendData
+                                ? ((visit.promedio ?? 0) / 4.0) * 100
+                                : totalAspects > 0 ? (checkedCount / totalAspects) * 100 : 80}%`,
                             }}
                           />
                         </div>
@@ -329,6 +474,10 @@ export const ReportesGrid = ({
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => {
+                            setSelectedVisit(visit);
+                            setShowFichaModal(true);
+                          }}
                           className="text-[10px] font-bold border-slate-200 text-slate-600 h-8 px-2.5 rounded-lg flex items-center gap-1 bg-surface hover:bg-slate-50 cursor-pointer"
                         >
                           <Eye className="h-3.5 w-3.5 text-primary" />
@@ -360,15 +509,26 @@ export const ReportesGrid = ({
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                     {filteredVisits.map((visit) => {
                       const fichaState = getFichaState(visit.id);
-                      const totalAspects = Object.keys(fichaState.checkedAspects).length;
-                      const checkedCount = Object.values(fichaState.checkedAspects).filter(Boolean).length;
-                      const levels = Object.values(fichaState.selectedLevels) as string[];
-                      const mostFrequentLevel =
-                        levels.length > 0
-                          ? levels.reduce((a, b, _, arr) =>
-                              arr.filter((v) => v === a).length >= arr.filter((v) => v === b).length ? a : b
-                            )
-                          : 'III';
+                      const hasBackendData = visit.nivelLogro !== undefined;
+                      const totalAspects = hasBackendData ? 0 : Object.keys(fichaState.checkedAspects).length;
+                      const checkedCount = hasBackendData ? 0 : Object.values(fichaState.checkedAspects).filter(Boolean).length;
+                      
+                      const levelLogroMap: Record<string, string> = {
+                        'INICIO': 'I',
+                        'EN_PROCESO': 'II',
+                        'LOGRO_ESPERADO': 'III',
+                        'LOGRO_DESTACADO': 'IV'
+                      };
+                      const mostFrequentLevel = hasBackendData
+                        ? (levelLogroMap[visit.nivelLogro || ''] || 'III')
+                        : (() => {
+                            const levels = Object.values(fichaState.selectedLevels) as string[];
+                            return levels.length > 0
+                              ? levels.reduce((a, b, _, arr) =>
+                                  arr.filter((v) => v === a).length >= arr.filter((v) => v === b).length ? a : b
+                                )
+                              : 'III';
+                          })();
 
                       return (
                         <tr
@@ -401,7 +561,9 @@ export const ReportesGrid = ({
                             {formatVisitDate(visit.fechaHora)}
                           </td>
                           <td className="py-3.5 px-4 font-bold text-slate-600">
-                            {checkedCount} / {totalAspects}
+                            {hasBackendData
+                              ? `Prom. ${(visit.promedio ?? 0).toFixed(2)}`
+                              : `${checkedCount} / ${totalAspects}`}
                           </td>
                           <td className="py-3.5 px-4">
                             <Badge
@@ -463,14 +625,15 @@ export const ReportesGrid = ({
       )}
 
       {selectedVisit && activeTemplate && activeFichaState && (
-        <FichaAuditorModal
+        <LlenarFichaForm
           isOpen={showFichaModal}
-          onClose={() => setShowFichaModal(false)}
+          onClose={() => {
+            setShowFichaModal(false);
+            setSelectedVisit(null);
+          }}
           visit={selectedVisit}
           template={activeTemplate}
-          fichaState={activeFichaState}
-          downloadingId={downloadingId}
-          onDownloadPDF={handleDownloadPDF}
+          initialState={activeFichaState}
         />
       )}
     </div>

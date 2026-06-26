@@ -9,9 +9,9 @@ export class MailerService {
   private readonly emailFrom: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.emailFrom = this.configService.get<string>('EMAIL_FROM') || 'no-reply@ugel-lampa.gob.pe';
+    this.emailFrom = this.configService.get<string>('EMAIL_FROM') ?? 'no-reply@ugel-lampa.gob.pe';
     const host = this.configService.get<string>('SMTP_HOST');
-    const port = this.configService.get<number>('SMTP_PORT') || 1025; // Default for local Mailpit / MailHog
+    const port = this.configService.get<number>('SMTP_PORT') ?? 1025;
     const user = this.configService.get<string>('SMTP_USER');
     const pass = this.configService.get<string>('SMTP_PASS');
 
@@ -68,7 +68,7 @@ export class MailerService {
   }
 
   async sendPasswordResetEmail(to: string, dni: string, token: string): Promise<void> {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
     const resetUrl = `${frontendUrl}/restablecer-password?token=${token}`;
 
     const subject = 'Recuperación de Contraseña - UGEL Lampa';

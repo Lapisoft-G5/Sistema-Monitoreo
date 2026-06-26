@@ -1,9 +1,25 @@
 import { useState } from 'react';
+import { CARGA_HORARIA } from '@shared/config/constants';
 import type { JefeArea } from '@entities/model-jefes-area';
-import { MOCK_JEFES_AREA } from '@entities/model-jefes-area';
 import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
-import type { IEspecialistaResponse as IJefeAreaResponse } from '@sistema-monitoreo/shared-contracts';
+import type { IEspecialistaResponse as IJefeAreaResponse, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
+
+export const fetchJefesArea = async (query?: IQueryEspecialistaRequest): Promise<JefeArea[]> => {
+  const res = await jefesAreaApi.findAll(query);
+  if (res.ok && res.data) {
+    return res.data.map(mapApiJefeAreaToFrontend);
+  }
+  return [];
+};
+
+export const fetchJefeAreaById = async (id: string): Promise<JefeArea | null> => {
+  const res = await jefesAreaApi.findById(id);
+  if (res.ok && res.data) {
+    return mapApiJefeAreaToFrontend(res.data);
+  }
+  return null;
+};
 
 const normalizeNivel = (nivel?: string | null): 'Inicial' | 'Primaria' | 'Secundaria' => {
   if (!nivel) return 'Secundaria';
@@ -22,12 +38,14 @@ export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea =
     dni: apiJefe.persona.dni,
     correo: apiJefe.persona.correo || '',
     celular: apiJefe.persona.telefono || '',
-    cargaHoraria: apiJefe.cargaLaboral || 40,
+    cargaHoraria: apiJefe.cargaLaboral || CARGA_HORARIA.JEFE_AREA,
     nivelEducativo: normalizeNivel(apiJefe.nivelEducativo),
     activo: apiJefe.estado === 'Activo',
     fechaCreacion: apiJefe.createdAt
       ? new Date(apiJefe.createdAt).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
+    cargo: apiJefe.cargo || 'Jefe de Área',
+    especialidades: apiJefe.especialidades || [],
   };
 };
 
@@ -56,7 +74,7 @@ export const useJefeAreaService = () => {
         apellidos: formData.apellidos.trim(),
         correo: formData.correo?.trim() || undefined,
         telefono: formData.celular?.trim() || undefined,
-        cargaHoraria: 40, // Jefe de Área tiene carga laboral obligatoria de 40 horas
+        cargaHoraria: CARGA_HORARIA.JEFE_AREA, // Jefe de Área tiene carga laboral obligatoria de 40 horas
         nivelEducativo: formData.nivelEducativo,
         rolCode,
       };
@@ -65,7 +83,6 @@ export const useJefeAreaService = () => {
       const res = await jefesAreaApi.update(formData.specialistId, dto);
       if (res.ok && res.data) {
         const mapped = mapApiJefeAreaToFrontend(res.data);
-        MOCK_JEFES_AREA.push(mapped);
         return { success: true, data: mapped };
       } else {
         const errMsg =
@@ -104,10 +121,6 @@ export const useJefeAreaService = () => {
       const res = await jefesAreaApi.update(id, dto);
       if (res.ok && res.data) {
         const mapped = mapApiJefeAreaToFrontend(res.data);
-        const index = MOCK_JEFES_AREA.findIndex((e) => e.id === id);
-        if (index !== -1) {
-          MOCK_JEFES_AREA[index] = mapped;
-        }
         return { success: true, data: mapped };
       } else {
         const errMsg =

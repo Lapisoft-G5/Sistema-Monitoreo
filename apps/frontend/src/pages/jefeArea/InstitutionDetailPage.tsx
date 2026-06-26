@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user'; // 🚀 Tu entidad de usuario limpia
 import type { Institucion } from '@entities/model-instituciones';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import { Spinner } from '@shared/ui/Spinner';
+import { fetchInstitucionById } from '@features/institutions/institution-service';
 
 import { InstitutionProfileWidget } from '@widgets/institutions/ViewInstitution';
 
@@ -23,12 +23,8 @@ export const InstitutionDetailPage = () => {
       if (!id) return;
       setLoading(true);
       try {
-        const res = await institutionsApi.findById(id);
-        if (res.ok && res.data) {
-          setInstitucion(mapApiInstitucionToFrontend(res.data));
-        } else {
-          setInstitucion(null);
-        }
+        const inst = await fetchInstitucionById(id);
+        setInstitucion(inst);
       } catch (err) {
         console.error('Error fetching details:', err);
         setInstitucion(null);
@@ -42,7 +38,7 @@ export const InstitutionDetailPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando datos de la I.E...</span>
       </div>
     );

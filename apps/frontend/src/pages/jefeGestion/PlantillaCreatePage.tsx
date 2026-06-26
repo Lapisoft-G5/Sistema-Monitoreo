@@ -1,35 +1,109 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { PlantillaForm, type PlantillaFormState } from '@widgets/plantillas';
-import { usePlantillas } from '@entities/model-plantillas';
-import { useUser } from '@entities/model-user';
+import { plantillasApi } from '@entities/model-plantillas/api/plantillas.api';
+import { useQueryClient } from '@tanstack/react-query';
+import { ConfirmModal } from '@shared/ui/ConfirmModal';
+
+const toBackendTipo = (tipo: string): 'DOCENTE' | 'DIRECTIVO' =>
+  tipo.toUpperCase().includes('DIRECTIVO') ? 'DIRECTIVO' : 'DOCENTE';
 
 export const PlantillaCreatePage = () => {
   const navigate = useNavigate();
-  const { addPlantilla } = usePlantillas();
-  const { user } = useUser();
+  const qc = useQueryClient();
+  const [isSaving, setIsSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingArchive, setPendingArchive] = useState<{ plantillas: { id: string; anioAcademico: number; tipoMonitoreo: string }[]; data: PlantillaFormState; backendTipo: 'DOCENTE' | 'DIRECTIVO' } | null>(null);
 
-  const handleSubmit = (data: PlantillaFormState) => {
-    const role: 'director_ie' | 'jefe_gestion' = user?.role === 'director_ie' || user?.role === 'director_institucion' ? 'director_ie' : 'jefe_gestion';
-    
-    const newPlantilla = {
-      id: 'pl-' + Date.now(),
-      tipoMonitoreo: data.tipoMonitoreo,
-      anioAcademico: Number(data.anioAcademico),
-      baremo: data.baremo,
-      niveles: data.niveles,
-      desempenos: data.desempenos,
-      fechaCreacion: new Date().toISOString().split('T')[0],
-      estado: 'Borrador' as const,
-      descripcion: `Plantilla registrada el ${new Date().toLocaleDateString('es-ES')}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
-      creadoPorRole: role,
-      creadoPorId: user?.id,
-      ieId: user?.institucion,
-    };
+  const handleSubmit = async (data: PlantillaFormState) => {
+    setIsSaving(true);
+    setSubmitError(null);
 
-    addPlantilla(newPlantilla);
-    navigate(-1);
+    const backendTipo = toBackendTipo(data.tipoMonitoreo);
+
+    try {
+      const existing = await plantillasApi.findAll({
+        tipoMonitoreo: backendTipo,
+        anioAcademico: Number(data.anioAcademico),
+        estado: 'Vigente',
+      });
+      if (existing && existing.length > 0) {
+        setPendingArchive({
+          plantillas: existing.map((p) => ({ id: p.id, anioAcademico: p.anioAcademico, tipoMonitoreo: p.tipoMonitoreo })),
+          data,
+          backendTipo,
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      await executeCreate(data, backendTipo, []);
+    } catch (err) {
+      console.error('[plantilla] Error al crear:', err);
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      setSubmitError(msg);
+      setIsSaving(false);
+    }
+  };
+
+  const executeCreate = async (data: PlantillaFormState, backendTipo: 'DOCENTE' | 'DIRECTIVO', toArchive: { id: string }[]) => {
+    try {
+      for (const old of toArchive) {
+        await plantillasApi.cambiarEstado(old.id, 'Historico');
+      }
+
+      const created = await plantillasApi.create({
+        tipoMonitoreo: backendTipo,
+        anioAcademico: Number(data.anioAcademico),
+        baremo: data.baremo,
+        descripcion: `Plantilla registrada el ${new Date().toLocaleDateString('es-ES')}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
+        niveles: data.niveles.map((n, i) => ({
+          nivelRomano: n.nivel,
+          denominacion: n.denominacion,
+          rangoMin: n.rangoMin,
+          color: n.color,
+          orden: i + 1,
+        })),
+        desempenos: data.desempenos
+          .map((d, i) => ({
+            id: d.id,
+            nombre: d.nombre,
+            descripcionCorta: d.descripcionCorta,
+            preguntaExtra: d.preguntaExtra || undefined,
+            orden: i + 1,
+            aspectos: d.aspectos
+              .filter((a) => a.descripcion.trim() !== '')
+              .map((a, ai) => ({
+                id: a.id,
+                descripcion: a.descripcion,
+                orden: ai + 1,
+              })),
+            rubrica: (d.rubrica ?? []).map((r) => ({
+              nivelRomano: r.nivel,
+              descripcion: r.descripcion,
+            })),
+          })),
+        ejeItems: (data.ejeItems ?? []).map((item) => ({
+          numero: item.numero,
+          descripcion: item.descripcion,
+        })),
+      });
+
+      await plantillasApi.cambiarEstado(created.id, 'Vigente');
+
+      qc.invalidateQueries({ queryKey: ['plantillas'] });
+
+      setPendingArchive(null);
+      setIsSaving(false);
+      navigate(-1);
+    } catch (err) {
+      console.error('[plantilla] Error al crear:', err);
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      setSubmitError(msg);
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -49,7 +123,37 @@ export const PlantillaCreatePage = () => {
         </div>
       </div>
 
-      <PlantillaForm onCancel={() => navigate(-1)} onSubmit={handleSubmit} />
+      {submitError && (
+        <div className="border border-rose-200 bg-rose-50 text-rose-700 text-sm rounded-xl p-3 font-semibold">
+          {submitError}
+        </div>
+      )}
+
+      <PlantillaForm onCancel={() => navigate(-1)} onSubmit={handleSubmit} isSaving={isSaving} />
+
+      {pendingArchive && (
+        <ConfirmModal
+          title="Archivar plantilla vigente existente"
+          message={
+            <span className="text-xs text-slate-600 leading-relaxed block">
+              Ya existe {pendingArchive.plantillas.length} plantilla(s) vigente(s) de tipo{' '}
+              <strong>{pendingArchive.plantillas[0]?.tipoMonitoreo}</strong> para el año{' '}
+              <strong>{pendingArchive.plantillas[0]?.anioAcademico}</strong>. Si continúa, la(s) plantilla(s)
+              vigente(s) pasará(n) a estado <strong>Histórico</strong> y la nueva plantilla quedará como
+              Vigente. ¿Desea continuar?
+            </span>
+          }
+          confirmLabel="Sí, archivar y crear"
+          cancelLabel="Cancelar"
+          onConfirm={() => {
+            if (pendingArchive) {
+              setIsSaving(true);
+              executeCreate(pendingArchive.data, pendingArchive.backendTipo, pendingArchive.plantillas);
+            }
+          }}
+          onCancel={() => setPendingArchive(null)}
+        />
+      )}
     </div>
   );
 };

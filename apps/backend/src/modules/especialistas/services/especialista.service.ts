@@ -1,10 +1,11 @@
 import {
+  Inject,
   Injectable,
-  ConflictException,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { EspecialistaRepository } from '../repositories/especialista.repository.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
@@ -13,6 +14,7 @@ import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 import { CargoEspecialista } from '@sistema-monitoreo/shared-contracts';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
+import { SessionRepository } from '../../auth/repositories/session.repository.js';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { CondicionLaboral } from '../../../common/enums/condicion-laboral.enum.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
@@ -23,6 +25,8 @@ export class EspecialistaService {
   constructor(
     private readonly repository: EspecialistaRepository,
     private readonly catalogsRepository: CatalogsRepository,
+    private readonly sessionRepository: SessionRepository,
+    private readonly configService: ConfigService,
   ) {}
 
   async findAll(filters?: QueryEspecialistaDto): Promise<IEspecialistaResponse[]> {
@@ -39,10 +43,7 @@ export class EspecialistaService {
   ): Promise<IEspecialistaResponse> {
     // ── Regla 1: Solo Director UGEL o Jefe de Área pueden crear Jefes de Gestión
     if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
-      if (
-        (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_UGEL &&
-        (currentUser.role as RoleCode) !== RoleCode.JEFE_AREA
-      ) {
+      if (currentUser.role !== RoleCode.DIRECTOR_UGEL && currentUser.role !== RoleCode.JEFE_AREA) {
         throw new ForbiddenException(
           'No tiene privilegios suficientes para crear un perfil de Jefe de Gestión.',
         );
@@ -71,23 +72,30 @@ export class EspecialistaService {
     }
 
     // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria
-    //   (esta lógica ya está cubierta por el validator IsValidEspecialidadForNivel
-    //    en el DTO, pero como doble-guarda la aplicamos aquí también)
-    if (
-      (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA &&
-      dto.nivelEducativo === 'Secundaria' &&
-      (!dto.especialidad || dto.especialidad.trim() === '')
-    ) {
-      throw new BadRequestException(
-        'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
-      );
+    const isEsp = (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA;
+    if (isEsp && dto.nivelEducativo === 'Secundaria') {
+      const mainSp = dto.especialidad?.trim();
+      const hasLegacySp = dto.especialidades && dto.especialidades.length > 0;
+      if (!mainSp && !hasLegacySp) {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
+        );
+      }
     }
 
-    const existingPersona = await this.catalogsRepository.findPersonaByDni(dto.dni);
-    if (existingPersona) {
-      throw new ConflictException(
-        `La persona con DNI ${dto.dni} ya está registrada en el sistema.`,
-      );
+    // ── Regla 5: Especialista → especialidad en Primaria (PIP o Educación Física si se define)
+    if (isEsp && dto.nivelEducativo === 'Primaria') {
+      const mainSp = dto.especialidad?.trim();
+      const legacySp =
+        dto.especialidades && dto.especialidades.length > 0
+          ? dto.especialidades[0]?.trim()
+          : undefined;
+      const sp = mainSp || legacySp;
+      if (sp && sp !== 'PIP' && sp !== 'Educación Física' && sp !== 'Educacion Fisica') {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Primaria, la especialidad debe ser PIP o Educación Física si se define.',
+        );
+      }
     }
 
     const role = await this.catalogsRepository.findRoleByCode(dto.rolCode);
@@ -105,7 +113,7 @@ export class EspecialistaService {
       dto.cargaLaboral = 40;
     }
 
-    const saltRounds = 12;
+    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') ?? 12;
     const passwordHash = await bcrypt.hash(dto.dni, saltRounds);
     return this.repository.create(dto, passwordHash, role.id);
   }
@@ -117,10 +125,7 @@ export class EspecialistaService {
   ): Promise<IEspecialistaResponse> {
     // ── Regla 1: Solo Director UGEL o Jefe de Área pueden modificar Jefes de Gestión
     if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
-      if (
-        (currentUser.role as RoleCode) !== RoleCode.DIRECTOR_UGEL &&
-        (currentUser.role as RoleCode) !== RoleCode.JEFE_AREA
-      ) {
+      if (currentUser.role !== RoleCode.DIRECTOR_UGEL && currentUser.role !== RoleCode.JEFE_AREA) {
         throw new ForbiddenException(
           'No tiene privilegios suficientes para actualizar un perfil de Jefe de Gestión.',
         );
@@ -149,14 +154,30 @@ export class EspecialistaService {
     }
 
     // ── Regla 4: Especialista → la especialidad es obligatoria en Secundaria
-    if (
-      (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA &&
-      dto.nivelEducativo === 'Secundaria' &&
-      (!dto.especialidad || dto.especialidad.trim() === '')
-    ) {
-      throw new BadRequestException(
-        'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
-      );
+    const isEspUpdate = (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA;
+    if (isEspUpdate && dto.nivelEducativo === 'Secundaria') {
+      const mainSp = dto.especialidad?.trim();
+      const hasLegacySp = dto.especialidades && dto.especialidades.length > 0;
+      if (!mainSp && !hasLegacySp) {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
+        );
+      }
+    }
+
+    // ── Regla 5: Especialista → especialidad en Primaria (PIP o Educación Física si se define)
+    if (isEspUpdate && dto.nivelEducativo === 'Primaria') {
+      const mainSp = dto.especialidad?.trim();
+      const legacySp =
+        dto.especialidades && dto.especialidades.length > 0
+          ? dto.especialidades[0]?.trim()
+          : undefined;
+      const sp = mainSp || legacySp;
+      if (sp && sp !== 'PIP' && sp !== 'Educación Física' && sp !== 'Educacion Fisica') {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Primaria, la especialidad debe ser PIP o Educación Física si se define.',
+        );
+      }
     }
 
     // Para Jefe de Gestión normalizar condicion
@@ -185,11 +206,19 @@ export class EspecialistaService {
   }
 
   async activate(id: string): Promise<IEspecialistaResponse> {
-    return this.repository.activate(id);
+    const result = await this.repository.activate(id);
+    // No invalidamos sesión: activate es idempotente y no cambia rol/cargo.
+    return result;
   }
 
   async deactivate(id: string): Promise<IEspecialistaResponse> {
-    return this.repository.deactivate(id);
+    const result = await this.repository.deactivate(id);
+    // No invalidamos sesión: deactivate solo quita el cargo del Especialista
+    // (lo baja de Jefe de Área a Especialista regular). El Usuario sigue
+    // activo y puede continuar usando el sistema. Si se le bajó el rol
+    // de 'jefe_area' a 'especialista', las nuevas capabilities aplicarán
+    // en el próximo login (o en el próximo refresh del token).
+    return result;
   }
 }
 

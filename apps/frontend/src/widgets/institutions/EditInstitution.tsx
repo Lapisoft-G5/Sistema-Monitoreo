@@ -12,6 +12,7 @@ import {
 } from '@features/institutions/institution-service';
 import { institutionsApi } from '@shared/api/institutions.api';
 import { Card } from '@shared/ui/card';
+import { Spinner } from '@shared/ui/Spinner';
 
 export const EditInstitutionCard = () => {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ export const EditInstitutionCard = () => {
   if (fetching) {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">
           Cargando datos de la institución...
         </span>

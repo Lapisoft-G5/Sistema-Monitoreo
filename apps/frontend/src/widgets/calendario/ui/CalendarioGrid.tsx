@@ -43,6 +43,7 @@ interface CalendarioGridProps {
   filterEstado: string;
   setFilterEstado: (s: string) => void;
   listaEspecialistas: string[];
+  modalidadesDisponibles: string[];
   nivelesDisponibles: string[];
   isAnyFilterActive: boolean;
   handleClearFilters: () => void;
@@ -55,7 +56,6 @@ const MONTH_NAMES = [
 
 const WEEK_DAYS = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
 
-const MODALIDADES = ['EBR', 'EBA', 'EBE', 'CEPTRO'];
 
 const formatVisitTime = (fechaHoraStr: string) => {
   try {
@@ -190,13 +190,17 @@ export const CalendarioGrid = ({
   filterEstado,
   setFilterEstado,
   listaEspecialistas,
+  modalidadesDisponibles,
   nivelesDisponibles,
   isAnyFilterActive,
   handleClearFilters,
 }: CalendarioGridProps) => {
   const { user } = useUser();
-  const isEspecialista = user?.role === 'especialista';
-  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+  const isEspecialista =
+    user?.role === 'especialista' ||
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
+  const isDirector = user?.role === 'director_institucion';
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -238,6 +242,17 @@ export const CalendarioGrid = ({
       newDate.setDate(currentDate.getDate() - 7);
     } else if (activeView === 'DIARIO') {
       newDate.setDate(currentDate.getDate() - 1);
+      const y = newDate.getFullYear();
+      const m = String(newDate.getMonth() + 1).padStart(2, '0');
+      const d = String(newDate.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+      setSelectedDateStr(dateStr);
+      const dayVisits = filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === dateStr);
+      if (dayVisits.length > 0) {
+        setSelectedVisitId(dayVisits[0].id);
+      } else {
+        setSelectedVisitId(null);
+      }
     }
     setCurrentDate(newDate);
   };
@@ -250,14 +265,36 @@ export const CalendarioGrid = ({
       newDate.setDate(currentDate.getDate() + 7);
     } else if (activeView === 'DIARIO') {
       newDate.setDate(currentDate.getDate() + 1);
+      const y = newDate.getFullYear();
+      const m = String(newDate.getMonth() + 1).padStart(2, '0');
+      const d = String(newDate.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+      setSelectedDateStr(dateStr);
+      const dayVisits = filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === dateStr);
+      if (dayVisits.length > 0) {
+        setSelectedVisitId(dayVisits[0].id);
+      } else {
+        setSelectedVisitId(null);
+      }
     }
     setCurrentDate(newDate);
   };
 
   const handleToday = () => {
-    setCurrentDate(new Date(2023, 9, 12, 12, 0, 0));
-    setSelectedDateStr('2023-10-12');
-    setSelectedVisitId('13');
+    const today = new Date();
+    setCurrentDate(today);
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+    setSelectedDateStr(todayStr);
+
+    const dayVisits = filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === todayStr);
+    if (dayVisits.length > 0) {
+      setSelectedVisitId(dayVisits[0].id);
+    } else {
+      setSelectedVisitId(null);
+    }
   };
 
   const handleSelectDayCell = (dateStr: string) => {
@@ -455,7 +492,7 @@ export const CalendarioGrid = ({
                 placeholder="Seleccione modalidad"
                 options={[
                   { value: 'Todos', label: 'Todas las modalidades' },
-                  ...MODALIDADES.map((m) => ({ value: m, label: m })),
+                  ...modalidadesDisponibles.map((m) => ({ value: m, label: m })),
                 ]}
               />
 
@@ -463,7 +500,6 @@ export const CalendarioGrid = ({
                 label="Nivel Educativo"
                 value={filterNivel}
                 onChange={(val) => setFilterNivel(val)}
-                disabled={filterModalidad === 'Todos'}
                 placeholder="Seleccione nivel"
                 options={[
                   { value: 'Todos', label: 'Todos los niveles' },
@@ -517,7 +553,7 @@ export const CalendarioGrid = ({
             onClick={handleToday}
             className="text-xs font-semibold hover:bg-slate-50 border-slate-200 text-slate-700 shadow-sm cursor-pointer"
           >
-            Hoy (Demo)
+            Hoy
           </Button>
           <div className="flex items-center border border-border rounded-lg bg-surface shadow-sm overflow-hidden">
             <button

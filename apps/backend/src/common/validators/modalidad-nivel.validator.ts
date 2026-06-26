@@ -1,5 +1,5 @@
 import { registerDecorator, ValidationOptions, ValidationArguments } from 'class-validator';
-import { ModalidadEducativa, MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
+import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 
 export function IsValidNivelForModalidad(property: string, validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {

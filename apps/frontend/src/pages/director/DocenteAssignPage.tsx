@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, Search, AlertCircle, Shield, Info } from 'lucide-react';
-import { teachersApi } from '@shared/api/teachers.api';
-import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import { CARGA_HORARIA } from '@shared/config/constants';
+import { fetchDocentes, fetchCargos, updateDocenteRaw } from '@features/docentes/docente-service';
 import type { Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
@@ -31,21 +31,15 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
       setLoadingDocentes(true);
       setFetchError(null);
       try {
-        const [teachersRes, cargosRes] = await Promise.all([
-          teachersApi.findAll(),
-          teachersApi.getCargos(),
+        const [docentesMapped, cargosRes] = await Promise.all([
+          fetchDocentes(),
+          fetchCargos(),
         ]);
 
-        if (teachersRes.ok && teachersRes.data) {
-          const mapped = teachersRes.data.map(mapApiDocenteToFrontend);
-          // Filtrar solo los docentes activos con cargo "Docente de Aula" de esta I.E.
-          const filtered = mapped.filter(
-            (d) => d.activo && d.cargo === 'Docente de Aula'
-          );
-          setDocentes(filtered);
-        } else {
-          setFetchError('No se pudo cargar la lista de docentes disponibles.');
-        }
+        const filtered = docentesMapped.filter(
+          (d) => d.activo && d.cargo === 'Docente de Aula'
+        );
+        setDocentes(filtered);
 
         if (cargosRes.ok && cargosRes.data) {
           setCargos(cargosRes.data);
@@ -75,15 +69,15 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
       // Forzar Nombrado o Destacado si tiene otro tipo (por restricciones del backend)
       const currentCond = selectedDocente.condicion as string;
       if (currentCond === 'Nombrado' || currentCond === 'Destacado') {
-        setCondicionLaboral(currentCond);
+        setTimeout(() => setCondicionLaboral(currentCond), 0);
       } else {
-        setCondicionLaboral('Nombrado');
+        setTimeout(() => setCondicionLaboral('Nombrado'), 0);
       }
 
       if (targetCargo === 'Coordinador Pedagógico') {
-        setCargaLaboral(40);
+        setTimeout(() => setCargaLaboral(40), 0);
       } else {
-        setCargaLaboral(selectedDocente.cargaHoraria || 30);
+        setTimeout(() => setCargaLaboral(selectedDocente.cargaHoraria || CARGA_HORARIA.DOCENTE), 0);
       }
     }
   }, [selectedDocente, targetCargo]);
@@ -123,7 +117,7 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
         })) || [],
       };
 
-      const res = await teachersApi.update(selectedDocente.id, dto);
+      const res = await updateDocenteRaw(selectedDocente.id, dto);
       if (res.ok) {
         navigate(redirectPath);
       } else {
@@ -131,7 +125,8 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
           (res.error as { message?: string })?.message || `Error al asignar el cargo de ${targetCargo}.`;
         setError(errMsg);
       }
-    } catch (err: any) {
+    } catch (e) {
+      const err = e as Error;
       setError(err.message || 'Error al procesar la asignación.');
       console.error('Error making assignment:', err);
     } finally {

@@ -25,7 +25,7 @@ export const PlantillaCabecera = ({
   onChange,
 }: Props) => {
   const { user } = useUser();
-  const isDirector = user?.role === 'director_ie' || user?.role === 'director_institucion';
+  const isDirector = user?.role === 'director_institucion';
   const setNivel = (i: number, p: Partial<NivelCalificacion>) =>
     onChange({ niveles: niveles.map((n, idx) => (idx === i ? { ...n, ...p } : n)) });
 
@@ -80,8 +80,8 @@ export const PlantillaCabecera = ({
         </div>
 
         {/* Tabla de niveles de logro */}
-        <div className="border border-border rounded-xl overflow-hidden h-fit">
-          <div className="grid grid-cols-[44px_1fr_72px_52px] gap-2 bg-muted/40 px-3 py-2 text-[0.6rem] font-bold uppercase tracking-wider text-text-muted">
+        <div className="border border-border rounded-xl h-fit">
+          <div className="grid grid-cols-[44px_minmax(160px,1fr)_80px_60px] gap-2 bg-muted/40 px-3 py-2 text-[0.6rem] font-bold uppercase tracking-wider text-text-muted">
             <span>Nivel</span>
             <span>Denominación</span>
             <span>Rango Mín.</span>
@@ -90,13 +90,14 @@ export const PlantillaCabecera = ({
           {niveles.map((n, i) => (
             <div
               key={n.nivel}
-              className="grid grid-cols-[44px_1fr_72px_52px] gap-2 items-center px-3 py-1.5 border-t border-border"
+              className="grid grid-cols-[44px_minmax(160px,1fr)_80px_60px] gap-2 items-start px-3 py-2 border-t border-border"
             >
-              <span className="font-bold text-sm text-text">{n.nivel}</span>
-              <input
+              <span className="font-bold text-sm text-text pt-1">{n.nivel}</span>
+              <textarea
                 value={n.denominacion}
                 onChange={(e) => setNivel(i, { denominacion: e.target.value })}
-                className="text-xs border border-input rounded-md px-2 py-1 bg-transparent w-full"
+                rows={1}
+                className="text-xs border border-input rounded-md px-2 py-1 bg-transparent w-full resize-none overflow-hidden"
               />
               <input
                 value={String(n.rangoMin)}
@@ -107,7 +108,7 @@ export const PlantillaCabecera = ({
                 type="color"
                 value={n.color}
                 onChange={(e) => setNivel(i, { color: e.target.value })}
-                className="w-7 h-7 rounded cursor-pointer border border-border"
+                className="w-7 h-7 rounded cursor-pointer border border-border mt-1"
               />
             </div>
           ))}

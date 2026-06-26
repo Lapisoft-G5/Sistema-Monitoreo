@@ -2,17 +2,18 @@ import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
+import { Spinner } from '@shared/ui/Spinner';
 import { EditarPlantillaForm } from '@widgets/plantillas';
 import type { PlantillaFormState } from '@widgets/plantillas';
-import { usePlantillas } from '@entities/model-plantillas'; 
+import { usePlantilla, useActualizarPlantilla } from '@entities/model-plantillas/use-plantillas-api';
+import { NIVELES_ROMANOS } from '@entities/model-plantillas';
 
 export const PlantillaEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { plantillas, updatePlantilla } = usePlantillas();
-  const [isSaving, setIsSaving] = useState(false);
-  
-  const plantilla = useMemo(() => plantillas.find((p) => p.id === id), [plantillas, id]);
+  const { data: plantilla, isLoading, isError, error } = usePlantilla(id);
+  const actualizar = useActualizarPlantilla();
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const initialData = useMemo<PlantillaFormState | null>(() => {
     if (!plantilla) return null;
@@ -21,35 +22,85 @@ export const PlantillaEditPage = () => {
       anioAcademico: plantilla.anioAcademico,
       baremo: plantilla.baremo,
       niveles: plantilla.niveles,
-      desempenos: plantilla.desempenos,
+      desempenos: plantilla.desempenos.map((d) => ({
+        ...d,
+        preguntaExtra: d.preguntaExtra ?? '',
+        rubrica:
+          d.rubrica && d.rubrica.length > 0
+            ? d.rubrica
+            : NIVELES_ROMANOS.map((nivel) => ({ nivel, descripcion: '' })),
+      })),
+      ejeItems: (plantilla.ejesItems || []).map((item) => ({
+        id: item.id,
+        numero: item.numero,
+        descripcion: item.descripcion,
+      })),
     };
   }, [plantilla]);
 
-  const error = !plantilla && id ? 'No se encontró la plantilla de monitoreo solicitada.' : null;
-
-  const handleSubmit = (data: PlantillaFormState) => {
+  const handleSubmit = async (data: PlantillaFormState) => {
     if (!id) return;
-    setIsSaving(true);
-    
-    // Actualizar la plantilla en el contexto
-    updatePlantilla(id, {
-      tipoMonitoreo: data.tipoMonitoreo,
-      anioAcademico: Number(data.anioAcademico),
-      baremo: data.baremo,
-      niveles: data.niveles,
-      desempenos: data.desempenos,
-    });
-    
-    setIsSaving(false);
-    navigate(-1);
+    setSubmitError(null);
+    try {
+      await actualizar.mutateAsync({
+        id,
+        data: {
+          baremo: data.baremo,
+          descripcion: `Plantilla modificada el ${new Date().toLocaleDateString('es-ES')}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
+          niveles: data.niveles.map((n, i) => ({
+            nivelRomano: n.nivel,
+            denominacion: n.denominacion,
+            rangoMin: n.rangoMin,
+            color: n.color,
+            orden: i + 1,
+          })),
+          desempenos: data.desempenos
+            .map((d, i) => ({
+              id: d.id,
+              nombre: d.nombre,
+              descripcionCorta: d.descripcionCorta,
+              preguntaExtra: d.preguntaExtra || undefined,
+              orden: i + 1,
+              aspectos: d.aspectos
+                .filter((a) => a.descripcion.trim() !== '')
+                .map((a, ai) => ({
+                  id: a.id,
+                  descripcion: a.descripcion,
+                  orden: ai + 1,
+                })),
+              rubrica: (d.rubrica ?? []).map((r) => ({
+                nivelRomano: r.nivel,
+                descripcion: r.descripcion,
+              })),
+            })),
+          ejeItems: (data.ejeItems ?? []).map((item) => ({
+            numero: item.numero,
+            descripcion: item.descripcion,
+          })),
+        },
+      });
+      navigate(-1);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      setSubmitError(msg);
+    }
   };
 
-  if (error) {
-    return <div className="p-6 text-destructive font-semibold">{error}</div>;
+  if (isError) {
+    return (
+      <div className="p-6 text-destructive font-semibold">
+        Error al cargar la plantilla: {error instanceof Error ? error.message : 'Error desconocido'}
+      </div>
+    );
   }
 
-  if (!initialData) {
-    return <div className="p-6 text-text-muted text-sm">Cargando datos de la rúbrica...</div>;
+  if (isLoading || !initialData) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-3">
+        <Spinner />
+        <span className="text-sm text-text-muted">Cargando datos de la rúbrica...</span>
+      </div>
+    );
   }
 
   return (
@@ -69,11 +120,17 @@ export const PlantillaEditPage = () => {
         </div>
       </div>
 
-      <EditarPlantillaForm 
-        initialData={initialData} 
-        onCancel={() => navigate(-1)} 
+      {submitError && (
+        <div className="border border-rose-200 bg-rose-50 text-rose-700 text-sm rounded-xl p-3 font-semibold">
+          {submitError}
+        </div>
+      )}
+
+      <EditarPlantillaForm
+        initialData={initialData}
+        onCancel={() => navigate(-1)}
         onSubmit={handleSubmit}
-        isLoading={isSaving}
+        isLoading={actualizar.isPending}
       />
     </div>
   );

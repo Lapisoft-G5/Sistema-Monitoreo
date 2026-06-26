@@ -1,14 +1,15 @@
 import { useState, useMemo, useEffect } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
+import { PAGINATION } from '@shared/config/constants';
 import { PageHeader } from '@shared/ui/pageHeader';
+import { Spinner } from '@shared/ui/Spinner';
 
 import { FilterInstitutions } from '@features/institutions/ui/filter-institution';
 import { InstitutionsStatsWidget } from '@/widgets/institutions/institutions-stats';
 import { InstitutionsTableWidget } from '@/widgets/institutions/institutions-table/ui/institution-table';
 import { useNavigate } from 'react-router-dom';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import { fetchInstituciones } from '@features/institutions/institution-service';
 import type { Institucion } from '@entities/model-instituciones';
 
 export const InstitucionesPage = () => {
@@ -16,20 +17,15 @@ export const InstitucionesPage = () => {
   const [instituciones, setInstituciones] = useState<Institucion[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchInstituciones = async () => {
+  const loadInstituciones = async () => {
     setLoading(true);
-    const res = await institutionsApi.findAll({ limit: 1000 });
-    if (res.ok && res.data) {
-      const mapped = res.data.data.map(mapApiInstitucionToFrontend);
-      setInstituciones(mapped);
-    } else {
-      console.error('Error loading institutions from API:', res.error);
-    }
+    const mapped = await fetchInstituciones({ limit: PAGINATION.MAX_LIMIT });
+    setInstituciones(mapped);
     setLoading(false);
   };
 
   useEffect(() => {
-    Promise.resolve().then(() => fetchInstituciones());
+    Promise.resolve().then(() => loadInstituciones());
   }, []);
 
   const distritosOptions = useMemo(
@@ -40,7 +36,7 @@ export const InstitucionesPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando instituciones...</span>
       </div>
     );

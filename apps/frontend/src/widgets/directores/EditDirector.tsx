@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { Card } from '@shared/ui/card';
+import { Spinner } from '@shared/ui/Spinner';
 import { DirectorFormBase } from '@features/directores';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import type { Docente } from '@entities/model-docentes';
+import { PAGINATION, CARGA_HORARIA } from '@shared/config/constants';
 import { useDocenteService, mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 import { teachersApi } from '@shared/api/teachers.api';
 import { institutionsApi } from '@shared/api/institutions.api';
@@ -29,7 +31,7 @@ export const EditDirectorCard = () => {
       try {
         const [teachersRes, instsRes] = await Promise.all([
           teachersApi.findAll(),
-          institutionsApi.findAll({ limit: 1000 }),
+          institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT }),
         ]);
 
         if (teachersRes.ok && teachersRes.data) {
@@ -55,7 +57,7 @@ export const EditDirectorCard = () => {
   if (fetching) {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando datos del director...</span>
       </div>
     );
@@ -98,7 +100,7 @@ export const EditDirectorCard = () => {
       nivelEducativo: data.nivelEducativo as DocenteFormData['nivelEducativo'],
       condicion: data.condicion as DocenteFormData['condicion'],
       especialidad: data.especialidad,
-      cargaHoraria: 40,
+      cargaHoraria: CARGA_HORARIA.JEFE_AREA,
       secciones: [],
       escala: data.escala,
       institucionId: data.institucionId,

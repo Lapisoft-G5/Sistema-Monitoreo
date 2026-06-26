@@ -26,6 +26,7 @@ export const plantillaSchema = z.object({
         id: z.string(),
         nombre: z.string().min(3, 'El nombre del desempeño es requerido'),
         descripcionCorta: z.string(),
+        preguntaExtra: z.preprocess((v) => v ?? '', z.string()),
         aspectos: z.array(
           z.object({ id: z.string(), descripcion: z.string().min(1, 'Describe el aspecto') }),
         ),

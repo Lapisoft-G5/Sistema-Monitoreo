@@ -1,3 +1,6 @@
+/** User roles matching the Prisma UserRole enum. */
+export type UserRole = 'ADMIN' | 'SPECIALIST' | 'DIRECTOR' | 'TEACHER';
+
 export const ModalidadEducativa = {
   EBR: 'EBR',
   EBA: 'EBA',

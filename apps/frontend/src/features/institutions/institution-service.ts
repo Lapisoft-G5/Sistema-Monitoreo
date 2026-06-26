@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import type { Institucion } from '@entities/model-instituciones';
-import { MOCK_INSTITUCIONES } from '@entities/model-instituciones';
 import type { InstitutionRawInput } from './ui/CreateInstitutionFormBase';
 import { institutionsApi } from '@shared/api/institutions.api';
-import type { IInstitucionResponse } from '@sistema-monitoreo/shared-contracts';
+import type { IInstitucionResponse, IQueryInstitucionRequest } from '@sistema-monitoreo/shared-contracts';
 
 export const mapApiInstitucionToFrontend = (apiInst: IInstitucionResponse): Institucion => {
   return {
@@ -24,6 +23,22 @@ export const mapApiInstitucionToFrontend = (apiInst: IInstitucionResponse): Inst
     activo: apiInst.estado === 'Activa',
     estado: apiInst.estado === 'Activa' ? 'Activa' : 'Inactiva',
   };
+};
+
+export const fetchInstituciones = async (query?: IQueryInstitucionRequest): Promise<Institucion[]> => {
+  const res = await institutionsApi.findAll(query);
+  if (res.ok && res.data) {
+    return res.data.data.map(mapApiInstitucionToFrontend);
+  }
+  return [];
+};
+
+export const fetchInstitucionById = async (id: string): Promise<Institucion | null> => {
+  const res = await institutionsApi.findById(id);
+  if (res.ok && res.data) {
+    return mapApiInstitucionToFrontend(res.data);
+  }
+  return null;
 };
 
 export const useInstitutionService = () => {
@@ -52,7 +67,6 @@ export const useInstitutionService = () => {
       const res = await institutionsApi.create(dto);
       if (res.ok && res.data) {
         const mapped = mapApiInstitucionToFrontend(res.data);
-        MOCK_INSTITUCIONES.push(mapped);
         return { success: true, data: mapped };
       } else {
         const errMsg =
@@ -87,10 +101,6 @@ export const useInstitutionService = () => {
       const res = await institutionsApi.update(id, dto);
       if (res.ok && res.data) {
         const mapped = mapApiInstitucionToFrontend(res.data);
-        const index = MOCK_INSTITUCIONES.findIndex((i) => i.id === id);
-        if (index !== -1) {
-          MOCK_INSTITUCIONES[index] = mapped;
-        }
         return { success: true, data: mapped };
       } else {
         const errMsg =

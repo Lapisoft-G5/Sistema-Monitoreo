@@ -22,14 +22,14 @@ describe('TeachersService', () => {
   let updateDocenteWithTransactionMock: jest.Mock<any>;
 
   beforeEach(async () => {
-    findInstitucionByIdMock = jest.fn();
-    findCargoByIdMock = jest.fn();
-    findDocenteByIdMock = jest.fn();
-    findDocentesMock = jest.fn();
-    findPersonaByEmailNotIdMock = jest.fn();
-    updateDocenteEstadoMock = jest.fn();
-    createDocenteWithTransactionMock = jest.fn();
-    updateDocenteWithTransactionMock = jest.fn();
+    findInstitucionByIdMock = jest.fn<any>();
+    findCargoByIdMock = jest.fn<any>();
+    findDocenteByIdMock = jest.fn<any>();
+    findDocentesMock = jest.fn<any>();
+    findPersonaByEmailNotIdMock = jest.fn<any>();
+    updateDocenteEstadoMock = jest.fn<any>();
+    createDocenteWithTransactionMock = jest.fn<any>();
+    updateDocenteWithTransactionMock = jest.fn<any>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -179,7 +179,7 @@ describe('TeachersService', () => {
       ).rejects.toThrow(new ForbiddenException('No tiene permisos para realizar esta acción.'));
     });
 
-    it('should throw ForbiddenException if director_ie has no assigned school', async () => {
+    it('should throw ForbiddenException if director_institucion has no assigned school', async () => {
       await expect(
         service.getDocentes({ sub: 'x', role: directorIeRole, permissions: ['docentes:read'] }),
       ).rejects.toThrow(

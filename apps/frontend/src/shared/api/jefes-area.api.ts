@@ -1,3 +1,4 @@
+import { CARGA_HORARIA } from '@shared/config/constants';
 import { especialistasApi } from './especialistas.api.js';
 import type {
   IEspecialistaResponse,
@@ -36,7 +37,7 @@ export const jefesAreaApi = {
       nivelEducativo: (dto.nivelEducativo as string) || 'Secundaria',
       rolCode: (dto.rolCode as string) || 'jefe_area',
       condicionLaboral: (dto.condicionLaboral as string) || 'Designado',
-      cargaLaboral: dto.cargaHoraria !== undefined ? Number(dto.cargaHoraria) : 40,
+      cargaLaboral: dto.cargaHoraria !== undefined ? Number(dto.cargaHoraria) : CARGA_HORARIA.JEFE_AREA,
     };
     return especialistasApi.create(specialistDto);
   },
@@ -56,7 +57,7 @@ export const jefesAreaApi = {
       estado: (dto.estado as string) || 'Activo',
       rolCode: (dto.rolCode as string) || 'jefe_area',
       condicionLaboral: (dto.condicionLaboral as string) || 'Designado',
-      cargaLaboral: dto.cargaHoraria !== undefined ? Number(dto.cargaHoraria) : 40,
+      cargaLaboral: dto.cargaHoraria !== undefined ? Number(dto.cargaHoraria) : CARGA_HORARIA.JEFE_AREA,
     };
     return especialistasApi.update(id, specialistDto);
   },

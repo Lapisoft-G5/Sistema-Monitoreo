@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { PAGINATION } from '@shared/config/constants';
 import { PageHeader } from '@shared/ui/pageHeader';
+import { Spinner } from '@shared/ui/Spinner';
 import { EditDocenteCard } from '@widgets/docentes';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import { fetchInstituciones } from '@features/institutions/institution-service';
 import type { Institucion } from '@entities/model-instituciones';
 
 export const DocenteEditPage = () => {
@@ -15,10 +16,8 @@ export const DocenteEditPage = () => {
   useEffect(() => {
     const fetchIes = async () => {
       setLoading(true);
-      const res = await institutionsApi.findAll({ limit: 1000 });
-      if (res.ok && res.data) {
-        setInstituciones(res.data.data.map(mapApiInstitucionToFrontend));
-      }
+      const mapped = await fetchInstituciones({ limit: PAGINATION.MAX_LIMIT });
+      setInstituciones(mapped);
       setLoading(false);
     };
     fetchIes();
@@ -27,7 +26,7 @@ export const DocenteEditPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando formulario...</span>
       </div>
     );

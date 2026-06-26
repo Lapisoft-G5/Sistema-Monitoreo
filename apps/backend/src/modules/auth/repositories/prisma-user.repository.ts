@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { UserRepository } from './user.repository.js';
@@ -7,54 +8,56 @@ import { Usuario } from '../entities/user.entity.js';
 export class PrismaUserRepository implements UserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findUserByDni(dni: string): Promise<Usuario | null> {
-    return this.prisma.usuario.findFirst({
-      where: { persona: { dni } },
-      include: {
-        rol: {
-          include: {
-            rolPermisos: {
-              include: {
-                permiso: true,
+  private buildInclude() {
+    return {
+      rol: {
+        include: {
+          rolPermisos: {
+            include: { permiso: true },
+          },
+        },
+      },
+      persona: {
+        include: {
+          docente: {
+            include: {
+              institucion: { include: { nivelEducativoRel: true } },
+              docenteCargos: {
+                where: { fechaFin: null },
+                include: { cargo: true },
+              },
+              docenteEspecialidades: { include: { especialidad: true } },
+            },
+          },
+          especialista: {
+            include: {
+              especialidades: { include: { especialidad: true } },
+              cargos: {
+                where: { fechaFin: null, esPrincipal: true },
+                orderBy: { fechaInicio: 'desc' },
+                take: 1,
               },
             },
           },
         },
-        persona: {
-          include: {
-            docente: {
-              include: { institucion: true, docenteCargos: { include: { cargo: true } } },
-            },
-            especialista: true,
-          },
-        },
       },
+    } as any;
+  }
+
+  async findUserByDni(dni: string): Promise<Usuario | null> {
+    const result = await this.prisma.usuario.findFirst({
+      where: { persona: { dni } },
+      include: this.buildInclude(),
     });
+    return result;
   }
 
   async findUserById(id: string): Promise<Usuario | null> {
-    return this.prisma.usuario.findUnique({
+    const result = await this.prisma.usuario.findUnique({
       where: { id },
-      include: {
-        rol: {
-          include: {
-            rolPermisos: {
-              include: {
-                permiso: true,
-              },
-            },
-          },
-        },
-        persona: {
-          include: {
-            docente: {
-              include: { institucion: true, docenteCargos: { include: { cargo: true } } },
-            },
-            especialista: true,
-          },
-        },
-      },
+      include: this.buildInclude(),
     });
+    return result;
   }
 
   async findUserByDniAndEmail(dni: string, email: string): Promise<Usuario | null> {

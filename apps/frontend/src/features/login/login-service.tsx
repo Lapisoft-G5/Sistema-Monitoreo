@@ -115,8 +115,10 @@ export const useLoginService = () => {
       institucion: data.user.institucion,
       institucionNombre: data.user.institucionNombre,
       institucionNivel: data.user.institucionNivel,
+      especialistaId: data.user.especialistaId,
       especialistaNivel: data.user.especialistaNivel,
       especialistaModalidad: data.user.especialistaModalidad,
+      especialistaEspecialidades: data.user.especialistaEspecialidades,
       distrito: data.user.distrito,
     });
 

@@ -20,6 +20,7 @@ const INITIAL: DirectorFormData = {
   institucionId: '',
   nivelEducativo: 'PRIMARIA',
   especialidad: '',
+  cargaHoraria: 40,
 };
 
 interface Props {
@@ -255,6 +256,16 @@ export const DirectorFormBase = ({
             options={ESCALAS_MAGISTERIALES}
             placeholder="Seleccione Escala"
             error={showError('escala')}
+          />
+        </div>
+        <div className="mt-[18px] max-w-xs">
+          <TextField
+            label="Carga Laboral (Horas)"
+            required
+            value={form.cargaHoraria?.toString() || ''}
+            onChange={(v) => set('cargaHoraria', v ? Number(v.replace(/\D/g, '')) : 40)}
+            placeholder="40"
+            error={showError('cargaHoraria')}
           />
         </div>
       </SectionCard>

@@ -70,7 +70,7 @@ export async function syncEspecialista(
   estado?: string,
 ): Promise<void> {
   const isMonitor = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(cargoNombre);
-  const escalaStr = escalaMagisterial != null ? String(escalaMagisterial) : null;
+  const escalaNum = escalaMagisterial != null ? Number(escalaMagisterial) : null;
   if (isMonitor) {
     await tx.especialista.upsert({
       where: { personaId },
@@ -81,7 +81,7 @@ export async function syncEspecialista(
         cargaLaboral: cargaLaboral ?? (cargoNombre === 'Coordinador Pedagógico' ? 40 : 30),
         estado: estado ?? EstadoRegistro.ACTIVO,
         modalidad: modalidad ?? 'EBR',
-        escalaMagisterial: escalaStr,
+        escalaMagisterial: escalaNum,
       },
       create: {
         personaId,
@@ -91,7 +91,7 @@ export async function syncEspecialista(
         cargaLaboral: cargaLaboral ?? (cargoNombre === 'Coordinador Pedagógico' ? 40 : 30),
         estado: estado ?? EstadoRegistro.ACTIVO,
         modalidad: modalidad ?? 'EBR',
-        escalaMagisterial: escalaStr,
+        escalaMagisterial: escalaNum,
       },
     });
   } else {

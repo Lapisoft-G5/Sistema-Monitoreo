@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { VALIDATION } from '@shared/config/constants';
 import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
 import { checkRoleConflict, type RolObjetivo } from '@shared/constants/roleValidation';
@@ -67,15 +67,19 @@ export function usePersonForm({
 
   const roleCheck = checkRoleConflict(persona, rolObjetivo, cargoObjetivo);
   const dniBloqueadoPorRol = roleCheck.bloquea;
+  const hadPersonaRef = useRef(false);
 
   useEffect(() => {
     if (persona) {
+      hadPersonaRef.current = true;
       const t = setTimeout(() => {
         setPersonaFields(persona);
       }, 0);
       return () => clearTimeout(t);
     }
-    if (!searchingDni && dni.length === VALIDATION.DNI_LENGTH && !persona) {
+    const shouldClear = !searchingDni && dni.length === VALIDATION.DNI_LENGTH && !persona && hadPersonaRef.current;
+    if (shouldClear) {
+      hadPersonaRef.current = false;
       const t = setTimeout(() => {
         clearPersonaFields();
       }, 0);

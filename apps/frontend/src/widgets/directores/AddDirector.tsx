@@ -26,7 +26,7 @@ export const CreateDirectorCard = () => {
       setFetching(true);
       try {
         const [instsRes, teachersRes] = await Promise.all([
-          institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT }),
+          institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT, estado: 'Activa' }),
           teachersApi.findAll(),
         ]);
         if (instsRes.ok && instsRes.data) {

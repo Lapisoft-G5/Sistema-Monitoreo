@@ -31,7 +31,7 @@ export const EditDirectorCard = () => {
       try {
         const [teachersRes, instsRes] = await Promise.all([
           teachersApi.findAll(),
-          institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT }),
+          institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT, estado: 'Activa' }),
         ]);
 
         if (teachersRes.ok && teachersRes.data) {

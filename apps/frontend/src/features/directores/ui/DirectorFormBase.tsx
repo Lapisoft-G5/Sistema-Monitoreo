@@ -121,21 +121,22 @@ export const DirectorFormBase = ({
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
           <div className="flex flex-col gap-1 w-full">
-            <TextField
-              label="DNI / Documento de Identidad"
-              required
-              value={form.dni}
-              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
-              placeholder="8 dígitos"
-              error={showError('dni')}
-              adornment={
-                searchingDni ? (
-                  <Spinner size="sm" />
-                ) : dniOk ? (
-                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-                ) : undefined
-              }
-            />
+          <TextField
+            label="DNI / Documento de Identidad"
+            required
+            value={form.dni}
+            onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
+            placeholder="8 dígitos"
+            error={showError('dni')}
+            disabled={!!initialData}
+            adornment={
+              searchingDni ? (
+                <Spinner size="sm" />
+              ) : dniOk ? (
+                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+              ) : undefined
+            }
+          />
           </div>
           <TextField
             label="Número de Celular"

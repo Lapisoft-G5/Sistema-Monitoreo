@@ -38,22 +38,26 @@ pnpm dev
 
 ## Poblado de Datos (Database Seeding)
 
-El monorepo cuenta con un script de semillas (`database/seeders/dev-seed.js`) diseñado para poblar la base de datos con roles y usuarios reales listos para pruebas pedagógicas y de seguridad.
+El monorepo cuenta con un script de semillas (`database/seeders/index.js`) diseñado para poblar la base de datos con roles, usuarios e instituciones reales, listos para pruebas pedagógicas y de seguridad.
 
 > [!IMPORTANT]
-> El seeder importa clases compiladas de TypeScript del backend, por lo que **es indispensable que el backend esté construido** antes de correr el seeder. Si acabas de clonar el repositorio, la secuencia correcta es:
+> El seeder importa clases compiladas de TypeScript del backend (como Prisma Client y helpers), por lo que **es indispensable que el backend esté construido** antes de correr el seeder. Si acabas de clonar el repositorio, la secuencia correcta es:
 >
 > ```bash
 > pnpm build
 > pnpm --filter backend prisma:seed
 > ```
 
-### Usuarios de Prueba Autogenerados (DNI = contraseña inicial)
+### Usuarios de Prueba (DNI = contraseña inicial)
 
-- **Director UGEL**: DNI `76358911` (carlos.quispe@ugel-lampa.gob.pe)
-- **Especialista Administrativo**: DNI `45678901` (juan.perez@ugel-lampa.gob.pe)
-- **Especialista de Nivel Medio**: DNI `32145678` (maria.gomez@ugel-lampa.gob.pe)
-- **Especialista de Nivel Bajo**: DNI `12345678` (pedro.huanca@ugel-lampa.gob.pe)
+Para realizar pruebas, puedes utilizar los siguientes usuarios autogenerados:
+
+- `40000001` → Administrador (Carlos Mendoza)
+- `40000002` → Jefe de Gestión (María Elena Huamán)
+- `40000004` → Especialista (Ana Lucía Ticona)
+- `40000006` → Director de I.E. (Rosa María Apaza)
+
+Para un listado detallado de más perfiles, flujos y credenciales de prueba, consulta el plan de QA en `docs/TEST_PLAN.md` (Sección 5).
 
 ---
 

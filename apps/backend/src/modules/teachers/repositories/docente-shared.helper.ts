@@ -69,7 +69,7 @@ export async function syncEspecialista(
   escalaMagisterial: number | string | null,
   estado?: string,
 ): Promise<void> {
-  const isMonitor = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(cargoNombre);
+  const isMonitor = ['Coordinador Pedagógico', 'Jefe de Taller'].includes(cargoNombre);
   const escalaNum = escalaMagisterial != null ? Number(escalaMagisterial) : null;
   if (isMonitor) {
     await tx.especialista.upsert({

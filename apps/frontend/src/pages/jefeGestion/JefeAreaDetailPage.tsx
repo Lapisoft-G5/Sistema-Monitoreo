@@ -166,18 +166,19 @@ export const JefeAreaDetailPage = () => {
                   {jefe.cargaHoraria || CARGA_HORARIA.JEFE_AREA} horas
                 </span>
               </div>
-              {jefe.especialidades && jefe.especialidades.length > 0 && (
+              {jefe.especialidad && (
                 <div>
                   <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
                     Especialidad
                   </span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {jefe.especialidades.map((esp) => (
-                      <Badge key={esp} variant="outline" className="text-xs bg-slate-50">
-                        {esp}
-                      </Badge>
-                    ))}
-                  </div>
+                  <span className="text-sm font-semibold text-text">
+                    {jefe.especialidad}
+                  </span>
+                  {jefe.especialidadesExtras && jefe.especialidadesExtras.length > 0 && (
+                    <span className="text-text-muted text-[0.7rem] block mt-1">
+                      Adicionales: {jefe.especialidadesExtras.join(', ')}
+                    </span>
+                  )}
                 </div>
               )}
               <div>

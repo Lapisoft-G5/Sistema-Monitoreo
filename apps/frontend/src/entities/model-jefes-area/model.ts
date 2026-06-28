@@ -11,5 +11,7 @@ export interface JefeArea {
   activo: boolean;
   fechaCreacion: string;
   cargo: string;
-  especialidades: string[];
+  especialidades?: string[] | null;
+  especialidad?: string | null;
+  especialidadesExtras?: string[] | null;
 }

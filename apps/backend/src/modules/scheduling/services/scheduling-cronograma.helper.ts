@@ -140,10 +140,14 @@ export async function crearVisita(
     throw new BadRequestException('La institución educativa seleccionada no está Activa.');
   }
   if (!activas.monitor) {
-    throw new BadRequestException('El monitor (especialista/director) seleccionado no está activo.');
+    throw new BadRequestException(
+      'El monitor (especialista/director) seleccionado no está activo.',
+    );
   }
   if (activas.monitorCargo === 'Jefe de Área') {
-    throw new ForbiddenException('Los Jefes de Área no pueden realizar visitas (rol no evaluador).');
+    throw new ForbiddenException(
+      'Los Jefes de Área no pueden realizar visitas (rol no evaluador).',
+    );
   }
   if (!activas.evaluado) {
     throw new BadRequestException('El evaluado (docente/director) seleccionado no está activo.');

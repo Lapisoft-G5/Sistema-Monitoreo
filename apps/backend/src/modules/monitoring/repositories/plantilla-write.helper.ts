@@ -6,6 +6,8 @@ import type { CreatePlantillaData, UpdatePlantillaData } from './plantilla.repos
 import { buildPlantilla } from './plantilla-builder.helper.js';
 import { syncArbol } from './plantilla-sync-arbol.helper.js';
 import { syncArbolWithTx } from './plantilla-sync-arbol-tx.helper.js';
+import type { SyncDesempeno } from './plantilla-sync-arbol-tx.helper.js';
+import type { NivelCalificacionInput } from '../dto/create-plantilla.dto.js';
 import { randomUUID } from 'node:crypto';
 
 export async function createPlantilla(
@@ -42,7 +44,7 @@ export async function createPlantilla(
       tx,
       id,
       data.data.niveles,
-      data.data.desempenos as unknown as any,
+      data.data.desempenos as unknown as SyncDesempeno[],
       data.data.ejeItems,
     );
   });
@@ -84,7 +86,7 @@ export async function updatePlantillaInPlace(
       await syncArbol(
         prisma,
         plantillaId,
-        nivelesActuales as unknown as any,
+        nivelesActuales as unknown as NivelCalificacionInput[],
         desempenosActuales,
         data.data.ejeItems,
       );
@@ -115,7 +117,7 @@ export async function updatePlantillaInPlace(
         await syncArbol(
           prisma,
           plantillaId,
-          nivelesActuales as unknown as any,
+          nivelesActuales as unknown as NivelCalificacionInput[],
           [],
           data.data.ejeItems,
         );

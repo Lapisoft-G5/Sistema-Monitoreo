@@ -94,7 +94,8 @@ export class PrismaFichaRepository implements FichaRepository {
         data: {
           nivel: data.nivel,
           observaciones: data.observaciones !== undefined ? data.observaciones : undefined,
-          preguntaExtraRespuesta: data.preguntaExtraRespuesta !== undefined ? data.preguntaExtraRespuesta : undefined,
+          preguntaExtraRespuesta:
+            data.preguntaExtraRespuesta !== undefined ? data.preguntaExtraRespuesta : undefined,
         },
       });
       return {

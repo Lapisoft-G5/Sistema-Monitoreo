@@ -10,7 +10,8 @@ import type {
   IPlanInstitucionCubierta,
 } from '@sistema-monitoreo/shared-contracts';
 import { MonitoringPlanRepository } from '../repositories/monitoring-plan.repository.js';
-import type { CreatePlanDto } from '../dto/create-plan.dto.js';
+import { CreatePlanDto } from '../dto/create-plan.dto.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
@@ -105,7 +106,10 @@ export class MonitoringPlanService {
     return this.repository.softDelete(id);
   }
 
-  async hardDelete(id: string, session?: SessionUser): Promise<{ success: boolean; message: string }> {
+  async hardDelete(
+    id: string,
+    session?: SessionUser,
+  ): Promise<{ success: boolean; message: string }> {
     const existing = await this.repository.findById(id);
     if (!existing) {
       throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
@@ -113,16 +117,19 @@ export class MonitoringPlanService {
     if (session && this.isDirector(session) && existing.tipoEntidad !== 'IE') {
       throw new ForbiddenException('No cuenta con permisos para eliminar este plan.');
     }
-    
+
     // Si tiene plantillas o cronogramas amarrados, prisma lanzará error de foreign key.
-    // Lo cual está bien, no se puede eliminar un plan que ya está en uso, a menos que 
+    // Lo cual está bien, no se puede eliminar un plan que ya está en uso, a menos que
     // lo hagamos en cascada o capturemos el error.
     try {
       await this.repository.hardDelete(id);
       return { success: true, message: 'Plan eliminado por completo.' };
-    } catch (e: any) {
-      if (e.code === 'P2003') { // Foreign key constraint failed
-        throw new ConflictException('No se puede eliminar el plan porque ya tiene plantillas o visitas (cronogramas) asociados.');
+    } catch (e: unknown) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2003') {
+        // Foreign key constraint failed
+        throw new ConflictException(
+          'No se puede eliminar el plan porque ya tiene plantillas o visitas (cronogramas) asociados.',
+        );
       }
       throw e;
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Edit,
@@ -22,6 +22,8 @@ import { fetchInstitucionById } from '@features/institutions/institution-service
 export const DocenteDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backPath = location.state?.from || '/instituciones/docentes';
 
   const [docente, setDocente] = useState<Docente | null>(null);
   const [instName, setInstName] = useState('I.E. No Asignada');
@@ -71,10 +73,10 @@ export const DocenteDetailPage = () => {
           El código identificador {id} no existe o no tiene permisos de acceso.
         </p>
         <button
-          onClick={() => navigate('/instituciones/docentes')}
+          onClick={() => navigate(backPath)}
           className="px-5 py-2.5 bg-bg border border-border rounded-xl font-semibold text-text hover:bg-muted transition-colors cursor-pointer"
         >
-          Volver a Docentes
+          Volver
         </button>
       </div>
     );
@@ -86,7 +88,7 @@ export const DocenteDetailPage = () => {
       <div className="flex items-center justify-between gap-3 flex-wrap bg-surface p-4 border border-border rounded-2xl shadow-sm">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/instituciones/docentes')}
+            onClick={() => navigate(backPath)}
             className="p-2 rounded-xl bg-bg border border-border text-text-muted hover:text-text hover:bg-muted transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
@@ -98,7 +100,7 @@ export const DocenteDetailPage = () => {
         </div>
 
         <Button
-          onClick={() => navigate(`/instituciones/docentes/${docente.id}/editar`)}
+          onClick={() => navigate(`${backPath}/${docente.id}/editar`, { state: { from: backPath } })}
           className="flex items-center gap-2 font-bold cursor-pointer bg-primary text-white hover:bg-primary-hover"
         >
           <Edit className="h-[16px] w-[16px]" />

@@ -84,6 +84,24 @@ export const DirectorFormBase = ({
       set('apellidos', persona.apellidos);
       set('correo', persona.correo ?? '');
       set('celular', persona.telefono ?? '');
+
+      if (persona.docente) {
+        if (persona.docente.condicionLaboral) {
+          set('condicion', persona.docente.condicionLaboral as DirectorFormData['condicion']);
+        }
+        if (persona.docente.escalaMagisterial) {
+          const escalaMap: Record<number, string> = {
+            1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII'
+          };
+          set('escala', (escalaMap[persona.docente.escalaMagisterial] || 'I') as DirectorFormData['escala']);
+        }
+        if (persona.docente.nivelEducativo) {
+          set('nivelEducativo', persona.docente.nivelEducativo as DirectorFormData['nivelEducativo']);
+        }
+        if (persona.docente.institucionId) {
+          set('institucionId', persona.docente.institucionId);
+        }
+      }
     }, []),
     clearPersonaFields: useCallback(() => {
       set('nombres', '');

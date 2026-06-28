@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { FastActions } from '@shared/ui/FastActions';
 import { type Institucion } from '@entities/model-instituciones';
 import { NivelBadge, ModalidadBadge, DirectorCell } from '@features/institutions/ui';
@@ -39,7 +39,7 @@ export const InstitutionsTableWidget = ({
   onEdit,
   onView,
 }: InstitutionsTableWidgetProps) => {
-  const navigate = useNavigate();
+
   const [deletingInst, setDeletingInst] = useState<Institucion | null>(null);
   const [restoringInst, setRestoringInst] = useState<Institucion | null>(null);
 
@@ -141,18 +141,8 @@ export const InstitutionsTableWidget = ({
             </TableCell>
             <TableCell className="text-right pr-5">
               <FastActions
-                onView={() => {
-                  onView(inst);
-                  navigate(`/instituciones/${inst.id}`);
-                }}
-                onEdit={
-                  inst.activo
-                    ? () => {
-                        onEdit(inst);
-                        navigate(`/instituciones/${inst.id}/editar`);
-                      }
-                    : undefined
-                }
+                onView={() => onView(inst)}
+                onEdit={inst.activo ? () => onEdit(inst) : undefined}
                 onDelete={inst.activo ? () => setDeletingInst(inst) : undefined}
                 onRestore={!inst.activo ? () => setRestoringInst(inst) : undefined}
                 viewTitle="Ver detalle"

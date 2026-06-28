@@ -174,13 +174,17 @@ export const ReportesGrid = ({
     if (hasBackendData && backendFicha) {
       const checkedAspects: Record<string, boolean> = {};
       (backendFicha.respuestasAspecto || []).forEach((ra) => {
-        checkedAspects[ra.aspectoId] = true;
+        checkedAspects[ra.aspectoId] = ra.marcado;
       });
 
       const selectedLevels: Record<string, string> = {};
+      const rubricComments: Record<string, string> = {};
       const numToRoman = ['', 'I', 'II', 'III', 'IV'];
       (backendFicha.respuestasDesempeno || []).forEach((rd) => {
         selectedLevels[rd.desempenoId] = numToRoman[rd.nivel] || 'I';
+        if (rd.observaciones) {
+          rubricComments[rd.desempenoId] = rd.observaciones;
+        }
       });
 
       const preguntaExtraAnswers: Record<string, boolean> = {};
@@ -206,9 +210,11 @@ export const ReportesGrid = ({
         generalComments: backendFicha.observaciones || '',
         sugerencias: backendFicha.sugerencias || '',
         compromisos: backendFicha.compromisos || '',
+        rubricComments,
         preguntaExtraAnswers,
         respuestasEjeItem,
         evidenciaUrls,
+        contexto: backendFicha.contexto,
       };
     }
 

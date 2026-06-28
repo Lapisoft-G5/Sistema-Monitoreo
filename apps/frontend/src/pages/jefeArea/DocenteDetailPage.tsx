@@ -8,6 +8,7 @@ import { Badge } from '@shared/ui/badge';
 import { Spinner } from '@shared/ui/Spinner';
 import { fetchDocenteById } from '@features/docentes/docente-service';
 import { fetchInstitucionById } from '@features/institutions/institution-service';
+import { DocenteCargosWidget } from '@widgets/docentes/DocenteCargosWidget';
 
 const nivelLabel = (n: string) => n.charAt(0) + n.slice(1).toLowerCase();
 
@@ -73,7 +74,7 @@ export const DocenteDetailPage = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300">
+    <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300 pb-10">
       {/* Cabecera */}
       <div className="flex items-center justify-between gap-3 flex-wrap bg-surface p-4 border border-border rounded-2xl shadow-sm">
         <div className="flex items-center gap-4">
@@ -84,7 +85,7 @@ export const DocenteDetailPage = () => {
             <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-text m-0 leading-tight">Ficha del Director</h1>
+            <h1 className="text-xl font-bold text-text m-0 leading-tight">Ficha del Docente/Director</h1>
             <p className="text-text-muted text-[0.8rem] m-0">Detalle laboral y de contacto</p>
           </div>
         </div>
@@ -145,7 +146,7 @@ export const DocenteDetailPage = () => {
         <Card className="p-6 border border-border shadow-xs flex flex-col gap-4">
           <div className="flex items-center gap-2 border-b border-border pb-3">
             <Briefcase className="w-5 h-5 text-primary" />
-            <h3 className="text-sm font-bold text-text">Situación Laboral</h3>
+            <h3 className="text-sm font-bold text-text">Situación Laboral Base</h3>
           </div>
           <div className="flex flex-col gap-3.5">
             <div>
@@ -156,7 +157,7 @@ export const DocenteDetailPage = () => {
                 variant="default"
                 className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide"
               >
-                Director de {nivelLabel(director.nivelEducativo)}
+                {director.cargo === 'Director' ? `Director de ${nivelLabel(director.nivelEducativo)}` : director.cargo}
               </Badge>
             </div>
             <div>
@@ -190,6 +191,17 @@ export const DocenteDetailPage = () => {
           </div>
         </Card>
       </div>
+
+      {director.cargosList && director.cargosList.length > 0 && (
+        <DocenteCargosWidget
+          docenteId={director.id}
+          cargosList={director.cargosList}
+          onCargosChanged={() => {
+            // Force a reload of the current page
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };

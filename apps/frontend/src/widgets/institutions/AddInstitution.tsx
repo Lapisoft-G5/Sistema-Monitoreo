@@ -7,14 +7,18 @@ import {
 import { useInstitutionService } from '@/features/institutions/institution-service';
 import { Card } from '@shared/ui/card';
 
-export const CreateInstitutionCard = () => {
+interface CreateInstitutionCardProps {
+  routePrefix?: string;
+}
+
+export const CreateInstitutionCard = ({ routePrefix = '/instituciones/padron' }: CreateInstitutionCardProps = {}) => {
   const navigate = useNavigate();
   const { createInstitution, loading, error } = useInstitutionService();
 
   const handleFormSubmit = async (formData: InstitutionRawInput) => {
     const result = await createInstitution(formData);
     if (result.success) {
-      navigate('/instituciones/padron');
+      navigate(routePrefix);
     }
   };
 
@@ -29,7 +33,7 @@ export const CreateInstitutionCard = () => {
 
       <InstitutionFormBase
         onSubmit={handleFormSubmit}
-        onCancel={() => navigate('/instituciones/padron')}
+        onCancel={() => navigate(routePrefix)}
         isLoading={loading}
       />
     </Card>

@@ -118,7 +118,7 @@ const getVisitTagColor = (estado: string) => {
   switch (estado) {
     case 'PROGRAMADO':
       return 'bg-blue-50/70 text-blue-800 border-blue-200 hover:bg-blue-100/70';
-    case 'EN PROCESO':
+    case 'EN_PROCESO':
       return 'bg-rose-50/70 text-rose-800 border-rose-200 hover:bg-rose-100/70';
     case 'COMPLETADO':
       return 'bg-emerald-50/70 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70';
@@ -135,7 +135,7 @@ const getVisitColorDot = (estado: string) => {
   switch (estado) {
     case 'PROGRAMADO':
       return 'bg-blue-500';
-    case 'EN PROCESO':
+    case 'EN_PROCESO':
       return 'bg-rose-500';
     case 'COMPLETADO':
       return 'bg-emerald-500';
@@ -152,7 +152,7 @@ const getVisitStatusBadgeClass = (estado: string) => {
   switch (estado) {
     case 'PROGRAMADO':
       return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'EN PROCESO':
+    case 'EN_PROCESO':
       return 'bg-rose-100 text-rose-800 border-rose-200';
     case 'COMPLETADO':
       return 'bg-emerald-100 text-emerald-800 border-emerald-200';
@@ -476,7 +476,7 @@ export const CalendarioGrid = ({
                 options={[
                   { value: 'Todos', label: 'Todos los estados' },
                   { value: 'PROGRAMADO', label: 'PROGRAMADO' },
-                  { value: 'EN PROCESO', label: 'EN PROCESO' },
+                  { value: 'EN_PROCESO', label: 'EN_PROCESO' },
                   { value: 'COMPLETADO', label: 'COMPLETADO' },
                   { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
                   { value: 'CANCELADO', label: 'CANCELADO' },

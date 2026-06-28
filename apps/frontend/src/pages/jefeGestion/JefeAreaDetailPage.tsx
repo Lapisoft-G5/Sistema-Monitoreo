@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen } from 'lucide-react';
 import { CARGA_HORARIA } from '@shared/config/constants';
 import { Card } from '@shared/ui/card';
@@ -12,6 +12,8 @@ import type { JefeArea } from '@entities/model-jefes-area';
 export const JefeAreaDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backPath = location.state?.from || '/jefes-area';
 
   const [jefe, setJefe] = useState<JefeArea | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,10 +55,10 @@ export const JefeAreaDetailPage = () => {
           El código identificador {id} no existe o no tiene permisos de acceso.
         </p>
         <button
-          onClick={() => navigate('/jefes-area')}
+          onClick={() => navigate(backPath)}
           className="px-5 py-2.5 bg-bg border border-border rounded-xl font-semibold text-text hover:bg-muted transition-colors cursor-pointer"
         >
-          Volver a Gestión
+          Volver
         </button>
       </div>
     );
@@ -68,7 +70,7 @@ export const JefeAreaDetailPage = () => {
       <div className="flex items-center justify-between gap-3 flex-wrap bg-surface p-4 border border-border rounded-2xl shadow-sm">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/jefes-area')}
+            onClick={() => navigate(backPath)}
             className="p-2 rounded-xl bg-bg border border-border text-text-muted hover:text-text hover:bg-muted transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
@@ -80,7 +82,7 @@ export const JefeAreaDetailPage = () => {
         </div>
 
         <Button
-          onClick={() => navigate(`/jefes-area/${jefe.id}/editar`)}
+          onClick={() => navigate(`${backPath}/${jefe.id}/editar`, { state: { from: backPath } })}
           className="flex items-center gap-2 font-bold cursor-pointer bg-primary text-white hover:bg-primary-hover"
         >
           <Edit className="h-[16px] w-[16px]" />

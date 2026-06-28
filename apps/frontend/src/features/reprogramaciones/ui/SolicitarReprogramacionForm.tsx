@@ -118,7 +118,7 @@ export const SolicitarReprogramacionForm = ({
             <div>I.E. Destino: <strong className="text-slate-800">{activeVisit.institucion}</strong></div>
           )}
           {!availableVisits && <div>Especialista: <strong className="text-slate-800">{activeVisit.especialista}</strong></div>}
-          <div>Docente / Directivo: <strong className="text-slate-800">{activeVisit.docenteDirectivo}</strong></div>
+          <div>Evaluado ({activeVisit.tipo}): <strong className="text-slate-800">{activeVisit.docenteDirectivo}</strong></div>
           <div>Fecha Programada Actual: <strong className="text-slate-800 text-primary">{formatVisitDateLabel(activeVisit.fechaHora)}</strong></div>
         </div>
 

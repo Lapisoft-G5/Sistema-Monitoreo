@@ -62,6 +62,7 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
         baremo={form.baremo}
         niveles={form.niveles}
         onChange={patch}
+        isEditMode={true}
       />
 
       <PlantillaDesempenos

@@ -84,10 +84,10 @@ export const plantillasApi = {
       body: JSON.stringify({ estado }),
     }),
 
-  duplicar: (id: string, descripcion?: string) =>
+  duplicar: (id: string, descripcion?: string, anioAcademico?: number) =>
     request<IPlantilla>(`/api/plantillas/${id}/duplicar`, {
       method: 'POST',
-      body: JSON.stringify({ descripcion }),
+      body: JSON.stringify({ descripcion, anioAcademico }),
     }),
 
   delete: (id: string) =>

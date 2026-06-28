@@ -67,6 +67,8 @@ export const EditEspecialistaCard = () => {
     correo: especialista.correo,
     celular: especialista.celular,
     especialidades: especialista.especialidades || undefined,
+    especialidad: especialista.especialidad || undefined,
+    especialidadesExtras: especialista.especialidadesExtras || undefined,
     nivelEducativo: especialista.nivelEducativo,
     modalidad: (especialista.modalidad as EspecialistaFormData['modalidad']) || 'EBR',
     cargo: (especialista.cargo as EspecialistaFormData['cargo']) || 'Especialista',

@@ -42,7 +42,16 @@ export const PlantillaCreatePage = () => {
       await executeCreate(data, backendTipo, []);
     } catch (err) {
       console.error('[plantilla] Error al crear:', err);
-      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      let msg = err instanceof Error ? err.message : 'Error desconocido';
+      if (msg.includes('should not be empty')) {
+        msg = msg
+          .replace(/desempenos\.(\d+)\.rubrica\.(\d+)\.descripcion/g, (_m, d, r) => `Desempeño ${Number(d) + 1} - Rúbrica ${Number(r) + 1}`)
+          .replace(/desempenos\.(\d+)\.aspectos\.(\d+)\.descripcion/g, (_m, d, a) => `Desempeño ${Number(d) + 1} - Aspecto ${Number(a) + 1}`)
+          .replace(/desempenos\.(\d+)\.nombre/g, (_m, d) => `Desempeño ${Number(d) + 1} (Nombre)`)
+          .replace(/ should not be empty/g, ': No debe estar vacío.')
+          .split(',')
+          .join('\n');
+      }
       setSubmitError(msg);
       setIsSaving(false);
     }
@@ -100,7 +109,16 @@ export const PlantillaCreatePage = () => {
       navigate(-1);
     } catch (err) {
       console.error('[plantilla] Error al crear:', err);
-      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      let msg = err instanceof Error ? err.message : 'Error desconocido';
+      if (msg.includes('should not be empty')) {
+        msg = msg
+          .replace(/desempenos\.(\d+)\.rubrica\.(\d+)\.descripcion/g, (_m, d, r) => `Desempeño ${Number(d) + 1} - Rúbrica ${Number(r) + 1}`)
+          .replace(/desempenos\.(\d+)\.aspectos\.(\d+)\.descripcion/g, (_m, d, a) => `Desempeño ${Number(d) + 1} - Aspecto ${Number(a) + 1}`)
+          .replace(/desempenos\.(\d+)\.nombre/g, (_m, d) => `Desempeño ${Number(d) + 1} (Nombre)`)
+          .replace(/ should not be empty/g, ': No debe estar vacío.')
+          .split(',')
+          .join('\n');
+      }
       setSubmitError(msg);
       setIsSaving(false);
     }
@@ -124,7 +142,7 @@ export const PlantillaCreatePage = () => {
       </div>
 
       {submitError && (
-        <div className="border border-rose-200 bg-rose-50 text-rose-700 text-sm rounded-xl p-3 font-semibold">
+        <div className="border border-rose-200 bg-rose-50 text-rose-700 text-sm rounded-xl p-3 font-semibold whitespace-pre-wrap">
           {submitError}
         </div>
       )}

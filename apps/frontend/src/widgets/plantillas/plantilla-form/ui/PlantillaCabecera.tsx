@@ -15,6 +15,7 @@ interface Props {
     baremo: Baremo;
     niveles: NivelCalificacion[];
   }>) => void;
+  isEditMode?: boolean;
 }
 
 export const PlantillaCabecera = ({
@@ -23,6 +24,7 @@ export const PlantillaCabecera = ({
   baremo,
   niveles,
   onChange,
+  isEditMode = false,
 }: Props) => {
   const { user } = useUser();
   const isDirector = user?.role === 'director_institucion';
@@ -49,7 +51,7 @@ export const PlantillaCabecera = ({
             onChange={(v) => onChange({ tipoMonitoreo: v })}
             options={(isDirector ? ['Monitoreo Docente'] : TIPOS_MONITOREO).map((t) => ({ value: t, label: t }))}
             placeholder="Seleccione el tipo"
-            disabled={isDirector}
+            disabled={isEditMode || isDirector}
           />
           <TextField
             label="Año Académico"
@@ -57,6 +59,7 @@ export const PlantillaCabecera = ({
             value={String(anioAcademico)}
             onChange={(v) => onChange({ anioAcademico: Number(v.replace(/\D/g, '')) || 0 })}
             placeholder="2024"
+            disabled={isEditMode}
           />
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text">

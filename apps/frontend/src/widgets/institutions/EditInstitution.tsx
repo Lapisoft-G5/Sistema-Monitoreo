@@ -14,7 +14,11 @@ import { institutionsApi } from '@shared/api/institutions.api';
 import { Card } from '@shared/ui/card';
 import { Spinner } from '@shared/ui/Spinner';
 
-export const EditInstitutionCard = () => {
+interface EditInstitutionCardProps {
+  routePrefix?: string;
+}
+
+export const EditInstitutionCard = ({ routePrefix = '/instituciones/padron' }: EditInstitutionCardProps = {}) => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { updateInstitution, loading, error } = useInstitutionService();
@@ -78,7 +82,7 @@ export const EditInstitutionCard = () => {
     if (!id) return;
     const result = await updateInstitution(id, formData);
     if (result.success) {
-      navigate('/instituciones/padron');
+      navigate(routePrefix);
     }
   };
 
@@ -94,7 +98,7 @@ export const EditInstitutionCard = () => {
       <InstitutionFormBase
         initialData={initialData}
         onSubmit={handleFormSubmit}
-        onCancel={() => navigate('/instituciones/padron')}
+        onCancel={() => navigate(routePrefix)}
         isLoading={loading}
       />
     </Card>

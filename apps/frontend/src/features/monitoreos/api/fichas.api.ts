@@ -28,10 +28,10 @@ export const fichasApi = {
       body: JSON.stringify(data),
     }),
 
-  saveRespuestaDesempeno: (fichaId: string, desempenoId: string, nivel: number, observaciones?: string) =>
+  saveRespuestaDesempeno: (fichaId: string, desempenoId: string, nivel: number, observaciones?: string, preguntaExtraRespuesta?: boolean) =>
     request<IFichaMonitoreo>(`/api/fichas/${fichaId}/respuestas-desempeno`, {
       method: 'PATCH',
-      body: JSON.stringify({ desempenoId, nivel, observaciones }),
+      body: JSON.stringify({ desempenoId, nivel, observaciones, preguntaExtraRespuesta }),
     }),
 
   saveRespuestaAspecto: (fichaId: string, aspectoId: string, marcado: boolean) =>

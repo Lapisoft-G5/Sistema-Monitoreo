@@ -3,7 +3,11 @@ import { AlertCircle } from 'lucide-react';
 import { JefeAreaFormBase, useJefeAreaService } from '@features/jefes-area';
 import { Card } from '@shared/ui/card';
 
-export const AddJefeArea = () => {
+interface AddJefeAreaProps {
+  routePrefix?: string;
+}
+
+export const AddJefeArea = ({ routePrefix = '/jefes-area' }: AddJefeAreaProps = {}) => {
   const navigate = useNavigate();
   const { createJefeArea, loading, error } = useJefeAreaService();
 
@@ -18,7 +22,7 @@ export const AddJefeArea = () => {
   }) => {
     const result = await createJefeArea(formData, 'jefe_area');
     if (result.success) {
-      navigate('/jefes-area');
+      navigate(routePrefix);
     }
   };
 
@@ -41,7 +45,7 @@ export const AddJefeArea = () => {
         initialData={initialData}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onSubmit={(data) => handleFormSubmit(data as any)}
-        onCancel={() => navigate('/jefes-area')}
+        onCancel={() => navigate(routePrefix)}
         isLoading={loading}
       />
     </Card>

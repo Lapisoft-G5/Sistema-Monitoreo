@@ -23,7 +23,8 @@ import {
 export class PlantillaService {
   constructor(private readonly repository: PlantillaRepository) {}
 
-  async findAll(filters?: QueryPlantillaDto, session?: SessionUser): Promise<IPlantilla[]> {
+  async findAll(filters?: QueryPlantillaDto, _session?: SessionUser): Promise<IPlantilla[]> {
+    void _session;
     return this.repository.findAll(filters);
   }
 
@@ -159,7 +160,12 @@ export class PlantillaService {
     return { count, estado: original.estado };
   }
 
-  async duplicar(id: string, session: SessionUser, descripcion?: string): Promise<IPlantilla> {
+  async duplicar(
+    id: string,
+    session: SessionUser,
+    descripcion?: string,
+    anioAcademico?: number,
+  ): Promise<IPlantilla> {
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
 
@@ -174,8 +180,14 @@ export class PlantillaService {
         'Solo Jefe de Gestion o Directores IE pueden duplicar plantillas.',
       );
     }
-
-    return this.repository.clone(id, session.id, rolAutorAlCrear, institucionId, descripcion);
+    return this.repository.clone(
+      id,
+      session.id,
+      rolAutorAlCrear,
+      institucionId,
+      descripcion,
+      anioAcademico,
+    );
   }
 }
 

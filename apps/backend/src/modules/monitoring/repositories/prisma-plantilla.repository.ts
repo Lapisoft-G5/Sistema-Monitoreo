@@ -27,6 +27,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(filters?: any): Promise<IPlantilla[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return findAllPlantillas(this.prisma, filters);
   }
 
@@ -81,6 +82,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     rolAutorAlCrear: 'jefe_gestion' | 'director_ie',
     institucionId: string | null,
     descripcion?: string,
+    anioAcademico?: number,
   ): Promise<IPlantilla> {
     return clonePlantilla(
       this.prisma,
@@ -89,6 +91,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
       rolAutorAlCrear,
       institucionId,
       descripcion,
+      anioAcademico,
     );
   }
 }

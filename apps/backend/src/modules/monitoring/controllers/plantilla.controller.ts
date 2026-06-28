@@ -21,7 +21,7 @@ import type { IPlantilla, IUpdatePlantillaResponse } from '@sistema-monitoreo/sh
 import { PlantillaService } from '../services/plantilla.service.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
-import { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-plantilla.dto.js';
+import { DuplicarPlantillaDto, PatchEstadoPlantillaDto, UpdatePlantillaDto } from '../dto/update-plantilla.dto.js';
 import { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
@@ -79,10 +79,10 @@ export class PlantillaController {
   @HttpCode(HttpStatus.CREATED)
   async duplicar(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: { descripcion?: string },
+    @Body() body: DuplicarPlantillaDto,
     @Req() req: any,
   ): Promise<IPlantilla> {
-    return this.service.duplicar(id, this.toSession(req), body?.descripcion);
+    return this.service.duplicar(id, this.toSession(req), body?.descripcion, body?.anioAcademico);
   }
 
   @Delete(':id')

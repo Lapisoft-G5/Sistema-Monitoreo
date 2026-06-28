@@ -18,7 +18,7 @@ export async function findAll(
     include: ESPECIALISTA_INCLUDE,
   });
 
-  const mapped = list.map((esp: any) => mapEspecialista(esp));
+  const mapped = list.map((esp) => mapEspecialista(esp));
   if (filters?.cargo) {
     return mapped.filter((esp) => esp.cargo === filters.cargo);
   }

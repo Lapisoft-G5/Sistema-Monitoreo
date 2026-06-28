@@ -4,8 +4,21 @@ import type {
   TipoMonitoreo,
   EstadoFicha,
 } from '@sistema-monitoreo/shared-contracts';
+import type { Prisma } from '../../../generated/prisma/client.js';
 
-export function fromPrismaFichaReporte(f: any): IReporteFicha {
+type FichaReportePayload = Prisma.FichaMonitoreoGetPayload<{
+  include: {
+    cronograma: {
+      include: {
+        institucion: { select: { id: true; codigoModular: true; nombre: true } };
+        evaluado: { include: { persona: { select: { nombres: true; apellidos: true } } } };
+        monitor: { include: { persona: { select: { nombres: true; apellidos: true } } } };
+      };
+    };
+  };
+}>;
+
+export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
   return {
     id: f.id,
     cronogramaId: f.cronogramaId,

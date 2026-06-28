@@ -1,12 +1,17 @@
+import type { Prisma } from '../../../generated/prisma/client.js';
 import type {
   IFichaMonitoreo,
   IFichaContexto,
   IFichaRespuestaDesempeno,
   IFichaRespuestaAspecto,
   IFichaRespuestaEjeItem,
+  NivelLogro,
+  EstadoFicha,
 } from '@sistema-monitoreo/shared-contracts';
 
-export function mapContexto(c: any): IFichaContexto {
+type FichaContextoPayload = Prisma.FichaContextoGetPayload<Record<string, never>>;
+
+export function mapContexto(c: FichaContextoPayload): IFichaContexto {
   return {
     id: c.id,
     areaCurricular: c.areaCurricular,
@@ -18,7 +23,17 @@ export function mapContexto(c: any): IFichaContexto {
   };
 }
 
-export function fromPrismaFicha(ficha: any): IFichaMonitoreo {
+type FichaMonitoreoPayload = Prisma.FichaMonitoreoGetPayload<{
+  include: {
+    fichaContexto: true;
+    respuestasDesempeno: true;
+    respuestasAspecto: true;
+    respuestasEjeItem: true;
+    plantilla: { select: { id: true; version: true; estado: true } };
+  };
+}>;
+
+export function fromPrismaFicha(ficha: FichaMonitoreoPayload): IFichaMonitoreo {
   const requiereMigracion = ficha.plantilla?.estado === 'Historico';
 
   return {
@@ -30,8 +45,8 @@ export function fromPrismaFicha(ficha: any): IFichaMonitoreo {
     anioAcademico: ficha.anioAcademico,
     puntajeTotal: ficha.puntajeTotal,
     promedio: Number(ficha.promedio),
-    nivelLogro: ficha.nivelLogro,
-    estado: ficha.estado,
+    nivelLogro: ficha.nivelLogro as NivelLogro,
+    estado: ficha.estado as EstadoFicha,
     contexto: mapContexto(ficha.fichaContexto),
     respuestasDesempeno: (ficha.respuestasDesempeno || []).map(fromPrismaRespuestaDesempeno),
     respuestasAspecto: (ficha.respuestasAspecto || []).map(fromPrismaRespuestaAspecto),
@@ -48,17 +63,20 @@ export function fromPrismaFicha(ficha: any): IFichaMonitoreo {
   };
 }
 
-function fromPrismaRespuestaDesempeno(r: any): IFichaRespuestaDesempeno {
+type RespuestaDesempenoPayload = Prisma.FichaRespuestaDesempenoGetPayload<Record<string, never>>;
+function fromPrismaRespuestaDesempeno(r: RespuestaDesempenoPayload): IFichaRespuestaDesempeno {
   return {
     id: r.id,
     fichaId: r.fichaId,
     desempenoId: r.desempenoId,
     nivel: r.nivel,
     observaciones: r.observaciones,
+    preguntaExtraRespuesta: r.preguntaExtraRespuesta,
   };
 }
 
-function fromPrismaRespuestaAspecto(r: any): IFichaRespuestaAspecto {
+type RespuestaAspectoPayload = Prisma.FichaRespuestaAspectoGetPayload<Record<string, never>>;
+function fromPrismaRespuestaAspecto(r: RespuestaAspectoPayload): IFichaRespuestaAspecto {
   return {
     id: r.id,
     fichaId: r.fichaId,
@@ -67,7 +85,8 @@ function fromPrismaRespuestaAspecto(r: any): IFichaRespuestaAspecto {
   };
 }
 
-function fromPrismaRespuestaEjeItem(r: any): IFichaRespuestaEjeItem {
+type RespuestaEjeItemPayload = Prisma.FichaRespuestaEjeItemGetPayload<Record<string, never>>;
+function fromPrismaRespuestaEjeItem(r: RespuestaEjeItemPayload): IFichaRespuestaEjeItem {
   return {
     id: r.id,
     fichaId: r.fichaId,

@@ -66,7 +66,7 @@ export async function update(
         where: { especialistaId: id, fechaFin: null },
         data: { fechaFin: new Date() },
       });
-      if (data.cargo !== CargoNombre.ESPECIALISTA) {
+      if (data.cargo !== (CargoNombre.ESPECIALISTA as string)) {
         await tx.especialistaCargo.create({
           data: {
             id: randomUUID(),
@@ -93,7 +93,7 @@ export async function update(
 
       let mainSpecialty = data.especialidad;
       if (mainSpecialty === undefined) {
-        const prevMain = esp.especialidades.find((e: any) => e.esPrincipal);
+        const prevMain = esp.especialidades.find((e) => e.esPrincipal);
         mainSpecialty = prevMain?.especialidad?.nombre;
       }
 
@@ -108,8 +108,8 @@ export async function update(
             (e: string) => e.trim() && e.trim() !== mainSpecialty,
           );
         } else {
-          const prevExtras = esp.especialidades.filter((e: any) => !e.esPrincipal);
-          extraSpecialties = prevExtras.map((e: any) => e.especialidad.nombre);
+          const prevExtras = esp.especialidades.filter((e) => !e.esPrincipal);
+          extraSpecialties = prevExtras.map((e) => e.especialidad.nombre);
         }
       }
 

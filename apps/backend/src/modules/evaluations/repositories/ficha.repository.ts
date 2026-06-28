@@ -22,6 +22,7 @@ export interface SaveRespuestaData {
   desempenoId: string;
   nivel: number;
   observaciones?: string;
+  preguntaExtraRespuesta?: boolean;
 }
 
 export interface SaveRespuestaEjeItemData {

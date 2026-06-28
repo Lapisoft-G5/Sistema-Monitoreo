@@ -9,6 +9,7 @@ export interface CreatePlanData {
   anioAcademico: number;
   archivoUrl: string;
   tipoEntidad: string;
+  estado?: string;
   autorId: string;
   rolAutorAlCrear: string;
   institucionId: string | null;
@@ -19,6 +20,7 @@ export abstract class MonitoringPlanRepository {
   abstract findById(id: string): Promise<IMonitoringPlanResponse | null>;
   abstract create(data: CreatePlanData): Promise<IMonitoringPlanResponse>;
   abstract softDelete(id: string): Promise<IMonitoringPlanResponse>;
+  abstract hardDelete(id: string): Promise<boolean>;
   abstract restore(id: string): Promise<IMonitoringPlanResponse>;
   abstract findCobertura(planId: string): Promise<IPlanInstitucionCubierta[]>;
   abstract addCobertura(planId: string, institucionId: string): Promise<void>;

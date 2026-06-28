@@ -43,8 +43,9 @@ export async function guardarRespuesta(
   repository: FichaRepository,
   fichaId: string,
   dto: SaveRespuestaDesempenoDto,
-  session: SessionUser,
+  _session: SessionUser,
 ): Promise<IFichaMonitoreo> {
+  void _session;
   const ficha = await validateBorrador(repository, fichaId);
   await ensurePlantillaVigente(repository, ficha);
   await repository.saveRespuestaDesempeno({
@@ -52,6 +53,7 @@ export async function guardarRespuesta(
     desempenoId: dto.desempenoId,
     nivel: dto.nivel,
     observaciones: dto.observaciones,
+    preguntaExtraRespuesta: dto.preguntaExtraRespuesta,
   });
   return repository.findById(fichaId) as Promise<IFichaMonitoreo>;
 }
@@ -61,8 +63,9 @@ export async function guardarRespuestaAspecto(
   fichaId: string,
   aspectoId: string,
   marcado: boolean,
-  session: SessionUser,
+  _session: SessionUser,
 ): Promise<IFichaMonitoreo> {
+  void _session;
   const ficha = await validateBorrador(repository, fichaId);
   await ensurePlantillaVigente(repository, ficha);
   await repository.saveRespuestaAspecto({ fichaId, aspectoId, marcado });
@@ -73,8 +76,9 @@ export async function guardarRespuestaEjeItem(
   repository: FichaRepository,
   fichaId: string,
   dto: SaveRespuestaEjeItemDto,
-  session: SessionUser,
+  _session: SessionUser,
 ): Promise<IFichaMonitoreo> {
+  void _session;
   const ficha = await validateBorrador(repository, fichaId);
   await ensurePlantillaVigente(repository, ficha);
   await repository.saveRespuestaEjeItem({
@@ -92,8 +96,9 @@ export async function subirEvidencia(
   fichaId: string,
   ejeItemId: string,
   file: Express.Multer.File,
-  session: SessionUser,
+  _session: SessionUser,
 ): Promise<string> {
+  void _session;
   const ficha = await validateBorrador(repository, fichaId);
   await ensurePlantillaVigente(repository, ficha);
 

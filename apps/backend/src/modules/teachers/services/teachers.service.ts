@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
-import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 import {
   TeachersRepository,

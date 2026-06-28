@@ -1,13 +1,14 @@
 import { ConflictException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 
 export async function checkDirectorConflict(
-  tx: any,
+  tx: Prisma.TransactionClient,
   institucionId: string,
   excludeDocenteId?: string,
 ): Promise<void> {
-  const where: any = {
+  const where: Prisma.DocenteCargoWhereInput = {
     docente: { institucionId },
     cargo: { nombre: 'Director' },
     fechaFin: null,
@@ -30,7 +31,7 @@ export async function checkDirectorConflict(
 }
 
 export async function upsertCurso(
-  tx: any,
+  tx: Prisma.TransactionClient,
   prisma: PrismaService,
   cursoAsignado: string,
   nivelEducativo: string,
@@ -49,8 +50,8 @@ export async function upsertCurso(
     update: {},
     create: {
       nombre: cursoAsignado,
-      nivelEducativoId: nivel?.id ?? null,
-    },
+      nivelEducativoId: nivel?.id,
+    } as Prisma.CursoUncheckedCreateInput,
   });
 
   await tx.docenteCurso.create({
@@ -59,7 +60,7 @@ export async function upsertCurso(
 }
 
 export async function syncEspecialista(
-  tx: any,
+  tx: Prisma.TransactionClient,
   personaId: string,
   cargoNombre: string,
   nivelEducativo: string,

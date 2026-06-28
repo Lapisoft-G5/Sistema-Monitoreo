@@ -54,3 +54,13 @@ export class PatchEstadoPlantillaDto {
   @IsIn(['Borrador', 'Vigente', 'Historico'])
   estado!: 'Borrador' | 'Vigente' | 'Historico';
 }
+
+export class DuplicarPlantillaDto {
+  @IsOptional()
+  @IsString()
+  descripcion?: string;
+
+  @IsOptional()
+  @IsInt()
+  anioAcademico?: number;
+}

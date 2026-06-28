@@ -1,4 +1,5 @@
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { CreateInstitucionDto } from '../dto/create-institucion.dto.js';
 import { UpdateInstitucionDto } from '../dto/update-institucion.dto.js';
 import { Institucion } from '../entities/institucion.entity.js';
@@ -11,21 +12,25 @@ export async function create(
   data: CreateInstitucionDto,
 ): Promise<Institucion> {
   const { directorDni, ...createData } = data;
+
+  const payload: Prisma.InstitucionEducativaUncheckedCreateInput = {
+    codigoModular: createData.codigoModular,
+    codigoLocal: createData.codigoLocal,
+    nombre: createData.nombre,
+    nivelEducativo: createData.nivelEducativo,
+    nivelEducativoId:
+      ((createData as Record<string, unknown>).nivelEducativoId as string | undefined) ?? null,
+    departamento: createData.departamento ?? 'Puno',
+    provincia: createData.provincia,
+    distrito: createData.distrito,
+    direccion: createData.direccion,
+    zona: createData.zona,
+    estado: createData.estado ?? EstadoInstitucion.ACTIVA,
+    modalidad: createData.modalidad as string,
+  };
+
   const record = await prisma.institucionEducativa.create({
-    data: {
-      codigoModular: createData.codigoModular,
-      codigoLocal: createData.codigoLocal,
-      nombre: createData.nombre,
-      nivelEducativo: createData.nivelEducativo,
-      nivelEducativoId: (createData as any).nivelEducativoId ?? null,
-      departamento: createData.departamento ?? 'Puno',
-      provincia: createData.provincia,
-      distrito: createData.distrito,
-      direccion: createData.direccion,
-      zona: createData.zona,
-      estado: createData.estado ?? EstadoInstitucion.ACTIVA,
-      modalidad: createData.modalidad,
-    } as any,
+    data: payload,
     include: INCLUDE_DOCENTE_DIRECTOR,
   });
 
@@ -38,7 +43,7 @@ export async function create(
     include: INCLUDE_DOCENTE_DIRECTOR,
   });
 
-  return mapInstitucion(reloaded || (record as any));
+  return mapInstitucion(reloaded || record);
 }
 
 export async function update(
@@ -52,12 +57,16 @@ export async function update(
     await assignDirector(prisma, id, directorDni);
   }
 
+  const updatePayload: Prisma.InstitucionEducativaUncheckedUpdateInput = {
+    ...updateData,
+    nivelEducativoId: (updateData as Record<string, unknown>).nivelEducativoId as
+      | string
+      | undefined,
+  };
+
   const record = await prisma.institucionEducativa.update({
     where: { id },
-    data: {
-      ...updateData,
-      nivelEducativoId: (updateData as any).nivelEducativoId ?? undefined,
-    } as any,
+    data: updatePayload,
     include: INCLUDE_DOCENTE_DIRECTOR,
   });
   return mapInstitucion(record);

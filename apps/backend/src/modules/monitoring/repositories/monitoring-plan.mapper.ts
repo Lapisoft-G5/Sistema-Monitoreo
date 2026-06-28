@@ -3,10 +3,13 @@ import type {
   IPlanInstitucionCubierta,
 } from '@sistema-monitoreo/shared-contracts';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import type { Prisma } from '../../../generated/prisma/client.js';
+
+type PlanMonitoreoPayload = Prisma.PlanMonitoreoGetPayload<Prisma.PlanMonitoreoDefaultArgs>;
 
 export async function fromPrismaPlan(
   prisma: PrismaService,
-  plan: any,
+  plan: PlanMonitoreoPayload,
 ): Promise<IMonitoringPlanResponse> {
   const cobertura = await prisma.planCoberturaIe.findMany({
     where: { planId: plan.id },
@@ -29,9 +32,9 @@ export async function fromPrismaPlan(
     tipoEntidad: plan.tipoEntidad,
     archivoUrl: plan.archivoUrl,
     estado: plan.estado,
-    autorId: plan.autorId,
-    rolAutorAlCrear: plan.rolAutorAlCrear,
-    institucionId: plan.institucionId,
+    autorId: plan.autorId ?? undefined,
+    rolAutorAlCrear: plan.rolAutorAlCrear ?? undefined,
+    institucionId: plan.institucionId ?? undefined,
     deleted: plan.deleted,
     deletedAt: plan.deletedAt ? plan.deletedAt.toISOString() : null,
     institucionesCubiertas,

@@ -69,5 +69,6 @@ export abstract class PlantillaRepository {
     rolAutorAlCrear: 'jefe_gestion' | 'director_ie',
     institucionId: string | null,
     descripcion?: string,
+    anioAcademico?: number,
   ): Promise<IPlantilla>;
 }

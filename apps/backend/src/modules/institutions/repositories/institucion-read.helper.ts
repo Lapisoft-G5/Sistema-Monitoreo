@@ -60,7 +60,7 @@ export async function findAll(
   ]);
 
   return {
-    data: data.map((record: any) => mapInstitucion(record)),
+    data: data.map((record) => mapInstitucion(record)),
     total,
   };
 }

@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import type { IVisita } from '@sistema-monitoreo/shared-contracts';
+import type { IVisita, EstadoVisita } from '@sistema-monitoreo/shared-contracts';
 import type {
   CronogramaRepository,
   CreateVisitaData,
@@ -18,10 +18,6 @@ function toScopeContext(session: SessionUser): ScopeContext {
     especialistaNivel: session.especialistaNivel,
     especialistaEspecialidades: session.especialistaEspecialidades,
   };
-}
-
-function esAutoridad(scopeFilter: ScopeFilter, session: SessionUser): boolean {
-  return scopeFilter.isAllScope(session.role) || scopeFilter.isInstitucionScope(session.role);
 }
 
 function aplicarScopingVisitas(
@@ -135,6 +131,24 @@ export async function crearVisita(
     );
   }
 
+  const activas = await cronogramaRepo.validateEntidadesActivas(
+    dto.institucionId,
+    dto.monitorId,
+    dto.evaluadoId,
+  );
+  if (!activas.institucion) {
+    throw new BadRequestException('La institución educativa seleccionada no está Activa.');
+  }
+  if (!activas.monitor) {
+    throw new BadRequestException('El monitor (especialista/director) seleccionado no está activo.');
+  }
+  if (activas.monitorCargo === 'Jefe de Área') {
+    throw new ForbiddenException('Los Jefes de Área no pueden realizar visitas (rol no evaluador).');
+  }
+  if (!activas.evaluado) {
+    throw new BadRequestException('El evaluado (docente/director) seleccionado no está activo.');
+  }
+
   const data: CreateVisitaData = {
     monitorId: dto.monitorId,
     institucionId: dto.institucionId,
@@ -169,7 +183,7 @@ export async function actualizarVisita(
   }
   const data: UpdateVisitaData = {
     detalles: dto.detalles,
-    estado: dto.estado as any,
+    estado: dto.estado as EstadoVisita,
   };
   return cronogramaRepo.update(id, data);
 }

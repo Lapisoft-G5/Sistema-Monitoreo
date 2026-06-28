@@ -124,6 +124,15 @@ export class MonitoringPlanController {
     return this.service.toggleEstado(id, this.toSession(req));
   }
 
+  @Delete(':id/hard')
+  @RequirePermissions('monitoreo:execute')
+  async hardDelete(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.service.hardDelete(id, this.toSession(req));
+  }
+
   @Get(':id/cobertura')
   @RequirePermissions('monitoreo:execute')
   async findCobertura(

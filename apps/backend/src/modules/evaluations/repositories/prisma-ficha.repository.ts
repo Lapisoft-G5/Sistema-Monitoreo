@@ -94,6 +94,7 @@ export class PrismaFichaRepository implements FichaRepository {
         data: {
           nivel: data.nivel,
           observaciones: data.observaciones !== undefined ? data.observaciones : undefined,
+          preguntaExtraRespuesta: data.preguntaExtraRespuesta !== undefined ? data.preguntaExtraRespuesta : undefined,
         },
       });
       return {
@@ -102,6 +103,7 @@ export class PrismaFichaRepository implements FichaRepository {
         desempenoId: updated.desempenoId,
         nivel: updated.nivel,
         observaciones: updated.observaciones,
+        preguntaExtraRespuesta: updated.preguntaExtraRespuesta,
       };
     }
     const created = await this.prisma.fichaRespuestaDesempeno.create({
@@ -111,6 +113,7 @@ export class PrismaFichaRepository implements FichaRepository {
         desempenoId: data.desempenoId,
         nivel: data.nivel,
         observaciones: data.observaciones ?? null,
+        preguntaExtraRespuesta: data.preguntaExtraRespuesta ?? null,
       },
     });
     return {
@@ -119,6 +122,7 @@ export class PrismaFichaRepository implements FichaRepository {
       desempenoId: created.desempenoId,
       nivel: created.nivel,
       observaciones: created.observaciones,
+      preguntaExtraRespuesta: created.preguntaExtraRespuesta,
     };
   }
 

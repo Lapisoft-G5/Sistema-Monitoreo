@@ -1,12 +1,23 @@
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
+import type { IPlantilla, TipoMonitoreo } from '@sistema-monitoreo/shared-contracts';
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { buildPlantilla } from './plantilla-builder.helper.js';
+
+export interface PlantillaFilters {
+  search?: string;
+  anioAcademico?: number;
+  tipoMonitoreo?: TipoMonitoreo;
+  estado?: string;
+  rolAutorAlCrear?: string;
+  institucionId?: string;
+  scope?: string;
+}
 
 export async function findAllPlantillas(
   prisma: PrismaService,
-  filters?: any,
+  filters?: PlantillaFilters,
 ): Promise<IPlantilla[]> {
-  const where: any = { deleted: false };
+  const where: Prisma.PlantillaMonitoreoWhereInput = { deleted: false };
   if (filters) {
     if (filters.search) {
       where.descripcion = { contains: filters.search, mode: 'insensitive' };
@@ -16,7 +27,7 @@ export async function findAllPlantillas(
     if (filters.estado) where.estado = filters.estado;
     if (filters.rolAutorAlCrear) where.rolAutorAlCrear = filters.rolAutorAlCrear;
     if (filters.institucionId !== undefined) where.institucionId = filters.institucionId;
-    if (filters.scope) where.scope = filters.scope;
+    // if (filters.scope) where.scope = filters.scope;
   }
   const plantillas = await prisma.plantillaMonitoreo.findMany({
     where,

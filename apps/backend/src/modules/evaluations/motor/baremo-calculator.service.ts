@@ -43,11 +43,11 @@ export class BaremoCalculatorService {
     if (promedio < 1.0 || promedio > 4.0) {
       throw new Error(`Promedio fuera de rango: ${promedio}. Debe estar entre 1.0 y 4.0.`);
     }
-    if (promedio >= 1.0 && promedio <= 1.4) return 'INICIO';
-    if (promedio >= 1.6 && promedio <= 2.4) return 'EN_PROCESO';
-    if (promedio >= 2.6 && promedio <= 3.4) return 'LOGRO_ESPERADO';
-    if (promedio >= 3.6 && promedio <= 4.0) return 'LOGRO_DESTACADO';
-    throw new Error(`Promedio en gap invalido: ${promedio}. Gaps 1.5, 2.5, 3.5 no son validos.`);
+    if (promedio >= 1.0 && promedio <= 1.5) return 'INICIO';
+    if (promedio > 1.5 && promedio <= 2.5) return 'EN_PROCESO';
+    if (promedio > 2.5 && promedio <= 3.5) return 'LOGRO_ESPERADO';
+    if (promedio > 3.5 && promedio <= 4.0) return 'LOGRO_DESTACADO';
+    throw new Error(`Promedio en gap invalido: ${promedio}.`);
   }
 
   /**

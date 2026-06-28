@@ -76,6 +76,25 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
     return planIe?.id ?? planUgel.id;
   }
 
+  async validateEntidadesActivas(
+    institucionId: string,
+    monitorId: string,
+    evaluadoId: string,
+  ): Promise<{ institucion: boolean; monitor: boolean; evaluado: boolean; monitorCargo?: string }> {
+    const [ie, monitor, evaluado] = await Promise.all([
+      this.prisma.institucionEducativa.findUnique({ where: { id: institucionId } }),
+      this.prisma.especialista.findUnique({ where: { id: monitorId } }),
+      this.prisma.docente.findUnique({ where: { id: evaluadoId } }),
+    ]);
+
+    return {
+      institucion: ie?.estado === 'Activa',
+      monitor: monitor?.estado === 'Activo',
+      evaluado: evaluado?.estado === 'Activo',
+      monitorCargo: monitor?.cargo,
+    };
+  }
+
   async countPendientesByMonitor(monitorId: string): Promise<number> {
     return this.prisma.cronograma.count({
       where: {

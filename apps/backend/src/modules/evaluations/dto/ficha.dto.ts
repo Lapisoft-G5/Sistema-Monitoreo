@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, IsUUID, Min, Max } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsUUID, Min, Max, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateFichaDto {
@@ -49,6 +49,10 @@ export class SaveRespuestaDesempenoDto {
   @IsOptional()
   @IsString()
   observaciones?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  preguntaExtraRespuesta?: boolean;
 }
 
 export class SaveRespuestaEjeItemDto {

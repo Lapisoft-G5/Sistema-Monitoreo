@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
@@ -230,17 +230,29 @@ export class PrismaFichaRepository implements FichaRepository {
   async findPlantillaVigente(tipo: string, anio: number): Promise<PlantillaBasic | null> {
     const p = await this.prisma.plantillaMonitoreo.findFirst({
       where: { tipoMonitoreo: tipo, anioAcademico: anio, estado: 'Vigente', deleted: false },
-      select: { id: true, estado: true, tipoMonitoreo: true, anioAcademico: true, descripcion: true },
+      select: {
+        id: true,
+        estado: true,
+        tipoMonitoreo: true,
+        anioAcademico: true,
+        descripcion: true,
+      },
     });
-    return p as PlantillaBasic | null;
+    return p;
   }
 
   async findCronogramaBasicById(id: string): Promise<CronogramaBasic | null> {
     const c = await this.prisma.cronograma.findUnique({
       where: { id },
-      select: { id: true, estado: true, tipoMonitoreo: true, fechaProgramada: true, evaluadoId: true },
+      select: {
+        id: true,
+        estado: true,
+        tipoMonitoreo: true,
+        fechaProgramada: true,
+        evaluadoId: true,
+      },
     });
-    return c as CronogramaBasic | null;
+    return c;
   }
 
   async findCursoBasicById(id: string): Promise<{ id: string } | null> {
@@ -266,9 +278,15 @@ export class PrismaFichaRepository implements FichaRepository {
   async findPlantillaBasicById(id: string): Promise<PlantillaBasic | null> {
     const p = await this.prisma.plantillaMonitoreo.findUnique({
       where: { id },
-      select: { id: true, estado: true, tipoMonitoreo: true, anioAcademico: true, descripcion: true },
+      select: {
+        id: true,
+        estado: true,
+        tipoMonitoreo: true,
+        anioAcademico: true,
+        descripcion: true,
+      },
     });
-    return p as PlantillaBasic | null;
+    return p;
   }
 
   async updateCronogramaEstado(id: string, estado: string): Promise<void> {

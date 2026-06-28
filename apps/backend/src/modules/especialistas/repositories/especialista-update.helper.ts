@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type { IEspecialistaResponse, IUpdateEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IEspecialistaResponse,
+  IUpdateEspecialistaRequest,
+} from '@sistema-monitoreo/shared-contracts';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { mapEspecialista, ESPECIALISTA_INCLUDE } from './especialista-mapper.helper.js';
 

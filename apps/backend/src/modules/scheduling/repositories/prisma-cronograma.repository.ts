@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
@@ -126,7 +126,7 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
     return this.prisma.especialistaEspecialidad.findMany({
       where: { especialistaId: monitorId },
       include: { especialidad: { select: { nombre: true } } },
-    }) as unknown as Array<{ especialidad: { nombre: string } }>;
+    });
   }
 
   async applyReprogramacion(
@@ -135,9 +135,7 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
     horaInicio: string,
   ): Promise<void> {
     await this.prisma.$transaction([
-      this.prisma.$executeRawUnsafe(
-        `SELECT set_config('app.reprogramacion_apply', 'true', true)`,
-      ),
+      this.prisma.$executeRawUnsafe(`SELECT set_config('app.reprogramacion_apply', 'true', true)`),
       this.prisma.cronograma.update({
         where: { id: cronogramaId },
         data: {

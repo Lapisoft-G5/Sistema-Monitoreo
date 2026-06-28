@@ -3,10 +3,7 @@ import { Institucion } from '../entities/institucion.entity.js';
 import { EstadoInstitucion } from '../../../common/enums/estado.enum.js';
 import { mapInstitucion, INCLUDE_DOCENTE_DIRECTOR } from './institucion-mapper.helper.js';
 
-export async function softDelete(
-  prisma: PrismaService,
-  id: string,
-): Promise<Institucion> {
+export async function softDelete(prisma: PrismaService, id: string): Promise<Institucion> {
   const record = await prisma.institucionEducativa.update({
     where: { id },
     data: { estado: EstadoInstitucion.INACTIVA },
@@ -15,10 +12,7 @@ export async function softDelete(
   return mapInstitucion(record);
 }
 
-export async function restore(
-  prisma: PrismaService,
-  id: string,
-): Promise<Institucion> {
+export async function restore(prisma: PrismaService, id: string): Promise<Institucion> {
   const record = await prisma.institucionEducativa.update({
     where: { id },
     data: { estado: EstadoInstitucion.ACTIVA },

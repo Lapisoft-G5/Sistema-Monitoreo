@@ -92,11 +92,16 @@ export async function updateDocenteWithTransaction(
     }
 
     if (cargo) {
-      const espEstado = (docente.estado as string) || 'Activo';
+      const espEstado = docente.estado || 'Activo';
       await syncEspecialista(
-        tx, personaId, cargo.nombre, dto.nivelEducativo,
-        dto.condicionLaboral ?? null, dto.cargaLaboral ?? null,
-        (docente.modalidad as string | null) ?? null, dto.escalaMagisterial ?? null,
+        tx,
+        personaId,
+        cargo.nombre,
+        dto.nivelEducativo,
+        dto.condicionLaboral ?? null,
+        dto.cargaLaboral ?? null,
+        docente.modalidad ?? null,
+        dto.escalaMagisterial ?? null,
         espEstado,
       );
     }

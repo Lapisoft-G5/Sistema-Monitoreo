@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
@@ -7,8 +6,18 @@ import {
   CreatePlantillaData,
   UpdatePlantillaData,
 } from './plantilla.repository.js';
-import { findAllPlantillas, findPlantillaById, countFichasAsociadas, findFichasByPlantilla } from './plantilla-read.helper.js';
-import { createPlantilla, updatePlantillaInPlace, updatePlantillaEstado, softDeletePlantilla } from './plantilla-write.helper.js';
+import {
+  findAllPlantillas,
+  findPlantillaById,
+  countFichasAsociadas,
+  findFichasByPlantilla,
+} from './plantilla-read.helper.js';
+import {
+  createPlantilla,
+  updatePlantillaInPlace,
+  updatePlantillaEstado,
+  softDeletePlantilla,
+} from './plantilla-write.helper.js';
 import { eliminarConCascade as eliminarConCascadeFn } from './plantilla-delete.helper.js';
 import { versionarConClon } from './plantilla-versionar.helper.js';
 import { clonePlantilla } from './plantilla-clone.helper.js';
@@ -29,7 +38,9 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     return countFichasAsociadas(this.prisma, plantillaId);
   }
 
-  async findFichasByPlantilla(plantillaId: string): Promise<{ id: string; evidenciaUrls: string[] }[]> {
+  async findFichasByPlantilla(
+    plantillaId: string,
+  ): Promise<{ id: string; evidenciaUrls: string[] }[]> {
     return findFichasByPlantilla(this.prisma, plantillaId);
   }
 
@@ -41,11 +52,18 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     return updatePlantillaInPlace(this.prisma, plantillaId, data);
   }
 
-  async versionarConClon(plantillaOriginalId: string, data: UpdatePlantillaData, nuevoAutorId: string): Promise<IPlantilla> {
+  async versionarConClon(
+    plantillaOriginalId: string,
+    data: UpdatePlantillaData,
+    nuevoAutorId: string,
+  ): Promise<IPlantilla> {
     return versionarConClon(this.prisma, plantillaOriginalId, data, nuevoAutorId);
   }
 
-  async updateEstado(id: string, estado: 'Borrador' | 'Vigente' | 'Historico'): Promise<IPlantilla> {
+  async updateEstado(
+    id: string,
+    estado: 'Borrador' | 'Vigente' | 'Historico',
+  ): Promise<IPlantilla> {
     return updatePlantillaEstado(this.prisma, id, estado);
   }
 
@@ -64,6 +82,13 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     institucionId: string | null,
     descripcion?: string,
   ): Promise<IPlantilla> {
-    return clonePlantilla(this.prisma, sourceId, nuevoAutorId, rolAutorAlCrear, institucionId, descripcion);
+    return clonePlantilla(
+      this.prisma,
+      sourceId,
+      nuevoAutorId,
+      rolAutorAlCrear,
+      institucionId,
+      descripcion,
+    );
   }
 }

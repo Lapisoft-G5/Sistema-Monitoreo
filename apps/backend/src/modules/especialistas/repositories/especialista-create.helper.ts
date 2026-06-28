@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { ConflictException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type { IEspecialistaResponse, ICreateEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IEspecialistaResponse,
+  ICreateEspecialistaRequest,
+} from '@sistema-monitoreo/shared-contracts';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { CondicionLaboral } from '../../../common/enums/condicion-laboral.enum.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
@@ -113,11 +116,7 @@ export async function create(
       }
     }
 
-    if (
-      specialtiesToCreate.length === 0 &&
-      data.especialidades &&
-      data.especialidades.length > 0
-    ) {
+    if (specialtiesToCreate.length === 0 && data.especialidades && data.especialidades.length > 0) {
       data.especialidades.forEach((espNombre, idx) => {
         const trimmed = espNombre.trim();
         if (

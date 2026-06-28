@@ -24,7 +24,11 @@ function esAutoridad(scopeFilter: ScopeFilter, session: SessionUser): boolean {
   return scopeFilter.isAllScope(session.role) || scopeFilter.isInstitucionScope(session.role);
 }
 
-function aplicarScopingVisitas(visitas: IVisita[], scopeFilter: ScopeFilter, session?: SessionUser): IVisita[] {
+function aplicarScopingVisitas(
+  visitas: IVisita[],
+  scopeFilter: ScopeFilter,
+  session?: SessionUser,
+): IVisita[] {
   if (!session) return visitas;
   const ctx = toScopeContext(session);
   if (scopeFilter.isAllScope(ctx.role)) return visitas;
@@ -38,7 +42,11 @@ function aplicarScopingVisitas(visitas: IVisita[], scopeFilter: ScopeFilter, ses
   return [];
 }
 
-function validarAccesoVisita(visita: IVisita, scopeFilter: ScopeFilter, session?: SessionUser): void {
+function validarAccesoVisita(
+  visita: IVisita,
+  scopeFilter: ScopeFilter,
+  session?: SessionUser,
+): void {
   if (!session) return;
   const ctx = toScopeContext(session);
   if (scopeFilter.isAllScope(ctx.role)) return;

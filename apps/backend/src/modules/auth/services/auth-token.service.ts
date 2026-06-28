@@ -83,7 +83,8 @@ export class AuthTokenService {
   } {
     const accessOpts: JwtSignOptions = {
       secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN') ?? '15m') as JwtSignOptions['expiresIn'],
+      expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN') ??
+        '15m') as JwtSignOptions['expiresIn'],
       jwtid: sessionJti,
     };
     const accessToken = this.jwtService.sign(
@@ -96,7 +97,8 @@ export class AuthTokenService {
 
     const refreshOpts: JwtSignOptions = {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: (this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d') as JwtSignOptions['expiresIn'],
+      expiresIn: (this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') ??
+        '7d') as JwtSignOptions['expiresIn'],
     };
     const refreshTokenJWT = this.jwtService.sign(
       { jti: sessionJti, sub: payload.sub, tokenHash: refreshTokenHash },

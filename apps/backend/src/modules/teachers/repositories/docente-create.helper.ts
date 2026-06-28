@@ -116,12 +116,12 @@ export async function createDocenteWithTransaction(
     }
 
     if (dto.cursoAsignado) {
-      await upsertCurso(tx, prisma, dto.cursoAsignado, dto.nivelEducativo, docente!.id);
+      await upsertCurso(tx, prisma, dto.cursoAsignado, dto.nivelEducativo, docente.id);
     }
 
     await tx.docenteCargo.create({
       data: {
-        docenteId: docente!.id,
+        docenteId: docente.id,
         cargoId: dto.cargoId,
         fechaInicio: new Date(),
         esPrincipal: true,
@@ -131,7 +131,7 @@ export async function createDocenteWithTransaction(
     if (dto.secciones?.length) {
       await tx.docenteSeccion.createMany({
         data: dto.secciones.map((s) => ({
-          docenteId: docente!.id,
+          docenteId: docente.id,
           grado: s.grado,
           seccion: s.seccion,
         })),
@@ -170,7 +170,7 @@ export async function createDocenteWithTransaction(
     }
 
     const fullDocente = await tx.docente.findUniqueOrThrow({
-      where: { id: docente!.id },
+      where: { id: docente.id },
       include: DOCENTE_INCLUDE,
     });
     return mapDocente(fullDocente);

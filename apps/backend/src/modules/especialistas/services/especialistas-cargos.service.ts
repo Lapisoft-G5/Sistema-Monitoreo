@@ -78,7 +78,12 @@ export class EspecialistasCargosService {
     }
 
     const fin = fechaFin ?? new Date();
-    await this.especialistaRepository.finalizeCargo(especialistaId, especialistaCargoId, fin, ec.cargo);
+    await this.especialistaRepository.finalizeCargo(
+      especialistaId,
+      especialistaCargoId,
+      fin,
+      ec.cargo,
+    );
 
     // Invalidar sesiones del usuario: sus capabilities cambiaron.
     const userId = await this.especialistaRepository.findUserIdByEspecialistaId(especialistaId);

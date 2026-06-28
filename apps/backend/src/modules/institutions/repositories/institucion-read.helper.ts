@@ -65,10 +65,7 @@ export async function findAll(
   };
 }
 
-export async function findById(
-  prisma: PrismaService,
-  id: string,
-): Promise<Institucion | null> {
+export async function findById(prisma: PrismaService, id: string): Promise<Institucion | null> {
   const record = await prisma.institucionEducativa.findUnique({
     where: { id },
     include: INCLUDE_DOCENTE_DIRECTOR,

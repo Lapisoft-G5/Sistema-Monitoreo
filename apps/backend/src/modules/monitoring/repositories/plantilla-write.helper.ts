@@ -1,10 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
-import type {
-  CreatePlantillaData,
-  UpdatePlantillaData,
-} from './plantilla.repository.js';
+import type { CreatePlantillaData, UpdatePlantillaData } from './plantilla.repository.js';
 import { buildPlantilla } from './plantilla-builder.helper.js';
 import { syncArbol } from './plantilla-sync-arbol.helper.js';
 import { syncArbolWithTx } from './plantilla-sync-arbol-tx.helper.js';
@@ -113,10 +110,7 @@ export async function updatePlantillaEstado(
   return buildPlantilla(prisma, id);
 }
 
-export async function softDeletePlantilla(
-  prisma: PrismaService,
-  id: string,
-): Promise<IPlantilla> {
+export async function softDeletePlantilla(prisma: PrismaService, id: string): Promise<IPlantilla> {
   const exists = await prisma.plantillaMonitoreo.findUnique({ where: { id } });
   if (!exists) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
   if (exists.deleted) {

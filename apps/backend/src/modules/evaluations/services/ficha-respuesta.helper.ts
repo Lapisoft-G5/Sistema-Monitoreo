@@ -2,10 +2,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
 import type { FichaRepository } from '../repositories/ficha.repository.js';
 import type { StorageService } from '../../../shared/storage/storage.constants.js';
-import type {
-  SaveRespuestaDesempenoDto,
-  SaveRespuestaEjeItemDto,
-} from '../dto/ficha.dto.js';
+import type { SaveRespuestaDesempenoDto, SaveRespuestaEjeItemDto } from '../dto/ficha.dto.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 
 async function ensurePlantillaVigente(

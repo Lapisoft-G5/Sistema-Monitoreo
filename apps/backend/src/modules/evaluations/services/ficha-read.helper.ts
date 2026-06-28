@@ -24,7 +24,7 @@ export async function findById(
 
   const scope = scopeFilter.forFicha({
     userId: session.id,
-    role: session.role as RoleCode,
+    role: session.role,
     institucionId: session.institucionId ?? null,
     especialistaNivel: session.especialistaNivel ?? null,
   });

@@ -14,11 +14,7 @@ export class RlsGucService {
    * se aplican a las queries del handler. Si es superuser, las policies son
    * BYPASSEADAS y esto es no-op.
    */
-  async setSessionGucs(
-    userId: string,
-    role: string,
-    institucionId: string,
-  ): Promise<void> {
+  async setSessionGucs(userId: string, role: string, institucionId: string): Promise<void> {
     try {
       await this.prisma.$executeRawUnsafe(
         `SELECT

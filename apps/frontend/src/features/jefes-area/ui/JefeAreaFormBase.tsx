@@ -226,6 +226,7 @@ export const JefeAreaFormBase = ({
             <SelectField
               label="Nivel Educativo a Cargo"
               required
+              disabled
               value={editForm.nivelEducativo}
               onChange={(v) =>
                 setEdit('nivelEducativo', v as 'Inicial' | 'Primaria' | 'Secundaria')

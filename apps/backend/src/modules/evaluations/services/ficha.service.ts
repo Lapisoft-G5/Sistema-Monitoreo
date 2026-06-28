@@ -30,7 +30,10 @@ export class FichaService {
     private readonly scopeFilter: ScopeFilter,
   ) {}
 
-  async findByVisitaId(cronogramaId: string, session: SessionUser): Promise<IFichaMonitoreo | null> {
+  async findByVisitaId(
+    cronogramaId: string,
+    session: SessionUser,
+  ): Promise<IFichaMonitoreo | null> {
     return findByVisitaId(this.repository, cronogramaId, session);
   }
 

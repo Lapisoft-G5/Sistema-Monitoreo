@@ -1,4 +1,9 @@
-import type { IReporteFicha, NivelLogro, TipoMonitoreo, EstadoFicha } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IReporteFicha,
+  NivelLogro,
+  TipoMonitoreo,
+  EstadoFicha,
+} from '@sistema-monitoreo/shared-contracts';
 
 export function fromPrismaFichaReporte(f: any): IReporteFicha {
   return {

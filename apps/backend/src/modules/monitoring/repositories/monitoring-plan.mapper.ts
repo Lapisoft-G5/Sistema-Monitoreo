@@ -1,4 +1,7 @@
-import type { IMonitoringPlanResponse, IPlanInstitucionCubierta } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IMonitoringPlanResponse,
+  IPlanInstitucionCubierta,
+} from '@sistema-monitoreo/shared-contracts';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 
 export async function fromPrismaPlan(

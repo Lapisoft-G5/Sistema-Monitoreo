@@ -36,7 +36,10 @@ export class SchedulingService {
     private readonly scopeFilter: ScopeFilter,
   ) {}
 
-  async findAllVisitas(filters?: Record<string, unknown>, session?: SessionUser): Promise<IVisita[]> {
+  async findAllVisitas(
+    filters?: Record<string, unknown>,
+    session?: SessionUser,
+  ): Promise<IVisita[]> {
     return findAllVisitas(this.cronogramaRepo, this.scopeFilter, filters, session);
   }
 
@@ -76,7 +79,14 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return aprobarSolicitud(this.cronogramaRepo, this.solicitudRepo, this.scopeFilter, id, dto, session);
+    return aprobarSolicitud(
+      this.cronogramaRepo,
+      this.solicitudRepo,
+      this.scopeFilter,
+      id,
+      dto,
+      session,
+    );
   }
 
   async rechazarSolicitud(
@@ -84,6 +94,13 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return rechazarSolicitud(this.cronogramaRepo, this.solicitudRepo, this.scopeFilter, id, dto, session);
+    return rechazarSolicitud(
+      this.cronogramaRepo,
+      this.solicitudRepo,
+      this.scopeFilter,
+      id,
+      dto,
+      session,
+    );
   }
 }

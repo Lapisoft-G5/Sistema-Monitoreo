@@ -12,7 +12,12 @@ import type { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-
 import type { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
-import { validarReglas, resolveAutor, guardVisibilidad, guardModificacion } from './plantilla-service.validator.js';
+import {
+  validarReglas,
+  resolveAutor,
+  guardVisibilidad,
+  guardModificacion,
+} from './plantilla-service.validator.js';
 
 @Injectable()
 export class PlantillaService {
@@ -118,7 +123,9 @@ export class PlantillaService {
     guardModificacion(original, session);
 
     if (session.role !== RoleCode.JEFE_GESTION && session.role !== RoleCode.DIRECTOR_INSTITUCION) {
-      throw new ForbiddenException('Solo el Jefe de Gestion o el Director IE pueden eliminar plantillas.');
+      throw new ForbiddenException(
+        'Solo el Jefe de Gestion o el Director IE pueden eliminar plantillas.',
+      );
     }
 
     const fichas = await this.repository.findFichasByPlantilla(id);
@@ -168,13 +175,7 @@ export class PlantillaService {
       );
     }
 
-    return this.repository.clone(
-      id,
-      session.id,
-      rolAutorAlCrear as 'jefe_gestion' | 'director_ie',
-      institucionId,
-      descripcion,
-    );
+    return this.repository.clone(id, session.id, rolAutorAlCrear, institucionId, descripcion);
   }
 }
 

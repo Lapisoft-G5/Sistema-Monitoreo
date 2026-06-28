@@ -1,13 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import {
-  IsString,
-  IsNumber,
-  IsOptional,
-  IsBoolean,
-  Min,
-  Max,
-  validateSync,
-} from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsBoolean, Min, Max, validateSync } from 'class-validator';
 
 export class EnvironmentVariables {
   @IsNumber()
@@ -93,7 +85,12 @@ export function validate(config: Record<string, unknown>): EnvironmentVariables 
   });
   const errors = validateSync(validatedConfig, { skipMissingProperties: false });
   if (errors.length > 0) {
-    throw new Error(`Environment validation failed: ${errors.map((e) => Object.values(e.constraints ?? {})).flat().join('; ')}`);
+    throw new Error(
+      `Environment validation failed: ${errors
+        .map((e) => Object.values(e.constraints ?? {}))
+        .flat()
+        .join('; ')}`,
+    );
   }
   return validatedConfig;
 }

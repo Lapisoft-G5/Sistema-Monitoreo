@@ -42,22 +42,18 @@ async function main() {
 
   await seedPersonas({ roleMap, cargoMap, instMap, nivelMap, cursoMap });
 
-  const { planUgelId } = await seedMonitoring({ instMap });
-  await seedScheduling({ planUgelId });
+  // const { planUgelId } = await seedMonitoring({ instMap });
+  // await seedScheduling({ planUgelId });
 
-  console.log('\n=== Seeding completado ===');
+  console.log('\n=== Seeding completado sin Planes ni Plantillas mockeadas ===');
   console.log('Credenciales: el DNI es la contrasena inicial (usuarios en isFirstLogin=true).');
   console.log('Usuarios creados:');
-  console.log('  director_ugel→ DNI: 40000001  (Carlos Mendoza Quispe)');
-  console.log('  jefe_gestion → DNI: 40000002  (Maria Elena Huaman Vargas)');
-  console.log('  jefe_area    → DNI: 40000003  (Jose Luis Quispe Mamani)');
-  console.log('  jefe_area    → DNI: 41000000  (Juan Jefe CTA)');
-  console.log('  jefe_gestion → DNI: 41000001  (Super Jefe Gestion)');
-  console.log('  especialista → DNI: 40000004  (Ana Lucia Ticona Coila)');
-  console.log('  especialista → DNI: 40000005  (Pedro Pablo Mamani Cruz)');
-  console.log('  director_institucion → DNI: 40000006  (Rosa Maria Apaza Condori)');
-  console.log('  director_institucion → DNI: 40000007  (Juan Carlos Choque Huaranca)');
-  console.log('  docente      → DNI: 40000008-40000013  (varios)');
+  console.log('  director_ugel        → DNI: 40000001');
+  console.log('  jefe_gestion         → DNI: 40000002, 41000001');
+  console.log('  jefe_area            → DNI: 40000003, 41000000, 41000002, 41000003, 41000004');
+  console.log('  especialista         → DNI: 40000004, 40000005, 42000001, 42000002, 42000003, 42000004');
+  console.log('  director_institucion → DNI: 40000006, 40000007, 43000001, 43000002, 43000003, 43000004, 43000005');
+  console.log('  docente (y cargos)   → DNI: 40000008-40000013, 44000001-44000003');
 }
 
 main()

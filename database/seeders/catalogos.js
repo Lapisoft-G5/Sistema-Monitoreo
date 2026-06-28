@@ -32,7 +32,7 @@ const NIVELES_POR_MODALIDAD = {
   ],
   CEPTRO: [
     { codigo: 'Corte y Ensamblaje', nombre: 'Corte y Ensamblaje' },
-    { codigo: 'Mecanica de Motos', nombre: 'Mecanica de Motos y Vehiculos Afines' },
+    { codigo: 'Mecánica de Motos y Vehículos Afines', nombre: 'Mecánica de Motos y Vehículos Afines' },
   ],
 };
 

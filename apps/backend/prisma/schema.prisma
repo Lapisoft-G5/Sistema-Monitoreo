@@ -697,6 +697,7 @@ model FichaRespuestaDesempeno {
   desempenoId  String   @map("desempeno_id") @db.Uuid
   nivel        Int      @db.SmallInt
   observaciones String?  @db.Text
+  preguntaExtraRespuesta Boolean? @map("pregunta_extra_respuesta")
 
   ficha        FichaMonitoreo      @relation(fields: [fichaId], references: [id], onDelete: Cascade)
   desempeno    DesempenoPlantilla  @relation(fields: [desempenoId], references: [id], onDelete: Restrict)

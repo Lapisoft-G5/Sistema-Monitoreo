@@ -22,6 +22,7 @@ export interface IFichaRespuestaDesempeno {
   desempenoId: string;
   nivel: number;
   observaciones: string | null;
+  preguntaExtraRespuesta: boolean | null;
 }
 
 export interface IFichaRespuestaAspecto {

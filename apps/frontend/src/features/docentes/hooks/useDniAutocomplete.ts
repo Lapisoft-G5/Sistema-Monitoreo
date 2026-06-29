@@ -34,6 +34,14 @@ export interface PersonaAutocompleteData {
     condicionLaboral: string | null;
     escalaMagisterial: number | null;
     cargosActivos: string[];
+    cursoAsignado?: string | null;
+    especialidad?: string | null;
+    institucion?: {
+      id: string;
+      nombre: string;
+      codigoModular: string;
+      nivel: string;
+    };
   } | null;
 }
 

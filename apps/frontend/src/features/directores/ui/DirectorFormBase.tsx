@@ -53,7 +53,7 @@ export const DirectorFormBase = ({
     set('institucionId', id);
     const selectedIe = instituciones.find((i) => i.id === id);
     if (selectedIe && selectedIe.nivel) {
-      set('nivelEducativo', selectedIe.nivel.toUpperCase() as "SECUNDARIA" | "INICIAL" | "PRIMARIA");
+      set('nivelEducativo', selectedIe.nivel);
     }
   };
 
@@ -80,28 +80,36 @@ export const DirectorFormBase = ({
     isLoading,
     errors,
     setPersonaFields: useCallback((persona) => {
-      set('nombres', persona.nombres);
-      set('apellidos', persona.apellidos);
-      set('correo', persona.correo ?? '');
-      set('celular', persona.telefono ?? '');
+      console.log('setPersonaFields trigger. Persona received:', persona);
+      setForm((prev) => {
+        const next = { ...prev };
+        next.nombres = persona.nombres;
+        next.apellidos = persona.apellidos;
+        next.correo = persona.correo ?? '';
+        next.celular = persona.telefono ?? '';
 
-      if (persona.docente) {
-        if (persona.docente.condicionLaboral) {
-          set('condicion', persona.docente.condicionLaboral as DirectorFormData['condicion']);
+        if (persona.docente) {
+          if (persona.docente.condicionLaboral && ['Designado', 'Encargado', 'Por Función'].includes(persona.docente.condicionLaboral)) {
+            next.condicion = persona.docente.condicionLaboral as DirectorFormData['condicion'];
+          }
+          if (persona.docente.escalaMagisterial) {
+            const escalaMap: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII' };
+            next.escala = (escalaMap[persona.docente.escalaMagisterial] || 'I') as DirectorFormData['escala'];
+          }
+          if (persona.docente.institucionId) {
+            next.institucionId = persona.docente.institucionId;
+          }
+          if (persona.docente.nivelEducativo) {
+            next.nivelEducativo = persona.docente.nivelEducativo;
+          }
+          if (persona.docente.especialidad) {
+            next.especialidad = persona.docente.especialidad;
+          } else if (persona.docente.cursoAsignado) {
+            next.especialidad = persona.docente.cursoAsignado;
+          }
         }
-        if (persona.docente.escalaMagisterial) {
-          const escalaMap: Record<number, string> = {
-            1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII'
-          };
-          set('escala', (escalaMap[persona.docente.escalaMagisterial] || 'I') as DirectorFormData['escala']);
-        }
-        if (persona.docente.nivelEducativo) {
-          set('nivelEducativo', persona.docente.nivelEducativo as DirectorFormData['nivelEducativo']);
-        }
-        if (persona.docente.institucionId) {
-          set('institucionId', persona.docente.institucionId);
-        }
-      }
+        return next;
+      });
     }, []),
     clearPersonaFields: useCallback(() => {
       set('nombres', '');
@@ -112,7 +120,16 @@ export const DirectorFormBase = ({
   });
 
   const showError = (key: keyof DirectorFormData) => (submitted ? errors[key] : '');
-  const celularOk = /^9\d{8}$/.test(form.celular);
+  const opcionesIE = useMemo(() => {
+    const list = instituciones.map((i) => ({ value: i.id, label: i.nombre }));
+    if (persona?.docente?.institucion) {
+      const exists = list.some(i => i.value === persona.docente!.institucion!.id);
+      if (!exists) {
+        list.push({ value: persona.docente!.institucion!.id, label: persona.docente!.institucion!.nombre });
+      }
+    }
+    return list;
+  }, [instituciones, persona?.docente?.institucion]);
 
   return (
     <div className="bg-bg p-0 flex flex-col gap-5 text-text animate-in fade-in-0 duration-300">
@@ -138,40 +155,41 @@ export const DirectorFormBase = ({
             disabled={isDniLocked || dniBloqueadoPorRol}
           />
         </div>
-        <div style={{ ...twoCols, marginTop: 18 }}>
-          <div className="min-w-[140px]">
-            <TextField
-              label="DNI / Documento de Identidad"
-              required
-              value={form.dni}
-              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
-              placeholder="8 dígitos"
-              error={showError('dni')}
-              disabled={!!initialData}
-              adornment={
-                searchingDni ? (
-                  <Spinner size="sm" />
-                ) : dniOk ? (
-                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-                ) : undefined
-              }
-            />
-          </div>
+        <div style={{ marginTop: 18, maxWidth: 'calc(50% - 9px)', minWidth: 240 }}>
           <TextField
-            label="Número de Celular"
+            label="DNI (8 dígitos)"
             required
-            value={form.celular}
-            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
-            placeholder="999 999 999"
-            error={showError('celular')}
+            value={form.dni}
+            onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
+            placeholder="Ej. 74859612"
+            error={showError('dni')}
             disabled={isDniLocked || dniBloqueadoPorRol}
             adornment={
-              celularOk ? (
+              searchingDni ? (
+                <Spinner size="sm" />
+              ) : dniOk ? (
                 <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
               ) : undefined
             }
           />
         </div>
+
+        {/* Warning card for duplicates/promotions */}
+        {roleCheck.advierte && !roleCheck.bloquea && (
+          <div
+            className={`mt-4 p-3 rounded-md text-sm ${
+              roleCheck.bloquea ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'
+            }`}
+          >
+            <span className="font-extrabold uppercase tracking-wide text-[0.72rem]">
+              {roleCheck.bloquea ? 'Bloqueado' : 'Advertencia'}:
+            </span>{' '}
+            {roleCheck.mensaje}
+            {roleCheck.detalle && (
+              <span className="block mt-1 font-normal text-[0.72rem]">{roleCheck.detalle}</span>
+            )}
+          </div>
+        )}
 
         {dniMessage && !searchingDni && (
           <div className="mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-2">
@@ -231,6 +249,7 @@ export const DirectorFormBase = ({
             options={CONDICION_DIRECTIVA.map((c) => ({ value: c, label: c }))}
             placeholder="Seleccione condición"
             error={showError('condicion')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
@@ -239,21 +258,17 @@ export const DirectorFormBase = ({
             required
             value={form.institucionId}
             onChange={handleInstitucionChange}
-            options={instituciones.map((i) => ({ value: i.id, label: i.nombre }))}
+            options={opcionesIE}
             placeholder="Seleccione la I.E."
             error={showError('institucionId')}
+            disabled={dniBloqueadoPorRol || !!persona?.docente?.institucionId}
           />
-          <SelectField
+          <TextField
             label="Nivel Educativo"
             required
             value={form.nivelEducativo}
-            onChange={(v) => set('nivelEducativo', v as "SECUNDARIA" | "INICIAL" | "PRIMARIA")}
-            options={[
-              { value: 'INICIAL', label: 'Inicial' },
-              { value: 'PRIMARIA', label: 'Primaria' },
-              { value: 'SECUNDARIA', label: 'Secundaria' },
-            ]}
-            placeholder="Seleccione Nivel"
+            onChange={() => undefined}
+            placeholder="Autocompletado de la I.E."
             error={showError('nivelEducativo')}
             disabled
           />
@@ -266,6 +281,7 @@ export const DirectorFormBase = ({
             onChange={(v) => set('especialidad', v)}
             placeholder="Ej. Matemática, Gestión Pedagógica"
             error={showError('especialidad')}
+            disabled={dniBloqueadoPorRol}
           />
           <SelectField
             label="Escala Magisterial"
@@ -275,6 +291,7 @@ export const DirectorFormBase = ({
             options={ESCALAS_MAGISTERIALES}
             placeholder="Seleccione Escala"
             error={showError('escala')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
         <div className="mt-[18px] max-w-xs">
@@ -285,6 +302,7 @@ export const DirectorFormBase = ({
             onChange={(v) => set('cargaHoraria', v ? Number(v.replace(/\D/g, '')) : 40)}
             placeholder="40"
             error={showError('cargaHoraria')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
       </SectionCard>

@@ -102,6 +102,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'instituciones_docentes',
     'instituciones_coordinadores',
     'instituciones_jefes_taller',
+    'monitoreo_reportes',
     'reportes',
   ],
 

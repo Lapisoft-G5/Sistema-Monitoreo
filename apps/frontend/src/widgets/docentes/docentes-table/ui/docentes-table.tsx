@@ -36,7 +36,7 @@ const docenteFilter = (targetCargo: DocentesTableWidgetProps['targetCargo']) =>
       );
       hasCargo = hasActiveMonitor !== undefined ? !hasActiveMonitor : doc.cargo === 'Docente de Aula';
     } else {
-      hasCargo = doc.cargosList?.some((c) => c.nombre === targetCargo) ?? (doc.cargo === targetCargo);
+      hasCargo = doc.cargosList?.some((c) => c.nombre === targetCargo && c.fechaFin === null) ?? (doc.cargo === targetCargo);
     }
     if (!hasCargo) return false;
 

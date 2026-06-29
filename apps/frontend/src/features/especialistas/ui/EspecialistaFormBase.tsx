@@ -126,10 +126,17 @@ export const EspecialistaFormBase = ({
     isLoading,
     errors,
     setPersonaFields: useCallback((persona) => {
-      set('nombres', persona.nombres);
-      set('apellidos', persona.apellidos);
-      set('correo', persona.correo ?? '');
-      set('celular', persona.telefono ?? '');
+      setForm((prev) => {
+        const next = { ...prev };
+        next.nombres = persona.nombres;
+        next.apellidos = persona.apellidos;
+        next.correo = persona.correo ?? '';
+        next.celular = persona.telefono ?? '';
+        if (persona.docente?.cursoAsignado) {
+          next.especialidad = persona.docente.cursoAsignado;
+        }
+        return next;
+      });
     }, []),
     clearPersonaFields: useCallback(() => {
       set('nombres', '');

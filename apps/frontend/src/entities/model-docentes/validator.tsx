@@ -22,7 +22,7 @@ export const docenteSchema = z.object({
   celular: z
     .string()
     .regex(/^9\d{8}$/, 'Debe ser un número de celular de 9 dígitos (ej. 987654321)'),
-  nivelEducativo: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA']),
+  nivelEducativo: z.string().min(1, 'El nivel educativo es requerido'),
   condicion: z.enum(['Nombrado', 'Contratado', 'Designado', 'Encargado', 'Por Función']),
   especialidad: z.string().optional().or(z.literal('')),
   cargaHoraria: z
@@ -69,9 +69,7 @@ export const directorSchema = z.object({
   condicion: z.enum(['Designado', 'Encargado', 'Por Función']),
   escala: z.enum(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']),
   institucionId: z.string().min(1, 'La institución educativa es requerida'),
-  nivelEducativo: z.enum(['INICIAL', 'PRIMARIA', 'SECUNDARIA'], {
-    message: 'Debe seleccionar un nivel educativo',
-  }),
+  nivelEducativo: z.string().min(1, 'Debe seleccionar un nivel educativo'),
   especialidad: z.string().min(3, 'La especialidad es requerida'),
   cargaHoraria: z
     .number({ message: 'Debe ser un número' })

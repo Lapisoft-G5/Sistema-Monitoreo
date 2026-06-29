@@ -673,13 +673,13 @@ export const PlanMonitoreoAnualPage = () => {
             title={isReactivating ? '¿Desea reactivar el Plan de Monitoreo?' : '¿Desea desactivar el Plan de Monitoreo?'}
             message={
               <div className="flex flex-col gap-3">
-                <span>
+                <p className="text-sm text-text-muted mt-2">
                   {isReactivating ? (
-                    <span>Esta acción cambiará el estado de este plan de monitoreo a **Activo** y estará disponible para todos los usuarios.</span>
+                    <span>Esta acción cambiará el estado de este plan de monitoreo a <strong>Activo</strong> y estará disponible para todos los usuarios.</span>
                   ) : (
-                    <span>Esta acción cambiará el estado de este plan de monitoreo a **Inactivo**. Ya no estará activo pero seguirá visible para reactivación.</span>
+                    <span>Esta acción cambiará el estado de este plan de monitoreo a <strong>Inactivo</strong>. Ya no estará activo pero seguirá visible para reactivación.</span>
                   )}
-                </span>
+                </p>
                 {localToggleError && (
                   <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
                     <p className="text-xs text-rose-700 font-semibold">{localToggleError}</p>

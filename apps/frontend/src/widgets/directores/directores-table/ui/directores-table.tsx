@@ -66,7 +66,7 @@ export const DirectoresTableWidget = ({
       const res = await teachersApi.deactivate(deleting.id);
       if (res.ok) {
         setDirectores((prev) =>
-          prev.map((d) => (d.id === deleting.id ? { ...d, activo: false } : d)),
+          prev.filter((d) => d.id !== deleting.id)
         );
       } else {
         const errMsg =

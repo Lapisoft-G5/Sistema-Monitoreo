@@ -55,6 +55,7 @@ export const JefeAreaFormBase = ({
   const [loadingSpecialists, setLoadingSpecialists] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [takenLevels, setTakenLevels] = useState<string[]>([]);
 
   // Cargar lista de especialistas aptos para promoción
   useEffect(() => {
@@ -69,6 +70,10 @@ export const JefeAreaFormBase = ({
           // Filtramos solo los que tienen cargo 'Especialista'
           const filtered = res.data.filter((e) => e.cargo === 'Especialista');
           setSpecialists(filtered);
+
+          // Obtenemos los niveles que ya tienen un Jefe de Área activo
+          const jefes = res.data.filter((e) => e.cargo === 'Jefe de Área');
+          setTakenLevels(jefes.map((j) => normalizeNivel(j.nivelEducativo)));
         } else {
           setFetchError('No se pudo cargar la lista de especialistas aptos.');
         }
@@ -281,9 +286,9 @@ export const JefeAreaFormBase = ({
             value={createForm.nivelEducativo}
             onChange={handleCreateLevelChange}
             options={[
-              { value: 'Inicial', label: 'Inicial' },
-              { value: 'Primaria', label: 'Primaria' },
-              { value: 'Secundaria', label: 'Secundaria' },
+              { value: 'Inicial', label: 'Inicial', disabled: takenLevels.includes('Inicial') },
+              { value: 'Primaria', label: 'Primaria', disabled: takenLevels.includes('Primaria') },
+              { value: 'Secundaria', label: 'Secundaria', disabled: takenLevels.includes('Secundaria') },
             ]}
             placeholder="Seleccione Nivel"
             error={showError('nivelEducativo')}

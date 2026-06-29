@@ -386,15 +386,53 @@ export const LlenarFichaForm = ({
           <div className="px-6 py-4 bg-slate-50 border-b border-border text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Área Curricular</label>
-              <input type="text" value={contextoArea} onChange={(e) => setContextoArea(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Ej. Matemática" />
+              <select value={contextoArea} onChange={(e) => setContextoArea(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
+                <option value="">Seleccione...</option>
+                <option value="Comunicación">Comunicación</option>
+                <option value="Matemática">Matemática</option>
+                <option value="Ciencia y Tecnología">Ciencia y Tecnología</option>
+                <option value="Personal Social">Personal Social</option>
+                <option value="Ciencias Sociales">Ciencias Sociales</option>
+                <option value="DPCC">DPCC</option>
+                <option value="Inglés">Inglés</option>
+                <option value="Educación Física">Educación Física</option>
+                <option value="Arte y Cultura">Arte y Cultura</option>
+                <option value="Educación para el Trabajo">Educación para el Trabajo</option>
+                <option value="Educación Religiosa">Educación Religiosa</option>
+                <option value="Tutoría">Tutoría</option>
+                <option value="Todas las áreas (Inicial)">Todas las áreas (Inicial)</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Grado</label>
-              <input type="text" value={contextoGrado} onChange={(e) => setContextoGrado(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Ej. 5to" />
+              <select value={contextoGrado} onChange={(e) => setContextoGrado(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
+                <option value="">Seleccione...</option>
+                <option value="3 años">3 años (Inicial)</option>
+                <option value="4 años">4 años (Inicial)</option>
+                <option value="5 años">5 años (Inicial)</option>
+                <option value="1er Grado">1er Grado</option>
+                <option value="2do Grado">2do Grado</option>
+                <option value="3er Grado">3er Grado</option>
+                <option value="4to Grado">4to Grado</option>
+                <option value="5to Grado">5to Grado</option>
+                <option value="6to Grado">6to Grado</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Sección</label>
-              <input type="text" value={contextoSeccion} onChange={(e) => setContextoSeccion(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Ej. A" />
+              <select value={contextoSeccion} onChange={(e) => setContextoSeccion(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
+                <option value="">Seleccione...</option>
+                <option value="Única">Única</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>

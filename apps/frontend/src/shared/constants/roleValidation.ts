@@ -44,9 +44,9 @@ export const checkRoleConflict = (
         return {
           bloquea: false,
           advierte: true,
-          mensaje: 'Esta persona ya es docente en el sistema.',
+          mensaje: 'Esta persona ya es docente en otra Institución (o con otro cargo).',
           detalle:
-            'Se creará un nuevo registro como Director además del rol docente existente.',
+            'Si continúa, se actualizará su perfil para trasladarlo a esta nueva Institución Educativa con el cargo de Director.',
         };
       }
       if (r.esEspecialista) {
@@ -54,7 +54,7 @@ export const checkRoleConflict = (
           bloquea: false,
           advierte: true,
           mensaje: `Esta persona ya está registrada como ${r.especialistaCargoActivo ?? 'Especialista'}.`,
-          detalle: 'Se creará además un registro como Director de I.E.',
+          detalle: 'Si continúa, se le asignará adicionalmente el cargo directivo.',
         };
       }
       return { bloquea: false, advierte: false, mensaje: '' };

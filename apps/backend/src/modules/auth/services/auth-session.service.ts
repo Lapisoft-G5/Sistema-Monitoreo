@@ -49,19 +49,34 @@ export class AuthSessionService {
     }
 
     if (user.lockedUntil && user.lockedUntil > now) {
-      // Bloqueo de cuenta desactivado temporalmente
-      await this.userRepository.resetFailedAttempts(user.id);
+      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 60000);
+      throw new ForbiddenException(`Cuenta bloqueada. Intente de nuevo en ${minutesLeft} minutos.`);
+    }
+
+    if (user.lastFailedLoginAt) {
+      const msSinceLastFail = now.getTime() - user.lastFailedLoginAt.getTime();
+      if (msSinceLastFail > 30 * 60 * 1000) {
+        await this.userRepository.resetFailedAttempts(user.id);
+      }
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
-      // Intentos fallidos desactivados temporalmente — no bloquear cuenta
+      const failedAttempts = await this.userRepository.incrementFailedAttempts(user.id, now);
+      
       await this.auditRepository.logAuthEvent({
         userId: user.id,
         eventType: 'LOGIN_FAILURE_PASSWORD',
         ...meta,
       });
+
+      if (failedAttempts >= 3) {
+        const lockUntil = new Date(now.getTime() + 30 * 60 * 1000);
+        await this.userRepository.lockAccount(user.id, lockUntil);
+        throw new UnauthorizedException('Cuenta bloqueada por múltiples intentos fallidos');
+      }
+
       throw new UnauthorizedException('Credenciales inválidas');
     }
 

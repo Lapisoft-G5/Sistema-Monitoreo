@@ -90,7 +90,7 @@ export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLog
       {/* Botón de Envío (Integrado al form para disparar el onSubmit nativo) */}
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || !dni.trim() || password.length < 6}
         className="w-full py-3.5 bg-[#990537] hover:bg-[#80042e] disabled:bg-[#990537]/50 text-white font-bold text-sm tracking-wider rounded-xl transition-all shadow-md mt-2 cursor-pointer disabled:cursor-not-allowed border-none"
       >
         {isLoading ? 'Verificando...' : 'INICIO DE SESIÓN'}

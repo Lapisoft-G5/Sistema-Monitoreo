@@ -50,7 +50,9 @@ describe('SchedulingService - Reprogramaciones', () => {
       findById: jest.fn<any>().mockResolvedValue(visitaBase),
       findPlanVigentePara: jest.fn<any>(),
       findPlantillaVigentePara: jest.fn<any>().mockResolvedValue('plantilla-1'),
-      validateEntidadesActivas: jest.fn<any>().mockResolvedValue({ institucion: true, monitor: true, evaluado: true }),
+      validateEntidadesActivas: jest
+        .fn<any>()
+        .mockResolvedValue({ institucion: true, monitor: true, evaluado: true }),
       countPendientesByMonitor: jest.fn<any>().mockResolvedValue(0),
       findVisitasMonitorPorFecha: jest.fn<any>().mockResolvedValue([]),
       findVisitaExistente: jest.fn<any>().mockResolvedValue(null),
@@ -99,7 +101,7 @@ describe('SchedulingService - Reprogramaciones', () => {
     storage = moduleRef.get(STORAGE_SERVICE);
   });
 
-  describe('crearVisita - candado operativo (EDU-0002)', () => {
+  describe('crearVisita - plan vigente requerido', () => {
     it('rechaza si no hay plan vigente para la institucion y anio', async () => {
       cronogramaRepo.findPlanVigentePara.mockResolvedValue(null);
       await expect(
@@ -141,25 +143,27 @@ describe('SchedulingService - Reprogramaciones', () => {
     });
   });
 
-  describe('crearVisita - max 3 pendientes por especialista (EDU-0011) - REINSTATED', () => {
+  describe('crearVisita - max 3 pendientes por especialista', () => {
     it('rechaza crear si el especialista ya tiene 3 o más visitas activas', async () => {
       cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
       cronogramaRepo.countPendientesByMonitor.mockResolvedValue(3);
       cronogramaRepo.create.mockResolvedValue(visitaBase);
-      await expect(service.crearVisita(
-        {
-          monitorId: 'esp-1',
-          institucionId: 'ie-1',
-          evaluadoId: 'doc-1',
-          tipoMonitoreo: 'DOCENTE',
-          numeroVisita: 2,
-          fechaProgramada: '2099-04-01',
-          horaInicio: '10:00:00',
-          modalidad: 'EBR',
-          nivelEducativo: 'Primaria',
-        } as any,
-        sesionJefe,
-      )).rejects.toThrow(BadRequestException);
+      await expect(
+        service.crearVisita(
+          {
+            monitorId: 'esp-1',
+            institucionId: 'ie-1',
+            evaluadoId: 'doc-1',
+            tipoMonitoreo: 'DOCENTE',
+            numeroVisita: 2,
+            fechaProgramada: '2099-04-01',
+            horaInicio: '10:00:00',
+            modalidad: 'EBR',
+            nivelEducativo: 'Primaria',
+          } as any,
+          sesionJefe,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

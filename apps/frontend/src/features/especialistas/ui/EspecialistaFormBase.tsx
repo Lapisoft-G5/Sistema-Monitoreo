@@ -294,6 +294,7 @@ export const EspecialistaFormBase = ({
             ]}
             placeholder="Seleccione Condición"
             error={showError('condicionLaboral')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
 
@@ -321,6 +322,7 @@ export const EspecialistaFormBase = ({
             ]}
             placeholder="Seleccione Modalidad"
             error={showError('modalidad')}
+            disabled={dniBloqueadoPorRol}
           />
           <SelectField
             label="Nivel Educativo *"
@@ -338,6 +340,7 @@ export const EspecialistaFormBase = ({
             options={availableNiveles.map((n) => ({ value: n, label: n }))}
             placeholder="Seleccione Nivel"
             error={showError('nivelEducativo')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
 
@@ -359,6 +362,7 @@ export const EspecialistaFormBase = ({
             ]}
             placeholder="Seleccione Escala Magisterial"
             error={showError('escalaMagisterial')}
+            disabled={dniBloqueadoPorRol}
           />
           {/* Especialidad principal */}
           {isPrimaria && (
@@ -450,6 +454,7 @@ export const EspecialistaFormBase = ({
             onChange={(v) => set('cargaLaboral', v ? Number(v.replace(/\D/g, '')) : 40)}
             placeholder="Ej. 40"
             error={showError('cargaLaboral')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
       </SectionCard>

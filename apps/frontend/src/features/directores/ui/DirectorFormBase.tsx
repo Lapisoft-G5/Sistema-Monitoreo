@@ -155,7 +155,7 @@ export const DirectorFormBase = ({
             disabled={isDniLocked || dniBloqueadoPorRol}
           />
         </div>
-        <div style={{ marginTop: 18, maxWidth: 'calc(50% - 9px)', minWidth: 240 }}>
+        <div style={{ ...twoCols, marginTop: 18 }}>
           <TextField
             label="DNI (8 dígitos)"
             required
@@ -163,7 +163,6 @@ export const DirectorFormBase = ({
             onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
             placeholder="Ej. 74859612"
             error={showError('dni')}
-            disabled={isDniLocked || dniBloqueadoPorRol}
             adornment={
               searchingDni ? (
                 <Spinner size="sm" />
@@ -171,6 +170,15 @@ export const DirectorFormBase = ({
                 <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
               ) : undefined
             }
+          />
+          <TextField
+            label="Número de Celular"
+            required
+            value={form.celular}
+            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
+            placeholder="Ej. 987654321"
+            error={showError('celular')}
+            disabled={isDniLocked || dniBloqueadoPorRol}
           />
         </div>
 

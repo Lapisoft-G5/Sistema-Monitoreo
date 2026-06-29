@@ -473,6 +473,7 @@ export const DocenteFormBase = ({
             onChange={(v) => set('cargaHoraria', Number(v.replace(/\D/g, '')))}
             placeholder="Ej. 30"
             error={showError('cargaHoraria')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
       </SectionCard>

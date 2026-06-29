@@ -169,15 +169,15 @@ export async function crearVisita(
   const planId = await cronogramaRepo.findPlanVigentePara(dto.institucionId, anio);
   if (!planId) {
     throw new BadRequestException(
-      `No existe Plan de Monitoreo Activo que habilite el registro de visitas para el anio ${anio}. ` +
-        'No se encontró un plan de monitoreo activo. Comuníquese con el Jefe de Gestión para registrar y activar un plan anual antes de programar visitas.',
+      `No se encontró un Plan de Monitoreo Activo para el año ${anio}. ` +
+        'Antes de programar visitas, el Jefe de Gestión debe registrar y activar un plan anual.',
     );
   }
 
   const plantillaId = await cronogramaRepo.findPlantillaVigentePara(dto.tipoMonitoreo, anio);
   if (!plantillaId) {
     throw new BadRequestException(
-      `No existe una Plantilla Vigente para el tipo de monitoreo ${dto.tipoMonitoreo} en el año ${anio}. ` +
+      `No se encontró una Plantilla Vigente de tipo "${dto.tipoMonitoreo}" para el año ${anio}. ` +
         'El Jefe de Gestión debe crear o activar una plantilla antes de programar visitas.',
     );
   }
@@ -207,18 +207,23 @@ export async function crearVisita(
   // REGLA DE NEGOCIO EDU-0002: Máximo 3 visitas pendientes (Programada/Reprogramada) por monitor
   const pendingVisitsCount = await cronogramaRepo.countPendientesByMonitor(dto.monitorId);
   if (pendingVisitsCount >= 3) {
-    throw new BadRequestException('Candado Operativo (EDU-0002): El monitor no puede tener más de 3 visitas pendientes. Debe ejecutar las visitas programadas antes de crear nuevas.');
+    throw new BadRequestException(
+      'El monitor ya tiene 3 visitas pendientes. Complete las visitas programadas antes de crear nuevas.',
+    );
   }
 
   // REGLA: No se puede programar para el mismo día o días anteriores (min +1 día)
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
-  const fechaProgramada = typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
+  const fechaProgramada =
+    typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
   const fechaProgNormalized = new Date(fechaProgramada);
   fechaProgNormalized.setHours(0, 0, 0, 0);
 
   if (fechaProgNormalized.getTime() <= hoy.getTime()) {
-    throw new BadRequestException('La fecha programada debe ser al menos un día posterior a la fecha actual.');
+    throw new BadRequestException(
+      'La fecha programada debe ser al menos un día posterior a la fecha actual.',
+    );
   }
 
   // Validar solapamiento de visitas para el monitor

@@ -48,13 +48,6 @@ export const useLoginService = () => {
 
   // 5. La función principal que será llamada por el formulario
   const login = async (dni: string, password: string) => {
-    // Protección frontal
-    if (isPenalized) {
-      const msg = 'Sistema penalizado temporalmente';
-      setError(msg);
-      return { success: false, error: msg };
-    }
-
     setLoading(true);
     setError(null);
 

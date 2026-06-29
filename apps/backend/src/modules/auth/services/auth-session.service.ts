@@ -74,10 +74,17 @@ export class AuthSessionService {
       if (failedAttempts >= 3) {
         const lockUntil = new Date(now.getTime() + 30 * 60 * 1000);
         await this.userRepository.lockAccount(user.id, lockUntil);
-        throw new UnauthorizedException('Cuenta bloqueada por múltiples intentos fallidos');
+        throw new UnauthorizedException({
+          message: 'Cuenta bloqueada por múltiples intentos fallidos',
+          failedLoginAttempts: failedAttempts,
+          lockedUntil: lockUntil.toISOString(),
+        });
       }
 
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException({
+        message: 'Credenciales inválidas',
+        failedLoginAttempts: failedAttempts,
+      });
     }
 
     await this.userRepository.resetFailedAttempts(user.id);

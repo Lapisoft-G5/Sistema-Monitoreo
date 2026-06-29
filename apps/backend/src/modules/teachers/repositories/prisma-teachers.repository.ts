@@ -6,7 +6,7 @@ import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { DocenteCargo } from '../../../generated/prisma/client.js';
 import { DocenteEntity, DocenteFilter, TeachersRepository } from './teachers.repository.js';
 import { findDocenteById, findDocentes, findPersonaByDni } from './docente-read.helper.js';
-import { updateDocenteEstado } from './docente-update-estado.helper.js';
+import { updateDocenteEstado, bajaDirector } from './docente-update-estado.helper.js';
 import { createDocenteWithTransaction } from './docente-create.helper.js';
 import { updateDocenteWithTransaction } from './docente-update.helper.js';
 
@@ -31,6 +31,10 @@ export class PrismaTeachersRepository implements TeachersRepository {
 
   async updateDocenteEstado(id: string, estado: string): Promise<DocenteEntity> {
     return updateDocenteEstado(this.prisma, id, estado);
+  }
+
+  async bajaDirector(id: string): Promise<DocenteEntity> {
+    return bajaDirector(this.prisma, id);
   }
 
   async createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteEntity> {

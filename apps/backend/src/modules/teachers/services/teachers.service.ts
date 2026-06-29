@@ -166,10 +166,24 @@ export class TeachersService {
       await validateJefeAreaCanManageDocente(currentUser, docente, this.catalogsRepository);
     }
 
-    const updatedDocente = await this.teachersRepository.updateDocenteEstado(
-      id,
-      EstadoRegistro.INACTIVO,
-    );
+    let updatedDocente;
+    const activeCargo = findActiveCargo(docente);
+    let isDirector = false;
+    if (activeCargo) {
+      const cargoCurrent = await this.catalogsRepository.findCargoById(activeCargo.cargoId);
+      if (cargoCurrent?.nombre === 'Director') {
+        isDirector = true;
+      }
+    }
+
+    if (isDirector) {
+      updatedDocente = await this.teachersRepository.bajaDirector(id);
+    } else {
+      updatedDocente = await this.teachersRepository.updateDocenteEstado(
+        id,
+        EstadoRegistro.INACTIVO,
+      );
+    }
 
     return {
       success: true,

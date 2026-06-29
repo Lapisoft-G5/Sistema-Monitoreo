@@ -173,9 +173,9 @@ export const DirectoresTableWidget = ({
       {deleting && (
         <ConfirmModal
           danger
-          title="¿Eliminar Director?"
-          message={`Esta acción es irreversible y eliminará el registro de ${deleting.apellidos}, ${deleting.nombres} del padrón de directores.`}
-          confirmLabel="Eliminar"
+          title="¿Cesar como Director?"
+          message={<>Esta acción retirará a <strong>{deleting.nombres} {deleting.apellidos}</strong> del cargo. La persona pasará a figurar como docente sin institución asignada. Puede reactivarse posteriormente.</>}
+          confirmLabel="Cesar Director"
           cancelLabel="Cancelar"
           onConfirm={confirmDelete}
           onCancel={() => setDeleting(null)}

@@ -51,6 +51,7 @@ export abstract class TeachersRepository {
   abstract findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]>;
   abstract findPersonaByDni(dni: string): Promise<any>;
   abstract updateDocenteEstado(id: string, estado: string): Promise<DocenteEntity>;
+  abstract bajaDirector(id: string): Promise<DocenteEntity>;
   abstract createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteEntity>;
   abstract updateDocenteWithTransaction(
     id: string,

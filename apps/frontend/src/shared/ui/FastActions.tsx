@@ -95,7 +95,7 @@ export const FastActions = ({
           className="h-8 w-8 cursor-pointer rounded-lg text-text-muted hover:text-destructive hover:bg-destructive/10"
           title={deleteTitle}
         >
-          <UserMinus className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" />
         </Button>
       )}
     </div>

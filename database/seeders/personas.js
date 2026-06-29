@@ -279,7 +279,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000018",
@@ -299,7 +299,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000019",
@@ -390,7 +390,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000024",
@@ -410,7 +410,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000025",
@@ -612,7 +612,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000036",
@@ -632,7 +632,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000037",
@@ -834,7 +834,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000048",
@@ -854,7 +854,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000049",
@@ -1056,7 +1056,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000060",
@@ -1076,7 +1076,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000061",
@@ -1167,7 +1167,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000066",
@@ -1187,7 +1187,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000067",
@@ -1278,7 +1278,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000072",
@@ -1298,7 +1298,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000073",
@@ -1389,7 +1389,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000078",
@@ -1409,7 +1409,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000079",

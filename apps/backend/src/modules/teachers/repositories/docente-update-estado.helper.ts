@@ -68,7 +68,7 @@ export async function bajaDirector(prisma: PrismaService, id: string) {
     });
 
     // 3. Cambiar el rol del usuario a 'docente'
-    const rolDocente = await tx.rol.findUnique({
+    const rolDocente = await tx.role.findUnique({
       where: { codigo: 'docente' },
     });
     if (rolDocente) {
@@ -83,7 +83,6 @@ export async function bajaDirector(prisma: PrismaService, id: string) {
       where: { id },
       data: {
         estado: EstadoRegistro.INACTIVO,
-        institucionId: null,
       },
       include: DOCENTE_INCLUDE,
     });

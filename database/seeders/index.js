@@ -1,4 +1,5 @@
 import { prisma, disconnect } from './_lib/prisma.js';
+import { seedUgeles } from './ugeles.js';
 import { seedCatalogos } from './catalogos.js';
 import { seedAuth } from './auth.js';
 import { seedCargos } from './cargos.js';
@@ -35,6 +36,7 @@ async function main() {
 
   await migrateLegacyRoles();
 
+  const { ugel } = await seedUgeles();
   const { nivelMap, cursoMap } = await seedCatalogos();
   const { roleMap } = await seedAuth();
   const cargoMap = await seedCargos();

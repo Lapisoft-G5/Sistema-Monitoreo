@@ -55,7 +55,7 @@ model Persona {
   nombres   String   @db.VarChar(120)
   apellidos String   @db.VarChar(120)
   correo    String?  @unique @db.VarChar(255)
-  telefono  String?  @db.VarChar(20)
+  telefono  String?  @unique @db.VarChar(20)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -347,6 +347,7 @@ model PlanMonitoreo {
   autorId           String?   @map("autor_id") @db.Uuid
   rolAutorAlCrear   String?   @map("rol_autor_al_crear") @db.VarChar(50) // 'jefe_gestion' | 'director_ie' (sello historico)
   institucionId     String?   @map("institucion_id") @db.Uuid
+  ugelId            String?   @map("ugel_id") @db.Uuid
   deleted           Boolean   @default(false)
   deletedAt         DateTime? @map("deleted_at")
   createdAt         DateTime  @default(now()) @map("created_at")
@@ -354,17 +355,34 @@ model PlanMonitoreo {
 
   autor             Usuario?               @relation(fields: [autorId], references: [id], onDelete: Restrict)
   institucion       InstitucionEducativa?  @relation("PlanInstitucion", fields: [institucionId], references: [id], onDelete: Restrict)
+  ugel              Ugel?                  @relation(fields: [ugelId], references: [id], onDelete: Restrict)
   cobertura         PlanCoberturaIe[]
   cronogramas       Cronograma[]
 
   @@index([autorId])
   @@index([institucionId])
+  @@index([ugelId])
   @@map("planes_monitoreo")
 }
 
 // ==========================================
 // 5.5. CATALOGOS TRANSVERSALES (Sprint 3)
 // ==========================================
+
+model Ugel {
+  id        String   @id @default(uuid()) @db.Uuid
+  codigo    String   @unique @db.VarChar(20)
+  nombre    String   @db.VarChar(200)
+  region    String   @db.VarChar(100)
+  provincia String   @db.VarChar(100)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  planes     PlanMonitoreo[]
+  plantillas PlantillaMonitoreo[]
+
+  @@map("ugeles")
+}
 
 model Modalidad {
   id        String   @id @default(uuid()) @db.Uuid
@@ -466,12 +484,14 @@ model PlantillaMonitoreo {
   autorId           String   @map("autor_id") @db.Uuid
   rolAutorAlCrear   String   @map("rol_autor_al_crear") @db.VarChar(50) // jefe_gestion | director_ie
   institucionId     String?  @map("institucion_id") @db.Uuid
+  ugelId            String?  @map("ugel_id") @db.Uuid
   deleted           Boolean  @default(false)
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
   autor             Usuario                @relation(fields: [autorId], references: [id], onDelete: Restrict)
   institucion       InstitucionEducativa?  @relation(fields: [institucionId], references: [id], onDelete: Restrict)
+  ugel              Ugel?                  @relation(fields: [ugelId], references: [id], onDelete: Restrict)
   nivelesCalificacion NivelCalificacion[]
   desempenos        DesempenoPlantilla[]
   ejesItems         EjeItemPlantilla[]
@@ -480,6 +500,7 @@ model PlantillaMonitoreo {
   @@unique([tipoMonitoreo, anioAcademico, version])
   @@index([estado])
   @@index([autorId])
+  @@index([ugelId])
   @@map("plantillas_monitoreo")
 }
 

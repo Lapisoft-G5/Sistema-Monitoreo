@@ -1,3 +1,4 @@
+import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
@@ -11,6 +12,22 @@ export async function transicionDocenteAEspecialista(
   rolEspecialistaId: string,
 ) {
   return prisma.$transaction(async (tx) => {
+    if (dto.cargo === 'Jefe de Área') {
+      const existingJefe = await tx.especialista.findFirst({
+        where: {
+          nivelEducativo: dto.nivelEducativo,
+          cargo: 'Jefe de Área',
+          estado: EstadoRegistro.ACTIVO,
+          personaId: { not: personaId },
+        },
+      });
+      if (existingJefe) {
+        throw new ConflictException(
+          `Ya existe un Jefe de Área activo para el nivel ${dto.nivelEducativo}.`,
+        );
+      }
+    }
+
     // 1. Verificar Docente activo
     const docente = await tx.docente.findUnique({
       where: { personaId },

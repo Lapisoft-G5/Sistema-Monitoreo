@@ -78,13 +78,14 @@ export async function bajaDirector(prisma: PrismaService, id: string) {
     }
 
     // 4. Inactivar el docente y quitar la IE
+    //    Usamos $executeRaw para poner institucionId = NULL porque el tipo generado
+    //    por Prisma marca la relación como "Required" aunque el schema la tenga como opcional.
     await tx.docente.update({
       where: { id },
-      data: {
-        estado: EstadoRegistro.INACTIVO,
-      },
+      data: { estado: EstadoRegistro.INACTIVO },
       include: DOCENTE_INCLUDE,
     });
+    await tx.$executeRaw`UPDATE docentes SET institucion_id = NULL WHERE id = ${id}::uuid`;
 
     // 5. Inactivar el usuario opcionalmente (o dejarlo activo pero como docente sin IE)
     // Según plan, inactivamos el usuario

@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, BadRequestException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { Prisma } from '../../../generated/prisma/client.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
@@ -38,25 +38,79 @@ export async function upsertCurso(
   docenteId: string,
 ): Promise<void> {
   const nivel = await prisma.nivelEducativo.findFirst({
-    where: { codigo: nivelEducativo, isActive: true },
+    where: {
+      codigo: { equals: nivelEducativo, mode: 'insensitive' },
+      isActive: true,
+    },
   });
+  if (!nivel) {
+    throw new BadRequestException(`No se encontró el nivel educativo: ${nivelEducativo}`);
+  }
+
   const curso = await tx.curso.upsert({
     where: {
       nombre_nivelEducativoId: {
         nombre: cursoAsignado,
-        nivelEducativoId: nivel?.id ?? '00000000-0000-0000-0000-000000000000',
+        nivelEducativoId: nivel.id,
       },
     },
     update: {},
     create: {
       nombre: cursoAsignado,
-      nivelEducativoId: nivel?.id,
-    } as Prisma.CursoUncheckedCreateInput,
+      nivelEducativoId: nivel.id,
+    },
   });
 
   await tx.docenteCurso.create({
     data: { docenteId, cursoId: curso.id },
   });
+}
+
+export async function upsertEspecialidad(
+  tx: Prisma.TransactionClient,
+  prisma: PrismaService,
+  especialidadAsignada: string,
+  nivelEducativo: string,
+  docenteId: string,
+): Promise<void> {
+  const nivel = await prisma.nivelEducativo.findFirst({
+    where: {
+      codigo: { equals: nivelEducativo, mode: 'insensitive' },
+      isActive: true,
+    },
+  });
+  if (!nivel) {
+    throw new BadRequestException(`No se encontró el nivel educativo: ${nivelEducativo}`);
+  }
+
+  const especialidad = await tx.especialidad.upsert({
+    where: {
+      nombre_nivelEducativoId: {
+        nombre: especialidadAsignada,
+        nivelEducativoId: nivel.id,
+      },
+    },
+    update: {},
+    create: {
+      nombre: especialidadAsignada,
+      nivelEducativoId: nivel.id,
+    },
+  });
+
+  const exists = await tx.docenteEspecialidad.findUnique({
+    where: {
+      docenteId_especialidadId: {
+        docenteId,
+        especialidadId: especialidad.id,
+      },
+    },
+  });
+
+  if (!exists) {
+    await tx.docenteEspecialidad.create({
+      data: { docenteId, especialidadId: especialidad.id },
+    });
+  }
 }
 
 export async function syncEspecialista(

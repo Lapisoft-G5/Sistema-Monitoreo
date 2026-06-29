@@ -71,9 +71,16 @@ export async function findPersonaByDni(prisma: PrismaService, dni: string) {
       usuario: { select: { id: true, isActive: true, isFirstLogin: true } },
       docente: {
         include: {
+          institucion: true,
           docenteCargos: {
             where: { fechaFin: null },
             include: { cargo: true },
+          },
+          docenteCursos: {
+            include: { curso: true },
+          },
+          docenteEspecialidades: {
+            include: { especialidad: true },
           },
         },
       },
@@ -125,10 +132,20 @@ export async function findPersonaByDni(prisma: PrismaService, dni: string) {
       ? {
           id: persona.docente.id,
           institucionId: persona.docente.institucionId,
+          institucion: persona.docente.institucion
+            ? {
+                id: persona.docente.institucion.id,
+                nombre: persona.docente.institucion.nombre,
+                codigoModular: persona.docente.institucion.codigoModular,
+                nivel: persona.docente.institucion.nivelEducativo,
+              }
+            : undefined,
           nivelEducativo: persona.docente.nivelEducativo,
           condicionLaboral: persona.docente.condicionLaboral,
           escalaMagisterial: persona.docente.escalaMagisterial,
           cargosActivos: docenteCargosActivos,
+          cursoAsignado: persona.docente.docenteCursos?.[0]?.curso?.nombre ?? null,
+          especialidad: persona.docente.docenteEspecialidades?.[0]?.especialidad?.nombre ?? null,
         }
       : null,
   };

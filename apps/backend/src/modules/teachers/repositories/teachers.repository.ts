@@ -4,7 +4,7 @@ import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 export interface DocenteEntity {
   id: string;
   personaId: string;
-  institucionId: string;
+  institucionId: string | null;
   gradoAcademico: string | null;
   nivelEducativo: string;
   modalidad?: string | null;

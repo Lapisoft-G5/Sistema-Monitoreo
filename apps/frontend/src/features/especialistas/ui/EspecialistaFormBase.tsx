@@ -189,7 +189,7 @@ export const EspecialistaFormBase = ({
               onChange={(v) => set('nombres', v)}
               placeholder="Ej. Juan Carlos"
               error={showError('nombres')}
-              disabled={isDniLocked}
+              disabled={isDniLocked || dniBloqueadoPorRol}
             />
           </div>
           <div className="md:col-span-2">
@@ -200,7 +200,7 @@ export const EspecialistaFormBase = ({
               onChange={(v) => set('apellidos', v)}
               placeholder="Ej. Pérez López"
               error={showError('apellidos')}
-              disabled={isDniLocked}
+              disabled={isDniLocked || dniBloqueadoPorRol}
             />
           </div>
         </div>
@@ -237,7 +237,7 @@ export const EspecialistaFormBase = ({
             onChange={(v) => set('correo', v)}
             placeholder="Ej. jperez@ugel-lampa.gob.pe"
             error={showError('correo')}
-            disabled={isDniLocked}
+            disabled={isDniLocked || dniBloqueadoPorRol}
           />
           <TextField
             label="Número de Celular"
@@ -245,6 +245,7 @@ export const EspecialistaFormBase = ({
             onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
             placeholder="Ej. 987654321"
             error={showError('celular')}
+            disabled={isDniLocked || dniBloqueadoPorRol}
             adornment={
               celularOk ? (
                 <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />

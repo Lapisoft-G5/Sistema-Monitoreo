@@ -84,6 +84,14 @@ export const checkRoleConflict = (
     case 'especialista':
     case 'jefe_area':
     case 'jefe_gestion':
+      if (r.esEspecialista && !tieneEspecialista(r, cargoObjetivo)) {
+        return {
+          bloquea: true,
+          advierte: false,
+          mensaje: `Esta persona ya está registrada como ${r.especialistaCargoActivo ?? 'Especialista'} con otro cargo.`,
+          detalle: 'No se puede duplicar el registro. Un Especialista solo puede tener un cargo activo a la vez.',
+        };
+      }
       if (tieneEspecialista(r, cargoObjetivo)) {
         return {
           bloquea: true,

@@ -224,7 +224,7 @@ export const DocenteFormBase = ({
               onChange={(v) => set('nombres', v)}
               placeholder="Ej. Rosa Elena"
               error={showError('nombres')}
-              disabled={isDniLocked}
+              disabled={isDniLocked || dniBloqueadoPorRol}
             />
           </div>
           <div className="md:col-span-2">
@@ -235,7 +235,7 @@ export const DocenteFormBase = ({
               onChange={(v) => set('apellidos', v)}
               placeholder="Ej. Mamani Ccopa"
               error={showError('apellidos')}
-              disabled={isDniLocked}
+              disabled={isDniLocked || dniBloqueadoPorRol}
             />
           </div>
         </div>
@@ -273,7 +273,7 @@ export const DocenteFormBase = ({
             onChange={(v) => set('correo', v)}
             placeholder="Ej. director@ie.edu.pe"
             error={showError('correo')}
-            disabled={isDniLocked}
+            disabled={isDniLocked || dniBloqueadoPorRol}
           />
           <TextField
             label="Número de Celular"
@@ -282,6 +282,7 @@ export const DocenteFormBase = ({
               onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
             placeholder="Ej. 987654321"
             error={showError('celular')}
+            disabled={isDniLocked || dniBloqueadoPorRol}
             adornment={
               celularOk ? (
                 <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />

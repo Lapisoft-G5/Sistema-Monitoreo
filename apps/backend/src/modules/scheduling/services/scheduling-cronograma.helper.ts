@@ -246,14 +246,15 @@ export async function crearVisita(
   }
 
   // Validar fecha en contexto de otras visitas del mismo evaluado
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const fechaNueva =
-    typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
-  const fechaNuevaNorm = new Date(fechaNueva);
-  fechaNuevaNorm.setHours(0, 0, 0, 0);
+  const fechaStr = dto.fechaProgramada.split('T')[0];
 
-  if (fechaNuevaNorm.getTime() < hoy.getTime()) {
+  // Obtener fecha actual en Perú (UTC-5) para evitar desfase con servidor UTC
+  const now = new Date();
+  const peruMs = now.getTime() - 5 * 60 * 60 * 1000;
+  const peruDate = new Date(peruMs);
+  const hoyStr = `${peruDate.getUTCFullYear()}-${String(peruDate.getUTCMonth() + 1).padStart(2, '0')}-${String(peruDate.getUTCDate()).padStart(2, '0')}`;
+
+  if (fechaStr < hoyStr) {
     throw new BadRequestException('La fecha programada no puede ser anterior a la fecha actual.');
   }
 
@@ -270,10 +271,9 @@ export async function crearVisita(
   );
 
   if (visitaAnterior) {
-    const fechaAnt = new Date(visitaAnterior.fechaProgramada);
-    fechaAnt.setHours(0, 0, 0, 0);
-    const diffMs = fechaNuevaNorm.getTime() - fechaAnt.getTime();
-    if (diffMs < 86400000) {
+    const fechaAntNum = parseInt(visitaAnterior.fechaProgramada.replace(/-/g, ''));
+    const fechaStrNum = parseInt(fechaStr.replace(/-/g, ''));
+    if (fechaStrNum <= fechaAntNum) {
       throw new BadRequestException(
         `La visita N.° ${dto.numeroVisita} debe programarse al menos 1 día después de la visita N.° ${dto.numeroVisita - 1} ` +
           `(${visitaAnterior.fechaProgramada}).`,
@@ -282,10 +282,9 @@ export async function crearVisita(
   }
 
   if (visitaSiguiente) {
-    const fechaSig = new Date(visitaSiguiente.fechaProgramada);
-    fechaSig.setHours(0, 0, 0, 0);
-    const diffMs = fechaSig.getTime() - fechaNuevaNorm.getTime();
-    if (diffMs < 86400000) {
+    const fechaSigNum = parseInt(visitaSiguiente.fechaProgramada.replace(/-/g, ''));
+    const fechaStrNum = parseInt(fechaStr.replace(/-/g, ''));
+    if (fechaSigNum <= fechaStrNum) {
       throw new BadRequestException(
         `La visita N.° ${dto.numeroVisita} debe programarse al menos 1 día antes de la visita N.° ${dto.numeroVisita + 1} ` +
           `(${visitaSiguiente.fechaProgramada}).`,

@@ -436,7 +436,11 @@ export const LlenarFichaForm = ({
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>
-              <input type="number" min="0" value={contextoAlumnos} onChange={(e) => setContextoAlumnos(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
+              <input type="number" min="0" max="50" value={contextoAlumnos} onChange={(e) => {
+                const val = e.target.value ? Number(e.target.value) : '';
+                if (val !== '' && val > 50) return;
+                setContextoAlumnos(val);
+              }} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Est. NEE (Opcional)</label>

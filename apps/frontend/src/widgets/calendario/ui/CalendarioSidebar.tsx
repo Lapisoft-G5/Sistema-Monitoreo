@@ -328,8 +328,9 @@ const {
           await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
         }
       }
+      setShowFichaModal(false);
     } catch (err: unknown) {
-      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string } } };
+      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string; message?: string } }; message?: string };
       if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
         // ILA-0046: la plantilla paso a Historico, abrir modal de migracion
         setMigracionContext({
@@ -340,10 +341,10 @@ const {
         setShowMigracionModal(true);
         return;
       }
+      const msg = apiErr?.response?.data?.message || apiErr?.message || 'Error desconocido al guardar borrador.';
+      alert(`Error: ${msg}`);
       console.warn('No se pudo persistir la ficha en backend:', err);
     }
-
-    setShowFichaModal(false);
   };
 
   const handleFinalizeMonitoreo = async (
@@ -400,8 +401,9 @@ const {
         }
       }
       await fichasApi.finalizar(ficha.id, data.generalComments, data.sugerencias, data.compromisos);
+      setShowFichaModal(false);
     } catch (err: unknown) {
-      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string } } };
+      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string; message?: string } }; message?: string };
       if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
         setMigracionContext({
           visitId,
@@ -411,10 +413,10 @@ const {
         setShowMigracionModal(true);
         return;
       }
+      const msg = apiErr?.response?.data?.message || apiErr?.message || 'Error desconocido al finalizar la ficha.';
+      alert(`Error: ${msg}`);
       console.warn('No se pudo finalizar la ficha en backend:', err);
     }
-
-    setShowFichaModal(false);
   };
 
   const romanToNumber = (roman: string): number => {

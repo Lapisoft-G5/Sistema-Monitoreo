@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -52,7 +53,7 @@ const getVisitStatusBadgeClass = (estado: string) => {
   switch (estado) {
     case 'PROGRAMADO':
       return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'EN PROCESO':
+    case 'EN_PROCESO':
       return 'bg-rose-100 text-rose-800 border-rose-200';
     case 'COMPLETADO':
       return 'bg-emerald-100 text-emerald-800 border-emerald-200';
@@ -69,7 +70,7 @@ const getVisitColorDot = (estado: string) => {
   switch (estado) {
     case 'PROGRAMADO':
       return 'bg-blue-500';
-    case 'EN PROCESO':
+    case 'EN_PROCESO':
       return 'bg-rose-500';
     case 'COMPLETADO':
       return 'bg-emerald-500';
@@ -279,6 +280,13 @@ const {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      contexto?: {
+        areaCurricular: string;
+        grado: string;
+        seccion: string;
+        cantidadEstudiantes: number;
+        cantidadEstudiantesNee: number;
+      };
     }
   ) => {
     // Persistir localmente (UX inmediata)
@@ -286,7 +294,7 @@ const {
       localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
     }
     qc.setQueryData(['cronogramas'], (prev: any) =>
-      Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'EN PROCESO' } : c)) : prev
+      Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'EN_PROCESO' } : c)) : prev
     );
 
     // Persistir en backend (best-effort, no bloquea la UI)
@@ -296,12 +304,11 @@ const {
       if (!ficha) {
         ficha = await fichasApi.create({
           cronogramaId: visitId,
-          areaCurricular: selectedVisit?.tipo === 'DOCENTE' ? 'Matematica' : undefined,
-          grado: selectedVisit?.tipo === 'DOCENTE' ? '5to' : undefined,
-          seccion: selectedVisit?.tipo === 'DOCENTE' ? 'A' : undefined,
-          cantidadEstudiantes: selectedVisit?.tipo === 'DOCENTE' ? 30 : undefined,
-          cantidadEstudiantesNee: selectedVisit?.tipo === 'DOCENTE' ? 2 : undefined,
-          cursoId: selectedVisit?.tipo === 'DOCENTE' ? '1f480ae6-cd7a-40f7-beac-108c05af771e' : undefined,
+          areaCurricular: data.contexto?.areaCurricular,
+          grado: data.contexto?.grado,
+          seccion: data.contexto?.seccion,
+          cantidadEstudiantes: data.contexto?.cantidadEstudiantes,
+          cantidadEstudiantesNee: data.contexto?.cantidadEstudiantesNee,
         });
       }
       // Guardar respuestas de desempeno (1-4)
@@ -351,6 +358,13 @@ const {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      contexto?: {
+        areaCurricular: string;
+        grado: string;
+        seccion: string;
+        cantidadEstudiantes: number;
+        cantidadEstudiantesNee: number;
+      };
     }
   ) => {
     localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
@@ -364,17 +378,17 @@ const {
       if (!ficha) {
         ficha = await fichasApi.create({
           cronogramaId: visitId,
-          areaCurricular: selectedVisit?.tipo === 'DOCENTE' ? 'Matematica' : undefined,
-          grado: selectedVisit?.tipo === 'DOCENTE' ? '5to' : undefined,
-          seccion: selectedVisit?.tipo === 'DOCENTE' ? 'A' : undefined,
-          cantidadEstudiantes: selectedVisit?.tipo === 'DOCENTE' ? 30 : undefined,
-          cantidadEstudiantesNee: selectedVisit?.tipo === 'DOCENTE' ? 2 : undefined,
-          cursoId: selectedVisit?.tipo === 'DOCENTE' ? '1f480ae6-cd7a-40f7-beac-108c05af771e' : undefined,
+          areaCurricular: data.contexto?.areaCurricular,
+          grado: data.contexto?.grado,
+          seccion: data.contexto?.seccion,
+          cantidadEstudiantes: data.contexto?.cantidadEstudiantes,
+          cantidadEstudiantesNee: data.contexto?.cantidadEstudiantesNee,
         });
       }
       for (const [desempenoId, nivelRoman] of Object.entries(data.selectedLevels)) {
         const obs = data.rubricComments?.[desempenoId];
-        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman), obs);
+        const extraRes = data.preguntaExtraAnswers?.[desempenoId];
+        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman), obs, extraRes);
       }
       for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
         await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
@@ -502,7 +516,7 @@ const {
 
             <div className="space-y-1">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                Docente / Directivo Evaluado
+                Evaluado ({selectedVisit.tipo})
               </span>
               <div className="flex items-start gap-2 text-slate-800">
                 <GraduationCap className="h-4.5 w-4.5 text-primary mt-0.5 shrink-0" />
@@ -576,7 +590,7 @@ const {
           <div className="space-y-2 pt-4 border-t border-border mt-6">
             {isEvaluadorAutorizado ? (
               <>
-                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO' || selectedVisit.estado === 'REPROGRAMADO') && (
+                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN_PROCESO' || selectedVisit.estado === 'REPROGRAMADO') && (
                   <div className="flex flex-col gap-2.5">
                     {/* Advertencia si no es la fecha programada */}
                     {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'REPROGRAMADO') && !isFechaCoincidente && (
@@ -626,7 +640,7 @@ const {
               </>
             ) : (
               <>
-                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN PROCESO' || selectedVisit.estado === 'REPROGRAMADO') && (
+                {(selectedVisit.estado === 'PROGRAMADO' || selectedVisit.estado === 'EN_PROCESO' || selectedVisit.estado === 'REPROGRAMADO') && (
                   <div className="flex flex-col gap-2">
                     <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                       <Clock className="h-4.5 w-4.5 text-blue-500 mt-0.5 shrink-0" />
@@ -695,6 +709,7 @@ const {
                             rubricComments,
                             respuestasEjeItem,
                             evidenciaUrls,
+                            contexto: ficha.contexto,
                           };
                           localStorage.setItem(`sistema-monitoreo:ficha-state:${selectedVisit.id}`, JSON.stringify(mappedData));
                         } else {

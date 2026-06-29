@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { STALE_TIMES, PAGINATION } from '@shared/config/constants';
@@ -20,6 +21,7 @@ export interface EspecialistaLite {
   nivelEducativo: string;
   cargo: string;
   especialidades?: string[];
+  activo: boolean;
 }
 
 export interface InstitucionLite {
@@ -27,6 +29,8 @@ export interface InstitucionLite {
   nombre: string;
   modalidad: string;
   nivelEducativo: string;
+  estado: string;
+  activo: boolean;
 }
 
 function getInitials(name: string) {
@@ -87,6 +91,7 @@ export const useCronogramasData = (enabled = true) => {
       nivelEducativo: e.nivelEducativo || 'Primaria',
       cargo: e.cargo || 'Especialista',
       especialidades: e.especialidades || [],
+      activo: e.estado === 'Activo',
     }));
   }, [espQuery.data]);
 
@@ -98,6 +103,8 @@ export const useCronogramasData = (enabled = true) => {
       nombre: i.nombre,
       modalidad: i.modalidad || 'EBR',
       nivelEducativo: i.nivelEducativo,
+      estado: i.estado || 'Inactiva',
+      activo: i.estado === 'Activa' || i.estado === 'Activo',
     }));
   }, [instQuery.data]);
 

@@ -40,10 +40,7 @@ export function validateInstitucionOwnership(
   }
 }
 
-export async function validateCargoExists(
-  catalogsRepository: CatalogsRepository,
-  cargoId: string,
-) {
+export async function validateCargoExists(catalogsRepository: CatalogsRepository, cargoId: string) {
   const cargo = await catalogsRepository.findCargoById(cargoId);
   if (!cargo) {
     throw new NotFoundException('El cargo especificado no existe.');

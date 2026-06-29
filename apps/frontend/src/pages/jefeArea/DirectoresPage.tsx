@@ -9,6 +9,7 @@ import { FilterDirectores } from '@features/directores';
 import { DirectoresStatsWidget, DirectoresTableWidget } from '@widgets/directores';
 import { fetchDocentes } from '@features/docentes/docente-service';
 import { fetchInstituciones } from '@features/institutions/institution-service';
+import { PAGINATION } from '@shared/config/constants';
 import type { Docente } from '@entities/model-docentes';
 import type { Institucion } from '@entities/model-instituciones';
 
@@ -23,7 +24,7 @@ export const DirectoresPage = () => {
     try {
       const [docentesMapped, instMapped] = await Promise.all([
         fetchDocentes(),
-        fetchInstituciones(),
+        fetchInstituciones({ limit: PAGINATION.MAX_LIMIT }),
       ]);
       setDirectores(docentesMapped);
       setInstituciones(instMapped);

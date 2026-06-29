@@ -1,5 +1,8 @@
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type { IEspecialistaResponse, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IEspecialistaResponse,
+  IQueryEspecialistaRequest,
+} from '@sistema-monitoreo/shared-contracts';
 import { mapEspecialista, ESPECIALISTA_INCLUDE } from './especialista-mapper.helper.js';
 import type { CargoRecord } from './especialista.repository.js';
 
@@ -15,7 +18,7 @@ export async function findAll(
     include: ESPECIALISTA_INCLUDE,
   });
 
-  const mapped = list.map((esp: any) => mapEspecialista(esp));
+  const mapped = list.map((esp) => mapEspecialista(esp));
   if (filters?.cargo) {
     return mapped.filter((esp) => esp.cargo === filters.cargo);
   }
@@ -52,7 +55,7 @@ export async function findCargosByEspecialistaId(
   return prisma.especialistaCargo.findMany({
     where: { especialistaId },
     orderBy: [{ fechaFin: 'asc' }, { fechaInicio: 'desc' }],
-  }) as unknown as CargoRecord[];
+  });
 }
 
 export async function findCargoById(
@@ -61,7 +64,7 @@ export async function findCargoById(
 ): Promise<CargoRecord | null> {
   return prisma.especialistaCargo.findUnique({
     where: { id },
-  }) as unknown as CargoRecord | null;
+  });
 }
 
 export async function countActiveCargos(

@@ -36,6 +36,7 @@ export const usePlanesMonitoreo = () => {
     titulo: string;
     anioAcademico: number;
     tipoEntidad: 'UGEL' | 'IE';
+    estado?: 'Activo' | 'Inactivo';
   }) => {
     setActionLoading(true);
     setError(null);
@@ -45,6 +46,9 @@ export const usePlanesMonitoreo = () => {
       formData.append('titulo', data.titulo);
       formData.append('anioAcademico', String(data.anioAcademico));
       formData.append('tipoEntidad', data.tipoEntidad);
+      if (data.estado) {
+        formData.append('estado', data.estado);
+      }
 
       const plan = await planesMonitoreoApi.create(formData);
       setPlanes((prev) => [plan, ...prev]);
@@ -74,5 +78,21 @@ export const usePlanesMonitoreo = () => {
     }
   };
 
-  return { planes, loading, error, actionLoading, fetchPlanes, uploadPlan, toggleEstado };
+  const hardDeletePlan = async (id: string) => {
+    setActionLoading(true);
+    setError(null);
+    try {
+      await planesMonitoreoApi.hardDelete(id);
+      setPlanes((prev) => prev.filter((p) => p.id !== id));
+      return { success: true };
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Error al eliminar el plan.';
+      setError(errMsg);
+      return { success: false, error: errMsg };
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  return { planes, loading, error, actionLoading, fetchPlanes, uploadPlan, toggleEstado, hardDeletePlan };
 };

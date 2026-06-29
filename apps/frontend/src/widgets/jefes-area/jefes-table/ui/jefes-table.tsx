@@ -106,16 +106,13 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
                 {doc.nivelEducativo}
               </Badge>
             </TableCell>
-            <TableCell>
-              {doc.especialidades && doc.especialidades.length > 0 ? (
-                <div className="flex flex-wrap gap-1">
-                  {doc.especialidades.map((esp) => (
-                    <Badge key={esp} variant="outline" className="text-[0.6rem] py-0 px-1 bg-slate-50 border-slate-200">{esp}</Badge>
-                  ))}
-                </div>
-              ) : (
-                <span className="text-xs text-text-muted">-</span>
-              )}
+            <TableCell className="font-medium text-text text-xs">
+              <div>
+                <span className="font-semibold text-text">{doc.especialidad || 'No especificada'}</span>
+                {(doc.especialidadesExtras?.length ?? 0) > 0 && (
+                  <span className="text-text-muted text-[0.7rem] block">Adicionales: {doc.especialidadesExtras?.join(', ')}</span>
+                )}
+              </div>
             </TableCell>
             <TableCell className="font-medium text-text text-xs">{doc.cargaHoraria} hrs</TableCell>
             <TableCell>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { User, Briefcase, Plus, Trash2, Check, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
@@ -142,18 +142,18 @@ export const DocenteFormBase = ({
     onValidSubmit: () => onSubmit(form),
     isLoading,
     errors,
-    setPersonaFields: (persona) => {
+    setPersonaFields: useCallback((persona) => {
       set('nombres', persona.nombres);
       set('apellidos', persona.apellidos);
       set('correo', persona.correo ?? '');
       set('celular', persona.telefono ?? '');
-    },
-    clearPersonaFields: () => {
+    }, []),
+    clearPersonaFields: useCallback(() => {
       set('nombres', '');
       set('apellidos', '');
       set('correo', '');
       set('celular', '');
-    },
+    }, []),
   });
 
   const showError = (key: keyof DocenteFormData) => (submitted ? errors[key] : '');

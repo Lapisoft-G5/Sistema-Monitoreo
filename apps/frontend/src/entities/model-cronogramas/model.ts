@@ -7,7 +7,7 @@ export interface Cronograma {
   docenteDirectivo: string;
   tipo: 'DOCENTE' | 'DIRECTIVO';
   nroVisita: string;
-  estado: 'PROGRAMADO' | 'EN PROCESO' | 'COMPLETADO' | 'REPROGRAMADO' | 'CANCELADO';
+  estado: 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'REPROGRAMADO' | 'CANCELADO';
   modalidad: string;
   nivel: string;
   observaciones?: string;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Compass, PlusCircle, Search, Trash2, Eye, FileText, X, AlertCircle, LayoutGrid, List, RotateCcw } from 'lucide-react';
+import { Compass, PlusCircle, Search, Eye, FileText, X, AlertCircle, LayoutGrid, List, RotateCcw, PowerOff, Trash2 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -29,14 +29,18 @@ export const PlanMonitoreoAnualPage = () => {
   // --- Estados de Modales ---
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
+  const [deletePlanHardId, setDeletePlanHardId] = useState<string | null>(null);
 
   // --- Estados de Formulario de Subida ---
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadYear, setUploadYear] = useState(new Date().getFullYear().toString());
   const [uploadEntity, setUploadEntity] = useState<'UGEL' | 'IE'>(defaultEntity);
+  const [uploadEstado, setUploadEstado] = useState<'Activo' | 'Inactivo'>('Activo');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [localUploadError, setLocalUploadError] = useState<string | null>(null);
+  const [localToggleError, setLocalToggleError] = useState<string | null>(null);
+  const [localHardDeleteError, setLocalHardDeleteError] = useState<string | null>(null);
 
   // Sincronizar tipo de entidad según el rol cargado de forma síncrona durante el render
   const [prevDefaultEntity, setPrevDefaultEntity] = useState(defaultEntity);
@@ -55,6 +59,7 @@ export const PlanMonitoreoAnualPage = () => {
     fetchPlanes,
     uploadPlan,
     toggleEstado,
+    hardDeletePlan,
   } = usePlanesMonitoreo();
 
   // --- Cargar datos con filtros ---
@@ -124,12 +129,14 @@ export const PlanMonitoreoAnualPage = () => {
       titulo: uploadTitle.trim(),
       anioAcademico: Number(uploadYear),
       tipoEntidad: uploadEntity,
+      estado: uploadEstado,
     });
 
     if (res.success) {
       // Limpiar y cerrar modal
       setUploadTitle('');
       setUploadFile(null);
+      setUploadEstado('Activo');
       setFormSubmitted(false);
       setShowUploadModal(false);
     }
@@ -138,9 +145,24 @@ export const PlanMonitoreoAnualPage = () => {
   // --- Manejo de Eliminado Lógico ---
   const handleDeleteConfirm = async () => {
     if (!deletePlanId) return;
+    setLocalToggleError(null);
     const res = await toggleEstado(deletePlanId);
     if (res.success) {
       setDeletePlanId(null);
+    } else {
+      setLocalToggleError(res.error || 'Error al cambiar estado.');
+    }
+  };
+
+  // --- Manejo de Eliminado Físico ---
+  const handleHardDeleteConfirm = async () => {
+    if (!deletePlanHardId) return;
+    setLocalHardDeleteError(null);
+    const res = await hardDeletePlan(deletePlanHardId);
+    if (res.success) {
+      setDeletePlanHardId(null);
+    } else {
+      setLocalHardDeleteError(res.error || 'Error al eliminar plan.');
     }
   };
 
@@ -336,23 +358,32 @@ export const PlanMonitoreoAnualPage = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setDeletePlanId(plan.id)}
+                            onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
                             className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
                             title="Desactivar Plan"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <PowerOff className="w-4 h-4" />
                           </Button>
                         ) : (
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setDeletePlanId(plan.id)}
+                            onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
                             className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/15 transition-colors rounded-lg cursor-pointer"
                             title="Reactivar Plan"
                           >
                             <RotateCcw className="w-4 h-4" />
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => { setLocalHardDeleteError(null); setDeletePlanHardId(plan.id); }}
+                          className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                          title="Eliminar por completo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -427,23 +458,32 @@ export const PlanMonitoreoAnualPage = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setDeletePlanId(plan.id)}
+                          onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
                           className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
                           title="Desactivar Plan"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <PowerOff className="w-4 h-4" />
                         </Button>
                       ) : (
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setDeletePlanId(plan.id)}
+                          onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
                           className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/15 transition-colors rounded-lg cursor-pointer"
                           title="Reactivar Plan"
                         >
                           <RotateCcw className="w-4 h-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => { setLocalHardDeleteError(null); setDeletePlanHardId(plan.id); }}
+                        className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                        title="Eliminar por completo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -549,6 +589,19 @@ export const PlanMonitoreoAnualPage = () => {
                 />
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <SelectField
+                  label="Estado Inicial"
+                  value={uploadEstado}
+                  placeholder="Seleccione un estado"
+                  onChange={(v) => setUploadEstado(v as 'Activo' | 'Inactivo')}
+                  options={[
+                    { value: 'Activo', label: 'Activo' },
+                    { value: 'Inactivo', label: 'Inactivo' },
+                  ]}
+                />
+              </div>
+
               {/* Subida de Archivo */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-text-muted">Documento PDF (Máx. 10MB) *</label>
@@ -619,13 +672,20 @@ export const PlanMonitoreoAnualPage = () => {
           <ConfirmModal
             title={isReactivating ? '¿Desea reactivar el Plan de Monitoreo?' : '¿Desea desactivar el Plan de Monitoreo?'}
             message={
-              <span>
-                {isReactivating ? (
-                  <span>Esta acción cambiará el estado de este plan de monitoreo a **Activo** y estará disponible para todos los usuarios.</span>
-                ) : (
-                  <span>Esta acción cambiará el estado de este plan de monitoreo a **Inactivo**. Ya no estará activo pero seguirá visible para reactivación.</span>
+              <div className="flex flex-col gap-3">
+                <span>
+                  {isReactivating ? (
+                    <span>Esta acción cambiará el estado de este plan de monitoreo a **Activo** y estará disponible para todos los usuarios.</span>
+                  ) : (
+                    <span>Esta acción cambiará el estado de este plan de monitoreo a **Inactivo**. Ya no estará activo pero seguirá visible para reactivación.</span>
+                  )}
+                </span>
+                {localToggleError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                    <p className="text-xs text-rose-700 font-semibold">{localToggleError}</p>
+                  </div>
                 )}
-              </span>
+              </div>
             }
             confirmLabel={
               actionLoading 
@@ -635,6 +695,33 @@ export const PlanMonitoreoAnualPage = () => {
             onConfirm={handleDeleteConfirm}
             onCancel={() => setDeletePlanId(null)}
             danger={!isReactivating}
+          />
+        );
+      })()}
+      {/* ── Modal de Confirmación para Eliminado Físico ── */}
+      {deletePlanHardId && (() => {
+        return (
+          <ConfirmModal
+            title="¿Eliminar definitivamente el Plan de Monitoreo?"
+            message={
+              <div className="flex flex-col gap-3">
+                <span className="font-bold text-destructive">
+                  ¡Atención! Esta acción no se puede deshacer.
+                </span>
+                <span>
+                  El plan de monitoreo será borrado completamente de la base de datos, siempre y cuando no tenga visitas (cronogramas) o plantillas asociadas.
+                </span>
+                {localHardDeleteError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                    <p className="text-xs text-rose-700 font-semibold">{localHardDeleteError}</p>
+                  </div>
+                )}
+              </div>
+            }
+            confirmLabel={actionLoading ? 'Eliminando...' : 'Eliminar Permanentemente'}
+            onConfirm={handleHardDeleteConfirm}
+            onCancel={() => setDeletePlanHardId(null)}
+            danger={true}
           />
         );
       })()}

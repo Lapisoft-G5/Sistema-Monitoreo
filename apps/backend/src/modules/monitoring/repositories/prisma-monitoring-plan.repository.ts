@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type {
   IMonitoringPlanResponse,
@@ -54,6 +54,7 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
         anioAcademico: data.anioAcademico,
         tipoEntidad: data.tipoEntidad,
         archivoUrl: data.archivoUrl,
+        estado: data.estado,
         autorId: data.autorId,
         rolAutorAlCrear: data.rolAutorAlCrear,
         institucionId: data.institucionId,
@@ -80,6 +81,20 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
       data: { estado: newEstado },
     });
     return this.buildResponse(plan);
+  }
+
+  async hardDelete(id: string): Promise<boolean> {
+    const existing = await this.prisma.planMonitoreo.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
+    }
+    await this.prisma.$transaction(async (tx) => {
+      // First delete dependent coverage
+      await tx.planCoberturaIe.deleteMany({ where: { planId: id } });
+      // Then delete the plan
+      await tx.planMonitoreo.delete({ where: { id } });
+    });
+    return true;
   }
 
   async restore(id: string): Promise<IMonitoringPlanResponse> {

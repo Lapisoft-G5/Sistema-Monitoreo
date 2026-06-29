@@ -12,7 +12,11 @@ import { Card } from '@shared/ui/card';
 import { Spinner } from '@shared/ui/Spinner';
 import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 
-export const EditJefeArea = () => {
+interface EditJefeAreaProps {
+  routePrefix?: string;
+}
+
+export const EditJefeArea = ({ routePrefix = '/jefes-area' }: EditJefeAreaProps = {}) => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { updateJefeArea, loading, error } = useJefeAreaService();
@@ -75,7 +79,7 @@ export const EditJefeArea = () => {
     if (!id) return;
     const result = await updateJefeArea(id, formData, 'jefe_area');
     if (result.success) {
-      navigate('/jefes-area');
+      navigate(routePrefix);
     }
   };
 
@@ -93,7 +97,7 @@ export const EditJefeArea = () => {
         initialData={initialData}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onSubmit={(data) => handleFormSubmit(data as any)}
-        onCancel={() => navigate('/jefes-area')}
+        onCancel={() => navigate(routePrefix)}
         isLoading={loading}
       />
     </Card>

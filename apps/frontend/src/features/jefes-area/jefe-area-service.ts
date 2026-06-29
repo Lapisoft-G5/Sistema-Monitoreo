@@ -46,6 +46,8 @@ export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea =
       : new Date().toISOString().split('T')[0],
     cargo: apiJefe.cargo || 'Jefe de Área',
     especialidades: apiJefe.especialidades || [],
+    especialidad: apiJefe.especialidad || null,
+    especialidadesExtras: apiJefe.especialidadesExtras || [],
   };
 };
 

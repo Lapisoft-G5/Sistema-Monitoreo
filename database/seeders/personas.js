@@ -15,184 +15,1462 @@ import { validarDNI, validarEmail, validarEdadPlausible } from './_lib/helpers.j
 
 const USERS = [
   {
-    dni: '40000001',
-    firstName: 'Carlos',
-    lastName: 'Mendoza Quispe',
-    email: 'carlos.mendoza@ugel.gob.pe',
-    role: 'director_ugel',
-    fechaNacimiento: '1975-03-15',
+    "dni": "40000001",
+    "firstName": "Carlos",
+    "lastName": "Mendoza Quispe",
+    "email": "carlos.mendoza@ugel.gob.pe",
+    "role": "director_ugel",
+    "fechaNacimiento": "1975-03-15"
   },
   {
-    dni: '40000002',
-    firstName: 'Maria Elena',
-    lastName: 'Huaman Vargas',
-    email: 'maria.huaman@ugel.gob.pe',
-    role: 'jefe_gestion',
-    fechaNacimiento: '1972-08-22',
-    nivelEducativo: 'Secundaria',
-    especialidad: 'Matematica',
+    "dni": "40000002",
+    "firstName": "Maria Elena",
+    "lastName": "Huaman Vargas",
+    "email": "maria.huaman@ugel.gob.pe",
+    "role": "jefe_gestion",
+    "fechaNacimiento": "1972-08-22",
+    "nivelEducativo": "Secundaria",
+    "especialidad": "Matematica"
   },
   {
-    dni: '40000003',
-    firstName: 'Jose Luis',
-    lastName: 'Quispe Mamani',
-    email: 'jose.quispe@ugel.gob.pe',
-    role: 'jefe_area',
-    fechaNacimiento: '1980-05-10',
-    nivelEducativo: 'Secundaria',
-    especialidad: 'Comunicacion',
+    "dni": "40000003",
+    "firstName": "Jose Luis",
+    "lastName": "Quispe Mamani",
+    "email": "jose.quispe@ugel.gob.pe",
+    "role": "jefe_area",
+    "fechaNacimiento": "1980-05-10",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "Comunicacion",
+      "Matematica",
+      "EPT"
+    ]
   },
   {
-    dni: '40000004',
-    firstName: 'Ana Lucia',
-    lastName: 'Ticona Coila',
-    email: 'ana.ticona@ugel.gob.pe',
-    role: 'especialista',
-    fechaNacimiento: '1985-11-03',
-    nivelEducativo: 'Primaria',
-    especialidad: 'PIP',
+    "dni": "40000004",
+    "firstName": "Martha",
+    "lastName": "Perez",
+    "email": "martha.perez@ugel.gob.pe",
+    "role": "jefe_area",
+    "fechaNacimiento": "1981-06-15",
+    "nivelEducativo": "Primaria",
+    "especialidades": [
+      "PIP",
+      "Educacion Fisica"
+    ]
   },
   {
-    dni: '40000005',
-    firstName: 'Pedro Pablo',
-    lastName: 'Mamani Cruz',
-    email: 'pedro.mamani@ugel.gob.pe',
-    role: 'especialista',
-    fechaNacimiento: '1982-07-19',
-    nivelEducativo: 'Secundaria',
-    especialidades: ['CTA', 'Ciencias Sociales'],
+    "dni": "40000005",
+    "firstName": "Sofia",
+    "lastName": "Gomez",
+    "email": "sofia.gomez@ugel.gob.pe",
+    "role": "jefe_area",
+    "fechaNacimiento": "1978-02-20",
+    "nivelEducativo": "Inicial"
   },
   {
-    dni: '41000000',
-    firstName: 'Juan',
-    lastName: 'Jefe CTA',
-    email: 'juan.jefecta@ugel.gob.pe',
-    role: 'jefe_area',
-    fechaNacimiento: '1979-05-10',
-    nivelEducativo: 'Secundaria',
-    especialidades: ['CTA', 'Matematica'],
+    "dni": "40000006",
+    "firstName": "Ana Lucia",
+    "lastName": "Ticona Coila",
+    "email": "ana.ticona@ugel.gob.pe",
+    "role": "especialista",
+    "fechaNacimiento": "1985-11-03",
+    "nivelEducativo": "Primaria",
+    "especialidades": [
+      "PIP",
+      "Educacion Fisica"
+    ]
   },
   {
-    dni: '41000001',
-    firstName: 'Super',
-    lastName: 'Jefe Gestion',
-    email: 'super.gestion@ugel.gob.pe',
-    role: 'jefe_gestion',
-    fechaNacimiento: '1970-01-01',
-    nivelEducativo: 'Secundaria',
-    especialidad: 'Matematica',
+    "dni": "40000007",
+    "firstName": "Pedro Pablo",
+    "lastName": "Mamani Cruz",
+    "email": "pedro.mamani@ugel.gob.pe",
+    "role": "especialista",
+    "fechaNacimiento": "1982-07-19",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "CTA",
+      "Ciencias Sociales",
+      "EPT"
+    ]
   },
   {
-    dni: '40000006',
-    firstName: 'Rosa Maria',
-    lastName: 'Apaza Condori',
-    email: 'rosa.apaza@ugel.gob.pe',
-    role: 'director_institucion',
-    fechaNacimiento: '1978-02-28',
-    institucionCodigoModular: '0200001',
-    nivelEducativo: 'Secundaria',
-    especialidad: 'Ciencias Sociales',
-    secciones: [{ grado: '5.', seccion: 'A' }, { grado: '5.', seccion: 'B' }],
-    condicionLaboral: 'Designado',
+    "dni": "40000008",
+    "firstName": "Lidia",
+    "lastName": "Salinas",
+    "email": "lidia.salinas@ugel.gob.pe",
+    "role": "especialista",
+    "fechaNacimiento": "1988-04-20",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "Matematica",
+      "Comunicacion",
+      "Ingles"
+    ]
   },
   {
-    dni: '40000007',
-    firstName: 'Juan Carlos',
-    lastName: 'Choque Huaranca',
-    email: 'juan.choque@ugel.gob.pe',
-    role: 'director_institucion',
-    fechaNacimiento: '1980-09-14',
-    institucionCodigoModular: '0200002',
-    nivelEducativo: 'Primaria',
-    secciones: [{ grado: '6.', seccion: 'A' }],
-    condicionLaboral: 'Designado',
+    "dni": "40000009",
+    "firstName": "Carmen",
+    "lastName": "Rios",
+    "email": "carmen.rios@ugel.gob.pe",
+    "role": "especialista",
+    "fechaNacimiento": "1983-09-12",
+    "nivelEducativo": "Inicial"
   },
   {
-    dni: '40000008',
-    firstName: 'Luz Marina',
-    lastName: 'Pari Huayta',
-    email: 'luz.pari@ugel.gob.pe',
-    role: 'docente',
-    fechaNacimiento: '1986-04-07',
-    institucionCodigoModular: '0200001',
-    nivelEducativo: 'Secundaria',
-    curso: 'Matematica',
-    secciones: [{ grado: '3.', seccion: 'A' }, { grado: '3.', seccion: 'B' }],
-    condicionLaboral: 'Nombrado',
-    cargaLaboral: 30,
-    cargoNombre: 'Coordinador Pedagógico',
+    "dni": "40000100",
+    "firstName": "Roberto",
+    "lastName": "Chuquimia",
+    "email": "roberto.chuquimia@ugel.gob.pe",
+    "role": "especialista",
+    "fechaNacimiento": "1981-10-10",
+    "nivelEducativo": "Primaria",
+    "especialidades": [
+      "PIP"
+    ]
   },
   {
-    dni: '40000009',
-    firstName: 'Miguel Angel',
-    lastName: 'Soto Ramos',
-    email: 'miguel.soto@ugel.gob.pe',
-    role: 'docente',
-    fechaNacimiento: '1988-12-01',
-    institucionCodigoModular: '0200001',
-    nivelEducativo: 'Secundaria',
-    curso: 'Comunicacion',
-    secciones: [{ grado: '4.', seccion: 'A' }],
-    condicionLaboral: 'Contratado',
-    cargaLaboral: 24,
-    cargoNombre: 'Jefe de Taller',
+    "dni": "40000101",
+    "firstName": "Juliana",
+    "lastName": "Huaricallo",
+    "email": "juliana.huaricallo@ugel.gob.pe",
+    "role": "especialista",
+    "fechaNacimiento": "1986-05-05",
+    "nivelEducativo": "Inicial"
   },
   {
-    dni: '40000010',
-    firstName: 'Patricia',
-    lastName: 'Mendoza Quispe',
-    email: 'patricia.mendoza@ugel.gob.pe',
-    role: 'docente',
-    fechaNacimiento: '1990-06-25',
-    institucionCodigoModular: '0200002',
-    nivelEducativo: 'Primaria',
-    curso: 'Personal Social',
-    secciones: [{ grado: '2.', seccion: 'A' }],
-    condicionLaboral: 'Contratado',
-    cargaLaboral: 20,
+    "dni": "40000010",
+    "firstName": "Director Silvia",
+    "lastName": "Apaza Quispe",
+    "email": "dir_0200001@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200001",
+    "nivelEducativo": "Secundaria",
+    "condicionLaboral": "Designado"
   },
   {
-    dni: '40000011',
-    firstName: 'Roberto',
-    lastName: 'Limachi Quispe',
-    email: 'roberto.limachi@ugel.gob.pe',
-    role: 'docente',
-    fechaNacimiento: '1984-10-18',
-    institucionCodigoModular: '0200004',
-    nivelEducativo: 'Secundaria',
-    curso: 'CTA',
-    secciones: [{ grado: '5.', seccion: 'A' }],
-    condicionLaboral: 'Nombrado',
-    cargaLaboral: 30,
+    "dni": "40000011",
+    "firstName": "Coord Victor",
+    "lastName": "Condori Gomez",
+    "email": "coord_0200001@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200001",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ciencias Sociales",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
   },
   {
-    dni: '40000012',
-    firstName: 'Sandra',
-    lastName: 'Ccopa Quispe',
-    email: 'sandra.ccopa@ugel.gob.pe',
-    role: 'docente',
-    fechaNacimiento: '1989-03-30',
-    institucionCodigoModular: '0200006',
-    nivelEducativo: 'Secundaria',
-    curso: 'Matematica',
-    secciones: [{ grado: '4.', seccion: 'A' }, { grado: '4.', seccion: 'B' }],
-    condicionLaboral: 'Nombrado',
-    cargaLaboral: 30,
+    "dni": "40000012",
+    "firstName": "Taller Silvia",
+    "lastName": "Perez Quispe",
+    "email": "taller_0200001@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200001",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ciencias Sociales",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
   },
   {
-    dni: '40000013',
-    firstName: 'Eduardo',
-    lastName: 'Coila Mamani',
-    email: 'eduardo.coila@ugel.gob.pe',
-    role: 'docente',
-    fechaNacimiento: '1987-08-12',
-    institucionCodigoModular: '0200001',
-    nivelEducativo: 'Primaria',
-    curso: 'Matematica',
-    secciones: [{ grado: '4.', seccion: 'A' }],
-    condicionLaboral: 'Nombrado',
-    cargaLaboral: 30,
+    "dni": "40000013",
+    "firstName": "Docente1 Silvia",
+    "lastName": "Quispe Rios",
+    "email": "docente1_0200001@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200001",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ciencias Sociales",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
   },
+  {
+    "dni": "40000014",
+    "firstName": "Docente2 Veronica",
+    "lastName": "Choque Choque",
+    "email": "docente2_0200001@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200001",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ciencias Sociales",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000015",
+    "firstName": "Docente3 Alberto",
+    "lastName": "Rios Flores",
+    "email": "docente3_0200001@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200001",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ciencias Sociales",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000016",
+    "firstName": "Director Marco",
+    "lastName": "Rios Condori",
+    "email": "dir_0200002@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200002",
+    "nivelEducativo": "Primaria",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000017",
+    "firstName": "Coord Hugo",
+    "lastName": "Apaza Rios",
+    "email": "coord_0200002@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200002",
+    "nivelEducativo": "Primaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000018",
+    "firstName": "Taller Veronica",
+    "lastName": "Apaza Condori",
+    "email": "taller_0200002@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200002",
+    "nivelEducativo": "Primaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000019",
+    "firstName": "Docente1 Roberto",
+    "lastName": "Caceres Rios",
+    "email": "docente1_0200002@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200002",
+    "nivelEducativo": "Primaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000020",
+    "firstName": "Docente2 Alberto",
+    "lastName": "Mamani Gomez",
+    "email": "docente2_0200002@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200002",
+    "nivelEducativo": "Primaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000021",
+    "firstName": "Docente3 Alberto",
+    "lastName": "Caceres Mamani",
+    "email": "docente3_0200002@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200002",
+    "nivelEducativo": "Primaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000022",
+    "firstName": "Director Veronica",
+    "lastName": "Perez Mamani",
+    "email": "dir_0200003@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200003",
+    "nivelEducativo": "Inicial",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000023",
+    "firstName": "Coord Roberto",
+    "lastName": "Caceres Perez",
+    "email": "coord_0200003@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200003",
+    "nivelEducativo": "Inicial",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000024",
+    "firstName": "Taller Hugo",
+    "lastName": "Apaza Choque",
+    "email": "taller_0200003@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200003",
+    "nivelEducativo": "Inicial",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000025",
+    "firstName": "Docente1 Julio",
+    "lastName": "Flores Caceres",
+    "email": "docente1_0200003@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200003",
+    "nivelEducativo": "Inicial",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000026",
+    "firstName": "Docente2 Alberto",
+    "lastName": "Choque Condori",
+    "email": "docente2_0200003@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200003",
+    "nivelEducativo": "Inicial",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000027",
+    "firstName": "Docente3 Manuel",
+    "lastName": "Perez Mamani",
+    "email": "docente3_0200003@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200003",
+    "nivelEducativo": "Inicial",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000028",
+    "firstName": "Director Marco",
+    "lastName": "Condori Caceres",
+    "email": "dir_0200004@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200004",
+    "nivelEducativo": "Secundaria",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000029",
+    "firstName": "Coord Daniela",
+    "lastName": "Quispe Gomez",
+    "email": "coord_0200004@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200004",
+    "nivelEducativo": "Secundaria",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000030",
+    "firstName": "Taller Daniela",
+    "lastName": "Gomez Apaza",
+    "email": "taller_0200004@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200004",
+    "nivelEducativo": "Secundaria",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000031",
+    "firstName": "Docente1 Veronica",
+    "lastName": "Gomez Caceres",
+    "email": "docente1_0200004@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200004",
+    "nivelEducativo": "Secundaria",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000032",
+    "firstName": "Docente2 Luis",
+    "lastName": "Condori Borda",
+    "email": "docente2_0200004@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200004",
+    "nivelEducativo": "Secundaria",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000033",
+    "firstName": "Docente3 Daniela",
+    "lastName": "Quispe Gomez",
+    "email": "docente3_0200004@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200004",
+    "nivelEducativo": "Secundaria",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000034",
+    "firstName": "Director Roberto",
+    "lastName": "Mamani Condori",
+    "email": "dir_0200005@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200005",
+    "nivelEducativo": "Primaria",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000035",
+    "firstName": "Coord Alberto",
+    "lastName": "Choque Flores",
+    "email": "coord_0200005@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200005",
+    "nivelEducativo": "Primaria",
+    "curso": "Personal Social",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000036",
+    "firstName": "Taller Luis",
+    "lastName": "Gomez Choque",
+    "email": "taller_0200005@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200005",
+    "nivelEducativo": "Primaria",
+    "curso": "Personal Social",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000037",
+    "firstName": "Docente1 Hugo",
+    "lastName": "Caceres Mamani",
+    "email": "docente1_0200005@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200005",
+    "nivelEducativo": "Primaria",
+    "curso": "Personal Social",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000038",
+    "firstName": "Docente2 Alberto",
+    "lastName": "Apaza Perez",
+    "email": "docente2_0200005@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200005",
+    "nivelEducativo": "Primaria",
+    "curso": "Personal Social",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000039",
+    "firstName": "Docente3 Andrea",
+    "lastName": "Flores Rios",
+    "email": "docente3_0200005@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200005",
+    "nivelEducativo": "Primaria",
+    "curso": "Personal Social",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000040",
+    "firstName": "Director Roberto",
+    "lastName": "Apaza Rios",
+    "email": "dir_0200006@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200006",
+    "nivelEducativo": "Secundaria",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000041",
+    "firstName": "Coord Lucia",
+    "lastName": "Choque Mamani",
+    "email": "coord_0200006@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200006",
+    "nivelEducativo": "Secundaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000042",
+    "firstName": "Taller Andrea",
+    "lastName": "Apaza Caceres",
+    "email": "taller_0200006@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200006",
+    "nivelEducativo": "Secundaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000043",
+    "firstName": "Docente1 Hugo",
+    "lastName": "Borda Rios",
+    "email": "docente1_0200006@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200006",
+    "nivelEducativo": "Secundaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000044",
+    "firstName": "Docente2 Roberto",
+    "lastName": "Quispe Choque",
+    "email": "docente2_0200006@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200006",
+    "nivelEducativo": "Secundaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000045",
+    "firstName": "Docente3 Julio",
+    "lastName": "Choque Choque",
+    "email": "docente3_0200006@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200006",
+    "nivelEducativo": "Secundaria",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000046",
+    "firstName": "Director Roberto",
+    "lastName": "Mamani Apaza",
+    "email": "dir_0200007@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200007",
+    "nivelEducativo": "Inicial",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000047",
+    "firstName": "Coord Victor",
+    "lastName": "Quispe Flores",
+    "email": "coord_0200007@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200007",
+    "nivelEducativo": "Inicial",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000048",
+    "firstName": "Taller Silvia",
+    "lastName": "Perez Apaza",
+    "email": "taller_0200007@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200007",
+    "nivelEducativo": "Inicial",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000049",
+    "firstName": "Docente1 Daniela",
+    "lastName": "Rios Apaza",
+    "email": "docente1_0200007@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200007",
+    "nivelEducativo": "Inicial",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000050",
+    "firstName": "Docente2 Victor",
+    "lastName": "Rios Apaza",
+    "email": "docente2_0200007@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200007",
+    "nivelEducativo": "Inicial",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000051",
+    "firstName": "Docente3 Andrea",
+    "lastName": "Quispe Flores",
+    "email": "docente3_0200007@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200007",
+    "nivelEducativo": "Inicial",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000052",
+    "firstName": "Director Daniela",
+    "lastName": "Condori Flores",
+    "email": "dir_0200008@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200008",
+    "nivelEducativo": "Secundaria",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000053",
+    "firstName": "Coord Manuel",
+    "lastName": "Borda Perez",
+    "email": "coord_0200008@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200008",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ingles",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000054",
+    "firstName": "Taller Andrea",
+    "lastName": "Choque Condori",
+    "email": "taller_0200008@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200008",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ingles",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000055",
+    "firstName": "Docente1 Silvia",
+    "lastName": "Borda Rios",
+    "email": "docente1_0200008@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200008",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ingles",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000056",
+    "firstName": "Docente2 Lucia",
+    "lastName": "Apaza Mamani",
+    "email": "docente2_0200008@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200008",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ingles",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000057",
+    "firstName": "Docente3 Fernando",
+    "lastName": "Perez Quispe",
+    "email": "docente3_0200008@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200008",
+    "nivelEducativo": "Secundaria",
+    "curso": "Ingles",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000058",
+    "firstName": "Director Veronica",
+    "lastName": "Quispe Rios",
+    "email": "dir_0200009@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200009",
+    "nivelEducativo": "Avanzado",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000059",
+    "firstName": "Coord Victor",
+    "lastName": "Borda Condori",
+    "email": "coord_0200009@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200009",
+    "nivelEducativo": "Avanzado",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000060",
+    "firstName": "Taller Daniela",
+    "lastName": "Apaza Choque",
+    "email": "taller_0200009@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200009",
+    "nivelEducativo": "Avanzado",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000061",
+    "firstName": "Docente1 Veronica",
+    "lastName": "Perez Gomez",
+    "email": "docente1_0200009@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200009",
+    "nivelEducativo": "Avanzado",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000062",
+    "firstName": "Docente2 Daniela",
+    "lastName": "Quispe Apaza",
+    "email": "docente2_0200009@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200009",
+    "nivelEducativo": "Avanzado",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000063",
+    "firstName": "Docente3 Roberto",
+    "lastName": "Borda Mamani",
+    "email": "docente3_0200009@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200009",
+    "nivelEducativo": "Avanzado",
+    "curso": "Comunicacion",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000064",
+    "firstName": "Director Marco",
+    "lastName": "Rios Flores",
+    "email": "dir_0200010@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200010",
+    "nivelEducativo": "CEBE",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000065",
+    "firstName": "Coord Andrea",
+    "lastName": "Apaza Apaza",
+    "email": "coord_0200010@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200010",
+    "nivelEducativo": "CEBE",
+    "curso": "Educacion Fisica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000066",
+    "firstName": "Taller Silvia",
+    "lastName": "Flores Gomez",
+    "email": "taller_0200010@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200010",
+    "nivelEducativo": "CEBE",
+    "curso": "Educacion Fisica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000067",
+    "firstName": "Docente1 Veronica",
+    "lastName": "Flores Caceres",
+    "email": "docente1_0200010@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200010",
+    "nivelEducativo": "CEBE",
+    "curso": "Educacion Fisica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000068",
+    "firstName": "Docente2 Victor",
+    "lastName": "Mamani Borda",
+    "email": "docente2_0200010@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200010",
+    "nivelEducativo": "CEBE",
+    "curso": "Educacion Fisica",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000069",
+    "firstName": "Docente3 Silvia",
+    "lastName": "Borda Perez",
+    "email": "docente3_0200010@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200010",
+    "nivelEducativo": "CEBE",
+    "curso": "Educacion Fisica",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000070",
+    "firstName": "Director Andrea",
+    "lastName": "Condori Apaza",
+    "email": "dir_0200011@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200011",
+    "nivelEducativo": "Mecánica de Motos y Vehículos Afines",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000071",
+    "firstName": "Coord Hugo",
+    "lastName": "Rios Mamani",
+    "email": "coord_0200011@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200011",
+    "nivelEducativo": "Mecánica de Motos y Vehículos Afines",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000072",
+    "firstName": "Taller Daniela",
+    "lastName": "Apaza Mamani",
+    "email": "taller_0200011@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200011",
+    "nivelEducativo": "Mecánica de Motos y Vehículos Afines",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000073",
+    "firstName": "Docente1 Roberto",
+    "lastName": "Perez Condori",
+    "email": "docente1_0200011@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200011",
+    "nivelEducativo": "Mecánica de Motos y Vehículos Afines",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000074",
+    "firstName": "Docente2 Roberto",
+    "lastName": "Gomez Choque",
+    "email": "docente2_0200011@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200011",
+    "nivelEducativo": "Mecánica de Motos y Vehículos Afines",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000075",
+    "firstName": "Docente3 Daniela",
+    "lastName": "Choque Rios",
+    "email": "docente3_0200011@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200011",
+    "nivelEducativo": "Mecánica de Motos y Vehículos Afines",
+    "curso": "CTA",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000076",
+    "firstName": "Director Fernando",
+    "lastName": "Borda Apaza",
+    "email": "dir_0200012@ugel.gob.pe",
+    "role": "director_institucion",
+    "fechaNacimiento": "1980-01-01",
+    "institucionCodigoModular": "0200012",
+    "nivelEducativo": "PRITE",
+    "condicionLaboral": "Designado"
+  },
+  {
+    "dni": "40000077",
+    "firstName": "Coord Julio",
+    "lastName": "Perez Condori",
+    "email": "coord_0200012@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1982-01-01",
+    "institucionCodigoModular": "0200012",
+    "nivelEducativo": "PRITE",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Coordinador Pedagógico"
+  },
+  {
+    "dni": "40000078",
+    "firstName": "Taller Lucia",
+    "lastName": "Mamani Apaza",
+    "email": "taller_0200012@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1983-01-01",
+    "institucionCodigoModular": "0200012",
+    "nivelEducativo": "PRITE",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "B"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 40,
+    "cargoNombre": "Jefe de Taller"
+  },
+  {
+    "dni": "40000079",
+    "firstName": "Docente1 Veronica",
+    "lastName": "Rios Gomez",
+    "email": "docente1_0200012@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200012",
+    "nivelEducativo": "PRITE",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "1",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000080",
+    "firstName": "Docente2 Alberto",
+    "lastName": "Quispe Gomez",
+    "email": "docente2_0200012@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200012",
+    "nivelEducativo": "PRITE",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "2",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  },
+  {
+    "dni": "40000081",
+    "firstName": "Docente3 Marco",
+    "lastName": "Mamani Rios",
+    "email": "docente3_0200012@ugel.gob.pe",
+    "role": "docente",
+    "fechaNacimiento": "1985-01-01",
+    "institucionCodigoModular": "0200012",
+    "nivelEducativo": "PRITE",
+    "curso": "Matematica",
+    "secciones": [
+      {
+        "grado": "3",
+        "seccion": "A"
+      }
+    ],
+    "condicionLaboral": "Nombrado",
+    "cargaLaboral": 30,
+    "cargoNombre": "Docente de Aula"
+  }
 ];
 
 const ESPECIALISTA_CARGO_POR_ROL = {
@@ -280,15 +1558,16 @@ export async function seedPersonas(ctx) {
       });
 
       const especialidadesToSeed = u.especialidades || (u.especialidad ? [u.especialidad] : []);
-      for (const espNombre of especialidadesToSeed) {
+      for (let i = 0; i < especialidadesToSeed.length; i++) {
+        const espNombre = especialidadesToSeed[i];
         const esp = await prisma.especialidad.findFirst({ where: { nombre: espNombre, isActive: true } });
         if (esp) {
           const espRow = await prisma.especialista.findUnique({ where: { personaId: persona.id } });
           if (espRow) {
             await prisma.especialistaEspecialidad.upsert({
               where: { especialistaId_especialidadId: { especialistaId: espRow.id, especialidadId: esp.id } },
-              update: {},
-              create: { especialistaId: espRow.id, especialidadId: esp.id },
+              update: { esPrincipal: i === 0 },
+              create: { especialistaId: espRow.id, especialidadId: esp.id, esPrincipal: i === 0 },
             });
           }
         }

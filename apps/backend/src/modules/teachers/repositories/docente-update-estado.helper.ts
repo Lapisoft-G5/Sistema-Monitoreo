@@ -10,11 +10,7 @@ const DOCENTE_INCLUDE = {
   docenteSecciones: true,
 } as const;
 
-export async function updateDocenteEstado(
-  prisma: PrismaService,
-  id: string,
-  estado: string,
-) {
+export async function updateDocenteEstado(prisma: PrismaService, id: string, estado: string) {
   return prisma.$transaction(async (tx) => {
     const docente = await tx.docente.update({
       where: { id },

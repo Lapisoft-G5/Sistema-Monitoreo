@@ -25,4 +25,8 @@ export class CreatePlanDto {
   @IsOptional()
   @IsUUID()
   institucionId?: string;
+
+  @IsOptional()
+  @IsString()
+  estado?: string;
 }

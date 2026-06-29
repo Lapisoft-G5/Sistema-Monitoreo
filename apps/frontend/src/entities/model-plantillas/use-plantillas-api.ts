@@ -71,8 +71,8 @@ export const useCambiarEstadoPlantilla = () => {
 export const useDuplicarPlantilla = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, descripcion }: { id: string; descripcion?: string }) =>
-      plantillasApi.duplicar(id, descripcion),
+    mutationFn: ({ id, descripcion, anioAcademico }: { id: string; descripcion?: string; anioAcademico?: number }) =>
+      plantillasApi.duplicar(id, descripcion, anioAcademico),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plantillas'] });
     },

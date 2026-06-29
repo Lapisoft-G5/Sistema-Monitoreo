@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Copy,
   Edit,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -73,6 +74,16 @@ export const PlantillasCatalog = () => {
   const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+
+  const [duplicateTemplate, setDuplicateTemplate] = useState<Plantilla | null>(null);
+  const [duplicateYear, setDuplicateYear] = useState<number>(new Date().getFullYear());
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
+
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
+
+  const [statusTemplate, setStatusTemplate] = useState<Plantilla | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const { data: deleteInfo, isLoading: isLoadingDeleteInfo } = useCountFichasPlantilla(deleteTemplateId);
 
@@ -137,33 +148,56 @@ export const PlantillasCatalog = () => {
     }
   };
 
-  const handleDuplicate = (plantilla: Plantilla) => {
-    if (!isDirector || !user) return;
-    duplicar.mutate(
-      { id: plantilla.id },
-      {
-        onError: (err) => {
-          setDeleteError(err instanceof Error ? err.message : 'Error al duplicar la plantilla.');
-        },
-      },
-    );
+  const handleDuplicateClick = (plantilla: Plantilla) => {
+    if (!user) return;
+    setDuplicateTemplate(plantilla);
+    setDuplicateYear(new Date().getFullYear());
+    setDuplicateError(null);
   };
 
-  const handleToggleEstado = (plantilla: Plantilla) => {
+  const handleDuplicateConfirm = async () => {
+    if (!duplicateTemplate) return;
+    setDuplicateError(null);
+    try {
+      await duplicar.mutateAsync({ 
+        id: duplicateTemplate.id,
+        anioAcademico: duplicateYear
+      });
+      setDuplicateTemplate(null);
+      setGlobalSuccess(`Plantilla duplicada para el año ${duplicateYear}`);
+      setGlobalError(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al duplicar la plantilla.';
+      setDuplicateError(msg);
+    }
+  };
+
+  const handleToggleEstadoClick = (plantilla: Plantilla) => {
+    setStatusTemplate(plantilla);
+    setStatusError(null);
+  };
+
+  const handleToggleEstadoConfirm = async () => {
+    if (!statusTemplate) return;
+    
     const nextEstado: Plantilla['estado'] =
-      plantilla.estado === 'Borrador'
+      statusTemplate.estado === 'Borrador'
         ? 'Vigente'
-        : plantilla.estado === 'Vigente'
+        : statusTemplate.estado === 'Vigente'
           ? 'Historico'
           : 'Borrador';
-    cambiarEstado.mutate(
-      { id: plantilla.id, estado: nextEstado },
-      {
-        onError: (err) => {
-          setDeleteError(err instanceof Error ? err.message : 'Error al cambiar el estado.');
-        },
-      },
-    );
+    
+    setStatusError(null);
+    setGlobalError(null);
+    setGlobalSuccess(null);
+    
+    try {
+      await cambiarEstado.mutateAsync({ id: statusTemplate.id, estado: nextEstado });
+      setGlobalSuccess(`Estado cambiado a ${nextEstado}`);
+      setStatusTemplate(null);
+    } catch (err) {
+      setStatusError(err instanceof Error ? err.message : 'Error al cambiar el estado.');
+    }
   };
 
   const formatShortDate = (dateStr: string) => {
@@ -267,6 +301,20 @@ export const PlantillasCatalog = () => {
         </div>
       )}
 
+      {globalError && (
+        <div className="p-4 border border-rose-200 rounded-lg bg-rose-50 mb-4 flex justify-between items-start">
+          <p className="text-rose-700 text-sm font-semibold">{globalError}</p>
+          <button onClick={() => setGlobalError(null)} className="text-rose-500 hover:text-rose-700">✕</button>
+        </div>
+      )}
+
+      {globalSuccess && (
+        <div className="p-4 border border-emerald-200 rounded-lg bg-emerald-50 mb-4 flex justify-between items-start">
+          <p className="text-emerald-700 text-sm font-semibold">{globalSuccess}</p>
+          <button onClick={() => setGlobalSuccess(null)} className="text-emerald-500 hover:text-emerald-700">✕</button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex items-center justify-center py-24">
           <Spinner />
@@ -274,6 +322,79 @@ export const PlantillasCatalog = () => {
         </div>
       ) : !isError && filteredPlantillas.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {!!duplicateTemplate && (
+            <ConfirmModal
+              title="Clonar Plantilla"
+              confirmLabel="Clonar"
+              cancelLabel="Cancelar"
+              onConfirm={handleDuplicateConfirm}
+              onCancel={() => setDuplicateTemplate(null)}
+              danger={false}
+              message={
+                <div className="space-y-4 text-left">
+                  <p className="text-sm text-gray-600">
+                    Se creará una copia en estado <strong className="text-gray-900">Borrador</strong> de la plantilla seleccionada.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-semibold text-gray-700">Año Académico Destino</label>
+                    <input
+                      type="number"
+                      min="2000"
+                      max="2100"
+                      value={duplicateYear}
+                      onChange={(e) => setDuplicateYear(Number(e.target.value))}
+                      className="px-3 py-2 border rounded-md"
+                    />
+                  </div>
+                  {duplicateError && (
+                    <div className="text-sm text-red-600 font-semibold bg-red-50 p-2 rounded-md">
+                      Error: {duplicateError}
+                    </div>
+                  )}
+                </div>
+              }
+            />
+          )}
+
+          {!!statusTemplate && (
+            <ConfirmModal
+              title="Confirmar Cambio de Estado"
+              confirmLabel="Cambiar Estado"
+              cancelLabel="Cancelar"
+              onConfirm={handleToggleEstadoConfirm}
+              onCancel={() => setStatusTemplate(null)}
+              danger={false}
+              message={
+                <div className="space-y-4 text-left">
+                  <p className="text-sm text-slate-600">
+                    ¿Estás seguro de que deseas cambiar el estado de la plantilla{' '}
+                    <strong>{statusTemplate.descripcion}</strong> de{' '}
+                    <strong>{statusTemplate.estado}</strong> a{' '}
+                    <strong>
+                      {statusTemplate.estado === 'Borrador'
+                        ? 'Vigente'
+                        : statusTemplate.estado === 'Vigente'
+                          ? 'Historico'
+                          : 'Borrador'}
+                    </strong>?
+                  </p>
+                  {statusTemplate.estado === 'Vigente' && (
+                    <p className="text-xs text-rose-600 font-medium">
+                      Nota: Al pasar a Histórico, esta plantilla no podrá volver a ser Vigente.
+                    </p>
+                  )}
+                  {statusError && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                      <p className="text-xs text-rose-700 font-semibold">
+                        Error: {statusError}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              }
+            />
+          )}
+
           {filteredPlantillas.map((plantilla) => {
             const isDocente = plantilla.tipoMonitoreo === 'Monitoreo Docente';
             const isGeneral = !plantilla.creadoPorRole || plantilla.creadoPorRole === 'jefe_gestion';
@@ -368,7 +489,7 @@ export const PlantillasCatalog = () => {
 
                   {isDirector && isGeneral ? (
                     <button
-                      onClick={() => handleDuplicate(plantilla)}
+                      onClick={() => handleDuplicateClick(plantilla)}
                       disabled={duplicar.isPending}
                       className="w-full justify-center border border-dashed border-primary text-primary hover:bg-primary-light text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                       title="Copiar y personalizar para mi I.E."
@@ -387,14 +508,25 @@ export const PlantillasCatalog = () => {
                           <Edit className="h-3.5 w-3.5 text-primary" />
                           <span>Modificar Plantilla</span>
                         </button>
+                        
+                        <button
+                          onClick={() => handleDuplicateClick(plantilla)}
+                          disabled={duplicar.isPending}
+                          className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                          title="Duplicar plantilla"
+                        >
+                          <Copy className="h-3.5 w-3.5 text-primary" />
+                          <span>Clonar Plantilla</span>
+                        </button>
+
                         {plantilla.estado !== 'Historico' && (
                           <button
-                            onClick={() => handleToggleEstado(plantilla)}
+                            onClick={() => handleToggleEstadoClick(plantilla)}
                             disabled={cambiarEstado.isPending}
                             className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
                             title="Cambiar Estado"
                           >
-                            <RefreshCw className="h-3 w-3 text-primary" />
+                            <AlertCircle className="h-3.5 w-3.5 text-primary" />
                             <span>Cambiar Estado</span>
                           </button>
                         )}

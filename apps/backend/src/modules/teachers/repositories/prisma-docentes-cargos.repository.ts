@@ -34,7 +34,7 @@ export class PrismaDocentesCargosRepository implements DocentesCargosRepository 
       include: { cargo: true },
     });
     if (!record) return null;
-    return record as unknown as DocenteCargoRow;
+    return record;
   }
 
   async findActiveDocenteCargosWithCargo(docenteId: string): Promise<DocenteCargoRow[]> {
@@ -42,7 +42,7 @@ export class PrismaDocentesCargosRepository implements DocentesCargosRepository 
       where: { docenteId, fechaFin: null },
       include: { cargo: true },
     });
-    return records as unknown as DocenteCargoRow[];
+    return records;
   }
 
   async findActiveCargoNombresByDocenteId(docenteId: string): Promise<CargoNombre[]> {
@@ -59,7 +59,7 @@ export class PrismaDocentesCargosRepository implements DocentesCargosRepository 
       include: { cargo: true },
       orderBy: [{ fechaFin: 'asc' }, { fechaInicio: 'desc' }],
     });
-    return records as unknown as DocenteCargoRow[];
+    return records;
   }
 
   async findDocentePersonaInfo(docenteId: string): Promise<DocentePersonaInfo | null> {
@@ -121,7 +121,7 @@ export class PrismaDocentesCargosRepository implements DocentesCargosRepository 
         });
       }
 
-      return created as unknown as DocenteCargoRow;
+      return created;
     });
   }
 

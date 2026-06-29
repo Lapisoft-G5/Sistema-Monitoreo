@@ -7,7 +7,14 @@ import type {
   IUpdateEspecialistaRequest,
   IQueryEspecialistaRequest,
 } from '@sistema-monitoreo/shared-contracts';
-import { findAll, findById, findUserIdByEspecialistaId, findCargosByEspecialistaId, findCargoById, countActiveCargos } from './especialista-read.helper.js';
+import {
+  findAll,
+  findById,
+  findUserIdByEspecialistaId,
+  findCargosByEspecialistaId,
+  findCargoById,
+  countActiveCargos,
+} from './especialista-read.helper.js';
 import { create } from './especialista-create.helper.js';
 import { update } from './especialista-update.helper.js';
 import { deleteEspecialista, activate, deactivate } from './especialista-delete.helper.js';
@@ -69,11 +76,20 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     return countActiveCargos(this.prisma, especialistaId);
   }
 
-  async createCargo(especialistaId: string, cargo: string, fechaInicio: Date): Promise<CargoRecord> {
+  async createCargo(
+    especialistaId: string,
+    cargo: string,
+    fechaInicio: Date,
+  ): Promise<CargoRecord> {
     return createCargo(this.prisma, especialistaId, cargo, fechaInicio);
   }
 
-  async finalizeCargo(especialistaId: string, cargoId: string, fechaFin: Date, cargoValue: string): Promise<void> {
+  async finalizeCargo(
+    especialistaId: string,
+    cargoId: string,
+    fechaFin: Date,
+    cargoValue: string,
+  ): Promise<void> {
     return finalizeCargo(this.prisma, especialistaId, cargoId, fechaFin, cargoValue);
   }
 }

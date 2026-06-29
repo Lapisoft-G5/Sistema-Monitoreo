@@ -1,12 +1,17 @@
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { randomUUID } from 'node:crypto';
+import type {
+  NivelCalificacionInput,
+  DesempenoInput,
+  EjeItemInput,
+} from '../dto/create-plantilla.dto.js';
 
 export async function syncArbol(
   prisma: PrismaService,
   plantillaId: string,
-  niveles: any[],
-  desempenos: any[],
-  ejeItems?: any[],
+  niveles: NivelCalificacionInput[],
+  desempenos: DesempenoInput[],
+  ejeItems?: EjeItemInput[],
 ): Promise<void> {
   for (const n of niveles) {
     const existing = await prisma.nivelCalificacion.findFirst({
@@ -75,7 +80,7 @@ export async function syncArbol(
       where: { desempenoId: desempeno.id },
     });
     const idsAspectosActuales = new Set(aspectosActuales.map((a) => a.id));
-    const idsAspectosNuevos = new Set(d.aspectos.map((a: any) => a.id));
+    const idsAspectosNuevos = new Set(d.aspectos.map((a) => a.id));
     for (const actual of aspectosActuales) {
       if (!idsAspectosNuevos.has(actual.id)) {
         await prisma.aspectoEvaluado.delete({ where: { id: actual.id } });
@@ -126,7 +131,7 @@ export async function syncArbol(
       where: { plantillaId },
     });
     const numsActuales = new Set(itemsActuales.map((i) => i.numero));
-    const numsNuevos = new Set(ejeItems.map((i: any) => i.numero));
+    const numsNuevos = new Set(ejeItems.map((i) => i.numero));
 
     for (const actual of itemsActuales) {
       if (!numsNuevos.has(actual.numero)) {

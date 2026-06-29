@@ -7,7 +7,7 @@ import { DirectorFormBase } from '@features/directores';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import type { Docente } from '@entities/model-docentes';
-import { PAGINATION, CARGA_HORARIA } from '@shared/config/constants';
+import { PAGINATION } from '@shared/config/constants';
 import { useDocenteService, mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 import { teachersApi } from '@shared/api/teachers.api';
 import { institutionsApi } from '@shared/api/institutions.api';
@@ -26,7 +26,7 @@ export const CreateDirectorCard = () => {
       setFetching(true);
       try {
         const [instsRes, teachersRes] = await Promise.all([
-          institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT }),
+          institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT, estado: 'Activa' }),
           teachersApi.findAll(),
         ]);
         if (instsRes.ok && instsRes.data) {
@@ -60,7 +60,7 @@ export const CreateDirectorCard = () => {
       nivelEducativo: data.nivelEducativo as DocenteFormData['nivelEducativo'],
       condicion: data.condicion as DocenteFormData['condicion'],
       especialidad: data.especialidad,
-      cargaHoraria: CARGA_HORARIA.JEFE_AREA,
+      cargaHoraria: data.cargaHoraria,
       secciones: [],
       escala: data.escala,
       institucionId: data.institucionId,

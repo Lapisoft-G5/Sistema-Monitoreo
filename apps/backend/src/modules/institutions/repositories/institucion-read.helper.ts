@@ -60,15 +60,12 @@ export async function findAll(
   ]);
 
   return {
-    data: data.map((record: any) => mapInstitucion(record)),
+    data: data.map((record) => mapInstitucion(record)),
     total,
   };
 }
 
-export async function findById(
-  prisma: PrismaService,
-  id: string,
-): Promise<Institucion | null> {
+export async function findById(prisma: PrismaService, id: string): Promise<Institucion | null> {
   const record = await prisma.institucionEducativa.findUnique({
     where: { id },
     include: INCLUDE_DOCENTE_DIRECTOR,

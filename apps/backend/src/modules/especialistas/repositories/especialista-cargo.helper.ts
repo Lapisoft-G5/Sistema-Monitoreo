@@ -23,7 +23,7 @@ export async function createCargo(
       where: { id: especialistaId },
       data: { cargo },
     });
-    return created as unknown as CargoRecord;
+    return created;
   });
 }
 

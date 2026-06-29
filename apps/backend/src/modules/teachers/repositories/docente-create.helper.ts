@@ -87,7 +87,9 @@ export async function createDocenteWithTransaction(
       if (dto.correo) {
         const correoExists = await tx.persona.findUnique({ where: { correo: dto.correo } });
         if (correoExists) {
-          throw new ConflictException('El correo electrónico ya está registrado para otra persona.');
+          throw new ConflictException(
+            'El correo electrónico ya está registrado para otra persona.',
+          );
         }
       }
       const newPersona = await tx.persona.create({
@@ -114,16 +116,25 @@ export async function createDocenteWithTransaction(
     }
 
     if (dto.cursoAsignado) {
-      await upsertCurso(tx, prisma, dto.cursoAsignado, dto.nivelEducativo, docente!.id);
+      await upsertCurso(tx, prisma, dto.cursoAsignado, dto.nivelEducativo, docente.id);
     }
 
     await tx.docenteCargo.create({
-      data: { docenteId: docente!.id, cargoId: dto.cargoId, fechaInicio: new Date(), esPrincipal: true },
+      data: {
+        docenteId: docente.id,
+        cargoId: dto.cargoId,
+        fechaInicio: new Date(),
+        esPrincipal: true,
+      },
     });
 
     if (dto.secciones?.length) {
       await tx.docenteSeccion.createMany({
-        data: dto.secciones.map((s) => ({ docenteId: docente!.id, grado: s.grado, seccion: s.seccion })),
+        data: dto.secciones.map((s) => ({
+          docenteId: docente.id,
+          grado: s.grado,
+          seccion: s.seccion,
+        })),
       });
     }
 
@@ -145,16 +156,21 @@ export async function createDocenteWithTransaction(
       });
     }
 
-    if (cargo && ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(cargo.nombre)) {
+    if (cargo) {
       await syncEspecialista(
-        tx, personaId, cargo.nombre, dto.nivelEducativo,
-        dto.condicionLaboral ?? null, dto.cargaLaboral ?? null,
-        docente?.modalidad ?? null, dto.escalaMagisterial ?? null,
+        tx,
+        personaId,
+        cargo.nombre,
+        dto.nivelEducativo,
+        dto.condicionLaboral ?? null,
+        dto.cargaLaboral ?? null,
+        docente?.modalidad ?? null,
+        dto.escalaMagisterial ?? null,
       );
     }
 
     const fullDocente = await tx.docente.findUniqueOrThrow({
-      where: { id: docente!.id },
+      where: { id: docente.id },
       include: DOCENTE_INCLUDE,
     });
     return mapDocente(fullDocente);

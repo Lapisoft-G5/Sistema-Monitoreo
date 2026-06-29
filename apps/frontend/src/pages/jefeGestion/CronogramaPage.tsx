@@ -127,7 +127,10 @@ export const CronogramaPage = () => {
     if (isDirector) {
       if (!user || !user.institucion) return [];
       return docentes.filter(
-        (doc) => doc.institucionId === user.institucion && doc.cargo !== 'Director'
+        (doc) => 
+          doc.institucionId === user.institucion && 
+          doc.activo === true && 
+          doc.cargo !== 'Director'
       );
     }
 
@@ -139,9 +142,10 @@ export const CronogramaPage = () => {
 
     return docentes.filter((doc) => {
       const matchInstId = doc.institucionId === matchInst.id;
+      const isActive = doc.activo === true;
       const isDirectorCargo = doc.cargo === 'Director';
       const matchCargo = formTipo === 'DIRECTIVO' ? isDirectorCargo : !isDirectorCargo;
-      return matchInstId && matchCargo;
+      return matchInstId && isActive && matchCargo;
     });
   }, [isDirector, user, formInstitucion, formTipo, docentes, instituciones]);
 
@@ -180,6 +184,7 @@ export const CronogramaPage = () => {
     return docentes.filter(
       (doc) =>
         doc.institucionId === matchInst.id &&
+        doc.activo === true &&
         (doc.cargo === 'Director' ||
           doc.cargo === 'Coordinador Pedagógico' ||
           doc.cargo === 'Jefe de Taller')
@@ -248,22 +253,44 @@ export const CronogramaPage = () => {
   }, [formModalidad, user]);
 
   // ── Especialistas filtrados por modalidad + nivel + cargo monitor ──
-  const MONITOR_CARGOS = ['Especialista', 'Jefe de Área', 'Jefe de Gestión'];
   const especialistasFiltrados = useMemo(() => {
+    const MONITOR_CARGOS = ['Especialista', 'Jefe de Gestión'];
     if (!formModalidad || !formNivel) return [];
-    return especialistas.filter(
-      (esp) =>
-        esp.modalidad === formModalidad &&
-        esp.nivelEducativo === formNivel &&
-        MONITOR_CARGOS.includes(esp.cargo)
-    );
-  }, [formModalidad, formNivel, especialistas]);
+    return especialistas.filter((esp) => {
+      // Por defecto, si el especialista no tiene modalidad, asumimos EBR (que es la principal de UGEL).
+      const espModalidad = esp.modalidad || 'EBR';
+      let matchModalidad = espModalidad === formModalidad;
+      let matchNivel = esp.nivelEducativo === formNivel;
+
+      // REGLAS DE NEGOCIO:
+      if (formModalidad === 'CEPTRO') {
+        matchModalidad = true;
+        const tieneEpt = esp.especialidades && esp.especialidades.includes('EPT');
+        matchNivel = esp.nivelEducativo === 'Secundaria' && !!tieneEpt;
+      } else if (formModalidad === 'EBA' || formModalidad === 'EBE') {
+        matchModalidad = true;
+        matchNivel = esp.nivelEducativo === 'Primaria' || esp.nivelEducativo === 'Inicial';
+      }
+
+      const isActive = esp.activo === true;
+      const isMonitorCargo = MONITOR_CARGOS.includes(esp.cargo);
+      
+      // Un Jefe de Gestión no puede asignar a OTRO Jefe de Gestión
+      // Solo puede asignarse a sí mismo
+      const isOtherJefeGestion = esp.cargo === 'Jefe de Gestión' && esp.id !== user?.especialistaId;
+
+      return matchModalidad && matchNivel && isActive && isMonitorCargo && !isOtherJefeGestion;
+    });
+  }, [formModalidad, formNivel, especialistas, user]);
 
   // ── Instituciones filtradas por modalidad + nivel ──
   const institucionesFiltradas = useMemo(() => {
     if (!formModalidad || !formNivel) return [];
     return instituciones.filter(
-      (inst) => inst.modalidad === formModalidad && inst.nivelEducativo === formNivel
+      (inst) => 
+        inst.modalidad === formModalidad && 
+        inst.nivelEducativo === formNivel && 
+        (inst.estado === 'Activa' || inst.activo === true)
     );
   }, [formModalidad, formNivel, instituciones]);
 
@@ -510,7 +537,7 @@ export const CronogramaPage = () => {
     switch (estado) {
       case 'PROGRAMADO':
         return 'bg-emerald-50 text-emerald-600 border border-emerald-200/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30';
-      case 'EN PROCESO':
+      case 'EN_PROCESO':
         return 'bg-amber-50 text-amber-600 border border-amber-200/50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30';
       case 'COMPLETADO':
         return 'bg-purple-50 text-purple-600 border border-purple-200/50 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/30';
@@ -600,7 +627,7 @@ export const CronogramaPage = () => {
             options={[
               { value: 'Todos', label: 'Todos los estados' },
               { value: 'PROGRAMADO', label: 'PROGRAMADO' },
-              { value: 'EN PROCESO', label: 'EN PROCESO' },
+              { value: 'EN_PROCESO', label: 'EN_PROCESO' },
               { value: 'COMPLETADO', label: 'COMPLETADO' },
               { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
               { value: 'CANCELADO', label: 'CANCELADO' },
@@ -715,7 +742,7 @@ export const CronogramaPage = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        {(!isDirector || item.tipo === 'DOCENTE') && (
+                        {(!isDirector || item.tipo === 'DOCENTE') && (item.estado === 'PROGRAMADO' || item.estado === 'REPROGRAMADO') && (
                           <>
                             <Button
                               variant="ghost"
@@ -1034,7 +1061,7 @@ export const CronogramaPage = () => {
                     placeholder="Seleccionar estado..."
                     options={[
                       { value: 'PROGRAMADO', label: 'PROGRAMADO' },
-                      { value: 'EN PROCESO', label: 'EN PROCESO' },
+                      { value: 'EN_PROCESO', label: 'EN_PROCESO' },
                       { value: 'COMPLETADO', label: 'COMPLETADO' },
                       { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
                       { value: 'CANCELADO', label: 'CANCELADO' },

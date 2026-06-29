@@ -16,7 +16,6 @@ describe('SchedulingService - Reprogramaciones', () => {
   let cronogramaRepo: jest.Mocked<CronogramaRepository>;
   let solicitudRepo: jest.Mocked<SolicitudReprogramacionRepository>;
   let storage: any;
-  let prisma: any;
 
   const sesionEspecialista = { id: 'esp-1', role: RoleCode.ESPECIALISTA };
   const sesionJefe = { id: 'jefe-1', role: RoleCode.JEFE_GESTION };
@@ -94,7 +93,6 @@ describe('SchedulingService - Reprogramaciones', () => {
     cronogramaRepo = moduleRef.get(CronogramaRepository);
     solicitudRepo = moduleRef.get(SolicitudReprogramacionRepository);
     storage = moduleRef.get(STORAGE_SERVICE);
-    prisma = moduleRef.get(PrismaService);
   });
 
   describe('crearVisita - candado operativo (EDU-0002)', () => {

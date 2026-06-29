@@ -25,8 +25,8 @@ export const ESPECIALISTA_INCLUDE = {
 
 export function mapEspecialista(esp: EspecialistaWithRelations): IEspecialistaResponse {
   const especialidadesList = esp.especialidades || [];
-  const mainRelation = especialidadesList.find((e: any) => e.esPrincipal);
-  const extraRelations = especialidadesList.filter((e: any) => !e.esPrincipal);
+  const mainRelation = especialidadesList.find((e) => e.esPrincipal);
+  const extraRelations = especialidadesList.filter((e) => !e.esPrincipal);
 
   const cargoActivo = (esp.cargos || []).find((c) => c.fechaFin === null);
   const cargoEfectivo = cargoActivo?.cargo ?? 'Especialista';
@@ -34,9 +34,9 @@ export function mapEspecialista(esp: EspecialistaWithRelations): IEspecialistaRe
   return {
     id: esp.id,
     personaId: esp.personaId,
-    especialidades: especialidadesList.map((e: any) => e.especialidad?.nombre).filter(Boolean),
+    especialidades: especialidadesList.map((e) => e.especialidad?.nombre).filter(Boolean),
     especialidad: mainRelation?.especialidad?.nombre || null,
-    especialidadesExtras: extraRelations.map((e: any) => e.especialidad?.nombre).filter(Boolean),
+    especialidadesExtras: extraRelations.map((e) => e.especialidad?.nombre).filter(Boolean),
     nivelEducativo: esp.nivelEducativo,
     modalidad: esp.modalidad ?? null,
     estado: esp.estado,

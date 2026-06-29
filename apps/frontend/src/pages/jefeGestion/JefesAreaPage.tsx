@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -12,6 +12,7 @@ import type { JefeArea } from '@entities/model-jefes-area';
 
 export const JefesAreaPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [jefes, setJefes] = useState<JefeArea[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +49,7 @@ export const JefesAreaPage = () => {
         description="Padrón oficial de jefes de área de la jurisdicción de la UGEL Lampa."
         action={
           <Button
-            onClick={() => navigate('/jefes-area/nuevo')}
+            onClick={() => navigate('/jefes-area/nuevo', { state: { from: location.pathname } })}
             className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white rounded-xl px-4 py-2.5 shadow-xs"
           >
             <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
@@ -66,9 +67,8 @@ export const JefesAreaPage = () => {
       {/* Tabla dedicada con redirección nativa */}
       <JefesTableWidget
         jefes={jefes}
-        setJefes={setJefes}
-        onView={(jefe) => navigate(`/jefes-area/${jefe.id}`)}
-        onEdit={(jefe) => navigate(`/jefes-area/${jefe.id}/editar`)}
+        onView={(jefe) => navigate(`/jefes-area/${jefe.id}`, { state: { from: location.pathname } })}
+        onEdit={(jefe) => navigate(`/jefes-area/${jefe.id}/editar`, { state: { from: location.pathname } })}
         onChanged={fetchJefes}
       />
     </div>

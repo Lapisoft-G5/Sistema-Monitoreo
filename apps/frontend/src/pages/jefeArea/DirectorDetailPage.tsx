@@ -181,13 +181,21 @@ export const DirectorDetailPage = () => {
                 <span className="text-xs font-bold text-text">Escala {director.escala}</span>
               </div>
             </div>
-            <div>
-              <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
-                Nivel Educativo
-              </span>
-              <span className="text-xs font-semibold text-text uppercase">
-                {director.nivelEducativo}
-              </span>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Nivel Educativo
+                </span>
+                <span className="text-xs font-semibold text-text uppercase">
+                  {director.nivelEducativo}
+                </span>
+              </div>
+              <div>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Carga Laboral
+                </span>
+                <span className="text-xs font-bold text-text">{director.cargaHoraria} h/semana</span>
+              </div>
             </div>
           </div>
         </Card>

@@ -67,7 +67,8 @@ export function config(env: Record<string, unknown>): AppConfig {
 
     cookies: {
       accessTokenMaxAgeMs: (env.COOKIE_ACCESS_TOKEN_MAX_AGE_MS as number) ?? 15 * 60 * 1000,
-      refreshTokenMaxAgeMs: (env.COOKIE_REFRESH_TOKEN_MAX_AGE_MS as number) ?? 7 * 24 * 60 * 60 * 1000,
+      refreshTokenMaxAgeMs:
+        (env.COOKIE_REFRESH_TOKEN_MAX_AGE_MS as number) ?? 7 * 24 * 60 * 60 * 1000,
     },
   };
 }

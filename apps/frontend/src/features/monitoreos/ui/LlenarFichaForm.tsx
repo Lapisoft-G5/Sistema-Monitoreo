@@ -34,6 +34,13 @@ interface LlenarFichaFormProps {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      contexto?: {
+        areaCurricular: string;
+        grado: string;
+        seccion: string;
+        cantidadEstudiantes: number;
+        cantidadEstudiantesNee: number;
+      };
     }
   ) => void;
   onFinalize?: (
@@ -48,6 +55,13 @@ interface LlenarFichaFormProps {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      contexto?: {
+        areaCurricular: string;
+        grado: string;
+        seccion: string;
+        cantidadEstudiantes: number;
+        cantidadEstudiantesNee: number;
+      };
     }
   ) => void;
   initialState?: {
@@ -60,6 +74,13 @@ interface LlenarFichaFormProps {
     preguntaExtraAnswers?: Record<string, boolean>;
     respuestasEjeItem?: Record<string, number>;
     evidenciaUrls?: Record<string, string>;
+    contexto?: {
+      areaCurricular: string;
+      grado: string;
+      seccion: string;
+      cantidadEstudiantes: number;
+      cantidadEstudiantesNee: number;
+    };
   };
 }
 
@@ -116,6 +137,12 @@ export const LlenarFichaForm = ({
   const [respuestasEjeItem, setRespuestasEjeItem] = useState<Record<string, number>>({});
   const [evidenciaUrls, setEvidenciaUrls] = useState<Record<string, string>>({});
 
+  const [contextoArea, setContextoArea] = useState<string>('');
+  const [contextoGrado, setContextoGrado] = useState<string>('');
+  const [contextoSeccion, setContextoSeccion] = useState<string>('');
+  const [contextoAlumnos, setContextoAlumnos] = useState<number | ''>('');
+  const [contextoAlumnosNee, setContextoAlumnosNee] = useState<number | ''>('');
+
   useEffect(() => {
     if (isOpen && visit) {
       if (initialState) {
@@ -129,6 +156,13 @@ export const LlenarFichaForm = ({
           setPreguntaExtraAnswers(initialState.preguntaExtraAnswers || {});
           setRespuestasEjeItem(initialState.respuestasEjeItem || {});
           setEvidenciaUrls(initialState.evidenciaUrls || {});
+          if (initialState.contexto) {
+            setContextoArea(initialState.contexto.areaCurricular);
+            setContextoGrado(initialState.contexto.grado);
+            setContextoSeccion(initialState.contexto.seccion);
+            setContextoAlumnos(initialState.contexto.cantidadEstudiantes);
+            setContextoAlumnosNee(initialState.contexto.cantidadEstudiantesNee);
+          }
         }, 0);
       } else {
         const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
@@ -145,6 +179,13 @@ export const LlenarFichaForm = ({
               setPreguntaExtraAnswers(parsed.preguntaExtraAnswers || {});
               setRespuestasEjeItem(parsed.respuestasEjeItem || {});
               setEvidenciaUrls(parsed.evidenciaUrls || {});
+              if (parsed.contexto) {
+                setContextoArea(parsed.contexto.areaCurricular);
+                setContextoGrado(parsed.contexto.grado);
+                setContextoSeccion(parsed.contexto.seccion);
+                setContextoAlumnos(parsed.contexto.cantidadEstudiantes);
+                setContextoAlumnosNee(parsed.contexto.cantidadEstudiantesNee);
+              }
             }, 0);
           } catch {
             setTimeout(() => {
@@ -157,6 +198,11 @@ export const LlenarFichaForm = ({
               setPreguntaExtraAnswers({});
               setRespuestasEjeItem({});
               setEvidenciaUrls({});
+              setContextoArea('');
+              setContextoGrado('');
+              setContextoSeccion('');
+              setContextoAlumnos('');
+              setContextoAlumnosNee('');
             }, 0);
           }
         } else {
@@ -170,6 +216,11 @@ export const LlenarFichaForm = ({
             setPreguntaExtraAnswers({});
             setRespuestasEjeItem({});
             setEvidenciaUrls({});
+            setContextoArea('');
+            setContextoGrado('');
+            setContextoSeccion('');
+            setContextoAlumnos('');
+            setContextoAlumnosNee('');
           }, 0);
         }
       }
@@ -201,6 +252,13 @@ export const LlenarFichaForm = ({
       preguntaExtraAnswers,
       respuestasEjeItem,
       evidenciaUrls,
+      contexto: visit.tipo === 'DOCENTE' ? {
+        areaCurricular: contextoArea,
+        grado: contextoGrado,
+        seccion: contextoSeccion,
+        cantidadEstudiantes: Number(contextoAlumnos) || 0,
+        cantidadEstudiantesNee: Number(contextoAlumnosNee) || 0,
+      } : undefined
     });
   };
 
@@ -225,6 +283,13 @@ export const LlenarFichaForm = ({
       preguntaExtraAnswers,
       respuestasEjeItem,
       evidenciaUrls,
+      contexto: visit.tipo === 'DOCENTE' ? {
+        areaCurricular: contextoArea,
+        grado: contextoGrado,
+        seccion: contextoSeccion,
+        cantidadEstudiantes: Number(contextoAlumnos) || 0,
+        cantidadEstudiantesNee: Number(contextoAlumnosNee) || 0,
+      } : undefined
     });
   };
 
@@ -251,7 +316,7 @@ export const LlenarFichaForm = ({
         nivelColor = '#ef4444';
         nivelBg = '#fef2f2';
       } else if (puntajeTotal >= 8 && puntajeTotal <= 12) {
-        nivel = 'EN PROCESO';
+        nivel = 'EN_PROCESO';
         nivelColor = '#f59e0b';
         nivelBg = '#fffbeb';
       } else if (puntajeTotal >= 13 && puntajeTotal <= 17) {
@@ -269,7 +334,7 @@ export const LlenarFichaForm = ({
         nivelColor = '#ef4444';
         nivelBg = '#fef2f2';
       } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.50)) {
-        nivel = 'EN PROCESO';
+        nivel = 'EN_PROCESO';
         nivelColor = '#f59e0b';
         nivelBg = '#fffbeb';
       } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.75)) {
@@ -316,6 +381,40 @@ export const LlenarFichaForm = ({
           <div>Especialista: <span className="text-slate-800">{visit.especialista}</span></div>
           <div>Fecha Programada: <span className="text-slate-800">{formatVisitDate(visit.fechaHora)} - {formatVisitTime(visit.fechaHora)}</span></div>
         </div>
+
+        {visit.tipo === 'DOCENTE' && !isCompleted && (
+          <div className="px-6 py-4 bg-slate-50 border-b border-border text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500">Área Curricular</label>
+              <input type="text" value={contextoArea} onChange={(e) => setContextoArea(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Ej. Matemática" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500">Grado</label>
+              <input type="text" value={contextoGrado} onChange={(e) => setContextoGrado(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Ej. 5to" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500">Sección</label>
+              <input type="text" value={contextoSeccion} onChange={(e) => setContextoSeccion(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Ej. A" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>
+              <input type="number" min="0" value={contextoAlumnos} onChange={(e) => setContextoAlumnos(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500">Est. NEE (Opcional)</label>
+              <input type="number" min="0" value={contextoAlumnosNee} onChange={(e) => setContextoAlumnosNee(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
+            </div>
+          </div>
+        )}
+        {visit.tipo === 'DOCENTE' && isCompleted && (
+          <div className="px-6 py-3 bg-slate-50 border-b border-border text-xs font-bold text-slate-600 grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div>Área: <span className="text-slate-800">{contextoArea || '-'}</span></div>
+            <div>Grado: <span className="text-slate-800">{contextoGrado || '-'}</span></div>
+            <div>Sección: <span className="text-slate-800">{contextoSeccion || '-'}</span></div>
+            <div>Estudiantes: <span className="text-slate-800">{contextoAlumnos || '-'}</span></div>
+            <div>Est. NEE: <span className="text-slate-800">{contextoAlumnosNee || '-'}</span></div>
+          </div>
+        )}
 
         {/* Contenedor con scroll interno — engloba cuerpo + comentarios + calificación */}
         <div className="flex-1 overflow-y-auto min-h-0">
@@ -658,12 +757,11 @@ export const LlenarFichaForm = ({
                               if (!ficha) {
                                 ficha = await fichasApi.create({
                                   cronogramaId: visit.id,
-                                  areaCurricular: visit.tipo === 'DOCENTE' ? 'Matematica' : undefined,
-                                  grado: visit.tipo === 'DOCENTE' ? '5to' : undefined,
-                                  seccion: visit.tipo === 'DOCENTE' ? 'A' : undefined,
-                                  cantidadEstudiantes: visit.tipo === 'DOCENTE' ? 30 : undefined,
-                                  cantidadEstudiantesNee: visit.tipo === 'DOCENTE' ? 2 : undefined,
-                                  cursoId: visit.tipo === 'DOCENTE' ? '1f480ae6-cd7a-40f7-beac-108c05af771e' : undefined,
+                                  areaCurricular: contextoArea,
+                                  grado: contextoGrado,
+                                  seccion: contextoSeccion,
+                                  cantidadEstudiantes: Number(contextoAlumnos) || 0,
+                                  cantidadEstudiantesNee: Number(contextoAlumnosNee) || 0,
                                 });
                               }
                               const result = await fichasApi.subirEvidenciaEjeItem(ficha.id, item.id, file);

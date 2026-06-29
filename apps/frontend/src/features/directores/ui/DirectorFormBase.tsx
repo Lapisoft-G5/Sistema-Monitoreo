@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { User, Briefcase, Check } from 'lucide-react';
 import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
@@ -20,6 +20,7 @@ const INITIAL: DirectorFormData = {
   institucionId: '',
   nivelEducativo: 'PRIMARIA',
   especialidad: '',
+  cargaHoraria: 40,
 };
 
 interface Props {
@@ -78,18 +79,36 @@ export const DirectorFormBase = ({
     onValidSubmit: () => onSubmit(form),
     isLoading,
     errors,
-    setPersonaFields: (persona) => {
+    setPersonaFields: useCallback((persona) => {
       set('nombres', persona.nombres);
       set('apellidos', persona.apellidos);
       set('correo', persona.correo ?? '');
       set('celular', persona.telefono ?? '');
-    },
-    clearPersonaFields: () => {
+
+      if (persona.docente) {
+        if (persona.docente.condicionLaboral) {
+          set('condicion', persona.docente.condicionLaboral as DirectorFormData['condicion']);
+        }
+        if (persona.docente.escalaMagisterial) {
+          const escalaMap: Record<number, string> = {
+            1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII'
+          };
+          set('escala', (escalaMap[persona.docente.escalaMagisterial] || 'I') as DirectorFormData['escala']);
+        }
+        if (persona.docente.nivelEducativo) {
+          set('nivelEducativo', persona.docente.nivelEducativo as DirectorFormData['nivelEducativo']);
+        }
+        if (persona.docente.institucionId) {
+          set('institucionId', persona.docente.institucionId);
+        }
+      }
+    }, []),
+    clearPersonaFields: useCallback(() => {
       set('nombres', '');
       set('apellidos', '');
       set('correo', '');
       set('celular', '');
-    },
+    }, []),
   });
 
   const showError = (key: keyof DirectorFormData) => (submitted ? errors[key] : '');
@@ -121,21 +140,22 @@ export const DirectorFormBase = ({
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
           <div className="flex flex-col gap-1 w-full">
-            <TextField
-              label="DNI / Documento de Identidad"
-              required
-              value={form.dni}
-              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
-              placeholder="8 dígitos"
-              error={showError('dni')}
-              adornment={
-                searchingDni ? (
-                  <Spinner size="sm" />
-                ) : dniOk ? (
-                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-                ) : undefined
-              }
-            />
+          <TextField
+            label="DNI / Documento de Identidad"
+            required
+            value={form.dni}
+            onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
+            placeholder="8 dígitos"
+            error={showError('dni')}
+            disabled={!!initialData}
+            adornment={
+              searchingDni ? (
+                <Spinner size="sm" />
+              ) : dniOk ? (
+                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+              ) : undefined
+            }
+          />
           </div>
           <TextField
             label="Número de Celular"
@@ -254,6 +274,16 @@ export const DirectorFormBase = ({
             options={ESCALAS_MAGISTERIALES}
             placeholder="Seleccione Escala"
             error={showError('escala')}
+          />
+        </div>
+        <div className="mt-[18px] max-w-xs">
+          <TextField
+            label="Carga Laboral (Horas)"
+            required
+            value={form.cargaHoraria?.toString() || ''}
+            onChange={(v) => set('cargaHoraria', v ? Number(v.replace(/\D/g, '')) : 40)}
+            placeholder="40"
+            error={showError('cargaHoraria')}
           />
         </div>
       </SectionCard>

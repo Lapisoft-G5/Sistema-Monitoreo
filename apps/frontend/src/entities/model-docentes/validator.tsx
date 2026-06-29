@@ -73,6 +73,10 @@ export const directorSchema = z.object({
     message: 'Debe seleccionar un nivel educativo',
   }),
   especialidad: z.string().min(3, 'La especialidad es requerida'),
+  cargaHoraria: z
+    .number({ message: 'Debe ser un número' })
+    .min(1, 'Carga horaria mínima es 1 hora')
+    .max(40, 'Carga horaria máxima es 40 horas'),
 });
 
 export type DirectorFormData = z.infer<typeof directorSchema>;

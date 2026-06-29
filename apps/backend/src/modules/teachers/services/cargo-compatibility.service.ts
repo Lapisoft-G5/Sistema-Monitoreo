@@ -1,5 +1,8 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { canAddCargo as canAddCargoRule, CargoNombre } from '../../../shared/auth/capability-map.js';
+import {
+  canAddCargo as canAddCargoRule,
+  CargoNombre,
+} from '../../../shared/auth/capability-map.js';
 import { DocentesCargosRepository } from '../repositories/docentes-cargos.repository.js';
 
 /**

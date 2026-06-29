@@ -34,6 +34,15 @@ export abstract class EspecialistaRepository {
   abstract findCargosByEspecialistaId(especialistaId: string): Promise<CargoRecord[]>;
   abstract findCargoById(id: string): Promise<CargoRecord | null>;
   abstract countActiveCargos(especialistaId: string): Promise<number>;
-  abstract createCargo(especialistaId: string, cargo: string, fechaInicio: Date): Promise<CargoRecord>;
-  abstract finalizeCargo(especialistaId: string, cargoId: string, fechaFin: Date, cargoValue: string): Promise<void>;
+  abstract createCargo(
+    especialistaId: string,
+    cargo: string,
+    fechaInicio: Date,
+  ): Promise<CargoRecord>;
+  abstract finalizeCargo(
+    especialistaId: string,
+    cargoId: string,
+    fechaFin: Date,
+    cargoValue: string,
+  ): Promise<void>;
 }

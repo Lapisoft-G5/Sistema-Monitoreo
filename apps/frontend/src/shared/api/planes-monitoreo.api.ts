@@ -29,5 +29,10 @@ export const planesMonitoreoApi = {
       method: 'DELETE',
     }),
 
+  hardDelete: (id: string) =>
+    request<{ success: boolean; message: string }>(`/api/planes-monitoreo/${id}/hard`, {
+      method: 'DELETE',
+    }),
+
   archivoUrl: (id: string) => `${API_BASE_URL}/api/planes-monitoreo/${id}/archivo`,
 };

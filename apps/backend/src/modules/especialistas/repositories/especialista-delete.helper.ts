@@ -1,7 +1,4 @@
-import {
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
@@ -91,10 +88,7 @@ export async function deleteEspecialista(
   });
 }
 
-export async function activate(
-  prisma: PrismaService,
-  id: string,
-): Promise<IEspecialistaResponse> {
+export async function activate(prisma: PrismaService, id: string): Promise<IEspecialistaResponse> {
   const esp = await prisma.especialista.findUnique({
     where: { id },
   });

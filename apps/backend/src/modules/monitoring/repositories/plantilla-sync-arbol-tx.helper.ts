@@ -1,11 +1,47 @@
 import { randomUUID } from 'node:crypto';
+import type { Prisma } from '../../../generated/prisma/client.js';
+
+export interface SyncNivel {
+  nivelRomano: string;
+  denominacion: string;
+  rangoMin: number;
+  color?: string | null;
+  orden: number;
+}
+
+export interface SyncAspecto {
+  id: string;
+  descripcion: string;
+  orden: number;
+}
+
+export interface SyncRubrica {
+  nivelRomano: string;
+  descripcion: string;
+}
+
+export interface SyncDesempeno {
+  id: string;
+  nombre: string;
+  descripcionCorta: string;
+  preguntaExtra?: string | null;
+  orden: number;
+  aspectos: SyncAspecto[];
+  rubrica: SyncRubrica[];
+}
+
+export interface SyncEjeItem {
+  numero: number;
+  descripcion: string;
+  orden?: number | null;
+}
 
 export async function syncArbolWithTx(
-  tx: any,
+  tx: Prisma.TransactionClient,
   plantillaId: string,
-  niveles: any[],
-  desempenos: any[],
-  ejeItems?: any[],
+  niveles: SyncNivel[],
+  desempenos: SyncDesempeno[],
+  ejeItems?: SyncEjeItem[],
 ): Promise<void> {
   for (const n of niveles) {
     await tx.nivelCalificacion.create({
@@ -15,7 +51,7 @@ export async function syncArbolWithTx(
         nivelRomano: n.nivelRomano,
         denominacion: n.denominacion,
         rangoMin: n.rangoMin,
-        color: n.color,
+        color: n.color ?? '#000000',
         orden: n.orden,
       },
     });
@@ -31,7 +67,7 @@ export async function syncArbolWithTx(
         preguntaExtra: d.preguntaExtra,
         orden: d.orden,
         aspectos: {
-          create: d.aspectos.map((a: any) => ({
+          create: d.aspectos.map((a) => ({
             id: a.id,
             descripcion: a.descripcion,
             orden: a.orden,

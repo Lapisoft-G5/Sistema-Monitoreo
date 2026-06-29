@@ -103,7 +103,8 @@ export class DocentesCargosService {
     const fin = fechaFin ?? new Date();
 
     // Calcular estado post-cierre con los datos actuales
-    const restantes = await this.docentesCargosRepository.findActiveDocenteCargosWithCargo(docenteId);
+    const restantes =
+      await this.docentesCargosRepository.findActiveDocenteCargosWithCargo(docenteId);
     const postCloseCargos = restantes.filter((r) => r.id !== docenteCargoId);
     const postCloseNombres = postCloseCargos
       .filter((r) => r.cargo?.nombre)

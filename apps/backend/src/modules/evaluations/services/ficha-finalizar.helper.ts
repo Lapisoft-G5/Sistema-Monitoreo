@@ -45,8 +45,9 @@ export async function migrarPlantilla(
   repository: FichaRepository,
   fichaId: string,
   nuevaPlantillaId: string,
-  session: SessionUser,
+  _session: SessionUser,
 ): Promise<IFichaMonitoreo> {
+  void _session;
   const ficha = await repository.findById(fichaId);
   if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
   if (ficha.estado !== 'BORRADOR') {

@@ -1,4 +1,14 @@
-import { Body, Controller, HttpCode, HttpStatus, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
@@ -155,8 +165,10 @@ export class AuthController {
   }
 
   private setAuthCookies(res: Response, accessToken?: string, refreshToken?: string) {
-    const accessMaxAge = this.configService.get<number>('COOKIE_ACCESS_TOKEN_MAX_AGE_MS') ?? 15 * 60 * 1000;
-    const refreshMaxAge = this.configService.get<number>('COOKIE_REFRESH_TOKEN_MAX_AGE_MS') ?? 7 * 24 * 60 * 60 * 1000;
+    const accessMaxAge =
+      this.configService.get<number>('COOKIE_ACCESS_TOKEN_MAX_AGE_MS') ?? 15 * 60 * 1000;
+    const refreshMaxAge =
+      this.configService.get<number>('COOKIE_REFRESH_TOKEN_MAX_AGE_MS') ?? 7 * 24 * 60 * 60 * 1000;
 
     if (accessToken) {
       res.cookie('accessToken', accessToken, this.getCookieOptions(accessMaxAge));

@@ -11,6 +11,7 @@ export async function clonePlantilla(
   rolAutorAlCrear: 'jefe_gestion' | 'director_ie',
   institucionId: string | null,
   descripcion?: string,
+  anioAcademico?: number,
 ): Promise<IPlantilla> {
   const original = await prisma.plantillaMonitoreo.findUnique({
     where: { id: sourceId },
@@ -28,11 +29,11 @@ export async function clonePlantilla(
   });
   if (!original) throw new NotFoundException(`Plantilla origen ${sourceId} no encontrada.`);
 
-  const anioActual = new Date().getFullYear();
+  const anioDestino = anioAcademico ?? new Date().getFullYear();
   const maxVersion = await prisma.plantillaMonitoreo.aggregate({
     where: {
       tipoMonitoreo: original.tipoMonitoreo,
-      anioAcademico: anioActual,
+      anioAcademico: anioDestino,
     },
     _max: { version: true },
   });
@@ -43,7 +44,7 @@ export async function clonePlantilla(
     data: {
       id: nuevoId,
       tipoMonitoreo: original.tipoMonitoreo,
-      anioAcademico: anioActual,
+      anioAcademico: anioDestino,
       version: nextVersion,
       baremo: original.baremo,
       descripcion:

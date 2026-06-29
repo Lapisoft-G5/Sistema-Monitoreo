@@ -3,7 +3,7 @@ import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Spinner } from '@shared/ui/Spinner';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { FilterDocentes } from '@features/docentes';
 import { DocentesStatsWidget, DocentesTableWidget } from '@widgets/docentes';
@@ -33,6 +33,7 @@ export const DocenteListPageBase = ({
   loadingLabel,
   filterCargoOut,
 }: DocenteListPageBaseProps) => {
+  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useUser();
   const [docentes, setDocentes] = useState<Docente[]>([]);
@@ -98,7 +99,7 @@ export const DocenteListPageBase = ({
         description={description}
         action={
           <Button
-            onClick={() => navigate(createPath)}
+            onClick={() => navigate(createPath, { state: { from: location.pathname } })}
             className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white"
           >
             <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
@@ -121,7 +122,7 @@ export const DocenteListPageBase = ({
         targetCargo={targetCargo}
         itemName={itemName}
         routePrefix="/instituciones/docentes"
-        onView={(doc) => navigate(`/instituciones/docentes/${doc.id}`)}
+        onView={(doc) => navigate(`/instituciones/docentes/${doc.id}`, { state: { from: location.pathname } })}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { DocenteFilter } from './teachers.repository.js';
 import { mapDocente } from './docente-mapper.helper.js';
+import type { Prisma } from '../../../generated/prisma/client.js';
 
 const DOCENTE_INCLUDE = {
   persona: true,
@@ -20,8 +21,8 @@ export async function findDocenteById(prisma: PrismaService, id: string) {
 }
 
 export async function findDocentes(prisma: PrismaService, filter?: DocenteFilter) {
-  const where: any = {};
-  const andConditions: any[] = [];
+  const where: Prisma.DocenteWhereInput = {};
+  const andConditions: Prisma.DocenteWhereInput[] = [];
 
   if (filter?.institucionId) {
     andConditions.push({ institucionId: filter.institucionId });

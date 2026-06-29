@@ -12,13 +12,19 @@ import type { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-
 import type { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
-import { validarReglas, resolveAutor, guardVisibilidad, guardModificacion } from './plantilla-service.validator.js';
+import {
+  validarReglas,
+  resolveAutor,
+  guardVisibilidad,
+  guardModificacion,
+} from './plantilla-service.validator.js';
 
 @Injectable()
 export class PlantillaService {
   constructor(private readonly repository: PlantillaRepository) {}
 
-  async findAll(filters?: QueryPlantillaDto, session?: SessionUser): Promise<IPlantilla[]> {
+  async findAll(filters?: QueryPlantillaDto, _session?: SessionUser): Promise<IPlantilla[]> {
+    void _session;
     return this.repository.findAll(filters);
   }
 
@@ -118,7 +124,9 @@ export class PlantillaService {
     guardModificacion(original, session);
 
     if (session.role !== RoleCode.JEFE_GESTION && session.role !== RoleCode.DIRECTOR_INSTITUCION) {
-      throw new ForbiddenException('Solo el Jefe de Gestion o el Director IE pueden eliminar plantillas.');
+      throw new ForbiddenException(
+        'Solo el Jefe de Gestion o el Director IE pueden eliminar plantillas.',
+      );
     }
 
     const fichas = await this.repository.findFichasByPlantilla(id);
@@ -152,7 +160,12 @@ export class PlantillaService {
     return { count, estado: original.estado };
   }
 
-  async duplicar(id: string, session: SessionUser, descripcion?: string): Promise<IPlantilla> {
+  async duplicar(
+    id: string,
+    session: SessionUser,
+    descripcion?: string,
+    anioAcademico?: number,
+  ): Promise<IPlantilla> {
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
 
@@ -167,13 +180,13 @@ export class PlantillaService {
         'Solo Jefe de Gestion o Directores IE pueden duplicar plantillas.',
       );
     }
-
     return this.repository.clone(
       id,
       session.id,
-      rolAutorAlCrear as 'jefe_gestion' | 'director_ie',
+      rolAutorAlCrear,
       institucionId,
       descripcion,
+      anioAcademico,
     );
   }
 }

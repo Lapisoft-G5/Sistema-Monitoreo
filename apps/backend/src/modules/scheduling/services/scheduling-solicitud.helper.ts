@@ -81,7 +81,15 @@ export async function aprobarSolicitud(
   dto: ResolverSolicitudDto,
   session: SessionUser,
 ): Promise<ISolicitudReprogramacion> {
-  return resolverSolicitud(cronogramaRepo, solicitudRepo, scopeFilter, id, 'APROBADO', dto, session);
+  return resolverSolicitud(
+    cronogramaRepo,
+    solicitudRepo,
+    scopeFilter,
+    id,
+    'APROBADO',
+    dto,
+    session,
+  );
 }
 
 export async function rechazarSolicitud(
@@ -92,7 +100,15 @@ export async function rechazarSolicitud(
   dto: ResolverSolicitudDto,
   session: SessionUser,
 ): Promise<ISolicitudReprogramacion> {
-  return resolverSolicitud(cronogramaRepo, solicitudRepo, scopeFilter, id, 'RECHAZADO', dto, session);
+  return resolverSolicitud(
+    cronogramaRepo,
+    solicitudRepo,
+    scopeFilter,
+    id,
+    'RECHAZADO',
+    dto,
+    session,
+  );
 }
 
 async function resolverSolicitud(
@@ -127,9 +143,13 @@ async function resolverSolicitud(
         session.especialistaEspecialidades &&
         session.especialistaEspecialidades.length > 0
       ) {
-        const monitorEspecialidades = await cronogramaRepo.findMonitorEspecialidades(cronograma.monitorId);
+        const monitorEspecialidades = await cronogramaRepo.findMonitorEspecialidades(
+          cronograma.monitorId,
+        );
         const monitorEspecs = monitorEspecialidades.map((e) => e.especialidad.nombre);
-        const hasOverlap = session.especialistaEspecialidades.some((e) => monitorEspecs.includes(e));
+        const hasOverlap = session.especialistaEspecialidades.some((e) =>
+          monitorEspecs.includes(e),
+        );
         if (!hasOverlap && monitorEspecs.length > 0) {
           throw new ForbiddenException(
             'El Jefe de Area solo puede resolver solicitudes de especialistas de su misma especialidad.',

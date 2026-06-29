@@ -2,9 +2,12 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
-import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
-import { TeachersRepository, DocenteFilter, DocenteEntity } from '../repositories/teachers.repository.js';
+import {
+  TeachersRepository,
+  DocenteFilter,
+  DocenteEntity,
+} from '../repositories/teachers.repository.js';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
 import {
@@ -45,7 +48,12 @@ export class TeachersService {
     }
 
     const cargo = await validateCargoExists(this.catalogsRepository, dto.cargoId);
-    validateCargoRestrictivo(cargo.nombre, dto.nivelEducativo, dto.cargaLaboral, dto.condicionLaboral);
+    validateCargoRestrictivo(
+      cargo.nombre,
+      dto.nivelEducativo,
+      dto.cargaLaboral,
+      dto.condicionLaboral,
+    );
     validateDirectorCannotAssignDirector(currentUser, cargo.nombre);
 
     if (currentUser.role === RoleCode.JEFE_AREA) {
@@ -93,7 +101,12 @@ export class TeachersService {
     validateInstitucionOwnership(currentUser, docente.institucionId);
 
     const cargo = await validateCargoExists(this.catalogsRepository, dto.cargoId);
-    validateCargoRestrictivo(cargo.nombre, dto.nivelEducativo, dto.cargaLaboral, dto.condicionLaboral);
+    validateCargoRestrictivo(
+      cargo.nombre,
+      dto.nivelEducativo,
+      dto.cargaLaboral,
+      dto.condicionLaboral,
+    );
     validateDirectorCannotAssignDirector(currentUser, cargo.nombre);
 
     if (currentUser.role === RoleCode.JEFE_AREA) {
@@ -112,7 +125,12 @@ export class TeachersService {
     }
 
     const activeCargo = findActiveCargo(docente);
-    return this.teachersRepository.updateDocenteWithTransaction(id, dto, activeCargo, docente.personaId);
+    return this.teachersRepository.updateDocenteWithTransaction(
+      id,
+      dto,
+      activeCargo,
+      docente.personaId,
+    );
   }
 
   async bajaDocente(
@@ -121,7 +139,11 @@ export class TeachersService {
   ): Promise<{
     success: boolean;
     message: string;
-    docente: { id: string; estado: string; persona: { dni: string; nombres: string; apellidos: string } };
+    docente: {
+      id: string;
+      estado: string;
+      persona: { dni: string; nombres: string; apellidos: string };
+    };
   }> {
     requirePermission(currentUser, 'docentes:write');
 
@@ -144,7 +166,10 @@ export class TeachersService {
       await validateJefeAreaCanManageDocente(currentUser, docente, this.catalogsRepository);
     }
 
-    const updatedDocente = await this.teachersRepository.updateDocenteEstado(id, EstadoRegistro.INACTIVO);
+    const updatedDocente = await this.teachersRepository.updateDocenteEstado(
+      id,
+      EstadoRegistro.INACTIVO,
+    );
 
     return {
       success: true,
@@ -167,7 +192,11 @@ export class TeachersService {
   ): Promise<{
     success: boolean;
     message: string;
-    docente: { id: string; estado: string; persona: { dni: string; nombres: string; apellidos: string } };
+    docente: {
+      id: string;
+      estado: string;
+      persona: { dni: string; nombres: string; apellidos: string };
+    };
   }> {
     requirePermission(currentUser, 'docentes:write');
 
@@ -190,7 +219,10 @@ export class TeachersService {
       await validateJefeAreaCanManageDocente(currentUser, docente, this.catalogsRepository);
     }
 
-    const updatedDocente = await this.teachersRepository.updateDocenteEstado(id, EstadoRegistro.ACTIVO);
+    const updatedDocente = await this.teachersRepository.updateDocenteEstado(
+      id,
+      EstadoRegistro.ACTIVO,
+    );
 
     return {
       success: true,

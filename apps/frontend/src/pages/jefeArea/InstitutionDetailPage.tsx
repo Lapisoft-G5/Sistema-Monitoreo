@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user'; // 🚀 Tu entidad de usuario limpia
 import type { Institucion } from '@entities/model-instituciones';
 import { Spinner } from '@shared/ui/Spinner';
@@ -10,6 +10,8 @@ import { InstitutionProfileWidget } from '@widgets/institutions/ViewInstitution'
 export const InstitutionDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backPath = location.state?.from || '/instituciones/padron';
 
   const { user } = useUser();
 
@@ -52,10 +54,10 @@ export const InstitutionDetailPage = () => {
           El código identificador {id} no existe o no tiene permisos de acceso.
         </p>
         <button
-          onClick={() => navigate('/instituciones/padron')}
+          onClick={() => navigate(backPath)}
           className="px-5 py-2.5 bg-bg border border-border rounded-xl font-semibold text-text hover:bg-muted transition-colors cursor-pointer"
         >
-          Volver al Padrón
+          Volver
         </button>
       </div>
     );
@@ -66,8 +68,8 @@ export const InstitutionDetailPage = () => {
       <InstitutionProfileWidget
         institucion={institucion}
         isReadOnly={isReadOnly}
-        onBack={() => navigate('/instituciones/padron')}
-        onEdit={() => navigate(`/instituciones/${id}/editar`)}
+        onBack={() => navigate(backPath)}
+        onEdit={() => navigate(`/instituciones/${id}/editar`, { state: { from: backPath } })}
       />
     </div>
   );

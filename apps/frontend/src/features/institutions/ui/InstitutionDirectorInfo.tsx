@@ -29,6 +29,10 @@ export const InstitutionDirectorInfo = ({ institucion }: { institucion: Instituc
               <CAMPO label="Director Asignado" value={institucion.director} />
             </div>
             <CAMPO
+              label="DNI"
+              value={institucion.directorDni || 'No registrado'}
+            />
+            <CAMPO
               label="Celular de Contacto"
               value={institucion.directorTelefono || 'Sin teléfono registrado'}
             />

@@ -110,8 +110,17 @@ describe('TeachersService', () => {
     });
 
     it('should throw ForbiddenException if director_institucion tries to register in a different institution', async () => {
-      await expect(service.createDocente(defaultDto, { sub: 'dir-id', role: RoleCode.DIRECTOR_INSTITUCION, institucion_id: 'ie-diff', permissions: ['docentes:write'] })).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para realizar esta acción en otra institución educativa.'),
+      await expect(
+        service.createDocente(defaultDto, {
+          sub: 'dir-id',
+          role: RoleCode.DIRECTOR_INSTITUCION,
+          institucion_id: 'ie-diff',
+          permissions: ['docentes:write'],
+        }),
+      ).rejects.toThrow(
+        new ForbiddenException(
+          'No tiene permisos para realizar esta acción en otra institución educativa.',
+        ),
       );
     });
 
@@ -293,8 +302,17 @@ describe('TeachersService', () => {
         institucionId: 'other-inst-uuid',
       });
 
-      await expect(service.updateDocente('d-1', updateDto, { sub: 'dir-id', role: RoleCode.DIRECTOR_INSTITUCION, institucion_id: 'ie-diff', permissions: ['docentes:write'] })).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para realizar esta acción en otra institución educativa.'),
+      await expect(
+        service.updateDocente('d-1', updateDto, {
+          sub: 'dir-id',
+          role: RoleCode.DIRECTOR_INSTITUCION,
+          institucion_id: 'ie-diff',
+          permissions: ['docentes:write'],
+        }),
+      ).rejects.toThrow(
+        new ForbiddenException(
+          'No tiene permisos para realizar esta acción en otra institución educativa.',
+        ),
       );
     });
 
@@ -386,8 +404,17 @@ describe('TeachersService', () => {
         institucionId: 'other-inst-uuid',
       });
 
-      await expect(service.bajaDocente('d-1', { sub: 'dir-id', role: RoleCode.DIRECTOR_INSTITUCION, institucion_id: 'ie-diff', permissions: ['docentes:write'] })).rejects.toThrow(
-        new ForbiddenException('No tiene permisos para realizar esta acción en otra institución educativa.'),
+      await expect(
+        service.bajaDocente('d-1', {
+          sub: 'dir-id',
+          role: RoleCode.DIRECTOR_INSTITUCION,
+          institucion_id: 'ie-diff',
+          permissions: ['docentes:write'],
+        }),
+      ).rejects.toThrow(
+        new ForbiddenException(
+          'No tiene permisos para realizar esta acción en otra institución educativa.',
+        ),
       );
     });
 

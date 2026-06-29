@@ -36,7 +36,10 @@ export async function update(
     const targetCargo = data.cargo || cargoActivoActual;
     const targetEstado = data.estado || esp.estado;
 
-    if (targetCargo === (CargoNombre.JEFE_AREA as string) && targetEstado === EstadoRegistro.ACTIVO) {
+    if (
+      targetCargo === (CargoNombre.JEFE_AREA as string) &&
+      targetEstado === EstadoRegistro.ACTIVO
+    ) {
       const existingJefe = await tx.especialista.findFirst({
         where: {
           nivelEducativo: targetNivel,

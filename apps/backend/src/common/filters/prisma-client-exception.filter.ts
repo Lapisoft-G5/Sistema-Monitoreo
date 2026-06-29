@@ -41,7 +41,10 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
         // Remove backticks, quotes, and whitespace that might be captured by regex or Prisma 5 output
         targetStr = targetStr.replace(/["'`\s]/g, '');
 
-        if (targetStr === 'telefono' || targetStr === 'celular') targetStr = 'celular/teléfono';
+        if (targetStr === 'telefono' || targetStr === 'celular') {
+          message = 'El número de celular/teléfono ingresado ya está registrado por otra persona. Verifique e intente nuevamente.';
+          break;
+        }
         if (targetStr === 'correo' || targetStr === 'email') targetStr = 'correo electrónico';
         if (targetStr === 'dni') targetStr = 'DNI';
 

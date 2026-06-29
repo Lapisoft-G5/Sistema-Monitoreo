@@ -64,7 +64,7 @@ export class AuthSessionService {
 
     if (!isPasswordValid) {
       const failedAttempts = await this.userRepository.incrementFailedAttempts(user.id, now);
-      
+
       await this.auditRepository.logAuthEvent({
         userId: user.id,
         eventType: 'LOGIN_FAILURE_PASSWORD',

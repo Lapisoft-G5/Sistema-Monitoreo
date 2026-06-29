@@ -45,4 +45,9 @@ export abstract class EspecialistaRepository {
     fechaFin: Date,
     cargoValue: string,
   ): Promise<void>;
+  abstract transicionDocenteAEspecialista(
+    personaId: string,
+    data: ICreateEspecialistaRequest,
+    roleId: string,
+  ): Promise<IEspecialistaResponse>;
 }

@@ -59,4 +59,9 @@ export abstract class TeachersRepository {
     activeCargo: any,
     personaId: string,
   ): Promise<DocenteEntity>;
+  abstract transicionEspecialistaADocente(
+    personaId: string,
+    dto: CreateDocenteDto,
+    rolDocenteId: string,
+  ): Promise<DocenteEntity>;
 }

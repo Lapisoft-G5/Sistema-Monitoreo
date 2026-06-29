@@ -1,7 +1,6 @@
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 import { mapDocente } from './docente-mapper.helper.js';
-import { resolveRoleCode } from './docente-shared.helper.js';
 
 const DOCENTE_INCLUDE = {
   persona: true,
@@ -55,31 +54,31 @@ export async function updateDocenteEstado(prisma: PrismaService, id: string, est
 
 export async function bajaDirector(prisma: PrismaService, id: string) {
   return prisma.$transaction(async (tx) => {
-    // 1. Obtener docente y su persona
     const docente = await tx.docente.findUniqueOrThrow({
       where: { id },
       include: { persona: true },
     });
 
-    // 2. Cerrar cargo activo de Director
-    await tx.docenteCargo.updateMany({
-      where: { docenteId: id, fechaFin: null },
-      data: { fechaFin: new Date() },
+    await tx.docenteCargo.deleteMany({
+      where: {
+        docenteId: id,
+        cargo: { nombre: 'Director' },
+        fechaFin: null,
+      },
     });
 
-    // 3. Cambiar el rol del usuario a 'docente'
     const rolDocente = await tx.role.findUnique({
       where: { codigo: 'docente' },
     });
     if (rolDocente) {
       await tx.usuario.updateMany({
-        where: { personaId: docente.personaId },
+        where: { personaId: docente.persona.id },
         data: { rolId: rolDocente.id },
       });
     }
 
     // 4. Inactivar el docente y quitar la IE
-    const updatedDocente = await tx.docente.update({
+    await tx.docente.update({
       where: { id },
       data: {
         estado: EstadoRegistro.INACTIVO,

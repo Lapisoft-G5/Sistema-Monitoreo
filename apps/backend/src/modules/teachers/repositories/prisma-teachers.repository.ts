@@ -9,6 +9,7 @@ import { findDocenteById, findDocentes, findPersonaByDni } from './docente-read.
 import { updateDocenteEstado, bajaDirector } from './docente-update-estado.helper.js';
 import { createDocenteWithTransaction } from './docente-create.helper.js';
 import { updateDocenteWithTransaction } from './docente-update.helper.js';
+import { transicionEspecialistaADocente } from './transicion-rol.helper.js';
 
 @Injectable()
 export class PrismaTeachersRepository implements TeachersRepository {
@@ -48,5 +49,13 @@ export class PrismaTeachersRepository implements TeachersRepository {
     personaId: string,
   ): Promise<DocenteEntity> {
     return updateDocenteWithTransaction(this.prisma, id, dto, activeCargo, personaId);
+  }
+
+  async transicionEspecialistaADocente(
+    personaId: string,
+    dto: CreateDocenteDto,
+    rolDocenteId: string,
+  ): Promise<DocenteEntity> {
+    return transicionEspecialistaADocente(this.prisma, personaId, dto, rolDocenteId);
   }
 }

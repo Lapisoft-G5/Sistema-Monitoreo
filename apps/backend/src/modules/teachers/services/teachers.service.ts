@@ -200,6 +200,43 @@ export class TeachersService {
     };
   }
 
+  async transicionRolADocente(
+    personaId: string,
+    dto: CreateDocenteDto,
+    currentUser: CurrentUser,
+  ): Promise<DocenteEntity> {
+    requirePermission(currentUser, 'docentes:write');
+
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
+      validateInstitucionOwnership(currentUser, dto.institucionId);
+    }
+
+    const institucion = await this.catalogsRepository.findInstitucionById(dto.institucionId);
+    if (!institucion) {
+      throw new NotFoundException('La institución educativa especificada no existe.');
+    }
+
+    const cargo = await validateCargoExists(this.catalogsRepository, dto.cargoId);
+    validateCargoRestrictivo(
+      cargo.nombre,
+      dto.nivelEducativo,
+      dto.cargaLaboral,
+      dto.condicionLaboral,
+    );
+    validateDirectorCannotAssignDirector(currentUser, cargo.nombre);
+
+    if (currentUser.role === RoleCode.JEFE_AREA) {
+      validateJefeAreaCanAssign(cargo.nombre);
+    }
+
+    const rolDocente = await this.catalogsRepository.findRoleByCode('docente');
+    if (!rolDocente) {
+      throw new Error('El rol de docente no está configurado en el sistema.');
+    }
+
+    return this.teachersRepository.transicionEspecialistaADocente(personaId, dto, rolDocente.id);
+  }
+
   async altaDocente(
     id: string,
     currentUser: CurrentUser,

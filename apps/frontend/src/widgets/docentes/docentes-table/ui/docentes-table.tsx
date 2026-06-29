@@ -72,6 +72,15 @@ export const DocentesTableWidget = ({
 
   const pagination = useEntityTable({ data: docentes, filterFn: docenteFilter(targetCargo) });
 
+  const handleFinalizeClick = (doc: Docente) => {
+    const { isMonitorCargo } = getCargoStatus(doc);
+    if (isMonitorCargo) {
+      setFinalizingDoc(doc);
+    } else {
+      setDeletingDoc(doc);
+    }
+  };
+
   const confirmFinalizeCargo = async () => {
     if (!finalizingDoc) return;
     const targetCargoObj = finalizingDoc.cargosList?.find((c) => c.nombre === targetCargo && c.fechaFin === null) ||
@@ -109,7 +118,7 @@ export const DocentesTableWidget = ({
     }
   };
 
-  const confirmDelete = async () => {
+  const confirmDeactivate = async () => {
     if (!deletingDoc) return;
     try {
       const res = await teachersApi.deactivate(deletingDoc.id);
@@ -215,13 +224,11 @@ export const DocentesTableWidget = ({
                 <FastActions
                   onView={() => onView(doc)}
                   onEdit={doc.activo && !isCargoFinalized ? () => { onEdit?.(doc); navigate(`${routePrefix}/${doc.id}/editar`); } : undefined}
-                  onDelete={!isMonitorCargo && doc.activo ? () => setDeletingDoc(doc) : undefined}
                   onRestore={!isMonitorCargo && !doc.activo ? () => setRestoringDoc(doc) : undefined}
-                  onFinalize={isMonitorCargo && !isCargoFinalized ? () => setFinalizingDoc(doc) : undefined}
+                  onFinalize={doc.activo && !isCargoFinalized ? () => handleFinalizeClick(doc) : undefined}
                   viewTitle="Ver ficha"
                   restoreTitle="Reactivar docente"
-                  deleteTitle="Desactivar docente"
-                  finalizeTitle={`Finalizar Cargo de ${targetCargo}`}
+                  finalizeTitle={isMonitorCargo ? `Finalizar Cargo de ${targetCargo}` : 'Desactivar docente'}
                 />
               </TableCell>
             </TableRow>
@@ -232,11 +239,11 @@ export const DocentesTableWidget = ({
       {deletingDoc && (
         <ConfirmModal
           danger
-          title="¿Eliminar Registro de Personal?"
-          message={`Esta acción es irreversible y eliminará el registro de ${deletingDoc.apellidos}, ${deletingDoc.nombres} del padrón oficial.`}
-          confirmLabel="Eliminar Registro"
+          title="¿Desactivar Docente?"
+          message={`Esta acción desactivará el registro de ${deletingDoc.apellidos}, ${deletingDoc.nombres} en el padrón oficial.`}
+          confirmLabel="Desactivar"
           cancelLabel="Cancelar"
-          onConfirm={confirmDelete}
+          onConfirm={confirmDeactivate}
           onCancel={() => setDeletingDoc(null)}
         />
       )}

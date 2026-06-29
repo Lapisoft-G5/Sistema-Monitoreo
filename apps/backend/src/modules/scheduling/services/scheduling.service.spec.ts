@@ -33,7 +33,7 @@ describe('SchedulingService - Reprogramaciones', () => {
     planId: 'plan-1',
     tipoMonitoreo: 'DOCENTE' as const,
     numeroVisita: 1,
-    fechaProgramada: '2026-03-15',
+    fechaProgramada: '2099-03-15',
     horaInicio: '09:00:00',
     detalles: null,
     estado: 'PROGRAMADO' as const,
@@ -49,7 +49,11 @@ describe('SchedulingService - Reprogramaciones', () => {
       findAll: jest.fn<any>().mockResolvedValue([visitaBase]),
       findById: jest.fn<any>().mockResolvedValue(visitaBase),
       findPlanVigentePara: jest.fn<any>(),
+      findPlantillaVigentePara: jest.fn<any>().mockResolvedValue('plantilla-1'),
+      validateEntidadesActivas: jest.fn<any>().mockResolvedValue({ institucion: true, monitor: true, evaluado: true }),
       countPendientesByMonitor: jest.fn<any>().mockResolvedValue(0),
+      findVisitasMonitorPorFecha: jest.fn<any>().mockResolvedValue([]),
+      findVisitaExistente: jest.fn<any>().mockResolvedValue(null),
       create: jest.fn<any>().mockResolvedValue(visitaBase),
       update: jest.fn<any>().mockResolvedValue({ ...visitaBase, estado: 'REPROGRAMADO' }),
       remove: jest.fn<any>(),
@@ -106,7 +110,7 @@ describe('SchedulingService - Reprogramaciones', () => {
             evaluadoId: 'doc-1',
             tipoMonitoreo: 'DOCENTE',
             numeroVisita: 1,
-            fechaProgramada: '2026-03-15',
+            fechaProgramada: '2099-03-15',
             horaInicio: '09:00:00',
             modalidad: 'EBR',
             nivelEducativo: 'Primaria',
@@ -126,7 +130,7 @@ describe('SchedulingService - Reprogramaciones', () => {
           evaluadoId: 'doc-1',
           tipoMonitoreo: 'DOCENTE',
           numeroVisita: 1,
-          fechaProgramada: '2026-03-15',
+          fechaProgramada: '2099-03-15',
           horaInicio: '09:00:00',
           modalidad: 'EBR',
           nivelEducativo: 'Primaria',
@@ -137,27 +141,25 @@ describe('SchedulingService - Reprogramaciones', () => {
     });
   });
 
-  describe('crearVisita - max 3 pendientes por especialista (EDU-0011) - ELIMINADO', () => {
-    it('permite crear incluso si el especialista ya tiene 3 o más visitas activas', async () => {
+  describe('crearVisita - max 3 pendientes por especialista (EDU-0011) - REINSTATED', () => {
+    it('rechaza crear si el especialista ya tiene 3 o más visitas activas', async () => {
       cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
-      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(5);
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(3);
       cronogramaRepo.create.mockResolvedValue(visitaBase);
-      const r = await service.crearVisita(
+      await expect(service.crearVisita(
         {
           monitorId: 'esp-1',
           institucionId: 'ie-1',
           evaluadoId: 'doc-1',
           tipoMonitoreo: 'DOCENTE',
           numeroVisita: 2,
-          fechaProgramada: '2026-04-01',
+          fechaProgramada: '2099-04-01',
           horaInicio: '10:00:00',
           modalidad: 'EBR',
           nivelEducativo: 'Primaria',
         } as any,
         sesionJefe,
-      );
-      expect(r.id).toBe('vis-1');
-      expect(cronogramaRepo.create).toHaveBeenCalled();
+      )).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -186,7 +188,7 @@ describe('SchedulingService - Reprogramaciones', () => {
           evaluadoId: 'doc-1',
           tipoMonitoreo: 'DOCENTE',
           numeroVisita: 1,
-          fechaProgramada: '2026-03-15',
+          fechaProgramada: '2099-03-15',
           horaInicio: '09:00:00',
           modalidad: 'EBR',
           nivelEducativo: 'Primaria',
@@ -208,7 +210,7 @@ describe('SchedulingService - Reprogramaciones', () => {
             evaluadoId: 'doc-1',
             tipoMonitoreo: 'DOCENTE',
             numeroVisita: 1,
-            fechaProgramada: '2026-03-15',
+            fechaProgramada: '2099-03-15',
             horaInicio: '09:00:00',
             modalidad: 'EBR',
             nivelEducativo: 'Secundaria',
@@ -230,7 +232,7 @@ describe('SchedulingService - Reprogramaciones', () => {
           evaluadoId: 'doc-1',
           tipoMonitoreo: 'DOCENTE',
           numeroVisita: 1,
-          fechaProgramada: '2026-03-15',
+          fechaProgramada: '2099-03-15',
           horaInicio: '09:00:00',
           modalidad: 'CEPTRO',
           nivelEducativo: 'Auxiliar Técnico',
@@ -324,7 +326,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       cronogramaId: 'vis-1',
       solicitanteId: 'esp-1',
       solicitanteRolAlCrear: 'especialista',
-      fechaOriginal: '2026-03-15',
+      fechaOriginal: '2099-03-15',
       horaOriginal: '09:00:00',
       fechaPropuesta: '2026-04-01',
       horaPropuesta: '10:00:00',
@@ -380,7 +382,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       id: 'sol-1',
       cronogramaId: 'vis-1',
       estado: 'PENDIENTE' as const,
-      fechaOriginal: '2026-03-15',
+      fechaOriginal: '2099-03-15',
       horaOriginal: '09:00:00',
       fechaPropuesta: '2026-04-01',
       horaPropuesta: '10:00:00',

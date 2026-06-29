@@ -33,7 +33,26 @@ function aplicarScopingVisitas(
   }
   if (scopeFilter.isMonitorScope(ctx.role)) return visitas;
   if (scopeFilter.isJefeAreaScope(ctx.role)) {
-    return visitas.filter((v) => v.nivelEducativo === ctx.especialistaNivel);
+    const nivel = ctx.especialistaNivel;
+    return visitas.filter((v) => {
+      if (nivel === 'Inicial') {
+        return (
+          (v.modalidad === 'EBR' && v.nivelEducativo?.toLowerCase() === 'inicial') ||
+          v.modalidad === 'EBE'
+        );
+      }
+      if (nivel === 'Primaria') {
+        return v.modalidad === 'EBR' && v.nivelEducativo?.toLowerCase() === 'primaria';
+      }
+      if (nivel === 'Secundaria') {
+        return (
+          (v.modalidad === 'EBR' && v.nivelEducativo?.toLowerCase() === 'secundaria') ||
+          v.modalidad === 'EBA' ||
+          v.modalidad === 'CEPTRO'
+        );
+      }
+      return false;
+    });
   }
   return [];
 }
@@ -49,6 +68,30 @@ function validarAccesoVisita(
   if (scopeFilter.isInstitucionScope(ctx.role)) {
     if (visita.institucionId !== ctx.institucionId) {
       throw new ForbiddenException('No tiene acceso a esta visita (otra institucion).');
+    }
+  }
+  if (scopeFilter.isJefeAreaScope(ctx.role)) {
+    const nivel = ctx.especialistaNivel;
+    const isEbrInicial =
+      visita.modalidad === 'EBR' && visita.nivelEducativo?.toLowerCase() === 'inicial';
+    const isEbrPrimaria =
+      visita.modalidad === 'EBR' && visita.nivelEducativo?.toLowerCase() === 'primaria';
+    const isEbrSecundaria =
+      visita.modalidad === 'EBR' && visita.nivelEducativo?.toLowerCase() === 'secundaria';
+    const isEbe = visita.modalidad === 'EBE';
+    const isEba = visita.modalidad === 'EBA';
+    const isCeptro = visita.modalidad === 'CEPTRO';
+
+    if (nivel === 'Inicial' && !isEbrInicial && !isEbe) {
+      throw new ForbiddenException('No tiene acceso a esta visita (solo EBR Inicial o EBE).');
+    }
+    if (nivel === 'Primaria' && !isEbrPrimaria) {
+      throw new ForbiddenException('No tiene acceso a esta visita (solo EBR Primaria).');
+    }
+    if (nivel === 'Secundaria' && !isEbrSecundaria && !isEba && !isCeptro) {
+      throw new ForbiddenException(
+        'No tiene acceso a esta visita (solo EBR Secundaria, EBA o CEPTRO).',
+      );
     }
   }
 }
@@ -127,7 +170,15 @@ export async function crearVisita(
   if (!planId) {
     throw new BadRequestException(
       `No existe Plan de Monitoreo Activo que habilite el registro de visitas para el anio ${anio}. ` +
-        'El Jefe de Gestion debe registrar y activar un plan antes de programar visitas (EDU-0002).',
+        'No se encontró un plan de monitoreo activo. Comuníquese con el Jefe de Gestión para registrar y activar un plan anual antes de programar visitas.',
+    );
+  }
+
+  const plantillaId = await cronogramaRepo.findPlantillaVigentePara(dto.tipoMonitoreo, anio);
+  if (!plantillaId) {
+    throw new BadRequestException(
+      `No existe una Plantilla Vigente para el tipo de monitoreo ${dto.tipoMonitoreo} en el año ${anio}. ` +
+        'El Jefe de Gestión debe crear o activar una plantilla antes de programar visitas.',
     );
   }
 
@@ -151,6 +202,55 @@ export async function crearVisita(
   }
   if (!activas.evaluado) {
     throw new BadRequestException('El evaluado (docente/director) seleccionado no está activo.');
+  }
+
+  // REGLA DE NEGOCIO EDU-0002: Máximo 3 visitas pendientes (Programada/Reprogramada) por monitor
+  const pendingVisitsCount = await cronogramaRepo.countPendientesByMonitor(dto.monitorId);
+  if (pendingVisitsCount >= 3) {
+    throw new BadRequestException('Candado Operativo (EDU-0002): El monitor no puede tener más de 3 visitas pendientes. Debe ejecutar las visitas programadas antes de crear nuevas.');
+  }
+
+  // REGLA: No se puede programar para el mismo día o días anteriores (min +1 día)
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fechaProgramada = typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
+  const fechaProgNormalized = new Date(fechaProgramada);
+  fechaProgNormalized.setHours(0, 0, 0, 0);
+
+  if (fechaProgNormalized.getTime() <= hoy.getTime()) {
+    throw new BadRequestException('La fecha programada debe ser al menos un día posterior a la fecha actual.');
+  }
+
+  // Validar solapamiento de visitas para el monitor
+  const fechaToUse = fechaProgramada;
+  const visitasMismoDia = await cronogramaRepo.findVisitasMonitorPorFecha(
+    dto.monitorId,
+    fechaToUse,
+  );
+  const [horaProp, minProp] = dto.horaInicio.split(':').map(Number);
+  const tiempoProp = horaProp * 60 + minProp;
+
+  for (const v of visitasMismoDia) {
+    const [horaV, minV] = v.horaInicio.split(':').map(Number);
+    const tiempoV = horaV * 60 + minV;
+    if (Math.abs(tiempoProp - tiempoV) < 120) {
+      // 2 horas
+      throw new BadRequestException(
+        `El monitor ya tiene una visita programada a las ${v.horaInicio} el mismo día. Debe haber al menos 2 horas de diferencia.`,
+      );
+    }
+  }
+
+  // Validar nVisita para el evaluado en el mismo año
+  const existeVisita = await cronogramaRepo.findVisitaExistente(
+    dto.evaluadoId,
+    anio,
+    dto.numeroVisita,
+  );
+  if (existeVisita) {
+    throw new BadRequestException(
+      `El evaluado ya tiene una visita programada con el número ${dto.numeroVisita} en el año ${anio}.`,
+    );
   }
 
   const data: CreateVisitaData = {

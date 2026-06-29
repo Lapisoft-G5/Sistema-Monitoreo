@@ -32,15 +32,15 @@ interface JefesTableWidgetProps {
 
 export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTableWidgetProps) => {
   const navigate = useNavigate();
-  const [deletingDoc, setDeletingDoc] = useState<JefeArea | null>(null);
+  const [finalizingDoc, setFinalizingDoc] = useState<JefeArea | null>(null);
   const [restoringDoc, setRestoringDoc] = useState<JefeArea | null>(null);
 
   const pagination = useEntityTable({ data: jefes, filterFn: jefeFilter });
 
-  const confirmDelete = async () => {
-    if (!deletingDoc) return;
+  const confirmFinalize = async () => {
+    if (!finalizingDoc) return;
     try {
-      const res = await jefesAreaApi.deactivate(deletingDoc.id);
+      const res = await jefesAreaApi.deactivate(finalizingDoc.id);
       if (res.ok) {
         onChanged?.();
       } else {
@@ -52,7 +52,7 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
     } catch (err) {
       console.error('Connection error when deactivating jefe de area:', err);
     } finally {
-      setDeletingDoc(null);
+      setFinalizingDoc(null);
     }
   };
 
@@ -127,26 +127,26 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
               <FastActions
                 onView={() => onView(doc)}
                 onEdit={doc.activo ? () => { if (onEdit) onEdit(doc); else navigate(`/jefes-area/${doc.id}/editar`); } : undefined}
-                onDelete={doc.activo ? () => setDeletingDoc(doc) : undefined}
+                onFinalize={doc.activo ? () => setFinalizingDoc(doc) : undefined}
                 onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
                 viewTitle="Ver ficha"
                 restoreTitle="Reactivar jefe de área"
-                deleteTitle="Desactivar jefe de área"
+                finalizeTitle="Desactivar jefe de área"
               />
             </TableCell>
           </TableRow>
         ))}
       </EntityTable>
 
-      {deletingDoc && (
+      {finalizingDoc && (
         <ConfirmModal
           danger
           title="¿Desactivar Jefe de Área?"
-          message={`Esta acción cambiará el estado de ${deletingDoc.apellidos}, ${deletingDoc.nombres} a Inactivo.`}
+          message={`Esta acción cambiará el estado de ${finalizingDoc.apellidos}, ${finalizingDoc.nombres} a Inactivo.`}
           confirmLabel="Desactivar"
           cancelLabel="Cancelar"
-          onConfirm={confirmDelete}
-          onCancel={() => setDeletingDoc(null)}
+          onConfirm={confirmFinalize}
+          onCancel={() => setFinalizingDoc(null)}
         />
       )}
 

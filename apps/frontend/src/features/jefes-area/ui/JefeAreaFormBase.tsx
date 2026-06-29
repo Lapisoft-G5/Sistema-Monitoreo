@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { User, Briefcase, Check, Search, AlertCircle, Shield, Info } from 'lucide-react';
 import { especialistasApi } from '@shared/api/especialistas.api';
 import type {
@@ -16,6 +16,7 @@ interface Props {
   isLoading: boolean;
   initialData?: Partial<JefeAreaEditFormData & JefeAreaCreateFormData>;
   isEdit?: boolean;
+  serverError?: string | null;
 }
 
 const normalizeNivel = (nivel?: string | null): 'Inicial' | 'Primaria' | 'Secundaria' => {
@@ -32,6 +33,7 @@ export const JefeAreaFormBase = ({
   isLoading,
   initialData,
   isEdit = false,
+  serverError,
 }: Props) => {
   // --- Estados para modo Edición ---
   const [editForm, setEditForm] = useState<JefeAreaEditFormData>({
@@ -161,7 +163,20 @@ export const JefeAreaFormBase = ({
     }
   }
 
-  const showError = (key: string) => (submitted ? errors[key] : '');
+  const celularRef = useRef<HTMLDivElement>(null);
+  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
+
+  useEffect(() => {
+    if (esErrorCelular && celularRef.current) {
+      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      celularRef.current.querySelector('input')?.focus();
+    }
+  }, [esErrorCelular]);
+
+  const showError = (key: string) => {
+    if (key === 'celular' && esErrorCelular) return serverError ?? '';
+    return submitted ? errors[key] : '';
+  };
 
   // Renderizar modo Edición
   if (isEdit) {
@@ -211,18 +226,20 @@ export const JefeAreaFormBase = ({
               placeholder="Correo"
               error={showError('correo')}
             />
-            <TextField
-              label="Número de Celular"
-              value={editForm.celular || ''}
-              onChange={(v) => setEdit('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
-              placeholder="Celular"
-              error={showError('celular')}
-              adornment={
-                celularOk ? (
-                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-                ) : undefined
-              }
-            />
+            <div ref={celularRef}>
+              <TextField
+                label="Número de Celular"
+                value={editForm.celular || ''}
+                onChange={(v) => setEdit('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
+                placeholder="Celular"
+                error={showError('celular')}
+                adornment={
+                  celularOk ? (
+                    <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+                  ) : undefined
+                }
+              />
+            </div>
           </div>
         </SectionCard>
 

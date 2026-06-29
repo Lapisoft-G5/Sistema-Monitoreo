@@ -29,6 +29,7 @@ export const CreateEspecialistaCard = () => {
         onSubmit={handleFormSubmit}
         onCancel={() => navigate('/especialistas')}
         isLoading={loading}
+        serverError={error}
       />
     </Card>
   );

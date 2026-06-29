@@ -44,6 +44,7 @@ export const CreateDocenteCard = ({
         instituciones={instituciones}
         defaultCargo={targetCargo}
         submitLabel={submitLabel}
+        serverError={error}
       />
     </Card>
   );

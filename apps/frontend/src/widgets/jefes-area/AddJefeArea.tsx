@@ -47,6 +47,7 @@ export const AddJefeArea = ({ routePrefix = '/jefes-area' }: AddJefeAreaProps = 
         onSubmit={(data) => handleFormSubmit(data as any)}
         onCancel={() => navigate(routePrefix)}
         isLoading={loading}
+        serverError={error}
       />
     </Card>
   );

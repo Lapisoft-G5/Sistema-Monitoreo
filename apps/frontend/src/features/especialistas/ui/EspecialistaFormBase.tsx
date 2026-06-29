@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { User, Briefcase, Check, Plus, X } from 'lucide-react';
 import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
@@ -15,6 +15,7 @@ interface Props {
   isLoading: boolean;
   initialData?: EspecialistaFormData;
   isJefeArea?: boolean;
+  serverError?: string | null;
 }
 
 const INITIAL_FORM: EspecialistaFormData = {
@@ -41,6 +42,7 @@ export const EspecialistaFormBase = ({
   isLoading,
   initialData,
   isJefeArea = false,
+  serverError,
 }: Props) => {
   // Ajuste de inicialización en base a si esJefeArea es verdadero
   const defaultForm = {
@@ -160,7 +162,20 @@ export const EspecialistaFormBase = ({
     set('especialidadesExtras', especialidadesExtras.filter((e) => e !== esp));
   };
 
-  const showError = (key: keyof EspecialistaFormData) => (submitted ? errors[key] : '');
+  const celularRef = useRef<HTMLDivElement>(null);
+  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
+
+  useEffect(() => {
+    if (esErrorCelular && celularRef.current) {
+      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      celularRef.current.querySelector('input')?.focus();
+    }
+  }, [esErrorCelular]);
+
+  const showError = (key: keyof EspecialistaFormData) => {
+    if (key === 'celular' && esErrorCelular) return serverError ?? '';
+    return submitted ? errors[key] : '';
+  };
   const celularOk = form.celular ? /^9\d{8}$/.test(form.celular) : false;
 
   const currentModalidad = form.modalidad || 'EBR';
@@ -246,19 +261,21 @@ export const EspecialistaFormBase = ({
             error={showError('correo')}
             disabled={isDniLocked || dniBloqueadoPorRol}
           />
-          <TextField
-            label="Número de Celular"
-            value={form.celular || ''}
-            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
-            placeholder="Ej. 987654321"
-            error={showError('celular')}
-            disabled={isDniLocked || dniBloqueadoPorRol}
-            adornment={
-              celularOk ? (
-                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-              ) : undefined
-            }
-          />
+          <div ref={celularRef}>
+            <TextField
+              label="Número de Celular"
+              value={form.celular || ''}
+              onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
+              placeholder="Ej. 987654321"
+              error={showError('celular')}
+              disabled={isDniLocked || dniBloqueadoPorRol}
+              adornment={
+                celularOk ? (
+                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+                ) : undefined
+              }
+            />
+          </div>
         </div>
       </SectionCard>
 

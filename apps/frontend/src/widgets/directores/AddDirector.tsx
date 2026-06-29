@@ -112,6 +112,7 @@ export const CreateDirectorCard = () => {
           nombre: i.nombre,
           nivel: i.nivelEducativo,
         }))}
+        serverError={finalError}
       />
     </Card>
   );

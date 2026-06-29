@@ -38,21 +38,21 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
 
         targetStr = targetStr.replace(/_key$/, '').split('_').pop() || targetStr;
 
-        // Remove backticks, quotes, and whitespace that might be captured by regex or Prisma 5 output
-        targetStr = targetStr.replace(/["'`\s]/g, '');
+        // Remove parens, backticks, quotes, and whitespace that might be captured by regex or Prisma output
+        targetStr = targetStr.replace(/[()"'`\s]/g, '');
 
         if (targetStr === 'telefono' || targetStr === 'celular') {
           message = 'El número de celular/teléfono ingresado ya está registrado por otra persona. Verifique e intente nuevamente.';
-          break;
-        }
-        if (targetStr === 'correo' || targetStr === 'email') targetStr = 'correo electrónico';
-        if (targetStr === 'dni') targetStr = 'DNI';
+        } else {
+          if (targetStr === 'correo' || targetStr === 'email') targetStr = 'correo electrónico';
+          if (targetStr === 'dni') targetStr = 'DNI';
 
-        if (targetStr === 'duplicado' && exception.meta) {
-          targetStr = JSON.stringify(exception.meta.target || exception.meta);
-        }
+          if (targetStr === 'duplicado' && exception.meta) {
+            targetStr = JSON.stringify(exception.meta.target || exception.meta);
+          }
 
-        message = `El valor ingresado ya está en uso: ${targetStr}`;
+          message = `El valor ingresado ya está en uso: ${targetStr}`;
+        }
         break;
       }
       case 'P2025':

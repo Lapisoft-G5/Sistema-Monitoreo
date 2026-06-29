@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { User, Briefcase, Plus, Trash2, Check, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
@@ -20,6 +20,7 @@ interface Props {
   instituciones: { id: string; nombre: string; nivel?: string }[];
   defaultCargo?: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
   submitLabel?: string;
+  serverError?: string | null;
 }
 
 const CURSOS_POR_NIVEL: Record<string, string[]> = {
@@ -79,6 +80,7 @@ export const DocenteFormBase = ({
   instituciones,
   defaultCargo = 'Director',
   submitLabel,
+  serverError,
 }: Props) => {
   const { user } = useUser();
   console.log('User context in DocenteFormBase:', user);
@@ -178,7 +180,10 @@ export const DocenteFormBase = ({
     }, []),
   });
 
-  const showError = (key: keyof DocenteFormData) => (submitted ? errors[key] : '');
+  const showError = (key: keyof DocenteFormData) => {
+    if (key === 'celular' && esErrorCelular) return serverError ?? '';
+    return submitted ? errors[key] : '';
+  };
 
   const opcionesIE = useMemo(() => {
     const list = instituciones.map((i) => ({ value: i.id, label: i.nombre }));
@@ -224,6 +229,16 @@ export const DocenteFormBase = ({
       currentSecciones.filter((s) => s.id !== id),
     );
   };
+
+  const celularRef = useRef<HTMLDivElement>(null);
+  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
+
+  useEffect(() => {
+    if (esErrorCelular && celularRef.current) {
+      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      celularRef.current.querySelector('input')?.focus();
+    }
+  }, [esErrorCelular]);
 
   const celularOk = /^9\d{8}$/.test(form.celular);
 
@@ -308,20 +323,22 @@ export const DocenteFormBase = ({
             error={showError('correo')}
             disabled={isDniLocked || dniBloqueadoPorRol}
           />
-          <TextField
-            label="Número de Celular"
-            required
-            value={form.celular}
-              onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
-            placeholder="Ej. 987654321"
-            error={showError('celular')}
-            disabled={isDniLocked || dniBloqueadoPorRol}
-            adornment={
-              celularOk ? (
-                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-              ) : undefined
-            }
-          />
+          <div ref={celularRef}>
+            <TextField
+              label="Número de Celular"
+              required
+              value={form.celular}
+                onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
+              placeholder="Ej. 987654321"
+              error={showError('celular')}
+              disabled={isDniLocked || dniBloqueadoPorRol}
+              adornment={
+                celularOk ? (
+                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+                ) : undefined
+              }
+            />
+          </div>
         </div>
       </SectionCard>
 

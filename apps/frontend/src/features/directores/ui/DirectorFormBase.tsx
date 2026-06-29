@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { User, Briefcase, Check } from 'lucide-react';
 import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
@@ -31,6 +31,7 @@ interface Props {
   // IEs disponibles para asignar
   instituciones: { id: string; nombre: string; nivel?: string }[];
   submitLabel?: string;
+  serverError?: string | null;
 }
 
 export const DirectorFormBase = ({
@@ -40,6 +41,7 @@ export const DirectorFormBase = ({
   initialData,
   instituciones,
   submitLabel,
+  serverError,
 }: Props) => {
   const [form, setForm] = useState<DirectorFormData>(() => ({
     ...INITIAL,
@@ -119,7 +121,20 @@ export const DirectorFormBase = ({
     }, []),
   });
 
-  const showError = (key: keyof DirectorFormData) => (submitted ? errors[key] : '');
+  const celularRef = useRef<HTMLDivElement>(null);
+  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
+
+  useEffect(() => {
+    if (esErrorCelular && celularRef.current) {
+      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      celularRef.current.querySelector('input')?.focus();
+    }
+  }, [esErrorCelular]);
+
+  const showError = (key: keyof DirectorFormData) => {
+    if (key === 'celular' && esErrorCelular) return serverError ?? '';
+    return submitted ? errors[key] : '';
+  };
   const opcionesIE = useMemo(() => {
     const list = instituciones.map((i) => ({ value: i.id, label: i.nombre }));
     if (persona?.docente?.institucion) {
@@ -171,15 +186,17 @@ export const DirectorFormBase = ({
               ) : undefined
             }
           />
-          <TextField
-            label="Número de Celular"
-            required
-            value={form.celular}
-            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
-            placeholder="Ej. 987654321"
-            error={showError('celular')}
-            disabled={isDniLocked || dniBloqueadoPorRol}
-          />
+          <div ref={celularRef}>
+            <TextField
+              label="Número de Celular"
+              required
+              value={form.celular}
+              onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
+              placeholder="Ej. 987654321"
+              error={showError('celular')}
+              disabled={isDniLocked || dniBloqueadoPorRol}
+            />
+          </div>
         </div>
 
         {/* Warning card for duplicates/promotions */}

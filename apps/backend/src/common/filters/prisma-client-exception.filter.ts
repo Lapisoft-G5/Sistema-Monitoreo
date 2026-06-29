@@ -18,8 +18,36 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
       case 'P2002': {
         // Violación de restricción de unicidad (Unique constraint failed)
         status = HttpStatus.CONFLICT;
-        const fields = exception.meta?.target as string[];
-        message = `Ya existe un registro con ese valor: ${fields?.join(', ') || 'duplicado'}`;
+        let targetStr = 'duplicado';
+        const target = exception.meta?.target;
+        
+        if (Array.isArray(target) && target.length > 0) {
+          targetStr = target[0];
+        } else if (typeof target === 'string') {
+          targetStr = target;
+        } else {
+          // Extraer del mensaje si meta no está disponible o no es útil
+          const match = exception.message.match(/Unique constraint failed on the (?:fields|constraint): ["'`]?([^"'`\)]+)["'`]?/i) ||
+                        exception.message.match(/Unique constraint failed on the fields: \(([^)]+)\)/i);
+          if (match && match[1]) {
+            targetStr = match[1];
+          }
+        }
+        
+        targetStr = targetStr.replace(/_key$/, '').split('_').pop() || targetStr;
+        
+        // Remove backticks, quotes, and whitespace that might be captured by regex or Prisma 5 output
+        targetStr = targetStr.replace(/["'`\s]/g, '');
+        
+        if (targetStr === 'telefono' || targetStr === 'celular') targetStr = 'celular/teléfono';
+        if (targetStr === 'correo' || targetStr === 'email') targetStr = 'correo electrónico';
+        if (targetStr === 'dni') targetStr = 'DNI';
+        
+        if (targetStr === 'duplicado' && exception.meta) {
+          targetStr = JSON.stringify(exception.meta.target || exception.meta);
+        }
+
+        message = `El valor ingresado ya está en uso: ${targetStr}`;
         break;
       }
       case 'P2025':

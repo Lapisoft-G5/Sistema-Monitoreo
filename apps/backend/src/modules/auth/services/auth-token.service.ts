@@ -128,8 +128,8 @@ export class AuthTokenService {
     let colegio_nivel: string | undefined;
 
     if (user.persona?.docente) {
-      colegio_id = user.persona.docente.institucionId;
-      institucion_id = user.persona.docente.institucionId;
+      colegio_id = user.persona.docente.institucionId || undefined;
+      institucion_id = user.persona.docente.institucionId || undefined;
       colegio_nombre = user.persona.docente.institucion?.nombre;
       colegio_nivel = user.persona.docente.institucion?.nivelEducativo;
     }

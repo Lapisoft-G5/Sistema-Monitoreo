@@ -611,7 +611,7 @@ model Cronograma {
   fechaProgramada DateTime @map("fecha_programada") @db.Date
   horaInicio      String   @map("hora_inicio") @db.VarChar(8) // HH:mm:ss
   detalles        String?  @db.Text
-  estado          String   @default("PROGRAMADO") @db.VarChar(20) // PROGRAMADO | EN_PROCESO | COMPLETADO | REPROGRAMADO | CANCELADO
+  estado          String   @default("PROGRAMADO") @db.VarChar(20) // PROGRAMADO | EN_PROCESO | COMPLETADO | REPROGRAMADO | CANCELADO | ANULADO
   modalidad       String   @db.VarChar(20) // EBR | EBA | EBE | CEPTRO
   nivelEducativo  String   @map("nivel_educativo") @db.VarChar(100)
   creadoPorId     String?  @map("creado_por_id") @db.Uuid

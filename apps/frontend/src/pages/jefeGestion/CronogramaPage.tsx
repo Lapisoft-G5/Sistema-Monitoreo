@@ -100,7 +100,6 @@ export const CronogramaPage = () => {
   const [formObservaciones, setFormObservaciones] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
-  const [showMaxVisitasModal, setShowMaxVisitasModal] = useState(false);
 
   // Docente actualmente seleccionado en el formulario y sus visitas existentes
   const selectedDocente = useMemo(() => {
@@ -109,13 +108,6 @@ export const CronogramaPage = () => {
       (d) => `${d.nombres} ${d.apellidos}`.trim() === formDocente.trim(),
     ) ?? null;
   }, [formDocente, docentes]);
-
-  const visitasExistentesCount = useMemo(() => {
-    if (!selectedDocente || editCronogramaId) return 0;
-    return cronogramas.filter(
-      (c) => c.evaluadoId === selectedDocente.id && c.tipo === formTipo,
-    ).length;
-  }, [selectedDocente, formTipo, cronogramas, editCronogramaId]);
 
   // --- Estados de Detalles / Ver ---
   const [viewCronograma, setViewCronograma] = useState<Cronograma | null>(null);
@@ -215,10 +207,11 @@ export const CronogramaPage = () => {
       (d) => `${d.nombres} ${d.apellidos}`.trim() === formDocente.trim(),
     );
     if (!matchedDoc) return;
-    const visitasExistentes = cronogramas.filter(
-      (c) => c.evaluadoId === matchedDoc.id && c.tipo === formTipo,
-    ).length;
-    const next = Math.min(visitasExistentes + 1, 5);
+    const visitasPrevias = cronogramas
+      .filter((c) => c.evaluadoId === matchedDoc.id && c.tipo === formTipo && c.estado !== 'ANULADO')
+      .map((c) => parseInt(c.nroVisita, 10));
+    const maxVisita = visitasPrevias.length > 0 ? Math.max(...visitasPrevias) : 0;
+    const next = maxVisita + 1;
     const t = setTimeout(() => {
       setFormVisita(String(next).padStart(2, '0'));
     }, 0);
@@ -359,7 +352,7 @@ export const CronogramaPage = () => {
 
       const matchInst = isDirector || filterInst === 'Todos' || item.institucion === filterInst;
       const matchTipo = filterTipo === 'Todos' || item.tipo === filterTipo;
-      const matchEstado = filterEstado === 'Todos' || item.estado === filterEstado;
+      const matchEstado = (filterEstado === 'Todos' && item.estado !== 'ANULADO') || item.estado === filterEstado;
 
       return matchSearchEvaluador && matchSearchDocente && matchInst && matchTipo && matchEstado;
     });
@@ -466,12 +459,6 @@ export const CronogramaPage = () => {
       return;
     }
 
-    // Validar límite de 5 visitas por docente (solo al crear)
-    if (!editCronogramaId && visitasExistentesCount >= 5) {
-      setShowMaxVisitasModal(true);
-      return;
-    }
-
     setFormSubmitting(true);
     try {
       if (editCronogramaId) {
@@ -548,10 +535,56 @@ export const CronogramaPage = () => {
         return 'bg-indigo-50 text-indigo-600 border border-indigo-200/50 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30';
       case 'CANCELADO':
         return 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700/50';
+      case 'ANULADO':
+        return 'bg-red-50 text-red-500 border border-red-200/50 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30';
     }
   };
 
-  const visitaOptions = ['01', '02', '03', '04', '05'];
+  // Botones de número de visita dinámicos
+  const visitaButtons = useMemo(() => {
+    let ocupados: Set<number>;
+    let anulados: Set<number>;
+    let maxNonAnulado = 0;
+    let totalCount: number;
+
+    if (selectedDocente) {
+      const visitasDelEvaluado = cronogramas.filter(
+        (c) => c.evaluadoId === selectedDocente.id && c.tipo === formTipo,
+      );
+      maxNonAnulado = Math.max(
+        0,
+        ...visitasDelEvaluado
+          .filter((c) => c.estado !== 'ANULADO')
+          .map((c) => parseInt(c.nroVisita, 10)),
+      );
+      ocupados = new Set(
+        visitasDelEvaluado
+          .filter((c) => c.estado !== 'ANULADO')
+          .map((c) => parseInt(c.nroVisita, 10)),
+      );
+      anulados = new Set(
+        visitasDelEvaluado
+          .filter((c) => c.estado === 'ANULADO')
+          .map((c) => parseInt(c.nroVisita, 10)),
+      );
+    } else {
+      ocupados = new Set();
+      anulados = new Set();
+    }
+    totalCount = Math.max(5, maxNonAnulado + 1);
+
+    return Array.from({ length: totalCount }, (_, i) => {
+      const num = i + 1;
+      const strNum = String(num).padStart(2, '0');
+      return {
+        value: strNum,
+        num,
+        isOcupado: ocupados.has(num),
+        isAnulado: anulados.has(num),
+        isFuture: !ocupados.has(num) && !anulados.has(num) && num > maxNonAnulado + 1,
+      };
+    });
+  }, [selectedDocente, formTipo, cronogramas]);
 
   return (
     <div className="flex flex-col w-full gap-6 animate-in fade-in-0 duration-300">
@@ -634,6 +667,7 @@ export const CronogramaPage = () => {
               { value: 'COMPLETADO', label: 'COMPLETADO' },
               { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
               { value: 'CANCELADO', label: 'CANCELADO' },
+              { value: 'ANULADO', label: 'ANULADO' },
             ]}
           />
         </div>
@@ -1030,28 +1064,52 @@ export const CronogramaPage = () => {
                     />
                   </div>
 
-                  {/* Número de Visita - read-only, auto-calculado */}
+                  {/* Número de Visita - dinámico con soporte de gaps */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-text-muted">Número de Visita *</label>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {visitaOptions.map((num) => (
-                        <button
-                          key={num}
-                          type="button"
-                          disabled
-                          aria-disabled
-                          className={`w-10 h-10 rounded-xl text-xs font-bold transition-all duration-200 border ${
-                            formVisita === num
-                              ? 'bg-primary text-white border-primary shadow-sm'
-                              : 'bg-surface text-text-muted border-border opacity-60'
-                          }`}
-                        >
-                          {parseInt(num)}
-                        </button>
-                      ))}
+                    <div className="flex flex-wrap gap-2 mt-0.5">
+                      {visitaButtons.map((btn) => {
+                        const isSelected = formVisita === btn.value;
+                        let btnClass = 'w-10 h-10 rounded-xl text-xs font-bold transition-all duration-200 border shrink-0 ';
+                        let disabled = true;
+                        let clickHandler: (() => void) | undefined;
+
+                        if (editCronogramaId) {
+                          btnClass += isSelected
+                            ? 'bg-primary text-white border-primary shadow-sm'
+                            : 'bg-surface text-text-muted border-border opacity-40';
+                        } else if (btn.isOcupado || btn.isFuture) {
+                          btnClass += 'bg-surface text-text-muted border-border opacity-40 cursor-not-allowed';
+                        } else {
+                          disabled = false;
+                          clickHandler = () => setFormVisita(btn.value);
+                          if (isSelected) {
+                            btnClass += 'bg-primary text-white border-primary shadow-sm cursor-pointer';
+                          } else if (btn.isAnulado) {
+                            btnClass += 'bg-surface text-amber-600 border-2 border-dashed border-amber-300 hover:bg-amber-50 hover:border-amber-400 cursor-pointer';
+                          } else {
+                            btnClass += 'bg-surface text-text-muted border-border hover:bg-muted cursor-pointer';
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={btn.value}
+                            type="button"
+                            disabled={disabled}
+                            aria-disabled={disabled}
+                            onClick={clickHandler}
+                            className={btnClass}
+                          >
+                            {btn.num}
+                          </button>
+                        );
+                      })}
                     </div>
                     <span className="text-[10px] text-text-muted pl-1">
-                      Se asigna automaticamente segun las visitas previas del docente/directivo.
+                      {editCronogramaId
+                        ? 'El número de visita no se puede modificar en edición.'
+                        : 'Se sugiere automáticamente. Puede seleccionar un número ANULADO (borde punteado) para rellenar el espacio.'}
                     </span>
                   </div>
                 </div>
@@ -1068,7 +1126,8 @@ export const CronogramaPage = () => {
                       { value: 'EN_PROCESO', label: 'EN_PROCESO' },
                       { value: 'COMPLETADO', label: 'COMPLETADO' },
                       { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
-                      { value: 'CANCELADO', label: 'CANCELADO' },
+              { value: 'CANCELADO', label: 'CANCELADO' },
+              { value: 'ANULADO', label: 'ANULADO' },
                     ]}
                   />
                 )}
@@ -1239,40 +1298,16 @@ export const CronogramaPage = () => {
         );
       })()}
 
-      {/* ── Modal: Límite de 5 visitas por docente alcanzado ── */}
-      {showMaxVisitasModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <Card className="bg-surface w-full max-w-md border border-border rounded-2xl shadow-xl p-6 space-y-4">
-            <div className="flex items-center gap-2 text-amber-800">
-              <AlertCircle className="h-6 w-6 text-amber-600" />
-              <h3 className="text-base font-extrabold tracking-tight">Límite de Visitas Alcanzado</h3>
-            </div>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              El docente <strong>{formDocente}</strong> ya tiene <strong>5 visitas</strong> de monitoreo programadas.
-              No es posible agregar más visitas para este docente.
-            </p>
-            <div className="flex justify-end pt-2">
-              <Button
-                onClick={() => setShowMaxVisitasModal(false)}
-                className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer"
-              >
-                Entendido
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
       {/* ── Modal de Confirmación para Eliminado ── */}
       {deleteCronogramaId && (
         <ConfirmModal
-          title="¿Desea eliminar este cronograma?"
+          title="¿Desea anular este cronograma?"
           message={
             <span>
-              Esta acción eliminará de forma lógica el cronograma de visita programada para esta institución.
+              Esta acción marcará la visita como ANULADA. El número de visita quedará como evidencia de auditoría.
             </span>
           }
-          confirmLabel="Eliminar Cronograma"
+          confirmLabel="Anular Cronograma"
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteCronogramaId(null)}
           danger

@@ -26,10 +26,12 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
 
   async findAll(filters?: any): Promise<IVisita[]> {
     const where: any = {};
+    if (filters?.estado) {
+      where.estado = filters.estado;
+    }
     if (filters) {
       if (filters.monitorId) where.monitorId = filters.monitorId;
       if (filters.institucionId) where.institucionId = filters.institucionId;
-      if (filters.estado) where.estado = filters.estado;
       if (filters.tipoMonitoreo) where.tipoMonitoreo = filters.tipoMonitoreo;
       if (filters.fechaDesde || filters.fechaHasta) {
         where.fechaProgramada = {};
@@ -195,7 +197,10 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
   }
 
   async remove(id: string): Promise<void> {
-    await this.prisma.cronograma.delete({ where: { id } });
+    await this.prisma.cronograma.update({
+      where: { id },
+      data: { estado: 'ANULADO' },
+    });
   }
 
   async findMonitorEspecialidades(

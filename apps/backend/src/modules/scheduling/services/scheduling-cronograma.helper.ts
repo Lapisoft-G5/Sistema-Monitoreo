@@ -212,22 +212,9 @@ export async function crearVisita(
     );
   }
 
-  // REGLA: No se puede programar para el mismo día o días anteriores (min +1 día)
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const fechaProgramada =
-    typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
-  const fechaProgNormalized = new Date(fechaProgramada);
-  fechaProgNormalized.setHours(0, 0, 0, 0);
-
-  if (fechaProgNormalized.getTime() <= hoy.getTime()) {
-    throw new BadRequestException(
-      'La fecha programada debe ser al menos un día posterior a la fecha actual.',
-    );
-  }
-
   // Validar solapamiento de visitas para el monitor
-  const fechaToUse = fechaProgramada;
+  const fechaToUse =
+    typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
   const visitasMismoDia = await cronogramaRepo.findVisitasMonitorPorFecha(
     dto.monitorId,
     fechaToUse,
@@ -256,6 +243,54 @@ export async function crearVisita(
     throw new BadRequestException(
       `El evaluado ya tiene una visita programada con el número ${dto.numeroVisita} en el año ${anio}.`,
     );
+  }
+
+  // Validar fecha en contexto de otras visitas del mismo evaluado
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fechaNueva =
+    typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
+  const fechaNuevaNorm = new Date(fechaNueva);
+  fechaNuevaNorm.setHours(0, 0, 0, 0);
+
+  if (fechaNuevaNorm.getTime() < hoy.getTime()) {
+    throw new BadRequestException('La fecha programada no puede ser anterior a la fecha actual.');
+  }
+
+  // Validar orden cronológico entre visitas del mismo evaluado
+  const visitaAnterior = await cronogramaRepo.findVisitaExistente(
+    dto.evaluadoId,
+    anio,
+    dto.numeroVisita - 1,
+  );
+  const visitaSiguiente = await cronogramaRepo.findVisitaExistente(
+    dto.evaluadoId,
+    anio,
+    dto.numeroVisita + 1,
+  );
+
+  if (visitaAnterior) {
+    const fechaAnt = new Date(visitaAnterior.fechaProgramada);
+    fechaAnt.setHours(0, 0, 0, 0);
+    const diffMs = fechaNuevaNorm.getTime() - fechaAnt.getTime();
+    if (diffMs < 86400000) {
+      throw new BadRequestException(
+        `La visita N.° ${dto.numeroVisita} debe programarse al menos 1 día después de la visita N.° ${dto.numeroVisita - 1} ` +
+          `(${visitaAnterior.fechaProgramada}).`,
+      );
+    }
+  }
+
+  if (visitaSiguiente) {
+    const fechaSig = new Date(visitaSiguiente.fechaProgramada);
+    fechaSig.setHours(0, 0, 0, 0);
+    const diffMs = fechaSig.getTime() - fechaNuevaNorm.getTime();
+    if (diffMs < 86400000) {
+      throw new BadRequestException(
+        `La visita N.° ${dto.numeroVisita} debe programarse al menos 1 día antes de la visita N.° ${dto.numeroVisita + 1} ` +
+          `(${visitaSiguiente.fechaProgramada}).`,
+      );
+    }
   }
 
   const data: CreateVisitaData = {
@@ -308,8 +343,11 @@ export async function eliminarVisita(
   validarAccesoVisita(existing, scopeFilter, session);
   if (existing.estado === 'COMPLETADO') {
     throw new BadRequestException(
-      'No se puede eliminar una visita en estado COMPLETADO (tiene ficha asociada).',
+      'No se puede anular una visita en estado COMPLETADO (tiene ficha asociada).',
     );
+  }
+  if (existing.estado === 'ANULADO') {
+    throw new BadRequestException('La visita ya se encuentra anulada.');
   }
   await cronogramaRepo.remove(id);
 }

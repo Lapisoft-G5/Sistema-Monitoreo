@@ -1,6 +1,7 @@
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
+import { CondicionLaboral } from '../../../common/enums/condicion-laboral.enum.js';
 import { mapEspecialista } from './especialista-mapper.helper.js';
 
 export async function transicionDocenteAEspecialista(
@@ -65,6 +66,9 @@ export async function transicionDocenteAEspecialista(
         data: {
           personaId,
           cargo: dto.cargo,
+          condicionLaboral: dto.condicionLaboral || CondicionLaboral.NOMBRADO,
+          cargaLaboral: dto.cargaLaboral ?? 40,
+          escalaMagisterial: dto.escalaMagisterial ?? null,
           nivelEducativo: dto.nivelEducativo,
           estado: EstadoRegistro.ACTIVO,
           cargos: {
@@ -85,7 +89,7 @@ export async function transicionDocenteAEspecialista(
       await tx.especialistaEspecialidad.create({
         data: {
           especialistaId: especialista.id,
-          especialidad: { connect: { id: dto.especialidad } },
+          especialidadId: dto.especialidad,
         },
       });
     }

@@ -23,9 +23,16 @@ import {
 export class PlantillaService {
   constructor(private readonly repository: PlantillaRepository) {}
 
-  async findAll(filters?: QueryPlantillaDto, _session?: SessionUser): Promise<IPlantilla[]> {
-    void _session;
-    return this.repository.findAll(filters);
+  private isDirector(session: SessionUser): boolean {
+    return session.role === RoleCode.DIRECTOR_INSTITUCION;
+  }
+
+  async findAll(filters?: QueryPlantillaDto, session?: SessionUser): Promise<IPlantilla[]> {
+    const scopedFilters = { ...filters };
+    if (session && this.isDirector(session) && session.institucionId) {
+      scopedFilters.institucionId = session.institucionId;
+    }
+    return this.repository.findAll(scopedFilters);
   }
 
   async findById(id: string, session?: SessionUser): Promise<IPlantilla> {

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   ConflictException,
   ForbiddenException,
@@ -21,7 +20,11 @@ export class MonitoringPlanService {
   constructor(private readonly repository: MonitoringPlanRepository) {}
 
   async findAll(filters?: QueryPlanDto, session?: SessionUser): Promise<IMonitoringPlanResponse[]> {
-    return this.repository.findAll(filters);
+    const scopedFilters = { ...filters };
+    if (session && this.isDirector(session) && session.institucionId) {
+      scopedFilters.institucionId = session.institucionId;
+    }
+    return this.repository.findAll(scopedFilters);
   }
 
   async findById(id: string, session?: SessionUser): Promise<IMonitoringPlanResponse> {
@@ -50,7 +53,7 @@ export class MonitoringPlanService {
 
       const isDuplicate = existing.some((plan) => {
         if (tipoEntidad === 'IE') {
-          return plan.autorId === session.id;
+          return plan.institucionId === institucionId;
         }
         return true; // Para UGEL es global por año
       });
@@ -92,7 +95,7 @@ export class MonitoringPlanService {
       });
       const isDuplicate = existingActivos.some((p) => {
         if (existing.tipoEntidad === 'IE') {
-          return p.autorId === existing.autorId; // Same author
+          return p.institucionId === existing.institucionId; // Same IE
         }
         return true;
       });

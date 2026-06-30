@@ -177,8 +177,8 @@ export async function crearVisita(
   const plantillaId = await cronogramaRepo.findPlantillaVigentePara(dto.tipoMonitoreo, anio);
   if (!plantillaId) {
     throw new BadRequestException(
-      `No se encontró una Plantilla Vigente de tipo "${dto.tipoMonitoreo}" para el año ${anio}. ` +
-        'El Jefe de Gestión debe crear o activar una plantilla antes de programar visitas.',
+      `No existe una Plantilla de Monitoreo vigente para ${dto.tipoMonitoreo} del año ${anio}. ` +
+        'Antes de programar visitas, el Jefe de Gestión debe registrar y activar una plantilla.',
     );
   }
 

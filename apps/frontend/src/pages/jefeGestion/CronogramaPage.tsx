@@ -462,12 +462,9 @@ export const CronogramaPage = () => {
     setFormSubmitting(true);
     try {
       if (editCronogramaId) {
-        const [datePart, timePart] = formFechaHora.split('T');
         const updatePayload: IUpdateVisitaRequest = {
           detalles: formObservaciones.trim() || undefined,
           estado: formEstado as EstadoVisita,
-          fechaProgramada: datePart,
-          horaInicio: timePart,
         };
         await updateCronograma(editCronogramaId, updatePayload);
         setShowFormModal(false);
@@ -1060,8 +1057,13 @@ export const CronogramaPage = () => {
                       onChange={(e) => setFormFechaHora(e.target.value)}
                       className="flex h-10 w-full rounded-xl border border-input bg-surface px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium text-text placeholder:text-text-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       required
-                      disabled={editCronogramaId !== null && formEstado !== 'PROGRAMADO' && formEstado !== 'REPROGRAMADO'}
+                      disabled={editCronogramaId !== null}
                     />
+                    {editCronogramaId && (
+                      <span className="text-[10px] text-amber-600 font-medium">
+                        Para cambiar fecha/hora, use Solicitud de Reprogramación desde el calendario.
+                      </span>
+                    )}
                   </div>
 
                   {/* Número de Visita - dinámico con soporte de gaps */}

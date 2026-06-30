@@ -181,8 +181,15 @@ export const CalendarioPage = () => {
         }
       }
 
-      if (user?.role === 'jefe_area') {
-        if (user.especialistaNivel && visit.nivel !== user.especialistaNivel) return false;
+      if (user?.role === 'jefe_area' && user.especialistaNivel) {
+        const nivel = user.especialistaNivel;
+        if (nivel === 'Inicial') {
+          if (visit.modalidad !== 'EBE' && visit.nivel !== 'Inicial') return false;
+        } else if (nivel === 'Primaria') {
+          if (visit.nivel !== 'Primaria') return false;
+        } else if (nivel === 'Secundaria') {
+          if (!['SECUNDARIA', 'EBA', 'CEPTRO'].includes((visit.modalidad ?? '').toUpperCase()) && visit.nivel !== 'Secundaria') return false;
+        }
       }
 
       // Filtros específicos de Director

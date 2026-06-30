@@ -332,8 +332,15 @@ export const CronogramaPage = () => {
         if (!isSameSchool && !isDirectedToMe) return false;
       }
 
-      if (user?.role === 'jefe_area') {
-        if (user.especialistaNivel && item.nivel !== user.especialistaNivel) return false;
+      if (user?.role === 'jefe_area' && user.especialistaNivel) {
+        const nivel = user.especialistaNivel;
+        if (nivel === 'Inicial') {
+          if (item.modalidad !== 'EBE' && item.nivel !== 'Inicial') return false;
+        } else if (nivel === 'Primaria') {
+          if (item.nivel !== 'Primaria') return false;
+        } else if (nivel === 'Secundaria') {
+          if (!['SECUNDARIA', 'EBA', 'CEPTRO'].includes(item.modalidad?.toUpperCase() ?? '') && item.nivel !== 'Secundaria') return false;
+        }
       }
 
       return true;

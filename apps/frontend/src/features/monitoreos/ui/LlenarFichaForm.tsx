@@ -16,6 +16,7 @@ import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
+import { AREAS_CURRICULARES } from '@sistema-monitoreo/shared-contracts';
 
 interface LlenarFichaFormProps {
   isOpen: boolean;
@@ -386,23 +387,20 @@ export const LlenarFichaForm = ({
           <div className="px-6 py-4 bg-slate-50 border-b border-border text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Área Curricular</label>
-              <select value={contextoArea} onChange={(e) => setContextoArea(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
-                <option value="">Seleccione...</option>
-                <option value="Comunicación">Comunicación</option>
-                <option value="Matemática">Matemática</option>
-                <option value="Ciencia y Tecnología">Ciencia y Tecnología</option>
-                <option value="Personal Social">Personal Social</option>
-                <option value="Ciencias Sociales">Ciencias Sociales</option>
-                <option value="DPCC">DPCC</option>
-                <option value="Inglés">Inglés</option>
-                <option value="Educación Física">Educación Física</option>
-                <option value="Arte y Cultura">Arte y Cultura</option>
-                <option value="Educación para el Trabajo">Educación para el Trabajo</option>
-                <option value="Educación Religiosa">Educación Religiosa</option>
-                <option value="Tutoría">Tutoría</option>
-                <option value="Todas las áreas (Inicial)">Todas las áreas (Inicial)</option>
-                <option value="Otro">Otro</option>
-              </select>
+              {(() => {
+                const key = visit.nivel?.toUpperCase() === 'INICIAL' || visit.modalidad === 'EBE' ? 'INICIAL'
+                  : visit.modalidad?.toUpperCase() === 'EBA' ? 'EBA'
+                  : visit.modalidad?.toUpperCase() === 'CEPTRO' ? 'CEPTRO'
+                  : visit.nivel?.toUpperCase() || 'PRIMARIA';
+                const areas = AREAS_CURRICULARES[key] || AREAS_CURRICULARES.PRIMARIA;
+                return (
+                  <select value={contextoArea} onChange={(e) => setContextoArea(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
+                    <option value="">Seleccione...</option>
+                    {areas.map((a) => <option key={a} value={a}>{a}</option>)}
+                    <option value="Otro">Otro</option>
+                  </select>
+                );
+              })()}
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Grado</label>

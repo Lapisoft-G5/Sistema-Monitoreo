@@ -57,6 +57,32 @@ export const CargoEspecialista = {
 
 export const CondicionLaboralEspecialista = ['Encargado', 'Destacado', 'Designado'] as const;
 
+/** Áreas curriculares por nivel educativo */
+export const AREAS_CURRICULARES: Record<string, string[]> = {
+  INICIAL: [
+    'Personal Social', 'Psicomotricidad', 'Comunicación',
+    'Descubrimiento del Mundo', 'Todas las áreas (Inicial)',
+  ],
+  PRIMARIA: [
+    'Comunicación', 'Matemática', 'Ciencia y Tecnología',
+    'Personal Social', 'Arte y Cultura', 'Educación Física',
+    'Educación Religiosa',
+  ],
+  SECUNDARIA: [
+    'Comunicación', 'Matemática', 'Ciencia y Tecnología',
+    'Desarrollo Personal, Ciudadanía y Cívica', 'Ciencias Sociales',
+    'Educación Física', 'Arte y Cultura', 'Inglés',
+    'Educación Religiosa', 'Educación para el Trabajo',
+  ],
+  EBA: ['Comunicación', 'Matemática', 'Ciencia, Tecnología y Salud', 'Ciencias Sociales'],
+  EBE: ['Comunicación', 'Matemática', 'Personal Social', 'Psicomotricidad'],
+  CEPTRO: [
+    'Corte y Ensamblaje de Materiales', 'Mecánica de Motos',
+    'Peluquería y Barbería', 'Instalaciones Eléctricas',
+    'Carpintería', 'Industria Alimentaria',
+  ],
+};
+
 export const MODALIDAD_NIVEL_MAP: Record<string, string[]> = {
   [ModalidadEducativa.EBR]: Object.values(NivelEducativoEBR),
   [ModalidadEducativa.EBA]: Object.values(NivelEducativoEBA),

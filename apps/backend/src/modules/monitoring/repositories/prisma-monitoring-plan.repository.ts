@@ -32,6 +32,9 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
       if (filters.estado !== undefined) {
         where.estado = filters.estado;
       }
+      if (filters.institucionId !== undefined) {
+        where.OR = [{ institucionId: filters.institucionId }, { tipoEntidad: 'UGEL' }];
+      }
     }
 
     const plans = await this.prisma.planMonitoreo.findMany({

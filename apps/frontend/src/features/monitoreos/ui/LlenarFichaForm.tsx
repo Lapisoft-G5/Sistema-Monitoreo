@@ -16,6 +16,7 @@ import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
+import { AREAS_CURRICULARES } from '@sistema-monitoreo/shared-contracts';
 
 interface LlenarFichaFormProps {
   isOpen: boolean;
@@ -386,19 +387,58 @@ export const LlenarFichaForm = ({
           <div className="px-6 py-4 bg-slate-50 border-b border-border text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Área Curricular</label>
-              <input type="text" value={contextoArea} onChange={(e) => setContextoArea(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Ej. Matemática" />
+              {(() => {
+                const key = visit.nivel?.toUpperCase() === 'INICIAL' || visit.modalidad === 'EBE' ? 'INICIAL'
+                  : visit.modalidad?.toUpperCase() === 'EBA' ? 'EBA'
+                  : visit.modalidad?.toUpperCase() === 'CEPTRO' ? 'CEPTRO'
+                  : visit.nivel?.toUpperCase() || 'PRIMARIA';
+                const areas = AREAS_CURRICULARES[key] || AREAS_CURRICULARES.PRIMARIA;
+                return (
+                  <select value={contextoArea} onChange={(e) => setContextoArea(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
+                    <option value="">Seleccione...</option>
+                    {areas.map((a) => <option key={a} value={a}>{a}</option>)}
+                    <option value="Otro">Otro</option>
+                  </select>
+                );
+              })()}
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Grado</label>
-              <input type="text" value={contextoGrado} onChange={(e) => setContextoGrado(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Ej. 5to" />
+              <select value={contextoGrado} onChange={(e) => setContextoGrado(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
+                <option value="">Seleccione...</option>
+                <option value="3 años">3 años (Inicial)</option>
+                <option value="4 años">4 años (Inicial)</option>
+                <option value="5 años">5 años (Inicial)</option>
+                <option value="1er Grado">1er Grado</option>
+                <option value="2do Grado">2do Grado</option>
+                <option value="3er Grado">3er Grado</option>
+                <option value="4to Grado">4to Grado</option>
+                <option value="5to Grado">5to Grado</option>
+                <option value="6to Grado">6to Grado</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Sección</label>
-              <input type="text" value={contextoSeccion} onChange={(e) => setContextoSeccion(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Ej. A" />
+              <select value={contextoSeccion} onChange={(e) => setContextoSeccion(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
+                <option value="">Seleccione...</option>
+                <option value="Única">Única</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>
-              <input type="number" min="0" value={contextoAlumnos} onChange={(e) => setContextoAlumnos(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
+              <input type="number" min="0" max="50" value={contextoAlumnos} onChange={(e) => {
+                const val = e.target.value ? Number(e.target.value) : '';
+                if (val !== '' && val > 50) return;
+                setContextoAlumnos(val);
+              }} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Est. NEE (Opcional)</label>

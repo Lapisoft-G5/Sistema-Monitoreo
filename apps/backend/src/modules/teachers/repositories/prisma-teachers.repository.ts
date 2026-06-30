@@ -6,9 +6,10 @@ import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { DocenteCargo } from '../../../generated/prisma/client.js';
 import { DocenteEntity, DocenteFilter, TeachersRepository } from './teachers.repository.js';
 import { findDocenteById, findDocentes, findPersonaByDni } from './docente-read.helper.js';
-import { updateDocenteEstado } from './docente-update-estado.helper.js';
+import { updateDocenteEstado, bajaDirector } from './docente-update-estado.helper.js';
 import { createDocenteWithTransaction } from './docente-create.helper.js';
 import { updateDocenteWithTransaction } from './docente-update.helper.js';
+import { transicionEspecialistaADocente } from './transicion-rol.helper.js';
 
 @Injectable()
 export class PrismaTeachersRepository implements TeachersRepository {
@@ -33,6 +34,10 @@ export class PrismaTeachersRepository implements TeachersRepository {
     return updateDocenteEstado(this.prisma, id, estado);
   }
 
+  async bajaDirector(id: string): Promise<DocenteEntity> {
+    return bajaDirector(this.prisma, id);
+  }
+
   async createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteEntity> {
     return createDocenteWithTransaction(this.prisma, this.configService, dto);
   }
@@ -44,5 +49,13 @@ export class PrismaTeachersRepository implements TeachersRepository {
     personaId: string,
   ): Promise<DocenteEntity> {
     return updateDocenteWithTransaction(this.prisma, id, dto, activeCargo, personaId);
+  }
+
+  async transicionEspecialistaADocente(
+    personaId: string,
+    dto: CreateDocenteDto,
+    rolDocenteId: string,
+  ): Promise<DocenteEntity> {
+    return transicionEspecialistaADocente(this.prisma, personaId, dto, rolDocenteId);
   }
 }

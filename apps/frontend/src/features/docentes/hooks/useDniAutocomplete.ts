@@ -34,6 +34,14 @@ export interface PersonaAutocompleteData {
     condicionLaboral: string | null;
     escalaMagisterial: number | null;
     cargosActivos: string[];
+    cursoAsignado?: string | null;
+    especialidad?: string | null;
+    institucion?: {
+      id: string;
+      nombre: string;
+      codigoModular: string;
+      nivel: string;
+    };
   } | null;
 }
 
@@ -100,7 +108,7 @@ export const useDniAutocomplete = (dni: string, enabled = true): UseDniAutocompl
   const message = isLoading
     ? 'Buscando...'
     : isFound && data
-      ? 'Persona encontrada en el sistema. Datos personales autocompletados.'
+      ? `Persona encontrada: ${data.nombres} ${data.apellidos} (${data.roles.esDirector ? 'Director' : data.roles.esDocenteAula ? 'Docente' : data.roles.esEspecialista ? data.roles.especialistaCargoActivo || 'Especialista' : 'Registrado en el sistema'}). Datos autocompletados.`
       : '';
 
   return { data, isLoading, isFound, isLocked, message };

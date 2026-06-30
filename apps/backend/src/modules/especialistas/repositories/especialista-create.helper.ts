@@ -17,6 +17,21 @@ export async function create(
   roleId: string,
 ): Promise<IEspecialistaResponse> {
   return await prisma.$transaction(async (tx) => {
+    if (data.cargo === (CargoNombre.JEFE_AREA as string)) {
+      const existingJefe = await tx.especialista.findFirst({
+        where: {
+          nivelEducativo: data.nivelEducativo,
+          cargo: CargoNombre.JEFE_AREA,
+          estado: EstadoRegistro.ACTIVO,
+        },
+      });
+      if (existingJefe) {
+        throw new ConflictException(
+          `Ya existe un Jefe de Área activo para el nivel ${data.nivelEducativo}.`,
+        );
+      }
+    }
+
     const existingPersona = await tx.persona.findUnique({
       where: { dni: data.dni },
       include: { especialista: true, usuario: true },

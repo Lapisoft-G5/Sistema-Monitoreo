@@ -40,6 +40,17 @@ export class TeachersController {
     return this.teachersService.createDocente(dto, req.user);
   }
 
+  @Post('persona/:personaId/transicion-a-docente')
+  @RequirePermissions('docentes:write')
+  @HttpCode(HttpStatus.OK)
+  async transicionRolADocente(
+    @Param('personaId') personaId: string,
+    @Body() dto: CreateDocenteDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<DocenteEntity> {
+    return this.teachersService.transicionRolADocente(personaId, dto, req.user);
+  }
+
   @Get()
   @RequirePermissions('docentes:read')
   @HttpCode(HttpStatus.OK)

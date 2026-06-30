@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 export interface Option {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 export const toOptions = (values: string[]): Option[] =>
@@ -146,7 +147,7 @@ export const SelectField = ({
       </SelectTrigger>
       <SelectContent className="max-h-[300px] z-50">
         {options.map((o) => (
-          <SelectItem key={o.value} value={o.value} className="text-sm">
+          <SelectItem key={o.value} value={o.value} disabled={o.disabled} className="text-sm">
             {o.label}
           </SelectItem>
         ))}

@@ -93,10 +93,11 @@ export const CreateDirectorCard = () => {
   const availableInstituciones = instituciones.filter((i) => !activeDirectorIds.includes(i.id));
 
   const finalError = error || serviceError;
+  const esErrorCelular = finalError?.toLowerCase().includes('celular') || finalError?.toLowerCase().includes('teléfono');
 
   return (
     <Card className="w-full bg-surface border border-border rounded-2xl shadow-sm overflow-hidden p-6 sm:p-8">
-      {finalError && (
+      {finalError && !esErrorCelular && (
         <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive text-sm font-medium mb-5">
           <AlertCircle className="w-5 h-5 shrink-0" />
           {finalError}
@@ -112,6 +113,7 @@ export const CreateDirectorCard = () => {
           nombre: i.nombre,
           nivel: i.nivelEducativo,
         }))}
+        serverError={finalError}
       />
     </Card>
   );

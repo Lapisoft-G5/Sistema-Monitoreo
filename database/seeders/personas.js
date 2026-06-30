@@ -263,9 +263,7 @@ const USERS = [
   },
   {
     "dni": "40000017",
-    "firstName": "Coord Hugo",
-    "lastName": "Apaza Rios",
-    "email": "coord_0200002@ugel.gob.pe",
+    "firstName": "Docente4 Hugo","lastName": "Apaza Rios","email": "docente4_0200002@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1982-01-01",
     "institucionCodigoModular": "0200002",
@@ -279,13 +277,13 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000018",
-    "firstName": "Taller Veronica",
+    "firstName": "Docente5 Veronica",
     "lastName": "Apaza Condori",
-    "email": "taller_0200002@ugel.gob.pe",
+    "email": "docente5_0200002@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1983-01-01",
     "institucionCodigoModular": "0200002",
@@ -299,7 +297,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000019",
@@ -374,9 +372,9 @@ const USERS = [
   },
   {
     "dni": "40000023",
-    "firstName": "Coord Roberto",
+    "firstName": "Docente4 Roberto",
     "lastName": "Caceres Perez",
-    "email": "coord_0200003@ugel.gob.pe",
+    "email": "docente4_0200003@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1982-01-01",
     "institucionCodigoModular": "0200003",
@@ -390,13 +388,13 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000024",
-    "firstName": "Taller Hugo",
+    "firstName": "Docente5 Hugo",
     "lastName": "Apaza Choque",
-    "email": "taller_0200003@ugel.gob.pe",
+    "email": "docente5_0200003@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1983-01-01",
     "institucionCodigoModular": "0200003",
@@ -410,7 +408,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000025",
@@ -596,9 +594,9 @@ const USERS = [
   },
   {
     "dni": "40000035",
-    "firstName": "Coord Alberto",
+    "firstName": "Docente4 Alberto",
     "lastName": "Choque Flores",
-    "email": "coord_0200005@ugel.gob.pe",
+    "email": "docente4_0200005@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1982-01-01",
     "institucionCodigoModular": "0200005",
@@ -612,13 +610,13 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000036",
-    "firstName": "Taller Luis",
+    "firstName": "Docente5 Luis",
     "lastName": "Gomez Choque",
-    "email": "taller_0200005@ugel.gob.pe",
+    "email": "docente5_0200005@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1983-01-01",
     "institucionCodigoModular": "0200005",
@@ -632,7 +630,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000037",
@@ -818,9 +816,9 @@ const USERS = [
   },
   {
     "dni": "40000047",
-    "firstName": "Coord Victor",
+    "firstName": "Docente4 Victor",
     "lastName": "Quispe Flores",
-    "email": "coord_0200007@ugel.gob.pe",
+    "email": "docente4_0200007@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1982-01-01",
     "institucionCodigoModular": "0200007",
@@ -834,13 +832,13 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000048",
-    "firstName": "Taller Silvia",
+    "firstName": "Docente5 Silvia",
     "lastName": "Perez Apaza",
-    "email": "taller_0200007@ugel.gob.pe",
+    "email": "docente5_0200007@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1983-01-01",
     "institucionCodigoModular": "0200007",
@@ -854,7 +852,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000049",
@@ -1040,9 +1038,9 @@ const USERS = [
   },
   {
     "dni": "40000059",
-    "firstName": "Coord Victor",
+    "firstName": "Docente4 Victor",
     "lastName": "Borda Condori",
-    "email": "coord_0200009@ugel.gob.pe",
+    "email": "docente4_0200009@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1982-01-01",
     "institucionCodigoModular": "0200009",
@@ -1056,13 +1054,13 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000060",
-    "firstName": "Taller Daniela",
+    "firstName": "Docente5 Daniela",
     "lastName": "Apaza Choque",
-    "email": "taller_0200009@ugel.gob.pe",
+    "email": "docente5_0200009@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1983-01-01",
     "institucionCodigoModular": "0200009",
@@ -1076,7 +1074,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000061",
@@ -1151,9 +1149,9 @@ const USERS = [
   },
   {
     "dni": "40000065",
-    "firstName": "Coord Andrea",
+    "firstName": "Docente4 Andrea",
     "lastName": "Apaza Apaza",
-    "email": "coord_0200010@ugel.gob.pe",
+    "email": "docente4_0200010@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1982-01-01",
     "institucionCodigoModular": "0200010",
@@ -1167,13 +1165,13 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000066",
-    "firstName": "Taller Silvia",
+    "firstName": "Docente5 Silvia",
     "lastName": "Flores Gomez",
-    "email": "taller_0200010@ugel.gob.pe",
+    "email": "docente5_0200010@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1983-01-01",
     "institucionCodigoModular": "0200010",
@@ -1187,7 +1185,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000067",
@@ -1262,9 +1260,9 @@ const USERS = [
   },
   {
     "dni": "40000071",
-    "firstName": "Coord Hugo",
+    "firstName": "Docente4 Hugo",
     "lastName": "Rios Mamani",
-    "email": "coord_0200011@ugel.gob.pe",
+    "email": "docente4_0200011@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1982-01-01",
     "institucionCodigoModular": "0200011",
@@ -1278,13 +1276,13 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000072",
-    "firstName": "Taller Daniela",
+    "firstName": "Docente5 Daniela",
     "lastName": "Apaza Mamani",
-    "email": "taller_0200011@ugel.gob.pe",
+    "email": "docente5_0200011@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1983-01-01",
     "institucionCodigoModular": "0200011",
@@ -1298,7 +1296,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000073",
@@ -1373,9 +1371,9 @@ const USERS = [
   },
   {
     "dni": "40000077",
-    "firstName": "Coord Julio",
+    "firstName": "Docente4 Julio",
     "lastName": "Perez Condori",
-    "email": "coord_0200012@ugel.gob.pe",
+    "email": "docente4_0200012@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1982-01-01",
     "institucionCodigoModular": "0200012",
@@ -1389,13 +1387,13 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Coordinador Pedagógico"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000078",
-    "firstName": "Taller Lucia",
+    "firstName": "Docente5 Lucia",
     "lastName": "Mamani Apaza",
-    "email": "taller_0200012@ugel.gob.pe",
+    "email": "docente5_0200012@ugel.gob.pe",
     "role": "docente",
     "fechaNacimiento": "1983-01-01",
     "institucionCodigoModular": "0200012",
@@ -1409,7 +1407,7 @@ const USERS = [
     ],
     "condicionLaboral": "Nombrado",
     "cargaLaboral": 40,
-    "cargoNombre": "Jefe de Taller"
+    "cargoNombre": "Docente de Aula"
   },
   {
     "dni": "40000079",

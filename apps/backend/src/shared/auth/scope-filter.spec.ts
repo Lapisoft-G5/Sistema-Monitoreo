@@ -79,7 +79,12 @@ describe('ScopeFilter', () => {
     it('JEFE_AREA: filter por nivel educativo en la IE del cronograma', () => {
       expect(
         filter.forCronograma(ctx({ role: RoleCode.JEFE_AREA, especialistaNivel: 'Primaria' })),
-      ).toEqual({ institucion: { nivelEducativo: 'Primaria' } });
+      ).toEqual({
+        institucion: {
+          modalidad: 'EBR',
+          nivelEducativo: { equals: 'Primaria', mode: 'insensitive' },
+        },
+      });
     });
 
     it('DOCENTE: filter por evaluado.persona.usuario.id', () => {

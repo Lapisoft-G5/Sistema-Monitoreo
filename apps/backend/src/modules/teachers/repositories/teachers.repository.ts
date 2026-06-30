@@ -4,7 +4,7 @@ import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 export interface DocenteEntity {
   id: string;
   personaId: string;
-  institucionId: string;
+  institucionId: string | null;
   gradoAcademico: string | null;
   nivelEducativo: string;
   modalidad?: string | null;
@@ -51,11 +51,17 @@ export abstract class TeachersRepository {
   abstract findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]>;
   abstract findPersonaByDni(dni: string): Promise<any>;
   abstract updateDocenteEstado(id: string, estado: string): Promise<DocenteEntity>;
+  abstract bajaDirector(id: string): Promise<DocenteEntity>;
   abstract createDocenteWithTransaction(dto: CreateDocenteDto): Promise<DocenteEntity>;
   abstract updateDocenteWithTransaction(
     id: string,
     dto: UpdateDocenteDto,
     activeCargo: any,
     personaId: string,
+  ): Promise<DocenteEntity>;
+  abstract transicionEspecialistaADocente(
+    personaId: string,
+    dto: CreateDocenteDto,
+    rolDocenteId: string,
   ): Promise<DocenteEntity>;
 }

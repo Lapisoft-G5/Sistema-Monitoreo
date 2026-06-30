@@ -5,6 +5,7 @@ import { mapDocente } from './docente-mapper.helper.js';
 import {
   checkDirectorConflict,
   upsertCurso,
+  upsertEspecialidad,
   syncEspecialista,
   resolveRoleCode,
 } from './docente-shared.helper.js';
@@ -59,6 +60,11 @@ export async function updateDocenteWithTransaction(
     await tx.docenteCurso.deleteMany({ where: { docenteId: id } });
     if (dto.cursoAsignado) {
       await upsertCurso(tx, prisma, dto.cursoAsignado, dto.nivelEducativo, id);
+    }
+
+    await tx.docenteEspecialidad.deleteMany({ where: { docenteId: id } });
+    if (dto.especialidad) {
+      await upsertEspecialidad(tx, prisma, dto.especialidad, dto.nivelEducativo, id);
     }
 
     await tx.docenteSeccion.deleteMany({ where: { docenteId: id } });

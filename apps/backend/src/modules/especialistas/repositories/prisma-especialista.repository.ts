@@ -19,6 +19,7 @@ import { create } from './especialista-create.helper.js';
 import { update } from './especialista-update.helper.js';
 import { deleteEspecialista, activate, deactivate } from './especialista-delete.helper.js';
 import { createCargo, finalizeCargo } from './especialista-cargo.helper.js';
+import { transicionDocenteAEspecialista } from './transicion-rol.helper.js';
 
 @Injectable()
 export class PrismaEspecialistaRepository implements EspecialistaRepository {
@@ -91,5 +92,13 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     cargoValue: string,
   ): Promise<void> {
     return finalizeCargo(this.prisma, especialistaId, cargoId, fechaFin, cargoValue);
+  }
+
+  async transicionDocenteAEspecialista(
+    personaId: string,
+    data: ICreateEspecialistaRequest,
+    roleId: string,
+  ): Promise<IEspecialistaResponse> {
+    return transicionDocenteAEspecialista(this.prisma, personaId, data, roleId);
   }
 }

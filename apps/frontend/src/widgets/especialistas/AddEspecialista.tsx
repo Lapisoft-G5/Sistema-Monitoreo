@@ -16,9 +16,11 @@ export const CreateEspecialistaCard = () => {
     }
   };
 
+  const esErrorCelular = error?.toLowerCase().includes('celular') || error?.toLowerCase().includes('teléfono');
+
   return (
     <Card className="w-full bg-surface border border-border rounded-2xl shadow-sm overflow-hidden p-6 sm:p-8">
-      {error && (
+      {error && !esErrorCelular && (
         <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive text-sm font-medium mb-5">
           <AlertCircle className="w-5 h-5 shrink-0" />
           {error}
@@ -29,6 +31,7 @@ export const CreateEspecialistaCard = () => {
         onSubmit={handleFormSubmit}
         onCancel={() => navigate('/especialistas')}
         isLoading={loading}
+        serverError={error}
       />
     </Card>
   );

@@ -27,10 +27,10 @@ model Role {
 }
 
 model Permiso {
-  id          String   @id @default(uuid()) @db.Uuid
-  codigo      String   @unique @db.VarChar(100)
-  nombre      String   @db.VarChar(100)
-  descripcion String?  @db.VarChar(255)
+  id          String  @id @default(uuid()) @db.Uuid
+  codigo      String  @unique @db.VarChar(100)
+  nombre      String  @db.VarChar(100)
+  descripcion String? @db.VarChar(255)
 
   rolPermisos RolPermiso[]
 
@@ -38,12 +38,12 @@ model Permiso {
 }
 
 model RolPermiso {
-  id        String   @id @default(uuid()) @db.Uuid
-  rolId     String   @map("rol_id") @db.Uuid
-  permisoId String   @map("permiso_id") @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid
+  rolId     String @map("rol_id") @db.Uuid
+  permisoId String @map("permiso_id") @db.Uuid
 
-  rol       Role     @relation(fields: [rolId], references: [id])
-  permiso   Permiso  @relation(fields: [permisoId], references: [id])
+  rol     Role    @relation(fields: [rolId], references: [id])
+  permiso Permiso @relation(fields: [permisoId], references: [id])
 
   @@unique([rolId, permisoId])
   @@map("rol_permisos")
@@ -55,7 +55,7 @@ model Persona {
   nombres   String   @db.VarChar(120)
   apellidos String   @db.VarChar(120)
   correo    String?  @unique @db.VarChar(255)
-  telefono  String?  @db.VarChar(20)
+  telefono  String?  @unique @db.VarChar(20)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -85,18 +85,18 @@ model Usuario {
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  persona             Persona               @relation(fields: [personaId], references: [id])
-  rol                 Role                  @relation(fields: [rolId], references: [id])
-  sesionesAuth        SesionAuth[]
-  tokensRecuperacion  TokenRecuperacion[]
-  logsAuditoria       LogAuditoria[]
-  planesAutor         PlanMonitoreo[]
-  plantillasAutor     PlantillaMonitoreo[]
-  cronogramasCreados  Cronograma[]          @relation("CronogramaCreador")
-  solicitudesCreadas  SolicitudReprogramacion[] @relation("SolicitudSolicitante")
+  persona              Persona                   @relation(fields: [personaId], references: [id])
+  rol                  Role                      @relation(fields: [rolId], references: [id])
+  sesionesAuth         SesionAuth[]
+  tokensRecuperacion   TokenRecuperacion[]
+  logsAuditoria        LogAuditoria[]
+  planesAutor          PlanMonitoreo[]
+  plantillasAutor      PlantillaMonitoreo[]
+  cronogramasCreados   Cronograma[]              @relation("CronogramaCreador")
+  solicitudesCreadas   SolicitudReprogramacion[] @relation("SolicitudSolicitante")
   solicitudesResueltas SolicitudReprogramacion[] @relation("SolicitudResolutor")
-  fichasCreadas       FichaMonitoreo[]      @relation("FichaCreador")
-  fichasFinalizadas   FichaMonitoreo[]      @relation("FichaFinalizador")
+  fichasCreadas        FichaMonitoreo[]          @relation("FichaCreador")
+  fichasFinalizadas    FichaMonitoreo[]          @relation("FichaFinalizador")
 
   @@index([personaId])
   @@index([rolId])
@@ -118,7 +118,7 @@ model SesionAuth {
   terminatedReason String?   @map("terminated_reason") @db.VarChar(30)
   isActive         Boolean   @default(true) @map("is_active")
 
-  usuario          Usuario   @relation(fields: [usuarioId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
 
   @@index([sessionJti])
   @@index([usuarioId, isActive])
@@ -127,15 +127,15 @@ model SesionAuth {
 }
 
 model TokenRecuperacion {
-  id          String    @id @default(uuid()) @db.Uuid
-  usuarioId   String    @map("usuario_id") @db.Uuid
-  tokenHash   String    @unique @map("token_hash") @db.VarChar(255)
-  expiresAt   DateTime  @map("expires_at")
-  isUsed      Boolean   @default(false) @map("is_used")
-  usedAt      DateTime? @map("used_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id        String    @id @default(uuid()) @db.Uuid
+  usuarioId String    @map("usuario_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
+  isUsed    Boolean   @default(false) @map("is_used")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
-  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
 
   @@index([tokenHash])
   @@index([usuarioId])
@@ -144,22 +144,21 @@ model TokenRecuperacion {
 }
 
 model LogAuditoria {
-  id          String    @id @default(uuid()) @db.Uuid
-  usuarioId   String?   @map("usuario_id") @db.Uuid
-  eventType   String    @map("event_type") @db.VarChar(80)
-  eventDetail String?   @map("event_detail") @db.Text
-  ipAddress   String?   @map("ip_address") @db.VarChar(64)
-  userAgent   String?   @map("user_agent") @db.VarChar(500)
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id          String   @id @default(uuid()) @db.Uuid
+  usuarioId   String?  @map("usuario_id") @db.Uuid
+  eventType   String   @map("event_type") @db.VarChar(80)
+  eventDetail String?  @map("event_detail") @db.Text
+  ipAddress   String?  @map("ip_address") @db.VarChar(64)
+  userAgent   String?  @map("user_agent") @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  usuario     Usuario?  @relation(fields: [usuarioId], references: [id])
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId, createdAt])
   @@index([eventType, createdAt])
   @@index([createdAt])
   @@map("logs_auditoria")
 }
-
 
 model Especialista {
   id                String   @id @default(uuid()) @db.Uuid
@@ -177,10 +176,10 @@ model Especialista {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
-  persona           Persona  @relation(fields: [personaId], references: [id])
-  cronogramas       Cronograma[]
-  especialidades    EspecialistaEspecialidad[]
-  cargos            EspecialistaCargo[]
+  persona        Persona                    @relation(fields: [personaId], references: [id])
+  cronogramas    Cronograma[]
+  especialidades EspecialistaEspecialidad[]
+  cargos         EspecialistaCargo[]
 
   @@map("especialistas")
 }
@@ -190,20 +189,20 @@ model Especialista {
 /// Constraint: solo 1 cargo activo (fechaFin IS NULL) por Especialista,
 /// enforced via índice único parcial en la migración.
 model EspecialistaCargo {
-  id              String   @id @default(uuid()) @db.Uuid
-  especialistaId  String   @map("especialista_id") @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
+  especialistaId String    @map("especialista_id") @db.Uuid
   /// Valores: 'Especialista' | 'Jefe de Área' | 'Jefe de Gestión'
   /// (o cualquier cargo Docente que el Especialista ejerza simultaneamente, ej. Director).
   /// Tamaño 50 para coincidir con el campo espejo `Especialista.cargo`.
-  cargo           String   @db.VarChar(50)
-  fechaInicio     DateTime @default(now()) @map("fecha_inicio")
-  fechaFin        DateTime? @map("fecha_fin")
+  cargo          String    @db.VarChar(50)
+  fechaInicio    DateTime  @default(now()) @map("fecha_inicio")
+  fechaFin       DateTime? @map("fecha_fin")
   /// El cargo principal es el que se usa para auth (decide landing + capabilities).
   /// Se calcula por prioridad si hubiera varios, pero el constraint de 1 activo
   /// lo hace único. La app asegura que el único activo tenga esPrincipal = true.
-  esPrincipal     Boolean  @default(false) @map("es_principal")
+  esPrincipal    Boolean   @default(false) @map("es_principal")
 
-  especialista     Especialista @relation(fields: [especialistaId], references: [id], onDelete: Cascade)
+  especialista Especialista @relation(fields: [especialistaId], references: [id], onDelete: Cascade)
 
   @@index([especialistaId, fechaInicio])
   @@map("especialista_cargos")
@@ -214,26 +213,26 @@ model EspecialistaCargo {
 // ==========================================
 
 model InstitucionEducativa {
-  id                String   @id @default(uuid()) @db.Uuid
-  codigoModular     String   @unique @map("codigo_modular") @db.VarChar(7)
-  codigoLocal       String   @map("codigo_local") @db.VarChar(8)
-  nombre            String   @db.VarChar(100)
-  nivelEducativoId  String?  @map("nivel_educativo_id") @db.Uuid
-  nivelEducativo    String   @map("nivel_educativo") @db.VarChar(50)
-  modalidad         String   @map("modalidad") @db.VarChar(50)
-  departamento        String   @default("Puno") @db.VarChar(50)
-  provincia         String   @db.VarChar(50)
-  distrito          String   @db.VarChar(50)
-  direccion         String   @db.VarChar(150)
-  zona              String   @db.VarChar(20)
-  estado            String   @default("Activa") @db.VarChar(20)
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+  id               String   @id @default(uuid()) @db.Uuid
+  codigoModular    String   @unique @map("codigo_modular") @db.VarChar(7)
+  codigoLocal      String   @map("codigo_local") @db.VarChar(8)
+  nombre           String   @db.VarChar(100)
+  nivelEducativoId String?  @map("nivel_educativo_id") @db.Uuid
+  nivelEducativo   String   @map("nivel_educativo") @db.VarChar(50)
+  modalidad        String   @map("modalidad") @db.VarChar(50)
+  departamento     String   @default("Puno") @db.VarChar(50)
+  provincia        String   @db.VarChar(50)
+  distrito         String   @db.VarChar(50)
+  direccion        String   @db.VarChar(150)
+  zona             String   @db.VarChar(20)
+  estado           String   @default("Activa") @db.VarChar(20)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
 
-  nivelEducativoRel NivelEducativo?    @relation(fields: [nivelEducativoId], references: [id], onDelete: SetNull)
+  nivelEducativoRel NivelEducativo?      @relation(fields: [nivelEducativoId], references: [id], onDelete: SetNull)
   docentes          Docente[]
   planCobertura     PlanCoberturaIe[]
-  planes            PlanMonitoreo[]    @relation("PlanInstitucion")
+  planes            PlanMonitoreo[]      @relation("PlanInstitucion")
   plantillas        PlantillaMonitoreo[]
   cronogramas       Cronograma[]
 
@@ -243,7 +242,7 @@ model InstitucionEducativa {
 model Docente {
   id                String   @id @default(uuid()) @db.Uuid
   personaId         String   @unique @map("persona_id") @db.Uuid
-  institucionId     String   @map("institucion_id") @db.Uuid
+  institucionId     String?  @map("institucion_id") @db.Uuid
   gradoAcademico    String?  @map("grado_academico") @db.VarChar(50)
   nivelEducativo    String   @map("nivel_educativo") @db.VarChar(50)
   nivelEducativoId  String?  @map("nivel_educativo_id") @db.Uuid
@@ -255,52 +254,52 @@ model Docente {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
-  persona           Persona  @relation(fields: [personaId], references: [id])
-  institucion       InstitucionEducativa @relation(fields: [institucionId], references: [id])
-  nivelEducativoRel NivelEducativo? @relation(fields: [nivelEducativoId], references: [id], onDelete: SetNull)
-  docenteCargos     DocenteCargo[]
-  docenteCursos     DocenteCurso[]
-  docenteSecciones  DocenteSeccion[]
+  persona               Persona               @relation(fields: [personaId], references: [id])
+  institucion           InstitucionEducativa? @relation(fields: [institucionId], references: [id])
+  nivelEducativoRel     NivelEducativo?       @relation(fields: [nivelEducativoId], references: [id], onDelete: SetNull)
+  docenteCargos         DocenteCargo[]
+  docenteCursos         DocenteCurso[]
+  docenteSecciones      DocenteSeccion[]
   docenteEspecialidades DocenteEspecialidad[]
-  cronogramas       Cronograma[]
+  cronogramas           Cronograma[]
 
   @@index([institucionId])
   @@map("docentes")
 }
 
 model DocenteSeccion {
-  id        String   @id @default(uuid()) @db.Uuid
-  docenteId String   @map("docente_id") @db.Uuid
-  grado     String   @db.VarChar(50)
-  seccion   String   @db.VarChar(10)
+  id        String @id @default(uuid()) @db.Uuid
+  docenteId String @map("docente_id") @db.Uuid
+  grado     String @db.VarChar(50)
+  seccion   String @db.VarChar(10)
 
-  docente   Docente  @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+  docente Docente @relation(fields: [docenteId], references: [id], onDelete: Cascade)
 
   @@unique([docenteId, grado, seccion])
   @@map("docente_secciones")
 }
 
 model Curso {
-  id                  String   @id @default(uuid()) @db.Uuid
-  nombre              String   @db.VarChar(100)
-  nivelEducativoId    String   @map("nivel_educativo_id") @db.Uuid
-  createdAt           DateTime @default(now()) @map("created_at")
+  id               String   @id @default(uuid()) @db.Uuid
+  nombre           String   @db.VarChar(100)
+  nivelEducativoId String   @map("nivel_educativo_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
 
-  nivelEducativo      NivelEducativo @relation(fields: [nivelEducativoId], references: [id], onDelete: Restrict)
-  docenteCursos       DocenteCurso[]
-  fichasContexto      FichaContexto[]
+  nivelEducativo NivelEducativo  @relation(fields: [nivelEducativoId], references: [id], onDelete: Restrict)
+  docenteCursos  DocenteCurso[]
+  fichasContexto FichaContexto[]
 
   @@unique([nombre, nivelEducativoId])
   @@map("cursos")
 }
 
 model DocenteCurso {
-  id        String   @id @default(uuid()) @db.Uuid
-  docenteId String   @map("docente_id") @db.Uuid
-  cursoId   String   @map("curso_id") @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid
+  docenteId String @map("docente_id") @db.Uuid
+  cursoId   String @map("curso_id") @db.Uuid
 
-  docente   Docente  @relation(fields: [docenteId], references: [id])
-  curso     Curso    @relation(fields: [cursoId], references: [id])
+  docente Docente @relation(fields: [docenteId], references: [id])
+  curso   Curso   @relation(fields: [cursoId], references: [id])
 
   @@unique([docenteId, cursoId])
   @@map("docente_cursos")
@@ -311,60 +310,78 @@ model DocenteCurso {
 // ==========================================
 
 model Cargo {
-  id            String   @id @default(uuid()) @db.Uuid
-  nombre        String   @unique @db.VarChar(50)
+  id            String         @id @default(uuid()) @db.Uuid
+  nombre        String         @unique @db.VarChar(50)
   docenteCargos DocenteCargo[]
 
   @@map("cargos")
 }
 
 model DocenteCargo {
-  id           String    @id @default(uuid()) @db.Uuid
-  docenteId    String    @map("docente_id") @db.Uuid
-  cargoId      String    @map("cargo_id") @db.Uuid
-  fechaInicio  DateTime  @default(now()) @map("fecha_inicio")
-  fechaFin     DateTime? @map("fecha_fin")
+  id          String    @id @default(uuid()) @db.Uuid
+  docenteId   String    @map("docente_id") @db.Uuid
+  cargoId     String    @map("cargo_id") @db.Uuid
+  fechaInicio DateTime  @default(now()) @map("fecha_inicio")
+  fechaFin    DateTime? @map("fecha_fin")
   /// Cargo principal del docente. Lo decide el service por prioridad
   /// (Director > Subdirector > Coord. Ped. > Jefe de Taller > PIP > Docente de Aula).
   /// Constraint: max 1 cargo activo (fechaFin IS NULL) con esPrincipal = true por docente
   /// (índice único parcial en la migración).
-  esPrincipal  Boolean   @default(false) @map("es_principal")
+  esPrincipal Boolean   @default(false) @map("es_principal")
 
-  docente     Docente   @relation(fields: [docenteId], references: [id])
-  cargo       Cargo     @relation(fields: [cargoId], references: [id])
+  docente Docente @relation(fields: [docenteId], references: [id])
+  cargo   Cargo   @relation(fields: [cargoId], references: [id])
 
   @@index([docenteId, cargoId, fechaInicio])
   @@map("docente_cargos")
 }
 
 model PlanMonitoreo {
-  id                String    @id @default(uuid()) @db.Uuid
-  titulo            String    @db.VarChar(150)
-  anioAcademico     Int       @map("anio_academico")
-  tipoEntidad       String    @map("tipo_entidad") @db.VarChar(10) // 'UGEL' | 'IE' (legacy, ver plan_cobertura_ie)
-  archivoUrl        String    @map("archivo_url") @db.VarChar(255)
-  estado            String    @default("Activo") @db.VarChar(20) // 'Activo' | 'Inactivo'
-  autorId           String?   @map("autor_id") @db.Uuid
-  rolAutorAlCrear   String?   @map("rol_autor_al_crear") @db.VarChar(50) // 'jefe_gestion' | 'director_ie' (sello historico)
-  institucionId     String?   @map("institucion_id") @db.Uuid
-  deleted           Boolean   @default(false)
-  deletedAt         DateTime? @map("deleted_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
+  id              String    @id @default(uuid()) @db.Uuid
+  titulo          String    @db.VarChar(150)
+  anioAcademico   Int       @map("anio_academico")
+  tipoEntidad     String    @map("tipo_entidad") @db.VarChar(10) // 'UGEL' | 'IE' (legacy, ver plan_cobertura_ie)
+  archivoUrl      String    @map("archivo_url") @db.VarChar(255)
+  estado          String    @default("Activo") @db.VarChar(20) // 'Activo' | 'Inactivo'
+  autorId         String?   @map("autor_id") @db.Uuid
+  rolAutorAlCrear String?   @map("rol_autor_al_crear") @db.VarChar(50) // 'jefe_gestion' | 'director_ie' (sello historico)
+  institucionId   String?   @map("institucion_id") @db.Uuid
+  ugelId          String?   @map("ugel_id") @db.Uuid
+  deleted         Boolean   @default(false)
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  autor             Usuario?               @relation(fields: [autorId], references: [id], onDelete: Restrict)
-  institucion       InstitucionEducativa?  @relation("PlanInstitucion", fields: [institucionId], references: [id], onDelete: Restrict)
-  cobertura         PlanCoberturaIe[]
-  cronogramas       Cronograma[]
+  autor       Usuario?              @relation(fields: [autorId], references: [id], onDelete: Restrict)
+  institucion InstitucionEducativa? @relation("PlanInstitucion", fields: [institucionId], references: [id], onDelete: Restrict)
+  ugel        Ugel?                 @relation(fields: [ugelId], references: [id], onDelete: Restrict)
+  cobertura   PlanCoberturaIe[]
+  cronogramas Cronograma[]
 
   @@index([autorId])
   @@index([institucionId])
+  @@index([ugelId])
   @@map("planes_monitoreo")
 }
 
 // ==========================================
 // 5.5. CATALOGOS TRANSVERSALES (Sprint 3)
 // ==========================================
+
+model Ugel {
+  id        String   @id @default(uuid()) @db.Uuid
+  codigo    String   @unique @db.VarChar(20)
+  nombre    String   @db.VarChar(200)
+  region    String   @db.VarChar(100)
+  provincia String   @db.VarChar(100)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  planes     PlanMonitoreo[]
+  plantillas PlantillaMonitoreo[]
+
+  @@map("ugeles")
+}
 
 model Modalidad {
   id        String   @id @default(uuid()) @db.Uuid
@@ -373,62 +390,62 @@ model Modalidad {
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
 
-  niveles   NivelEducativo[]
+  niveles NivelEducativo[]
 
   @@map("modalidades")
 }
 
 model NivelEducativo {
-  id           String   @id @default(uuid()) @db.Uuid
-  codigo       String   @db.VarChar(50)
-  nombre       String   @db.VarChar(100)
-  modalidadId  String   @map("modalidad_id") @db.Uuid
-  isActive     Boolean  @default(true) @map("is_active")
+  id          String  @id @default(uuid()) @db.Uuid
+  codigo      String  @db.VarChar(50)
+  nombre      String  @db.VarChar(100)
+  modalidadId String  @map("modalidad_id") @db.Uuid
+  isActive    Boolean @default(true) @map("is_active")
 
-  modalidad    Modalidad @relation(fields: [modalidadId], references: [id], onDelete: Restrict)
-  instituciones InstitucionEducativa[]
-  cursos       Curso[]
+  modalidad      Modalidad              @relation(fields: [modalidadId], references: [id], onDelete: Restrict)
+  instituciones  InstitucionEducativa[]
+  cursos         Curso[]
   especialidades Especialidad[]
-  docentes     Docente[]
+  docentes       Docente[]
 
   @@unique([codigo, modalidadId])
   @@map("niveles_educativos")
 }
 
 model Especialidad {
-  id                String   @id @default(uuid()) @db.Uuid
-  nombre            String   @db.VarChar(100)
-  nivelEducativoId  String   @map("nivel_educativo_id") @db.Uuid
-  isActive          Boolean  @default(true) @map("is_active")
+  id               String  @id @default(uuid()) @db.Uuid
+  nombre           String  @db.VarChar(100)
+  nivelEducativoId String  @map("nivel_educativo_id") @db.Uuid
+  isActive         Boolean @default(true) @map("is_active")
 
-  nivelEducativo    NivelEducativo @relation(fields: [nivelEducativoId], references: [id], onDelete: Restrict)
-  docentes          DocenteEspecialidad[]
-  especialistas      EspecialistaEspecialidad[]
+  nivelEducativo NivelEducativo             @relation(fields: [nivelEducativoId], references: [id], onDelete: Restrict)
+  docentes       DocenteEspecialidad[]
+  especialistas  EspecialistaEspecialidad[]
 
   @@unique([nombre, nivelEducativoId])
   @@map("especialidades")
 }
 
 model DocenteEspecialidad {
-  id            String   @id @default(uuid()) @db.Uuid
-  docenteId     String   @map("docente_id") @db.Uuid
-  especialidadId String   @map("especialidad_id") @db.Uuid
+  id             String @id @default(uuid()) @db.Uuid
+  docenteId      String @map("docente_id") @db.Uuid
+  especialidadId String @map("especialidad_id") @db.Uuid
 
-  docente       Docente      @relation(fields: [docenteId], references: [id], onDelete: Cascade)
-  especialidad  Especialidad @relation(fields: [especialidadId], references: [id], onDelete: Cascade)
+  docente      Docente      @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+  especialidad Especialidad @relation(fields: [especialidadId], references: [id], onDelete: Cascade)
 
   @@unique([docenteId, especialidadId])
   @@map("docente_especialidades")
 }
 
 model EspecialistaEspecialidad {
-  id            String   @id @default(uuid()) @db.Uuid
-  especialistaId String   @map("especialista_id") @db.Uuid
-  especialidadId String   @map("especialidad_id") @db.Uuid
-  esPrincipal   Boolean  @default(false) @map("es_principal")
+  id             String  @id @default(uuid()) @db.Uuid
+  especialistaId String  @map("especialista_id") @db.Uuid
+  especialidadId String  @map("especialidad_id") @db.Uuid
+  esPrincipal    Boolean @default(false) @map("es_principal")
 
-  especialista   Especialista @relation(fields: [especialistaId], references: [id], onDelete: Cascade)
-  especialidad   Especialidad  @relation(fields: [especialidadId], references: [id], onDelete: Cascade)
+  especialista Especialista @relation(fields: [especialistaId], references: [id], onDelete: Cascade)
+  especialidad Especialidad @relation(fields: [especialidadId], references: [id], onDelete: Cascade)
 
   @@unique([especialistaId, especialidadId])
   @@map("especialista_especialidades")
@@ -439,12 +456,12 @@ model EspecialistaEspecialidad {
 // ==========================================
 
 model PlanCoberturaIe {
-  id            String              @id @default(uuid()) @db.Uuid
-  planId        String              @map("plan_id") @db.Uuid
-  institucionId String              @map("institucion_id") @db.Uuid
+  id            String @id @default(uuid()) @db.Uuid
+  planId        String @map("plan_id") @db.Uuid
+  institucionId String @map("institucion_id") @db.Uuid
 
-  plan          PlanMonitoreo       @relation(fields: [planId], references: [id], onDelete: Cascade)
-  institucion   InstitucionEducativa @relation(fields: [institucionId], references: [id], onDelete: Restrict)
+  plan        PlanMonitoreo        @relation(fields: [planId], references: [id], onDelete: Cascade)
+  institucion InstitucionEducativa @relation(fields: [institucionId], references: [id], onDelete: Restrict)
 
   @@unique([planId, institucionId], name: "uq_plan_cobertura")
   @@index([institucionId])
@@ -456,44 +473,47 @@ model PlanCoberturaIe {
 // ==========================================
 
 model PlantillaMonitoreo {
-  id                String   @id @default(uuid()) @db.Uuid
-  tipoMonitoreo     String   @map("tipo_monitoreo") @db.VarChar(20) // DOCENTE | DIRECTIVO
-  anioAcademico     Int      @map("anio_academico")
-  version           Int      @default(1)
-  baremo            String   @db.VarChar(20) // VIGENTE | PORCENTUAL
-  descripcion       String?  @db.Text
-  estado            String   @default("Borrador") @db.VarChar(20) // Borrador | Vigente | Historico
-  autorId           String   @map("autor_id") @db.Uuid
-  rolAutorAlCrear   String   @map("rol_autor_al_crear") @db.VarChar(50) // jefe_gestion | director_ie
-  institucionId     String?  @map("institucion_id") @db.Uuid
-  deleted           Boolean  @default(false)
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  tipoMonitoreo   String   @map("tipo_monitoreo") @db.VarChar(20) // DOCENTE | DIRECTIVO
+  anioAcademico   Int      @map("anio_academico")
+  version         Int      @default(1)
+  baremo          String   @db.VarChar(20) // VIGENTE | PORCENTUAL
+  descripcion     String?  @db.Text
+  estado          String   @default("Borrador") @db.VarChar(20) // Borrador | Vigente | Historico
+  autorId         String   @map("autor_id") @db.Uuid
+  rolAutorAlCrear String   @map("rol_autor_al_crear") @db.VarChar(50) // jefe_gestion | director_ie
+  institucionId   String?  @map("institucion_id") @db.Uuid
+  ugelId          String?  @map("ugel_id") @db.Uuid
+  deleted         Boolean  @default(false)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
-  autor             Usuario                @relation(fields: [autorId], references: [id], onDelete: Restrict)
-  institucion       InstitucionEducativa?  @relation(fields: [institucionId], references: [id], onDelete: Restrict)
+  autor               Usuario               @relation(fields: [autorId], references: [id], onDelete: Restrict)
+  institucion         InstitucionEducativa? @relation(fields: [institucionId], references: [id], onDelete: Restrict)
+  ugel                Ugel?                 @relation(fields: [ugelId], references: [id], onDelete: Restrict)
   nivelesCalificacion NivelCalificacion[]
-  desempenos        DesempenoPlantilla[]
-  ejesItems         EjeItemPlantilla[]
-  fichas            FichaMonitoreo[]
+  desempenos          DesempenoPlantilla[]
+  ejesItems           EjeItemPlantilla[]
+  fichas              FichaMonitoreo[]
 
   @@unique([tipoMonitoreo, anioAcademico, version])
   @@index([estado])
   @@index([autorId])
+  @@index([ugelId])
   @@map("plantillas_monitoreo")
 }
 
 model NivelCalificacion {
-  id           String   @id @default(uuid()) @db.Uuid
-  plantillaId  String   @map("plantilla_id") @db.Uuid
-  nivelRomano  String   @map("nivel_romano") @db.VarChar(4) // I | II | III | IV
-  denominacion String   @db.VarChar(100)
-  rangoMin     Int      @map("rango_min")
-  color        String   @db.Char(7)
+  id           String @id @default(uuid()) @db.Uuid
+  plantillaId  String @map("plantilla_id") @db.Uuid
+  nivelRomano  String @map("nivel_romano") @db.VarChar(4) // I | II | III | IV
+  denominacion String @db.VarChar(100)
+  rangoMin     Int    @map("rango_min")
+  color        String @db.Char(7)
   orden        Int
 
-  plantilla    PlantillaMonitoreo @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
-  rubrica      RubricaNivel[]
+  plantilla PlantillaMonitoreo @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  rubrica   RubricaNivel[]
 
   @@unique([plantillaId, nivelRomano])
   @@index([plantillaId, orden])
@@ -501,43 +521,43 @@ model NivelCalificacion {
 }
 
 model DesempenoPlantilla {
-  id                String   @id @default(uuid()) @db.Uuid
-  plantillaId       String   @map("plantilla_id") @db.Uuid
-  nombre            String   @db.VarChar(255)
-  descripcionCorta  String?  @map("descripcion_corta") @db.Text
-  orden             Int
-  preguntaExtra     String?  @map("pregunta_extra") @db.Text
+  id               String  @id @default(uuid()) @db.Uuid
+  plantillaId      String  @map("plantilla_id") @db.Uuid
+  nombre           String  @db.VarChar(255)
+  descripcionCorta String? @map("descripcion_corta") @db.Text
+  orden            Int
+  preguntaExtra    String? @map("pregunta_extra") @db.Text
 
-  plantilla         PlantillaMonitoreo @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
-  aspectos          AspectoEvaluado[]
-  rubrica           RubricaNivel[]
-  respuestas        FichaRespuestaDesempeno[]
+  plantilla  PlantillaMonitoreo        @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  aspectos   AspectoEvaluado[]
+  rubrica    RubricaNivel[]
+  respuestas FichaRespuestaDesempeno[]
 
   @@index([plantillaId, orden])
   @@map("desempenos_plantilla")
 }
 
 model AspectoEvaluado {
-  id           String   @id @default(uuid()) @db.Uuid
-  desempenoId  String   @map("desempeno_id") @db.Uuid
-  descripcion  String   @db.Text
-  orden        Int
+  id          String @id @default(uuid()) @db.Uuid
+  desempenoId String @map("desempeno_id") @db.Uuid
+  descripcion String @db.Text
+  orden       Int
 
-  desempeno    DesempenoPlantilla @relation(fields: [desempenoId], references: [id], onDelete: Cascade)
-  respuestas   FichaRespuestaAspecto[]
+  desempeno  DesempenoPlantilla      @relation(fields: [desempenoId], references: [id], onDelete: Cascade)
+  respuestas FichaRespuestaAspecto[]
 
   @@index([desempenoId, orden])
   @@map("aspectos_evaluados")
 }
 
 model RubricaNivel {
-  id                   String   @id @default(uuid()) @db.Uuid
-  desempenoId          String   @map("desempeno_id") @db.Uuid
-  nivelCalificacionId  String   @map("nivel_calificacion_id") @db.Uuid
-  descripcion          String   @db.Text
+  id                  String @id @default(uuid()) @db.Uuid
+  desempenoId         String @map("desempeno_id") @db.Uuid
+  nivelCalificacionId String @map("nivel_calificacion_id") @db.Uuid
+  descripcion         String @db.Text
 
-  desempeno            DesempenoPlantilla @relation(fields: [desempenoId], references: [id], onDelete: Cascade)
-  nivelCalificacion    NivelCalificacion  @relation(fields: [nivelCalificacionId], references: [id], onDelete: Cascade)
+  desempeno         DesempenoPlantilla @relation(fields: [desempenoId], references: [id], onDelete: Cascade)
+  nivelCalificacion NivelCalificacion  @relation(fields: [nivelCalificacionId], references: [id], onDelete: Cascade)
 
   @@unique([desempenoId, nivelCalificacionId])
   @@map("rubrica_niveles")
@@ -548,28 +568,28 @@ model RubricaNivel {
 // ==========================================
 
 model EjeItemPlantilla {
-  id                String   @id @default(uuid()) @db.Uuid
-  plantillaId       String   @map("plantilla_id") @db.Uuid
-  numero            Int
-  descripcion       String   @db.Text
-  orden             Int
+  id          String @id @default(uuid()) @db.Uuid
+  plantillaId String @map("plantilla_id") @db.Uuid
+  numero      Int
+  descripcion String @db.Text
+  orden       Int
 
-  plantilla         PlantillaMonitoreo @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
-  respuestas        FichaRespuestaEjeItem[]
+  plantilla  PlantillaMonitoreo      @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  respuestas FichaRespuestaEjeItem[]
 
   @@index([plantillaId, orden])
   @@map("ejes_items_plantilla")
 }
 
 model FichaRespuestaEjeItem {
-  id            String   @id @default(uuid()) @db.Uuid
-  fichaId       String   @map("ficha_id") @db.Uuid
-  ejeItemId     String   @map("eje_item_id") @db.Uuid
-  nivel         Int      @db.SmallInt
-  evidenciaUrl  String?  @map("evidencia_url") @db.Text
+  id           String  @id @default(uuid()) @db.Uuid
+  fichaId      String  @map("ficha_id") @db.Uuid
+  ejeItemId    String  @map("eje_item_id") @db.Uuid
+  nivel        Int     @db.SmallInt
+  evidenciaUrl String? @map("evidencia_url") @db.Text
 
-  ficha         FichaMonitoreo  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
-  ejeItem       EjeItemPlantilla @relation(fields: [ejeItemId], references: [id], onDelete: Cascade)
+  ficha   FichaMonitoreo   @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  ejeItem EjeItemPlantilla @relation(fields: [ejeItemId], references: [id], onDelete: Cascade)
 
   @@unique([fichaId, ejeItemId])
   @@index([ejeItemId])
@@ -581,30 +601,30 @@ model FichaRespuestaEjeItem {
 // ==========================================
 
 model Cronograma {
-  id                String   @id @default(uuid()) @db.Uuid
-  monitorId         String   @map("monitor_id") @db.Uuid
-  institucionId     String   @map("institucion_id") @db.Uuid
-  evaluadoId        String   @map("evaluado_id") @db.Uuid
-  planId            String?  @map("plan_id") @db.Uuid
-  tipoMonitoreo     String   @map("tipo_monitoreo") @db.VarChar(20) // DOCENTE | DIRECTIVO
-  numeroVisita      Int      @map("numero_visita") @db.SmallInt
-  fechaProgramada   DateTime @map("fecha_programada") @db.Date
-  horaInicio        String   @map("hora_inicio") @db.VarChar(8) // HH:mm:ss
-  detalles          String?  @db.Text
-  estado            String   @default("PROGRAMADO") @db.VarChar(20) // PROGRAMADO | EN_PROCESO | COMPLETADO | REPROGRAMADO | CANCELADO
-  modalidad         String   @db.VarChar(20) // EBR | EBA | EBE | CEPTRO
-  nivelEducativo    String   @map("nivel_educativo") @db.VarChar(100)
-  creadoPorId       String?  @map("creado_por_id") @db.Uuid
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  monitorId       String   @map("monitor_id") @db.Uuid
+  institucionId   String   @map("institucion_id") @db.Uuid
+  evaluadoId      String   @map("evaluado_id") @db.Uuid
+  planId          String?  @map("plan_id") @db.Uuid
+  tipoMonitoreo   String   @map("tipo_monitoreo") @db.VarChar(20) // DOCENTE | DIRECTIVO
+  numeroVisita    Int      @map("numero_visita") @db.SmallInt
+  fechaProgramada DateTime @map("fecha_programada") @db.Date
+  horaInicio      String   @map("hora_inicio") @db.VarChar(8) // HH:mm:ss
+  detalles        String?  @db.Text
+  estado          String   @default("PROGRAMADO") @db.VarChar(20) // PROGRAMADO | EN_PROCESO | COMPLETADO | REPROGRAMADO | CANCELADO | ANULADO
+  modalidad       String   @db.VarChar(20) // EBR | EBA | EBE | CEPTRO
+  nivelEducativo  String   @map("nivel_educativo") @db.VarChar(100)
+  creadoPorId     String?  @map("creado_por_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
-  monitor           Especialista  @relation(fields: [monitorId], references: [id], onDelete: Restrict)
-  institucion       InstitucionEducativa @relation(fields: [institucionId], references: [id], onDelete: Restrict)
-  evaluado          Docente       @relation(fields: [evaluadoId], references: [id], onDelete: Restrict)
-  plan              PlanMonitoreo? @relation(fields: [planId], references: [id], onDelete: Restrict)
-  creadoPor         Usuario?      @relation("CronogramaCreador", fields: [creadoPorId], references: [id], onDelete: SetNull)
-  solicitudes       SolicitudReprogramacion[]
-  ficha             FichaMonitoreo?
+  monitor     Especialista              @relation(fields: [monitorId], references: [id], onDelete: Restrict)
+  institucion InstitucionEducativa      @relation(fields: [institucionId], references: [id], onDelete: Restrict)
+  evaluado    Docente                   @relation(fields: [evaluadoId], references: [id], onDelete: Restrict)
+  plan        PlanMonitoreo?            @relation(fields: [planId], references: [id], onDelete: Restrict)
+  creadoPor   Usuario?                  @relation("CronogramaCreador", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  solicitudes SolicitudReprogramacion[]
+  ficha       FichaMonitoreo?
 
   @@index([institucionId, fechaProgramada])
   @@index([monitorId, fechaProgramada])
@@ -626,13 +646,13 @@ model SolicitudReprogramacion {
   archivoSustentoUrl    String    @map("archivo_sustento_url") @db.VarChar(500)
   estado                String    @default("PENDIENTE") @db.VarChar(20) // PENDIENTE | APROBADO | RECHAZADO
   resueltoPorId         String?   @map("resuelto_por_id") @db.Uuid
-  comentarioResolucion   String?   @map("comentario_resolucion") @db.Text
+  comentarioResolucion  String?   @map("comentario_resolucion") @db.Text
   fechaResolucion       DateTime? @map("fecha_resolucion")
   createdAt             DateTime  @default(now()) @map("created_at")
 
-  cronograma     Cronograma @relation(fields: [cronogramaId], references: [id], onDelete: Restrict)
-  solicitante    Usuario    @relation("SolicitudSolicitante", fields: [solicitanteId], references: [id], onDelete: Restrict)
-  resueltoPor    Usuario?   @relation("SolicitudResolutor", fields: [resueltoPorId], references: [id], onDelete: SetNull)
+  cronograma  Cronograma @relation(fields: [cronogramaId], references: [id], onDelete: Restrict)
+  solicitante Usuario    @relation("SolicitudSolicitante", fields: [solicitanteId], references: [id], onDelete: Restrict)
+  resueltoPor Usuario?   @relation("SolicitudResolutor", fields: [resueltoPorId], references: [id], onDelete: SetNull)
 
   @@index([cronogramaId])
   @@index([estado])
@@ -644,28 +664,28 @@ model SolicitudReprogramacion {
 // ==========================================
 
 model FichaMonitoreo {
-  id                  String   @id @default(uuid()) @db.Uuid
-  cronogramaId        String   @unique @map("cronograma_id") @db.Uuid
-  plantillaId         String   @map("plantilla_id") @db.Uuid
-  fichaContextoId     String   @unique @map("ficha_contexto_id") @db.Uuid
-  anioAcademico       Int      @map("anio_academico")
-  puntajeTotal        Int      @map("puntaje_total") @db.SmallInt
-  promedio            Decimal  @db.Decimal(4, 2)
-  nivelLogro          String   @map("nivel_logro") @db.VarChar(20) // INICIO | EN_PROCESO | LOGRO_ESPERADO | LOGRO_DESTACADO
-  estado              String   @default("BORRADOR") @db.VarChar(20) // BORRADOR | FINALIZADO | MIGRADA
-  creadoPorId         String?  @map("creado_por_id") @db.Uuid
-  finalizadaPorId     String?  @map("finalizada_por_id") @db.Uuid
-  observaciones       String?  @db.Text
-  sugerencias         String?  @db.Text
-  compromisos         String?  @db.Text
-  createdAt           DateTime @default(now()) @map("created_at")
-  finalizadaAt        DateTime? @map("finalizada_at")
+  id              String    @id @default(uuid()) @db.Uuid
+  cronogramaId    String    @unique @map("cronograma_id") @db.Uuid
+  plantillaId     String    @map("plantilla_id") @db.Uuid
+  fichaContextoId String    @unique @map("ficha_contexto_id") @db.Uuid
+  anioAcademico   Int       @map("anio_academico")
+  puntajeTotal    Int       @map("puntaje_total") @db.SmallInt
+  promedio        Decimal   @db.Decimal(4, 2)
+  nivelLogro      String    @map("nivel_logro") @db.VarChar(20) // INICIO | EN_PROCESO | LOGRO_ESPERADO | LOGRO_DESTACADO
+  estado          String    @default("BORRADOR") @db.VarChar(20) // BORRADOR | FINALIZADO | MIGRADA
+  creadoPorId     String?   @map("creado_por_id") @db.Uuid
+  finalizadaPorId String?   @map("finalizada_por_id") @db.Uuid
+  observaciones   String?   @db.Text
+  sugerencias     String?   @db.Text
+  compromisos     String?   @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+  finalizadaAt    DateTime? @map("finalizada_at")
 
-  cronograma          Cronograma          @relation(fields: [cronogramaId], references: [id], onDelete: Restrict)
-  plantilla           PlantillaMonitoreo  @relation(fields: [plantillaId], references: [id], onDelete: Restrict)
-  fichaContexto       FichaContexto       @relation(fields: [fichaContextoId], references: [id], onDelete: Cascade)
-  creadoPor           Usuario?            @relation("FichaCreador", fields: [creadoPorId], references: [id], onDelete: SetNull)
-  finalizadaPor       Usuario?            @relation("FichaFinalizador", fields: [finalizadaPorId], references: [id], onDelete: SetNull)
+  cronograma          Cronograma                @relation(fields: [cronogramaId], references: [id], onDelete: Restrict)
+  plantilla           PlantillaMonitoreo        @relation(fields: [plantillaId], references: [id], onDelete: Restrict)
+  fichaContexto       FichaContexto             @relation(fields: [fichaContextoId], references: [id], onDelete: Cascade)
+  creadoPor           Usuario?                  @relation("FichaCreador", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  finalizadaPor       Usuario?                  @relation("FichaFinalizador", fields: [finalizadaPorId], references: [id], onDelete: SetNull)
   respuestasDesempeno FichaRespuestaDesempeno[]
   respuestasAspecto   FichaRespuestaAspecto[]
   respuestasEjeItem   FichaRespuestaEjeItem[]
@@ -677,30 +697,30 @@ model FichaMonitoreo {
 }
 
 model FichaContexto {
-  id                       String   @id @default(uuid()) @db.Uuid
-  areaCurricular           String?  @map("area_curricular") @db.VarChar(100)
-  grado                    String?  @db.VarChar(50)
-  seccion                  String?  @db.VarChar(10)
-  cantidadEstudiantes      Int?     @map("cantidad_estudiantes")
-  cantidadEstudiantesNee   Int?     @map("cantidad_estudiantes_nee")
-  cursoId                  String?  @map("curso_id") @db.Uuid
+  id                     String  @id @default(uuid()) @db.Uuid
+  areaCurricular         String? @map("area_curricular") @db.VarChar(100)
+  grado                  String? @db.VarChar(50)
+  seccion                String? @db.VarChar(10)
+  cantidadEstudiantes    Int?    @map("cantidad_estudiantes")
+  cantidadEstudiantesNee Int?    @map("cantidad_estudiantes_nee")
+  cursoId                String? @map("curso_id") @db.Uuid
 
-  curso                    Curso?   @relation(fields: [cursoId], references: [id], onDelete: SetNull)
-  ficha                    FichaMonitoreo?
+  curso Curso?          @relation(fields: [cursoId], references: [id], onDelete: SetNull)
+  ficha FichaMonitoreo?
 
   @@map("ficha_contexto")
 }
 
 model FichaRespuestaDesempeno {
-  id           String   @id @default(uuid()) @db.Uuid
-  fichaId      String   @map("ficha_id") @db.Uuid
-  desempenoId  String   @map("desempeno_id") @db.Uuid
-  nivel        Int      @db.SmallInt
-  observaciones String?  @db.Text
+  id                     String   @id @default(uuid()) @db.Uuid
+  fichaId                String   @map("ficha_id") @db.Uuid
+  desempenoId            String   @map("desempeno_id") @db.Uuid
+  nivel                  Int      @db.SmallInt
+  observaciones          String?  @db.Text
   preguntaExtraRespuesta Boolean? @map("pregunta_extra_respuesta")
 
-  ficha        FichaMonitoreo      @relation(fields: [fichaId], references: [id], onDelete: Cascade)
-  desempeno    DesempenoPlantilla  @relation(fields: [desempenoId], references: [id], onDelete: Restrict)
+  ficha     FichaMonitoreo     @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  desempeno DesempenoPlantilla @relation(fields: [desempenoId], references: [id], onDelete: Restrict)
 
   @@unique([fichaId, desempenoId])
   @@index([desempenoId])
@@ -708,13 +728,13 @@ model FichaRespuestaDesempeno {
 }
 
 model FichaRespuestaAspecto {
-  id          String   @id @default(uuid()) @db.Uuid
-  fichaId     String   @map("ficha_id") @db.Uuid
-  aspectoId   String   @map("aspecto_id") @db.Uuid
-  marcado     Boolean  @default(false)
+  id        String  @id @default(uuid()) @db.Uuid
+  fichaId   String  @map("ficha_id") @db.Uuid
+  aspectoId String  @map("aspecto_id") @db.Uuid
+  marcado   Boolean @default(false)
 
-  ficha       FichaMonitoreo    @relation(fields: [fichaId], references: [id], onDelete: Cascade)
-  aspecto     AspectoEvaluado   @relation(fields: [aspectoId], references: [id], onDelete: Restrict)
+  ficha   FichaMonitoreo  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  aspecto AspectoEvaluado @relation(fields: [aspectoId], references: [id], onDelete: Restrict)
 
   @@unique([fichaId, aspectoId])
   @@index([aspectoId])

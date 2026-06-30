@@ -8,6 +8,7 @@ import { mapDocente } from './docente-mapper.helper.js';
 import {
   checkDirectorConflict,
   upsertCurso,
+  upsertEspecialidad,
   syncEspecialista,
   resolveRoleCode,
 } from './docente-shared.helper.js';
@@ -117,6 +118,10 @@ export async function createDocenteWithTransaction(
 
     if (dto.cursoAsignado) {
       await upsertCurso(tx, prisma, dto.cursoAsignado, dto.nivelEducativo, docente.id);
+    }
+
+    if (dto.especialidad) {
+      await upsertEspecialidad(tx, prisma, dto.especialidad, dto.nivelEducativo, docente.id);
     }
 
     await tx.docenteCargo.create({

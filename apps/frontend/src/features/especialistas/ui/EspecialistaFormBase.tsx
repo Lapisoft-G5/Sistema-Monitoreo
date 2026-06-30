@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { User, Briefcase, Check, Plus, X } from 'lucide-react';
 import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
@@ -15,6 +15,7 @@ interface Props {
   isLoading: boolean;
   initialData?: EspecialistaFormData;
   isJefeArea?: boolean;
+  serverError?: string | null;
 }
 
 const INITIAL_FORM: EspecialistaFormData = {
@@ -41,6 +42,7 @@ export const EspecialistaFormBase = ({
   isLoading,
   initialData,
   isJefeArea = false,
+  serverError,
 }: Props) => {
   // Ajuste de inicialización en base a si esJefeArea es verdadero
   const defaultForm = {
@@ -126,10 +128,17 @@ export const EspecialistaFormBase = ({
     isLoading,
     errors,
     setPersonaFields: useCallback((persona) => {
-      set('nombres', persona.nombres);
-      set('apellidos', persona.apellidos);
-      set('correo', persona.correo ?? '');
-      set('celular', persona.telefono ?? '');
+      setForm((prev) => {
+        const next = { ...prev };
+        next.nombres = persona.nombres;
+        next.apellidos = persona.apellidos;
+        next.correo = persona.correo ?? '';
+        next.celular = persona.telefono ?? '';
+        if (persona.docente?.cursoAsignado) {
+          next.especialidad = persona.docente.cursoAsignado;
+        }
+        return next;
+      });
     }, []),
     clearPersonaFields: useCallback(() => {
       set('nombres', '');
@@ -153,7 +162,20 @@ export const EspecialistaFormBase = ({
     set('especialidadesExtras', especialidadesExtras.filter((e) => e !== esp));
   };
 
-  const showError = (key: keyof EspecialistaFormData) => (submitted ? errors[key] : '');
+  const celularRef = useRef<HTMLDivElement>(null);
+  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
+
+  useEffect(() => {
+    if (esErrorCelular && celularRef.current) {
+      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      celularRef.current.querySelector('input')?.focus();
+    }
+  }, [esErrorCelular]);
+
+  const showError = (key: keyof EspecialistaFormData) => {
+    if (key === 'celular' && esErrorCelular) return serverError ?? '';
+    return submitted ? errors[key] : '';
+  };
   const celularOk = form.celular ? /^9\d{8}$/.test(form.celular) : false;
 
   const currentModalidad = form.modalidad || 'EBR';
@@ -189,7 +211,7 @@ export const EspecialistaFormBase = ({
               onChange={(v) => set('nombres', v)}
               placeholder="Ej. Juan Carlos"
               error={showError('nombres')}
-              disabled={isDniLocked}
+              disabled={isDniLocked || dniBloqueadoPorRol}
             />
           </div>
           <div className="md:col-span-2">
@@ -200,7 +222,7 @@ export const EspecialistaFormBase = ({
               onChange={(v) => set('apellidos', v)}
               placeholder="Ej. Pérez López"
               error={showError('apellidos')}
-              disabled={isDniLocked}
+              disabled={isDniLocked || dniBloqueadoPorRol}
             />
           </div>
         </div>
@@ -237,20 +259,23 @@ export const EspecialistaFormBase = ({
             onChange={(v) => set('correo', v)}
             placeholder="Ej. jperez@ugel-lampa.gob.pe"
             error={showError('correo')}
-            disabled={isDniLocked}
+            disabled={isDniLocked || dniBloqueadoPorRol}
           />
-          <TextField
-            label="Número de Celular"
-            value={form.celular || ''}
-            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
-            placeholder="Ej. 987654321"
-            error={showError('celular')}
-            adornment={
-              celularOk ? (
-                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-              ) : undefined
-            }
-          />
+          <div ref={celularRef}>
+            <TextField
+              label="Número de Celular"
+              value={form.celular || ''}
+              onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
+              placeholder="Ej. 987654321"
+              error={showError('celular')}
+              disabled={isDniLocked || dniBloqueadoPorRol}
+              adornment={
+                celularOk ? (
+                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+                ) : undefined
+              }
+            />
+          </div>
         </div>
       </SectionCard>
 
@@ -286,6 +311,7 @@ export const EspecialistaFormBase = ({
             ]}
             placeholder="Seleccione Condición"
             error={showError('condicionLaboral')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
 
@@ -313,6 +339,7 @@ export const EspecialistaFormBase = ({
             ]}
             placeholder="Seleccione Modalidad"
             error={showError('modalidad')}
+            disabled={dniBloqueadoPorRol}
           />
           <SelectField
             label="Nivel Educativo *"
@@ -330,6 +357,7 @@ export const EspecialistaFormBase = ({
             options={availableNiveles.map((n) => ({ value: n, label: n }))}
             placeholder="Seleccione Nivel"
             error={showError('nivelEducativo')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
 
@@ -351,6 +379,7 @@ export const EspecialistaFormBase = ({
             ]}
             placeholder="Seleccione Escala Magisterial"
             error={showError('escalaMagisterial')}
+            disabled={dniBloqueadoPorRol}
           />
           {/* Especialidad principal */}
           {isPrimaria && (
@@ -442,6 +471,7 @@ export const EspecialistaFormBase = ({
             onChange={(v) => set('cargaLaboral', v ? Number(v.replace(/\D/g, '')) : 40)}
             placeholder="Ej. 40"
             error={showError('cargaLaboral')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
       </SectionCard>

@@ -5,7 +5,8 @@ export type EstadoVisita =
   | 'EN_PROCESO'
   | 'COMPLETADO'
   | 'REPROGRAMADO'
-  | 'CANCELADO';
+  | 'CANCELADO'
+  | 'ANULADO';
 
 export type EstadoSolicitudReprogramacion = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
 

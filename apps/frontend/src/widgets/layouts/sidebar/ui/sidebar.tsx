@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user';
 import { ROLE_PERMISSIONS, ROLE_LABELS } from '@shared/constants/roles';
 import type { MenuItem } from '@shared/constants/roles';
-import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight, Compass, ClipboardList, BarChart3 } from 'lucide-react';
+import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight, Compass, BarChart3 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
 
@@ -74,13 +74,6 @@ export const Sidebar = () => {
                 children: [
                   { id: 'monitoreo_calendario', label: 'Calendario', path: '/monitoreo/calendario' },
                 ],
-              },
-              {
-                id: 'monitoreo_reportes',
-                label: 'Reportes',
-                icon: <ClipboardList className="h-[18px] w-[18px]" />,
-                path: '/monitoreo/reportes',
-                children: [],
               },
               {
                 id: 'reportes',

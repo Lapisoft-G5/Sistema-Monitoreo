@@ -28,11 +28,11 @@ export function getDirectorInstitucionId(currentUser: CurrentUser): string {
 
 export function validateInstitucionOwnership(
   currentUser: CurrentUser,
-  targetInstitucionId: string,
+  docenteInstitucionId: string | null,
 ): void {
   if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
     const userInstitucionId = getDirectorInstitucionId(currentUser);
-    if (targetInstitucionId !== userInstitucionId) {
+    if (docenteInstitucionId !== userInstitucionId) {
       throw new ForbiddenException(
         'No tiene permisos para realizar esta acción en otra institución educativa.',
       );

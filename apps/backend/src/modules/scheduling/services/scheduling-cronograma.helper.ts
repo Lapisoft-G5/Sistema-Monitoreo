@@ -33,7 +33,26 @@ function aplicarScopingVisitas(
   }
   if (scopeFilter.isMonitorScope(ctx.role)) return visitas;
   if (scopeFilter.isJefeAreaScope(ctx.role)) {
-    return visitas.filter((v) => v.nivelEducativo === ctx.especialistaNivel);
+    const nivel = ctx.especialistaNivel;
+    return visitas.filter((v) => {
+      if (nivel === 'Inicial') {
+        return (
+          (v.modalidad === 'EBR' && v.nivelEducativo?.toLowerCase() === 'inicial') ||
+          v.modalidad === 'EBE'
+        );
+      }
+      if (nivel === 'Primaria') {
+        return v.modalidad === 'EBR' && v.nivelEducativo?.toLowerCase() === 'primaria';
+      }
+      if (nivel === 'Secundaria') {
+        return (
+          (v.modalidad === 'EBR' && v.nivelEducativo?.toLowerCase() === 'secundaria') ||
+          v.modalidad === 'EBA' ||
+          v.modalidad === 'CEPTRO'
+        );
+      }
+      return false;
+    });
   }
   return [];
 }
@@ -49,6 +68,30 @@ function validarAccesoVisita(
   if (scopeFilter.isInstitucionScope(ctx.role)) {
     if (visita.institucionId !== ctx.institucionId) {
       throw new ForbiddenException('No tiene acceso a esta visita (otra institucion).');
+    }
+  }
+  if (scopeFilter.isJefeAreaScope(ctx.role)) {
+    const nivel = ctx.especialistaNivel;
+    const isEbrInicial =
+      visita.modalidad === 'EBR' && visita.nivelEducativo?.toLowerCase() === 'inicial';
+    const isEbrPrimaria =
+      visita.modalidad === 'EBR' && visita.nivelEducativo?.toLowerCase() === 'primaria';
+    const isEbrSecundaria =
+      visita.modalidad === 'EBR' && visita.nivelEducativo?.toLowerCase() === 'secundaria';
+    const isEbe = visita.modalidad === 'EBE';
+    const isEba = visita.modalidad === 'EBA';
+    const isCeptro = visita.modalidad === 'CEPTRO';
+
+    if (nivel === 'Inicial' && !isEbrInicial && !isEbe) {
+      throw new ForbiddenException('No tiene acceso a esta visita (solo EBR Inicial o EBE).');
+    }
+    if (nivel === 'Primaria' && !isEbrPrimaria) {
+      throw new ForbiddenException('No tiene acceso a esta visita (solo EBR Primaria).');
+    }
+    if (nivel === 'Secundaria' && !isEbrSecundaria && !isEba && !isCeptro) {
+      throw new ForbiddenException(
+        'No tiene acceso a esta visita (solo EBR Secundaria, EBA o CEPTRO).',
+      );
     }
   }
 }
@@ -126,8 +169,16 @@ export async function crearVisita(
   const planId = await cronogramaRepo.findPlanVigentePara(dto.institucionId, anio);
   if (!planId) {
     throw new BadRequestException(
-      `No existe Plan de Monitoreo Activo que habilite el registro de visitas para el anio ${anio}. ` +
-        'El Jefe de Gestion debe registrar y activar un plan antes de programar visitas (EDU-0002).',
+      `No se encontró un Plan de Monitoreo Activo para el año ${anio}. ` +
+        'Antes de programar visitas, el Jefe de Gestión debe registrar y activar un plan anual.',
+    );
+  }
+
+  const plantillaId = await cronogramaRepo.findPlantillaVigentePara(dto.tipoMonitoreo, anio);
+  if (!plantillaId) {
+    throw new BadRequestException(
+      `No existe una Plantilla de Monitoreo vigente para ${dto.tipoMonitoreo} del año ${anio}. ` +
+        'Antes de programar visitas, el Jefe de Gestión debe registrar y activar una plantilla.',
     );
   }
 
@@ -151,6 +202,94 @@ export async function crearVisita(
   }
   if (!activas.evaluado) {
     throw new BadRequestException('El evaluado (docente/director) seleccionado no está activo.');
+  }
+
+  // REGLA DE NEGOCIO EDU-0002: Máximo 3 visitas pendientes (Programada/Reprogramada) por monitor
+  const pendingVisitsCount = await cronogramaRepo.countPendientesByMonitor(dto.monitorId);
+  if (pendingVisitsCount >= 3) {
+    throw new BadRequestException(
+      'El monitor ya tiene 3 visitas pendientes. Complete las visitas programadas antes de crear nuevas.',
+    );
+  }
+
+  // Validar solapamiento de visitas para el monitor
+  const fechaToUse =
+    typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
+  const visitasMismoDia = await cronogramaRepo.findVisitasMonitorPorFecha(
+    dto.monitorId,
+    fechaToUse,
+  );
+  const [horaProp, minProp] = dto.horaInicio.split(':').map(Number);
+  const tiempoProp = horaProp * 60 + minProp;
+
+  for (const v of visitasMismoDia) {
+    const [horaV, minV] = v.horaInicio.split(':').map(Number);
+    const tiempoV = horaV * 60 + minV;
+    if (Math.abs(tiempoProp - tiempoV) < 120) {
+      // 2 horas
+      throw new BadRequestException(
+        `El monitor ya tiene una visita programada a las ${v.horaInicio} el mismo día. Debe haber al menos 2 horas de diferencia.`,
+      );
+    }
+  }
+
+  // Validar nVisita para el evaluado en el mismo año
+  const existeVisita = await cronogramaRepo.findVisitaExistente(
+    dto.evaluadoId,
+    anio,
+    dto.numeroVisita,
+  );
+  if (existeVisita) {
+    throw new BadRequestException(
+      `El evaluado ya tiene una visita programada con el número ${dto.numeroVisita} en el año ${anio}.`,
+    );
+  }
+
+  // Validar fecha en contexto de otras visitas del mismo evaluado
+  const fechaStr = dto.fechaProgramada.split('T')[0];
+
+  // Obtener fecha actual en Perú (UTC-5) para evitar desfase con servidor UTC
+  const now = new Date();
+  const peruMs = now.getTime() - 5 * 60 * 60 * 1000;
+  const peruDate = new Date(peruMs);
+  const hoyStr = `${peruDate.getUTCFullYear()}-${String(peruDate.getUTCMonth() + 1).padStart(2, '0')}-${String(peruDate.getUTCDate()).padStart(2, '0')}`;
+
+  if (fechaStr < hoyStr) {
+    throw new BadRequestException('La fecha programada no puede ser anterior a la fecha actual.');
+  }
+
+  // Validar orden cronológico entre visitas del mismo evaluado
+  const visitaAnterior = await cronogramaRepo.findVisitaExistente(
+    dto.evaluadoId,
+    anio,
+    dto.numeroVisita - 1,
+  );
+  const visitaSiguiente = await cronogramaRepo.findVisitaExistente(
+    dto.evaluadoId,
+    anio,
+    dto.numeroVisita + 1,
+  );
+
+  if (visitaAnterior) {
+    const fechaAntNum = parseInt(visitaAnterior.fechaProgramada.replace(/-/g, ''));
+    const fechaStrNum = parseInt(fechaStr.replace(/-/g, ''));
+    if (fechaStrNum <= fechaAntNum) {
+      throw new BadRequestException(
+        `La visita N.° ${dto.numeroVisita} debe programarse al menos 1 día después de la visita N.° ${dto.numeroVisita - 1} ` +
+          `(${visitaAnterior.fechaProgramada}).`,
+      );
+    }
+  }
+
+  if (visitaSiguiente) {
+    const fechaSigNum = parseInt(visitaSiguiente.fechaProgramada.replace(/-/g, ''));
+    const fechaStrNum = parseInt(fechaStr.replace(/-/g, ''));
+    if (fechaSigNum <= fechaStrNum) {
+      throw new BadRequestException(
+        `La visita N.° ${dto.numeroVisita} debe programarse al menos 1 día antes de la visita N.° ${dto.numeroVisita + 1} ` +
+          `(${visitaSiguiente.fechaProgramada}).`,
+      );
+    }
   }
 
   const data: CreateVisitaData = {
@@ -203,8 +342,11 @@ export async function eliminarVisita(
   validarAccesoVisita(existing, scopeFilter, session);
   if (existing.estado === 'COMPLETADO') {
     throw new BadRequestException(
-      'No se puede eliminar una visita en estado COMPLETADO (tiene ficha asociada).',
+      'No se puede anular una visita en estado COMPLETADO (tiene ficha asociada).',
     );
+  }
+  if (existing.estado === 'ANULADO') {
+    throw new BadRequestException('La visita ya se encuentra anulada.');
   }
   await cronogramaRepo.remove(id);
 }

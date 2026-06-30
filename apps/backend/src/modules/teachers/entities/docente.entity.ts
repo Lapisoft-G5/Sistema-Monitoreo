@@ -2,7 +2,7 @@ import { BaseEntity } from '../../../shared/types/base.entity.js';
 
 export class Docente extends BaseEntity {
   personaId!: string;
-  institucionId!: string;
+  institucionId!: string | null;
   gradoAcademico: string | null = null;
   nivelEducativo!: string;
   nivelEducativoId: string | null = null;

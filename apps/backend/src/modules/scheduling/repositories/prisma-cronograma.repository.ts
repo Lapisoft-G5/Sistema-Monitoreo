@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IVisita,
+  ISolicitudReprogramacion,
+  TipoMonitoreo,
+} from '@sistema-monitoreo/shared-contracts';
 import {
   CronogramaRepository,
   CreateVisitaData,
@@ -22,10 +26,12 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
 
   async findAll(filters?: any): Promise<IVisita[]> {
     const where: any = {};
+    if (filters?.estado) {
+      where.estado = filters.estado;
+    }
     if (filters) {
       if (filters.monitorId) where.monitorId = filters.monitorId;
       if (filters.institucionId) where.institucionId = filters.institucionId;
-      if (filters.estado) where.estado = filters.estado;
       if (filters.tipoMonitoreo) where.tipoMonitoreo = filters.tipoMonitoreo;
       if (filters.fechaDesde || filters.fechaHasta) {
         where.fechaProgramada = {};
@@ -76,6 +82,21 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
     return planIe?.id ?? planUgel.id;
   }
 
+  async findPlantillaVigentePara(
+    tipoMonitoreo: TipoMonitoreo,
+    anio: number,
+  ): Promise<string | null> {
+    const plantilla = await this.prisma.plantillaMonitoreo.findFirst({
+      where: {
+        anioAcademico: anio,
+        tipoMonitoreo,
+        estado: 'Vigente',
+        deleted: false,
+      },
+    });
+    return plantilla?.id ?? null;
+  }
+
   async validateEntidadesActivas(
     institucionId: string,
     monitorId: string,
@@ -102,6 +123,46 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
         estado: { in: ['PROGRAMADO', 'EN_PROCESO', 'REPROGRAMADO'] },
       },
     });
+  }
+
+  async findVisitaExistente(
+    evaluadoId: string,
+    anio: number,
+    numeroVisita: number,
+  ): Promise<IVisita | null> {
+    const inicioAnio = new Date(anio, 0, 1);
+    const finAnio = new Date(anio, 11, 31, 23, 59, 59, 999);
+    const row = await this.prisma.cronograma.findFirst({
+      where: {
+        evaluadoId,
+        numeroVisita,
+        fechaProgramada: {
+          gte: inicioAnio,
+          lte: finAnio,
+        },
+        estado: { not: 'ANULADO' },
+      },
+    });
+    return row ? this.mapVisita(row) : null;
+  }
+
+  async findVisitasMonitorPorFecha(monitorId: string, fechaProgramada: Date): Promise<IVisita[]> {
+    const inicioDia = new Date(fechaProgramada);
+    inicioDia.setHours(0, 0, 0, 0);
+    const finDia = new Date(fechaProgramada);
+    finDia.setHours(23, 59, 59, 999);
+
+    const rows = await this.prisma.cronograma.findMany({
+      where: {
+        monitorId,
+        fechaProgramada: {
+          gte: inicioDia,
+          lte: finDia,
+        },
+        estado: { in: ['PROGRAMADO', 'EN_PROCESO', 'REPROGRAMADO'] },
+      },
+    });
+    return rows.map((r) => this.mapVisita(r));
   }
 
   async create(data: CreateVisitaData): Promise<IVisita> {
@@ -136,7 +197,10 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
   }
 
   async remove(id: string): Promise<void> {
-    await this.prisma.cronograma.delete({ where: { id } });
+    await this.prisma.cronograma.update({
+      where: { id },
+      data: { estado: 'ANULADO' },
+    });
   }
 
   async findMonitorEspecialidades(

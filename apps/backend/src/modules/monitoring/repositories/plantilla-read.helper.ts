@@ -26,7 +26,9 @@ export async function findAllPlantillas(
     if (filters.tipoMonitoreo) where.tipoMonitoreo = filters.tipoMonitoreo;
     if (filters.estado) where.estado = filters.estado;
     if (filters.rolAutorAlCrear) where.rolAutorAlCrear = filters.rolAutorAlCrear;
-    if (filters.institucionId !== undefined) where.institucionId = filters.institucionId;
+    if (filters.institucionId !== undefined) {
+      where.OR = [{ institucionId: filters.institucionId }, { rolAutorAlCrear: 'jefe_gestion' }];
+    }
     // if (filters.scope) where.scope = filters.scope;
   }
   const plantillas = await prisma.plantillaMonitoreo.findMany({

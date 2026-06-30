@@ -212,12 +212,57 @@ export class EspecialistaService {
 
   async deactivate(id: string): Promise<IEspecialistaResponse> {
     const result = await this.repository.deactivate(id);
-    // No invalidamos sesión: deactivate solo quita el cargo del Especialista
-    // (lo baja de Jefe de Área a Especialista regular). El Usuario sigue
-    // activo y puede continuar usando el sistema. Si se le bajó el rol
-    // de 'jefe_area' a 'especialista', las nuevas capabilities aplicarán
-    // en el próximo login (o en el próximo refresh del token).
     return result;
+  }
+
+  async transicionRolAEspecialista(
+    personaId: string,
+    dto: CreateEspecialistaDto,
+    currentUser: JwtPayload,
+  ): Promise<IEspecialistaResponse> {
+    if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
+      if (currentUser.role !== RoleCode.DIRECTOR_UGEL && currentUser.role !== RoleCode.JEFE_AREA) {
+        throw new ForbiddenException(
+          'No tiene privilegios suficientes para crear un perfil de Jefe de Gestión.',
+        );
+      }
+      dto.condicionLaboral = CondicionLaboral.NOMBRADO;
+    }
+
+    if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_AREA) {
+      dto.cargaLaboral = 40;
+    }
+
+    const isEsp = (dto.cargo as CargoNombre) === CargoNombre.ESPECIALISTA;
+    if (isEsp && dto.nivelEducativo === 'Secundaria') {
+      const mainSp = dto.especialidad?.trim();
+      const hasLegacySp = dto.especialidades && dto.especialidades.length > 0;
+      if (!mainSp && !hasLegacySp) {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Secundaria, la especialidad es obligatoria.',
+        );
+      }
+    }
+    if (isEsp && dto.nivelEducativo === 'Primaria') {
+      const mainSp = dto.especialidad?.trim();
+      const legacySp =
+        dto.especialidades && dto.especialidades.length > 0
+          ? dto.especialidades[0]?.trim()
+          : undefined;
+      const sp = mainSp || legacySp;
+      if (sp && sp !== 'PIP' && sp !== 'Educación Física' && sp !== 'Educacion Fisica') {
+        throw new BadRequestException(
+          'Para un Especialista de nivel Primaria, la especialidad debe ser PIP o Educación Física si se define.',
+        );
+      }
+    }
+
+    const role = await this.catalogsRepository.findRoleByCode(dto.rolCode);
+    if (!role) {
+      throw new NotFoundException(`El rol ${dto.rolCode} no existe.`);
+    }
+
+    return this.repository.transicionDocenteAEspecialista(personaId, dto, role.id);
   }
 }
 

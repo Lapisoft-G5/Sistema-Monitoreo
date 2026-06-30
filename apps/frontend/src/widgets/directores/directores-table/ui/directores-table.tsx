@@ -52,7 +52,7 @@ export const DirectoresTableWidget = ({
   onView,
   onEdit,
 }: DirectoresTableWidgetProps) => {
-  const [deleting, setDeleting] = useState<Docente | null>(null);
+  const [finalizing, setFinalizing] = useState<Docente | null>(null);
   const [restoring, setRestoring] = useState<Docente | null>(null);
 
   const pagination = useEntityTable({ data: directores, filterFn: directorFilter });
@@ -60,23 +60,35 @@ export const DirectoresTableWidget = ({
   const getInstName = (id: string) =>
     instituciones.find((i) => i.id === id)?.nombre ?? 'I.E. No Asignada';
 
-  const confirmDelete = async () => {
-    if (!deleting) return;
+  const confirmFinalize = async () => {
+    if (!finalizing) return;
+    const targetCargo = finalizing.cargosList?.find((c) => c.nombre === 'Director' && c.fechaFin === null);
+    if (!targetCargo) return;
+
     try {
-      const res = await teachersApi.deactivate(deleting.id);
+      const res = await teachersApi.finalizeCargo(finalizing.id, targetCargo.id);
       if (res.ok) {
+        const nowStr = new Date().toISOString().split('T')[0];
         setDirectores((prev) =>
-          prev.map((d) => (d.id === deleting.id ? { ...d, activo: false } : d)),
+          prev.map((d) => {
+            if (d.id === finalizing.id) {
+              const updatedCargos = d.cargosList?.map((c) =>
+                c.id === targetCargo.id ? { ...c, fechaFin: nowStr, esPrincipal: false } : c
+              );
+              return { ...d, activo: false, cargosList: updatedCargos };
+            }
+            return d;
+          }),
         );
       } else {
         const errMsg =
-          (res.error as { message?: string })?.message || 'Error al dar de baja el director.';
+          (res.error as { message?: string })?.message || 'Error al finalizar el cargo de director.';
         alert(errMsg);
       }
     } catch (err) {
-      console.error('Connection error when deactivating director:', err);
+      console.error('Connection error when finalizing director:', err);
     } finally {
-      setDeleting(null);
+      setFinalizing(null);
     }
   };
 
@@ -156,29 +168,29 @@ export const DirectoresTableWidget = ({
               </Badge>
             </TableCell>
             <TableCell className="text-right pr-5">
-              <FastActions
-                onView={() => onView(dir)}
-                onEdit={dir.activo && onEdit ? () => onEdit(dir) : undefined}
-                onDelete={dir.activo ? () => setDeleting(dir) : undefined}
-                onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
-                viewTitle="Ver ficha"
-                restoreTitle="Reactivar director"
-                deleteTitle="Desactivar director"
-              />
+                <FastActions
+                  onView={() => onView(dir)}
+                  onEdit={dir.activo && onEdit ? () => onEdit(dir) : undefined}
+                  onFinalize={dir.activo ? () => setFinalizing(dir) : undefined}
+                  onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
+                  viewTitle="Ver ficha"
+                  restoreTitle="Reactivar director"
+                  finalizeTitle="Cesar como Director"
+                />
             </TableCell>
           </TableRow>
         ))}
       </EntityTable>
 
-      {deleting && (
+      {finalizing && (
         <ConfirmModal
           danger
-          title="¿Eliminar Director?"
-          message={`Esta acción es irreversible y eliminará el registro de ${deleting.apellidos}, ${deleting.nombres} del padrón de directores.`}
-          confirmLabel="Eliminar"
+          title="¿Finalizar Designación de Director?"
+          message={<>Esta acción cesará a <strong>{finalizing.nombres} {finalizing.apellidos}</strong> como Director. La persona pasará a figurar como docente sin institución asignada y su acceso al sistema será desactivado. Puede reactivarse posteriormente.</>}
+          confirmLabel="Cesar Director"
           cancelLabel="Cancelar"
-          onConfirm={confirmDelete}
-          onCancel={() => setDeleting(null)}
+          onConfirm={confirmFinalize}
+          onCancel={() => setFinalizing(null)}
         />
       )}
 

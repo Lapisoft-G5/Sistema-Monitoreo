@@ -169,9 +169,8 @@ export const ReportesGrid = ({
 
   const activeFichaState = useMemo(() => {
     if (!selectedVisit) return null;
-    const hasBackendData = 'nivelLogro' in selectedVisit;
 
-    if (hasBackendData && backendFicha) {
+    if (backendFicha) {
       const checkedAspects: Record<string, boolean> = {};
       (backendFicha.respuestasAspecto || []).forEach((ra) => {
         checkedAspects[ra.aspectoId] = ra.marcado;

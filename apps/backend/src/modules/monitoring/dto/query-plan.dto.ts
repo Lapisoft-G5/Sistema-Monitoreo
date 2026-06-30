@@ -20,4 +20,8 @@ export class QueryPlanDto {
   @IsOptional()
   @IsString()
   estado?: string;
+
+  @IsOptional()
+  @IsString()
+  institucionId?: string;
 }

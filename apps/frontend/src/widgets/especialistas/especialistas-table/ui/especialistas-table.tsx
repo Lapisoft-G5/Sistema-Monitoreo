@@ -40,18 +40,18 @@ export const EspecialistasTableWidget = ({
   onView,
 }: EspecialistasTableWidgetProps) => {
   const navigate = useNavigate();
-  const [deletingDoc, setDeletingDoc] = useState<Especialista | null>(null);
+  const [finalizingDoc, setFinalizingDoc] = useState<Especialista | null>(null);
   const [restoringDoc, setRestoringDoc] = useState<Especialista | null>(null);
 
   const pagination = useEntityTable({ data: especialistas, filterFn: especialistaFilter });
 
-  const confirmDelete = async () => {
-    if (!deletingDoc) return;
+  const confirmFinalize = async () => {
+    if (!finalizingDoc) return;
     try {
-      const res = await especialistasApi.deactivate(deletingDoc.id);
+      const res = await especialistasApi.deactivate(finalizingDoc.id);
       if (res.ok) {
         setEspecialistas((prev) =>
-          prev.map((e) => (e.id === deletingDoc.id ? { ...e, activo: false } : e)),
+          prev.map((e) => (e.id === finalizingDoc.id ? { ...e, activo: false } : e)),
         );
       } else {
         const errMsg =
@@ -62,7 +62,7 @@ export const EspecialistasTableWidget = ({
     } catch (err) {
       console.error('Connection error when deactivating specialist:', err);
     } finally {
-      setDeletingDoc(null);
+      setFinalizingDoc(null);
     }
   };
 
@@ -148,26 +148,26 @@ export const EspecialistasTableWidget = ({
               <FastActions
                 onView={() => onView(doc)}
                 onEdit={doc.activo ? () => { if (onEdit) onEdit(doc); else navigate(`/especialistas/${doc.id}/editar`); } : undefined}
-                onDelete={doc.activo ? () => setDeletingDoc(doc) : undefined}
+                onFinalize={doc.activo ? () => setFinalizingDoc(doc) : undefined}
                 onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
                 viewTitle="Ver ficha"
                 restoreTitle="Reactivar especialista"
-                deleteTitle="Desactivar especialista"
+                finalizeTitle="Desactivar especialista"
               />
             </TableCell>
           </TableRow>
         ))}
       </EntityTable>
 
-      {deletingDoc && (
+      {finalizingDoc && (
         <ConfirmModal
           danger
           title="¿Desactivar Especialista?"
-          message={`Esta acción cambiará el estado de ${deletingDoc.apellidos}, ${deletingDoc.nombres} a Inactivo.`}
+          message={`Esta acción cambiará el estado de ${finalizingDoc.apellidos}, ${finalizingDoc.nombres} a Inactivo.`}
           confirmLabel="Desactivar"
           cancelLabel="Cancelar"
-          onConfirm={confirmDelete}
-          onCancel={() => setDeletingDoc(null)}
+          onConfirm={confirmFinalize}
+          onCancel={() => setFinalizingDoc(null)}
         />
       )}
 

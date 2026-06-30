@@ -8,7 +8,6 @@ import {
   IsString,
   IsUUID,
   Matches,
-  Max,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -30,7 +29,6 @@ export class CreateVisitaDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(5)
   numeroVisita!: number;
 
   @IsDateString()
@@ -72,6 +70,6 @@ export class UpdateVisitaDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['PROGRAMADO', 'EN_PROCESO', 'COMPLETADO', 'REPROGRAMADO', 'CANCELADO'])
+  @IsIn(['PROGRAMADO', 'EN_PROCESO', 'COMPLETADO', 'REPROGRAMADO', 'CANCELADO', 'ANULADO'])
   estado?: string;
 }

@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type {
   IEspecialistaResponse,
   IUpdateEspecialistaRequest,
 } from '@sistema-monitoreo/shared-contracts';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
+import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 import { mapEspecialista, ESPECIALISTA_INCLUDE } from './especialista-mapper.helper.js';
 
 export async function update(
@@ -31,6 +32,29 @@ export async function update(
   const cargoCambio = data.cargo && data.cargo !== cargoActivoActual;
 
   return await prisma.$transaction(async (tx) => {
+    const targetNivel = data.nivelEducativo || esp.nivelEducativo;
+    const targetCargo = data.cargo || cargoActivoActual;
+    const targetEstado = data.estado || esp.estado;
+
+    if (
+      targetCargo === (CargoNombre.JEFE_AREA as string) &&
+      targetEstado === EstadoRegistro.ACTIVO
+    ) {
+      const existingJefe = await tx.especialista.findFirst({
+        where: {
+          nivelEducativo: targetNivel,
+          cargo: CargoNombre.JEFE_AREA,
+          estado: EstadoRegistro.ACTIVO,
+          id: { not: id },
+        },
+      });
+      if (existingJefe) {
+        throw new ConflictException(
+          `Ya existe un Jefe de Área activo para el nivel ${targetNivel}.`,
+        );
+      }
+    }
+
     await tx.persona.update({
       where: { id: esp.personaId },
       data: {

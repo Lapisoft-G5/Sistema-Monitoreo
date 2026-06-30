@@ -132,13 +132,8 @@ export class PrismaReporteRepository implements ReporteRepository {
       for (const f of grupo) {
         dist[f.nivelLogro] = (dist[f.nivelLogro] ?? 0) + 1;
         sumaPromedios += Number(f.promedio);
-        // Aproximacion: contamos por tipo via cronograma
-        const cronograma = await this.prisma.cronograma.findUnique({
-          where: { id: f.cronogramaId },
-          select: { tipoMonitoreo: true },
-        });
-        if (cronograma?.tipoMonitoreo === 'DOCENTE') docentesCount++;
-        else if (cronograma?.tipoMonitoreo === 'DIRECTIVO') directivosCount++;
+        if (f.cronograma?.tipoMonitoreo === 'DOCENTE') docentesCount++;
+        else if (f.cronograma?.tipoMonitoreo === 'DIRECTIVO') directivosCount++;
       }
       const totalFichas = grupo.length;
       const promedioInstitucional =

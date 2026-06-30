@@ -93,10 +93,7 @@ export class ScopeFilter {
       return { monitorId: ctx.userId };
     }
     if (this.isJefeAreaScope(ctx.role)) {
-      // jefe_area ve todas las IEs de su nivel. Lo resolvemos en
-      // el service que llama con un JOIN a instituciones para no acoplar
-      // el filter a la tabla de instituciones.
-      return { institucion: { nivelEducativo: ctx.especialistaNivel ?? '__none__' } };
+      return { institucion: this.forInstitucion(ctx) };
     }
     if (this.isOwnScope(ctx.role)) {
       return {
@@ -215,19 +212,7 @@ export class ScopeFilter {
       return ctx.institucionId ? { institucionId: ctx.institucionId } : { id: '__none__' };
     }
     if (this.isJefeAreaScope(ctx.role)) {
-      return {
-        institucion: {
-          OR: [
-            {
-              modalidad: 'EBR',
-              nivelEducativo: { equals: ctx.especialistaNivel ?? '__none__', mode: 'insensitive' },
-            },
-            { modalidad: 'EBE' },
-            { modalidad: 'EBA' },
-            { modalidad: 'CEPTRO' },
-          ],
-        },
-      };
+      return { institucion: this.forInstitucion(ctx) };
     }
     return { id: '__none__' };
   }

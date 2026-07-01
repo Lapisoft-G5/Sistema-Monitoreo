@@ -1,10 +1,11 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pnpm --filter backend run build"
+    "buildCommand": "pnpm --filter backend exec prisma migrate deploy && pnpm --filter backend run build",
+    "nodeVersion": "22"
   },
   "deploy": {
-    "startCommand": "pnpm --filter backend exec prisma migrate deploy && pnpm --filter backend run start:prod",
+    "startCommand": "node dist/main.js",
     "healthcheckPath": "/api/health",
     "restartPolicyType": "ON_FAILURE"
   }

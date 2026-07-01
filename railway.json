@@ -3,7 +3,7 @@
     "buildCommand": "pnpm --filter @sistema-monitoreo/shared-contracts run build && pnpm --filter backend run build"
   },
   "deploy": {
-    "startCommand": "node dist/main.js",
+    "startCommand": "node apps/backend/dist/main.js",
     "healthcheckPath": "/api/health",
     "restartPolicyType": "ON_FAILURE"
   }

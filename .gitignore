@@ -43,5 +43,3 @@ skills-lock.json
 AGENTS.md
 
 *.pdf
-# Nixpacks build cache
-.nixpacks/

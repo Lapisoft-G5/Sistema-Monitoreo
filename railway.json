@@ -1,6 +1,5 @@
 {
   "build": {
-    "builder": "NIXPACKS",
     "buildCommand": "pnpm --filter backend run build"
   },
   "deploy": {

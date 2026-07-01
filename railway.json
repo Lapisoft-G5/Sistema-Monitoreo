@@ -1,8 +1,7 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pnpm --filter backend exec prisma migrate deploy && pnpm --filter backend run build",
-    "nodeVersion": "22"
+    "buildCommand": "pnpm --filter backend exec prisma migrate deploy && pnpm --filter backend run build"
   },
   "deploy": {
     "startCommand": "node dist/main.js",

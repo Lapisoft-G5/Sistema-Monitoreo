@@ -39,6 +39,12 @@ export interface DocenteEntity {
     grado: string;
     seccion: string;
   }>;
+  evaluadorActual?: {
+    id: string;
+    evaluadorId: string;
+    evaluadorNombres: string;
+    evaluadorApellidos: string;
+  } | null;
 }
 
 export interface DocenteFilter {
@@ -64,4 +70,7 @@ export abstract class TeachersRepository {
     dto: CreateDocenteDto,
     rolDocenteId: string,
   ): Promise<DocenteEntity>;
+  abstract getAsignacionesActivas(evaluadorId: string): Promise<any[]>;
+  abstract syncAsignaciones(evaluadorId: string, evaluadoIds: string[]): Promise<void>;
+  abstract checkAsignacionesConflict(evaluadorId: string, evaluadoIds: string[]): Promise<any[]>;
 }

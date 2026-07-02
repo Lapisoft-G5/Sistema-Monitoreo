@@ -289,4 +289,65 @@ export class TeachersService {
       },
     };
   }
+
+  async getAsignaciones(evaluadorId: string, currentUser: CurrentUser): Promise<any[]> {
+    requirePermission(currentUser, 'docentes:read');
+
+    const evaluador = await this.teachersRepository.findDocenteById(evaluadorId);
+    if (!evaluador) {
+      throw new NotFoundException('El evaluador especificado no existe.');
+    }
+
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
+      validateInstitucionOwnership(currentUser, evaluador.institucionId);
+    }
+
+    return this.teachersRepository.getAsignacionesActivas(evaluadorId);
+  }
+
+  async saveAsignaciones(
+    evaluadorId: string,
+    evaluadoIds: string[],
+    currentUser: CurrentUser,
+  ): Promise<{ success: boolean; message: string }> {
+    requirePermission(currentUser, 'docentes:write');
+
+    const evaluador = await this.teachersRepository.findDocenteById(evaluadorId);
+    if (!evaluador) {
+      throw new NotFoundException('El evaluador especificado no existe.');
+    }
+
+    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
+      validateInstitucionOwnership(currentUser, evaluador.institucionId);
+    }
+
+    // Validar que los evaluados pertenezcan a la misma institución
+    for (const evaluadoId of evaluadoIds) {
+      const evaluado = await this.teachersRepository.findDocenteById(evaluadoId);
+      if (!evaluado) {
+        throw new NotFoundException(`El docente evaluado con ID ${evaluadoId} no existe.`);
+      }
+      if (evaluado.institucionId !== evaluador.institucionId) {
+        throw new ConflictException(`El docente ${evaluado.persona.nombres} no pertenece a la misma institución que el evaluador.`);
+      }
+    }
+
+    // Verificar conflictos: ¿Algún docente ya tiene otro evaluador activo?
+    if (evaluadoIds.length > 0) {
+      const conflictos = await this.teachersRepository.checkAsignacionesConflict(evaluadorId, evaluadoIds);
+      if (conflictos.length > 0) {
+        const nombresConflicto = conflictos.map(c => 
+          `${c.evaluado.persona.nombres} ${c.evaluado.persona.apellidos} (Asignado a: ${c.evaluador.persona.nombres} ${c.evaluador.persona.apellidos})`
+        ).join(', ');
+        throw new ConflictException(`Los siguientes docentes ya están asignados a otro evaluador: ${nombresConflicto}`);
+      }
+    }
+
+    await this.teachersRepository.syncAsignaciones(evaluadorId, evaluadoIds);
+
+    return {
+      success: true,
+      message: 'Asignaciones sincronizadas correctamente',
+    };
+  }
 }

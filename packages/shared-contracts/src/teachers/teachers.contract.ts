@@ -73,6 +73,36 @@ export interface IDocenteResponse {
     grado: string;
     seccion: string;
   }>;
+  evaluadorActual?: {
+    id: string;
+    evaluadorId: string;
+    evaluadorNombres: string;
+    evaluadorApellidos: string;
+  } | null;
+  docenteAreas?: Array<{
+    id: string;
+    areaId: string;
+    area: {
+      id: string;
+      nombre: string;
+    };
+  }>;
+  evaluadoresAsignados?: Array<{
+    id: string;
+    evaluadorId: string;
+    evaluador: {
+      id: string;
+      persona: { nombres: string; apellidos: string; };
+    }
+  }>;
+  docentesAevaluar?: Array<{
+    id: string;
+    evaluadoId: string;
+    evaluado: {
+      id: string;
+      persona: { nombres: string; apellidos: string; };
+    }
+  }>;
 }
 
 export interface IBajaDocenteResponse {

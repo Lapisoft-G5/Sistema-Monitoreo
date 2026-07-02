@@ -118,4 +118,25 @@ export class TeachersController {
   }> {
     return this.teachersService.altaDocente(id, req.user);
   }
+
+  @Get(':evaluadorId/asignaciones')
+  @RequirePermissions('docentes:read')
+  @HttpCode(HttpStatus.OK)
+  async getAsignaciones(
+    @Param('evaluadorId') evaluadorId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<any[]> {
+    return this.teachersService.getAsignaciones(evaluadorId, req.user);
+  }
+
+  @Post(':evaluadorId/asignaciones')
+  @RequirePermissions('docentes:write')
+  @HttpCode(HttpStatus.OK)
+  async saveAsignaciones(
+    @Param('evaluadorId') evaluadorId: string,
+    @Body() dto: { evaluadoIds: string[] },
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.teachersService.saveAsignaciones(evaluadorId, dto.evaluadoIds, req.user);
+  }
 }

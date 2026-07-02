@@ -58,4 +58,83 @@ export class PrismaTeachersRepository implements TeachersRepository {
   ): Promise<DocenteEntity> {
     return transicionEspecialistaADocente(this.prisma, personaId, dto, rolDocenteId);
   }
+
+  async getAsignacionesActivas(evaluadorId: string): Promise<any[]> {
+    return this.prisma.asignacionEvaluador.findMany({
+      where: {
+        evaluadorId,
+        isActive: true,
+      },
+      include: {
+        evaluado: {
+          include: {
+            persona: true,
+          }
+        },
+      }
+    });
+  }
+
+  async syncAsignaciones(evaluadorId: string, evaluadoIds: string[]): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Obtener asignaciones activas actuales
+      const activas = await tx.asignacionEvaluador.findMany({
+        where: {
+          evaluadorId,
+          isActive: true,
+        },
+      });
+
+      const activasIds = activas.map(a => a.evaluadoId);
+
+      // 2. Determinar cuáles desactivar (están en activas pero no en evaluadoIds)
+      const aDesactivar = activas.filter(a => !evaluadoIds.includes(a.evaluadoId));
+      if (aDesactivar.length > 0) {
+        await tx.asignacionEvaluador.updateMany({
+          where: {
+            id: { in: aDesactivar.map(a => a.id) },
+          },
+          data: {
+            isActive: false,
+            fechaFin: new Date(),
+          },
+        });
+      }
+
+      // 3. Determinar cuáles crear (están en evaluadoIds pero no en activas)
+      const aCrearIds = evaluadoIds.filter(id => !activasIds.includes(id));
+      if (aCrearIds.length > 0) {
+        await tx.asignacionEvaluador.createMany({
+          data: aCrearIds.map(evaluadoId => ({
+            evaluadorId,
+            evaluadoId,
+            isActive: true,
+            fechaInicio: new Date(),
+          })),
+        });
+      }
+    });
+  }
+
+  async checkAsignacionesConflict(evaluadorId: string, evaluadoIds: string[]): Promise<any[]> {
+    return this.prisma.asignacionEvaluador.findMany({
+      where: {
+        evaluadoId: { in: evaluadoIds },
+        evaluadorId: { not: evaluadorId },
+        isActive: true,
+      },
+      include: {
+        evaluador: {
+          include: {
+            persona: true
+          }
+        },
+        evaluado: {
+          include: {
+            persona: true
+          }
+        }
+      }
+    });
+  }
 }

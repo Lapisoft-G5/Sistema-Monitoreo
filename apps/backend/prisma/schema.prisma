@@ -261,6 +261,9 @@ model Docente {
   docenteCursos         DocenteCurso[]
   docenteSecciones      DocenteSeccion[]
   docenteEspecialidades DocenteEspecialidad[]
+  docenteAreas          DocenteArea[]
+  evaluadoresAsignados  AsignacionEvaluador[] @relation("EvaluadoRel")
+  docentesAevaluar      AsignacionEvaluador[] @relation("EvaluadorRel")
   cronogramas           Cronograma[]
 
   @@index([institucionId])
@@ -334,6 +337,22 @@ model DocenteCargo {
 
   @@index([docenteId, cargoId, fechaInicio])
   @@map("docente_cargos")
+}
+
+model AsignacionEvaluador {
+  id          String    @id @default(uuid()) @db.Uuid
+  evaluadorId String    @map("evaluador_id") @db.Uuid
+  evaluadoId  String    @map("evaluado_id") @db.Uuid
+  fechaInicio DateTime  @default(now()) @map("fecha_inicio")
+  fechaFin    DateTime? @map("fecha_fin")
+  isActive    Boolean   @default(true) @map("is_active")
+
+  evaluador Docente @relation("EvaluadorRel", fields: [evaluadorId], references: [id], onDelete: Restrict)
+  evaluado  Docente @relation("EvaluadoRel", fields: [evaluadoId], references: [id], onDelete: Restrict)
+
+  @@index([evaluadorId, isActive])
+  @@index([evaluadoId, isActive])
+  @@map("asignaciones_evaluador")
 }
 
 model PlanMonitoreo {
@@ -412,13 +431,26 @@ model NivelEducativo {
   @@map("niveles_educativos")
 }
 
+model Area {
+  id       String  @id @default(uuid()) @db.Uuid
+  nombre   String  @unique @db.VarChar(100)
+  isActive Boolean @default(true) @map("is_active")
+
+  especialidades Especialidad[]
+  docentes       DocenteArea[]
+
+  @@map("areas")
+}
+
 model Especialidad {
   id               String  @id @default(uuid()) @db.Uuid
   nombre           String  @db.VarChar(100)
   nivelEducativoId String  @map("nivel_educativo_id") @db.Uuid
+  areaId           String? @map("area_id") @db.Uuid
   isActive         Boolean @default(true) @map("is_active")
 
   nivelEducativo NivelEducativo             @relation(fields: [nivelEducativoId], references: [id], onDelete: Restrict)
+  area           Area?                      @relation(fields: [areaId], references: [id], onDelete: SetNull)
   docentes       DocenteEspecialidad[]
   especialistas  EspecialistaEspecialidad[]
 
@@ -436,6 +468,18 @@ model DocenteEspecialidad {
 
   @@unique([docenteId, especialidadId])
   @@map("docente_especialidades")
+}
+
+model DocenteArea {
+  id        String @id @default(uuid()) @db.Uuid
+  docenteId String @map("docente_id") @db.Uuid
+  areaId    String @map("area_id") @db.Uuid
+
+  docente Docente @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+  area    Area    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@unique([docenteId, areaId])
+  @@map("docente_areas")
 }
 
 model EspecialistaEspecialidad {
@@ -615,6 +659,7 @@ model Cronograma {
   modalidad       String   @db.VarChar(20) // EBR | EBA | EBE | CEPTRO
   nivelEducativo  String   @map("nivel_educativo") @db.VarChar(100)
   creadoPorId     String?  @map("creado_por_id") @db.Uuid
+  alertaVencimientoEnviada Boolean @default(false) @map("alerta_vencimiento_enviada")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -740,3 +785,4 @@ model FichaRespuestaAspecto {
   @@index([aspectoId])
   @@map("ficha_respuestas_aspecto")
 }
+

@@ -21,8 +21,14 @@ export class MonitoringPlanService {
 
   async findAll(filters?: QueryPlanDto, session?: SessionUser): Promise<IMonitoringPlanResponse[]> {
     const scopedFilters = { ...filters };
-    if (session && this.isDirector(session) && session.institucionId) {
-      scopedFilters.institucionId = session.institucionId;
+    if (session) {
+      if (this.isDirector(session) && session.institucionId) {
+        scopedFilters.institucionId = session.institucionId;
+      } else if (session.role === RoleCode.JEFE_AREA) {
+        // Jefe de Area solo ve planes UGEL
+        scopedFilters.tipoEntidad = 'UGEL';
+      }
+      // JEFE_GESTION no se le aplica filtro restrictivo, puede ver de UGEL y de IE
     }
     return this.repository.findAll(scopedFilters);
   }
@@ -32,8 +38,13 @@ export class MonitoringPlanService {
     if (!plan) {
       throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
     }
-    if (session && this.isDirector(session) && plan.tipoEntidad !== 'IE') {
-      throw new ForbiddenException('No cuenta con permisos para ver este plan.');
+    if (session) {
+      if (this.isDirector(session) && plan.tipoEntidad !== 'IE') {
+        throw new ForbiddenException('No cuenta con permisos para ver este plan.');
+      }
+      if (session.role === RoleCode.JEFE_AREA && plan.tipoEntidad === 'IE') {
+        throw new ForbiddenException('El Jefe de Area no tiene acceso a los planes de las II.EE.');
+      }
     }
     return plan;
   }
@@ -84,8 +95,13 @@ export class MonitoringPlanService {
     if (!existing) {
       throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
     }
-    if (session && this.isDirector(session) && existing.tipoEntidad !== 'IE') {
-      throw new ForbiddenException('No cuenta con permisos para modificar este plan.');
+    if (session) {
+      if (this.isDirector(session) && existing.tipoEntidad !== 'IE') {
+        throw new ForbiddenException('No cuenta con permisos para modificar este plan.');
+      }
+      if (session.role === RoleCode.JEFE_GESTION && existing.tipoEntidad === 'IE') {
+        throw new ForbiddenException('Los Jefes de Gestion no pueden modificar planes de II.EE.');
+      }
     }
     if (existing.estado === 'Inactivo') {
       const existingActivos = await this.repository.findAll({
@@ -117,8 +133,13 @@ export class MonitoringPlanService {
     if (!existing) {
       throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
     }
-    if (session && this.isDirector(session) && existing.tipoEntidad !== 'IE') {
-      throw new ForbiddenException('No cuenta con permisos para eliminar este plan.');
+    if (session) {
+      if (this.isDirector(session) && existing.tipoEntidad !== 'IE') {
+        throw new ForbiddenException('No cuenta con permisos para eliminar este plan.');
+      }
+      if (session.role === RoleCode.JEFE_GESTION && existing.tipoEntidad === 'IE') {
+        throw new ForbiddenException('Los Jefes de Gestion no pueden eliminar planes de II.EE.');
+      }
     }
 
     // Si tiene plantillas o cronogramas amarrados, prisma lanzará error de foreign key.

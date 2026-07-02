@@ -40,10 +40,26 @@ export function resolveAutor(session: SessionUser): {
 
 export function guardVisibilidad(plantilla: IPlantilla, session?: SessionUser): void {
   if (!session) return;
+  if (isDirector(session) && plantilla.rolAutorAlCrear === 'jefe_gestion') {
+    // Directores ven plantillas UGEL
+    return;
+  }
+  if (isDirector(session) && plantilla.institucionId !== session.institucionId) {
+    throw new ForbiddenException('No tiene permisos para ver esta plantilla.');
+  }
+  if (session.role === RoleCode.JEFE_AREA && plantilla.rolAutorAlCrear === 'director_ie') {
+    throw new ForbiddenException('El Jefe de Area no tiene acceso a las plantillas de II.EE.');
+  }
+  if (session.role === RoleCode.JEFE_GESTION && plantilla.rolAutorAlCrear === 'director_ie' && plantilla.estado === 'Borrador') {
+    throw new ForbiddenException('El Jefe de Gestion no tiene acceso a plantillas Borrador de las II.EE.');
+  }
 }
 
 export function guardModificacion(plantilla: IPlantilla, session: SessionUser): void {
   if (isDirector(session) && plantilla.rolAutorAlCrear === 'jefe_gestion') {
     throw new ForbiddenException('Los Directores IE no pueden modificar plantillas UGEL.');
+  }
+  if (session.role === RoleCode.JEFE_GESTION && plantilla.rolAutorAlCrear === 'director_ie') {
+    throw new ForbiddenException('Los Jefes de Gestion no pueden modificar plantillas de las II.EE.');
   }
 }

@@ -5,11 +5,13 @@ import type {
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { Prisma } from '../../../generated/prisma/client.js';
 
-type PlanMonitoreoPayload = Prisma.PlanMonitoreoGetPayload<Prisma.PlanMonitoreoDefaultArgs>;
+type PlanMonitoreoPayload = Prisma.PlanMonitoreoGetPayload<{
+  include: { institucion: { select: { nombre: true; codigoModular: true } } };
+}>;
 
 export async function fromPrismaPlan(
   prisma: PrismaService,
-  plan: PlanMonitoreoPayload,
+  plan: PlanMonitoreoPayload | any,
 ): Promise<IMonitoringPlanResponse> {
   const cobertura = await prisma.planCoberturaIe.findMany({
     where: { planId: plan.id },
@@ -40,5 +42,11 @@ export async function fromPrismaPlan(
     institucionesCubiertas,
     createdAt: plan.createdAt.toISOString(),
     updatedAt: plan.updatedAt.toISOString(),
+    institucion: plan.institucion
+      ? {
+          nombre: plan.institucion.nombre,
+          codigoModular: plan.institucion.codigoModular,
+        }
+      : undefined,
   };
 }

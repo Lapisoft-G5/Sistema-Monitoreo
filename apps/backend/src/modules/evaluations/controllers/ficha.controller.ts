@@ -19,7 +19,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
+import type { IFichaMonitoreo, IHistorialPedagogicoResponse } from '@sistema-monitoreo/shared-contracts';
 import { FichaService } from '../services/ficha.service.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import {
@@ -51,6 +51,15 @@ export class FichaController {
     @Req() req: any,
   ): Promise<IFichaMonitoreo | null> {
     return this.service.findByVisitaId(cronogramaId, this.toSession(req));
+  }
+
+  @Get('historial/:evaluadoId')
+  @RequirePermissions('monitoreo:read')
+  async historial(
+    @Param('evaluadoId', new ParseUUIDPipe()) evaluadoId: string,
+    @Req() req: any,
+  ): Promise<IHistorialPedagogicoResponse> {
+    return this.service.getHistorial(evaluadoId, this.toSession(req));
   }
 
   @Get(':id')

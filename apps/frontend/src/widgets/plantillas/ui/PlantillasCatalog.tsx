@@ -62,6 +62,11 @@ export const PlantillasCatalog = () => {
           (p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion),
       );
     }
+    
+    if (user?.role === 'jefe_gestion') {
+      return plantillas;
+    }
+    
     return plantillas.filter((p) => !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion');
   }, [plantillas, isDirector, user]);
 
@@ -105,7 +110,8 @@ export const PlantillasCatalog = () => {
       if (
         searchText &&
         !p.tipoMonitoreo.toLowerCase().includes(searchText.toLowerCase()) &&
-        !p.descripcion.toLowerCase().includes(searchText.toLowerCase())
+        !p.descripcion.toLowerCase().includes(searchText.toLowerCase()) &&
+        !(p.institucionNombre || '').toLowerCase().includes(searchText.toLowerCase())
       ) {
         return false;
       }
@@ -413,13 +419,14 @@ export const PlantillasCatalog = () => {
                       </Badge>
                       <Badge
                         variant="outline"
-                        className={`text-[9px] font-bold px-2 py-0.5 border shadow-sm ${
+                        className={`text-[9px] font-bold px-2 py-0.5 border shadow-sm truncate max-w-[150px] ${
                           isGeneral
                             ? 'bg-slate-50 text-slate-600 border-slate-200'
                             : 'bg-purple-50 text-purple-700 border-purple-200'
                         }`}
+                        title={isGeneral ? 'UGEL' : plantilla.institucionNombre || 'Mi I.E.'}
                       >
-                        {isGeneral ? 'UGEL' : 'Mi I.E.'}
+                        {isGeneral ? 'UGEL' : plantilla.institucionNombre || 'Mi I.E.'}
                       </Badge>
                     </div>
                     <Badge

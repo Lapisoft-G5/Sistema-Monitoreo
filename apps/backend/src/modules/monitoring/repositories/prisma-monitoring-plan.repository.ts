@@ -39,13 +39,25 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
 
     const plans = await this.prisma.planMonitoreo.findMany({
       where,
+      include: {
+        institucion: {
+          select: { nombre: true, codigoModular: true },
+        },
+      },
       orderBy: [{ anioAcademico: 'desc' }, { createdAt: 'desc' }],
     });
     return Promise.all(plans.map((p) => this.buildResponse(p)));
   }
 
   async findById(id: string): Promise<IMonitoringPlanResponse | null> {
-    const plan = await this.prisma.planMonitoreo.findFirst({ where: { id, deleted: false } });
+    const plan = await this.prisma.planMonitoreo.findFirst({
+      where: { id, deleted: false },
+      include: {
+        institucion: {
+          select: { nombre: true, codigoModular: true },
+        },
+      },
+    });
     if (!plan) return null;
     return this.buildResponse(plan);
   }

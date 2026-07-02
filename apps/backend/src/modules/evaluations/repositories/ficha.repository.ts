@@ -7,6 +7,7 @@ import type {
   IFichaRespuestaEjeItem,
   NivelLogro,
   EstadoFicha,
+  IHistorialPedagogicoResponse,
 } from '@sistema-monitoreo/shared-contracts';
 
 export interface CreateFichaData {
@@ -99,4 +100,5 @@ export abstract class FichaRepository {
     oldAspectos: Array<{ id: string; marcado: boolean }>,
   ): Promise<IFichaMonitoreo>;
   abstract existsWithScope(id: string, scopeWhere: Record<string, unknown>): Promise<boolean>;
+  abstract getHistorial(evaluadoId: string): Promise<IHistorialPedagogicoResponse>;
 }

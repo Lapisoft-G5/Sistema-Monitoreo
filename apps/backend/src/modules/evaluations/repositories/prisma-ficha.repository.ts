@@ -8,6 +8,7 @@ import type {
   IFichaRespuestaAspecto,
   IFichaRespuestaEjeItem,
   NivelLogro,
+  IHistorialPedagogicoResponse,
 } from '@sistema-monitoreo/shared-contracts';
 import {
   FichaRepository,
@@ -374,5 +375,34 @@ export class PrismaFichaRepository implements FichaRepository {
       select: { id: true },
     });
     return result !== null;
+  }
+
+  async getHistorial(evaluadoId: string): Promise<IHistorialPedagogicoResponse> {
+    const fichas = await this.prisma.fichaMonitoreo.findMany({
+      where: {
+        cronograma: { evaluadoId },
+        estado: 'FINALIZADO',
+      },
+      select: {
+        id: true,
+        promedio: true,
+        nivelLogro: true,
+        observaciones: true,
+        cronograma: {
+          select: { fechaProgramada: true },
+        },
+      },
+      orderBy: {
+        cronograma: { fechaProgramada: 'asc' },
+      },
+    });
+
+    return fichas.map((f) => ({
+      id: f.id,
+      promedio: Number(f.promedio),
+      nivelLogro: f.nivelLogro,
+      observaciones: f.observaciones,
+      fecha: f.cronograma.fechaProgramada.toISOString(),
+    }));
   }
 }

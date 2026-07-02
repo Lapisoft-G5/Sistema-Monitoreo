@@ -70,6 +70,10 @@ export interface IPlantilla {
   ejesItems: IEjeItem[];
   createdAt: string;
   updatedAt: string;
+  institucion?: {
+    nombre: string;
+    codigoModular: string;
+  };
 }
 
 export interface ICreatePlantillaRequest {

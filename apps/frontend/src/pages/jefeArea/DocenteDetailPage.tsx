@@ -5,9 +5,10 @@ import { type Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
-import { teachersApi } from '@shared/api/teachers.api';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
+import { Spinner } from '@shared/ui/Spinner';
+import { fetchDocenteById } from '@features/docentes/docente-service';
+import { fetchInstitucionById } from '@features/institutions/institution-service';
+import { DocenteCargosWidget } from '@widgets/docentes/DocenteCargosWidget';
 
 const nivelLabel = (n: string) => n.charAt(0) + n.slice(1).toLowerCase();
 
@@ -24,20 +25,17 @@ export const DocenteDetailPage = () => {
       if (!id) return;
       setLoading(true);
       try {
-        const res = await teachersApi.findAll();
-        if (res.ok && res.data) {
-          const found = res.data.find((d) => d.id === id);
-          if (found) {
-            const mapped = mapApiDocenteToFrontend(found);
-            setDirector(mapped);
-            // Fetch institution name
-            const instRes = await institutionsApi.findById(found.institucionId);
-            if (instRes.ok && instRes.data) {
-              setInstName(instRes.data.nombre);
+        const found = await fetchDocenteById(id);
+        if (found) {
+          setDirector(found);
+          if (found.institucionId) {
+            const inst = await fetchInstitucionById(found.institucionId);
+            if (inst) {
+              setInstName(inst.nombre);
             }
-          } else {
-            setDirector(null);
           }
+        } else {
+          setDirector(null);
         }
       } catch (err) {
         console.error('Error fetching director detail:', err);
@@ -52,7 +50,7 @@ export const DocenteDetailPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando ficha del director...</span>
       </div>
     );
@@ -62,7 +60,9 @@ export const DocenteDetailPage = () => {
     return (
       <div className="w-full max-w-[820px] mx-auto text-center py-20 bg-surface border border-border rounded-2xl shadow-sm mt-6">
         <h2 className="text-xl font-bold text-text mb-2">Director no encontrado</h2>
-        <p className="text-text-muted mb-6">El identificador {id} no existe o no tiene permisos de acceso.</p>
+        <p className="text-text-muted mb-6">
+          El identificador {id} no existe o no tiene permisos de acceso.
+        </p>
         <button
           onClick={() => navigate('/instituciones/docentes')}
           className="px-5 py-2.5 bg-bg border border-border rounded-xl font-semibold text-text hover:bg-muted transition-colors cursor-pointer"
@@ -74,7 +74,7 @@ export const DocenteDetailPage = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300">
+    <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300 pb-10">
       {/* Cabecera */}
       <div className="flex items-center justify-between gap-3 flex-wrap bg-surface p-4 border border-border rounded-2xl shadow-sm">
         <div className="flex items-center gap-4">
@@ -85,7 +85,7 @@ export const DocenteDetailPage = () => {
             <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-text m-0 leading-tight">Ficha del Director</h1>
+            <h1 className="text-xl font-bold text-text m-0 leading-tight">Ficha del Docente/Director</h1>
             <p className="text-text-muted text-[0.8rem] m-0">Detalle laboral y de contacto</p>
           </div>
         </div>
@@ -116,7 +116,9 @@ export const DocenteDetailPage = () => {
               </span>
             </div>
             <div>
-              <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">DNI</span>
+              <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                DNI
+              </span>
               <span className="text-sm font-semibold text-text">{director.dni}</span>
             </div>
             <div className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-xl border border-border/40">
@@ -144,15 +146,18 @@ export const DocenteDetailPage = () => {
         <Card className="p-6 border border-border shadow-xs flex flex-col gap-4">
           <div className="flex items-center gap-2 border-b border-border pb-3">
             <Briefcase className="w-5 h-5 text-primary" />
-            <h3 className="text-sm font-bold text-text">Situación Laboral</h3>
+            <h3 className="text-sm font-bold text-text">Situación Laboral Base</h3>
           </div>
           <div className="flex flex-col gap-3.5">
             <div>
               <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
                 Cargo Desempeñado
               </span>
-              <Badge variant="default" className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide">
-                Director de {nivelLabel(director.nivelEducativo)}
+              <Badge
+                variant="default"
+                className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide"
+              >
+                {director.cargo === 'Director' ? `Director de ${nivelLabel(director.nivelEducativo)}` : director.cargo}
               </Badge>
             </div>
             <div>
@@ -179,11 +184,24 @@ export const DocenteDetailPage = () => {
               <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
                 Nivel Educativo
               </span>
-              <span className="text-xs font-semibold text-text uppercase">{director.nivelEducativo}</span>
+              <span className="text-xs font-semibold text-text uppercase">
+                {director.nivelEducativo}
+              </span>
             </div>
           </div>
         </Card>
       </div>
+
+      {director.cargosList && director.cargosList.length > 0 && (
+        <DocenteCargosWidget
+          docenteId={director.id}
+          cargosList={director.cargosList}
+          onCargosChanged={() => {
+            // Force a reload of the current page
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };

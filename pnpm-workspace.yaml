@@ -1,6 +1,6 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - 'apps/*'
+  - 'packages/*'
 
 minimumReleaseAge: 0
 
@@ -8,8 +8,10 @@ allowBuilds:
   '@nestjs/core': true
   '@prisma/engines': true
   '@scarf/scarf': true
+  '@swc/core': true
   bcrypt: true
   esbuild: true
   msw: true
   prisma: true
+  puppeteer: true
   unrs-resolver: true

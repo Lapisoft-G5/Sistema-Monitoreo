@@ -49,40 +49,42 @@ export class AuthSessionService {
     }
 
     if (user.lockedUntil && user.lockedUntil > now) {
-      await this.auditRepository.logAuthEvent({
-        userId: user.id,
-        eventType: 'LOGIN_FAILURE_LOCKED',
-        ...meta,
-      });
-      throw new ForbiddenException({
-        message: 'Cuenta bloqueada temporalmente. Intente más tarde.',
-        lockedUntil: user.lockedUntil.toISOString(),
-      });
+      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 60000);
+      throw new ForbiddenException(`Cuenta bloqueada. Intente de nuevo en ${minutesLeft} minutos.`);
+    }
+
+    if (user.lastFailedLoginAt) {
+      const msSinceLastFail = now.getTime() - user.lastFailedLoginAt.getTime();
+      if (msSinceLastFail > 30 * 60 * 1000) {
+        await this.userRepository.resetFailedAttempts(user.id);
+      }
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
-      if (user.lockedUntil && user.lockedUntil <= now) {
-        await this.userRepository.resetFailedAttempts(user.id);
-      }
-      const updatedAttempts = await this.userRepository.incrementFailedAttempts(user.id, now);
-      if (updatedAttempts >= 3) {
-        const lockUntil = new Date(now.getTime() + 15 * 60 * 1000);
+      const failedAttempts = await this.userRepository.incrementFailedAttempts(user.id, now);
+
+      await this.auditRepository.logAuthEvent({
+        userId: user.id,
+        eventType: 'LOGIN_FAILURE_PASSWORD',
+        ...meta,
+      });
+
+      if (failedAttempts >= 3) {
+        const lockUntil = new Date(now.getTime() + 30 * 60 * 1000);
         await this.userRepository.lockAccount(user.id, lockUntil);
-        await this.auditRepository.logAuthEvent({
-          userId: user.id,
-          eventType: 'ACCOUNT_LOCKED',
-          ...meta,
-        });
-      } else {
-        await this.auditRepository.logAuthEvent({
-          userId: user.id,
-          eventType: 'LOGIN_FAILURE_PASSWORD',
-          ...meta,
+        throw new UnauthorizedException({
+          message: 'Cuenta bloqueada por múltiples intentos fallidos',
+          failedLoginAttempts: failedAttempts,
+          lockedUntil: lockUntil.toISOString(),
         });
       }
-      throw new UnauthorizedException('Credenciales inválidas');
+
+      throw new UnauthorizedException({
+        message: 'Credenciales inválidas',
+        failedLoginAttempts: failedAttempts,
+      });
     }
 
     await this.userRepository.resetFailedAttempts(user.id);
@@ -114,6 +116,10 @@ export class AuthSessionService {
       institucion: payload.institucion_id || payload.colegio_id,
       institucionNombre: payload.colegio_nombre,
       institucionNivel: payload.colegio_nivel,
+      especialistaId: payload.especialista_id,
+      especialistaNivel: payload.especialista_nivel,
+      especialistaModalidad: payload.especialista_modalidad,
+      especialistaEspecialidades: payload.especialista_especialidades,
       firstLogin: payload.firstLogin,
     };
 
@@ -142,9 +148,13 @@ export class AuthSessionService {
     const isSessionActive = await this.sessionRepository.isSessionActive(payload.jti);
 
     if (!isSessionActive) {
+      const userExists = await this.userRepository.findUserById(payload.sub);
       await this.auditRepository.logAuthEvent({
-        userId: payload.sub,
+        userId: userExists ? payload.sub : undefined,
         eventType: 'REFRESH_TOKEN_FAILURE_INVALID_SESSION',
+        eventDetail: !userExists
+          ? `Intento de refresh con usuario inexistente (posible DB reset/usuario eliminado): ${payload.sub}`
+          : undefined,
         ...meta,
       });
       throw new UnauthorizedException('Sesión inválida o expirada');

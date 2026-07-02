@@ -13,19 +13,11 @@ export const PageHeader = ({ title, description, action }: PageHeaderProps) => {
         <h1 className="text-2xl sm:text-[1.7rem] font-extrabold text-text tracking-tight">
           {title}
         </h1>
-        {description && (
-          <p className="text-sm text-text-muted font-medium">
-            {description}
-          </p>
-        )}
+        {description && <p className="text-sm text-text-muted font-medium">{description}</p>}
       </div>
-      
+
       {/* Contenedor para acciones (Botones, exportar, etc.) */}
-      {action && (
-        <div className="flex items-center shrink-0">
-          {action}
-        </div>
-      )}
+      {action && <div className="flex items-center shrink-0">{action}</div>}
     </div>
   );
 };

@@ -7,7 +7,7 @@ import type { DocenteFormData } from '@entities/model-docentes/validator';
 
 interface Props {
   instituciones: { id: string; nombre: string }[];
-  targetCargo?: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula';
+  targetCargo?: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
   routePrefix?: string;
   submitLabel?: string;
 }
@@ -28,9 +28,11 @@ export const CreateDocenteCard = ({
     }
   };
 
+  const esErrorCelular = error?.toLowerCase().includes('celular') || error?.toLowerCase().includes('teléfono');
+
   return (
     <Card className="w-full bg-surface border border-border rounded-2xl shadow-sm overflow-hidden p-6 sm:p-8">
-      {error && (
+      {error && !esErrorCelular && (
         <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive text-sm font-medium mb-5">
           <AlertCircle className="w-5 h-5 shrink-0" />
           {error}
@@ -44,6 +46,7 @@ export const CreateDocenteCard = ({
         instituciones={instituciones}
         defaultCargo={targetCargo}
         submitLabel={submitLabel}
+        serverError={error}
       />
     </Card>
   );

@@ -6,118 +6,94 @@ import type {
   IUpdateInstitucionRequest,
   IUpdateInstitucionResponse,
 } from '@sistema-monitoreo/shared-contracts';
+import { request } from '../config/api.js';
 
-const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
+function buildUrl(base: string, query?: Record<string, unknown>): string {
+  if (!query) return base;
+  const params = new URLSearchParams();
+  Object.entries(query).forEach(([key, val]) => {
+    if (val !== undefined && val !== null) {
+      params.append(key, String(val));
+    }
+  });
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
+}
 
 export const institutionsApi = {
-  findAll: async (query?: IQueryInstitucionRequest): Promise<{ ok: boolean; data?: IInstitucionListResponse; error?: unknown }> => {
+  findAll: async (
+    query?: IQueryInstitucionRequest,
+  ): Promise<{ ok: boolean; data?: IInstitucionListResponse; error?: unknown }> => {
     try {
-      const url = new URL(`${getApiBaseUrl()}/api/instituciones`);
-      if (query) {
-        Object.entries(query).forEach(([key, val]) => {
-          if (val !== undefined && val !== null) {
-            url.searchParams.append(key, String(val));
-          }
-        });
-      }
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
+      const data = await request<IInstitucionListResponse>(
+        buildUrl('/api/instituciones', query as Record<string, unknown>),
+      );
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
     }
   },
 
-  findById: async (id: string): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
+  findById: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/instituciones/${id}`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
+      const data = await request<IInstitucionResponse>(`/api/instituciones/${id}`);
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
     }
   },
 
-  create: async (dto: ICreateInstitucionRequest): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
+  create: async (
+    dto: ICreateInstitucionRequest,
+  ): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/instituciones`, {
+      const data = await request<IInstitucionResponse>('/api/instituciones', {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dto),
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
     }
   },
 
-  update: async (id: string, dto: IUpdateInstitucionRequest): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
+  update: async (
+    id: string,
+    dto: IUpdateInstitucionRequest,
+  ): Promise<{ ok: boolean; data?: IInstitucionResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/instituciones/${id}`, {
+      const data = await request<IInstitucionResponse>(`/api/instituciones/${id}`, {
         method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dto),
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
     }
   },
 
-  softDelete: async (id: string): Promise<{ ok: boolean; data?: IUpdateInstitucionResponse; error?: unknown }> => {
+  softDelete: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IUpdateInstitucionResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/instituciones/${id}/baja`, {
+      const data = await request<IUpdateInstitucionResponse>(`/api/instituciones/${id}/baja`, {
         method: 'PATCH',
-        credentials: 'include',
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
     }
   },
 
-  restore: async (id: string): Promise<{ ok: boolean; data?: IUpdateInstitucionResponse; error?: unknown }> => {
+  restore: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IUpdateInstitucionResponse; error?: unknown }> => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/instituciones/${id}/alta`, {
+      const data = await request<IUpdateInstitucionResponse>(`/api/instituciones/${id}/alta`, {
         method: 'PATCH',
-        credentials: 'include',
       });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };

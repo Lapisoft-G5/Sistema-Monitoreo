@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { InstitutionsService } from '../services/institutions.service.js';
 import { CreateInstitucionDto } from '../dto/create-institucion.dto.js';
@@ -23,6 +24,7 @@ import {
   IInstitucionListResponse,
   IUpdateInstitucionResponse,
 } from '@sistema-monitoreo/shared-contracts';
+import { JwtPayload } from '../../auth/services/auth-token.service.js';
 
 @Controller('instituciones')
 export class InstitutionsController {
@@ -37,8 +39,11 @@ export class InstitutionsController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @RequirePermissions('instituciones:write')
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateInstitucionDto): Promise<IInstitucionResponse> {
-    return this.institutionsService.create(dto);
+  async create(
+    @Body() dto: CreateInstitucionDto,
+    @Req() req: { user?: JwtPayload },
+  ): Promise<IInstitucionResponse> {
+    return this.institutionsService.create(dto, req.user);
   }
 
   /**
@@ -49,8 +54,11 @@ export class InstitutionsController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @RequirePermissions('instituciones:read')
   @HttpCode(HttpStatus.OK)
-  async findAll(@Query() query: QueryInstitucionDto): Promise<IInstitucionListResponse> {
-    return this.institutionsService.findAll(query);
+  async findAll(
+    @Query() query: QueryInstitucionDto,
+    @Req() req: { user?: JwtPayload },
+  ): Promise<IInstitucionListResponse> {
+    return this.institutionsService.findAll(query, req.user);
   }
 
   /**

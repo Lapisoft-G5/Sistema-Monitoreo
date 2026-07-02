@@ -9,20 +9,22 @@ import { jefeGestionRoutes } from '@/pages/jefeGestion/jefeGestion.routes';
 import { especialistaRoutes } from '@/pages/especialista/especialista.routes';
 import { directorUgelRoutes } from '@/pages/directorUgel/directorUgel.routes';
 import { RootRedirect } from './RootRedirect';
+import { SuperadminPanel } from '@/pages/superadmin/SuperadminPanel';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <AppShell />, 
+    element: <AppShell />,
     children: [
       { index: true, element: <RootRedirect /> },
-      
+
       ...directorUgelRoutes,
-      ...adminRoutes, 
+      ...adminRoutes,
       ...jefeGestionRoutes,
       ...especialistaRoutes,
     ],
   },
+  { path: '/superadmin', element: <SuperadminPanel /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/recuperar-password', element: <ForgotPasswordPage /> },
   { path: '/restablecer-password', element: <ResetPasswordPage /> },

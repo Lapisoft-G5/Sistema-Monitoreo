@@ -2,23 +2,27 @@ export type UserRole =
   | 'director_ugel'
   | 'jefe_area'
   | 'jefe_gestion'
-  | 'coordinador_pedagogico' // 🚀 Agregado para solucionar el error de TypeScript
+  | 'coordinador_pedagogico'
+  | 'jefe_taller'
   | 'especialista'
   | 'director_institucion'
-  | 'director_ie' // 🚀 Fallback alias para base de datos local
   | 'docente'
-  | 'invitado';
+  | 'invitado'
+  | 'admin'
+  | 'superusuario';
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   director_ugel: 'Director UGEL',
   jefe_area: 'Jefe de Área',
-  coordinador_pedagogico: 'Coordinador Pedagógico', // 🚀 Corregido la etiqueta
+  coordinador_pedagogico: 'Coordinador Pedagógico',
+  jefe_taller: 'Jefe de Taller',
   jefe_gestion: 'Jefe de Gestión',
   especialista: 'Especialista',
   director_institucion: 'Director de Institución',
-  director_ie: 'Director de Institución',
   docente: 'Docente',
   invitado: 'Invitado',
+  admin: 'Administrador del Sistema',
+  superusuario: 'Super Administrador',
 };
 
 export type MenuItem =
@@ -27,35 +31,82 @@ export type MenuItem =
   | 'monitoreo_plan'
   | 'monitoreo_gestion'
   | 'monitoreo_reportes'
+  | 'monitoreo_plan_anual'
+  | 'monitoreo_cronograma'
+  | 'monitoreo_calendario'
+  | 'plantillas'
   | 'instituciones'
   | 'instituciones_padron'
   | 'instituciones_docentes'
   | 'instituciones_coordinadores'
+  | 'instituciones_jefes_taller'
   | 'especialistas'
   | 'jefes_area'
   | 'reportes'
-  | 'configuracion';
+  | 'reportes'
+  | 'configuracion'
+  | 'superadmin';
 
-const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'configuracion'];
+const BASE_PERMISSIONS: MenuItem[] = ['reportes'];
 
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
+  admin: [
+    'dashboard', 'monitoreo', 'monitoreo_plan', 'monitoreo_gestion', 'monitoreo_reportes',
+    'monitoreo_plan_anual', 'monitoreo_cronograma', 'monitoreo_calendario', 'plantillas',
+    'instituciones', 'instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores',
+    'instituciones_jefes_taller', 'especialistas', 'jefes_area', 'reportes', 'configuracion'
+  ],
+
   director_ugel: ['dashboard', 'reportes'],
 
-  jefe_gestion: ['monitoreo', 'monitoreo_reportes', 'especialistas', 'jefes_area', 'reportes'],
-
-  jefe_area: ['instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores'],
-
-  coordinador_pedagogico: ['monitoreo', 'monitoreo_plan', 'especialistas', 'jefes_area', 'reportes'],
-
-  especialista: ['monitoreo', 'monitoreo_reportes', 'reportes'], // 🚀 Se eliminó la duplicación aquí
-
-  director_institucion: [
+  jefe_gestion: [
+    'monitoreo',
+    'monitoreo_plan_anual',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
+    'plantillas',
+    'especialistas',
+    'jefes_area',
+    'reportes',
+    'instituciones_padron',
     'instituciones_docentes',
+  ],
+
+  jefe_area: [
+    'instituciones_padron',
+    'instituciones_docentes',
+    'monitoreo',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
     'reportes',
   ],
 
-  director_ie: [
+  coordinador_pedagogico: [
+    'monitoreo',
+    'monitoreo_calendario',
+    'monitoreo_reportes',
+    'reportes',
+  ],
+
+  jefe_taller: [
+    'monitoreo',
+    'monitoreo_calendario',
+    'monitoreo_reportes',
+    'reportes',
+  ],
+
+  especialista: ['monitoreo', 'monitoreo_calendario', 'reportes'],
+
+  director_institucion: [
+    'monitoreo',
+    'monitoreo_plan_anual',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
+    'plantillas',
     'instituciones_docentes',
+    'instituciones_coordinadores',
+    'instituciones_jefes_taller',
+    'monitoreo_reportes',
     'reportes',
   ],
 
@@ -67,6 +118,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_plan',
     'monitoreo_gestion',
     'monitoreo_reportes',
+    'plantillas',
     'instituciones',
     'instituciones_padron',
     'instituciones_docentes',
@@ -75,6 +127,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes',
     'configuracion',
   ],
+  superusuario: ['superadmin'],
 };
 
 const READ_ONLY_ROLES: UserRole[] = ['invitado'];
@@ -88,15 +141,21 @@ export const isReadOnlyRole = (role: UserRole): boolean => READ_ONLY_ROLES.inclu
 
 export const getDefaultLandingPage = (role: UserRole): string => {
   switch (role) {
+    case 'admin':
+      return '/dashboard';
+    case 'superusuario':
+      return '/superadmin';
     case 'jefe_area':
       return '/instituciones/padron';
     case 'jefe_gestion':
       return '/especialistas';
     case 'especialista':
-      return '/monitoreo/reportes';
+      return '/monitoreo/calendario';
     case 'director_institucion':
-    case 'director_ie':
       return '/instituciones/docentes';
+    case 'coordinador_pedagogico':
+    case 'jefe_taller':
+      return '/monitoreo/calendario';
     case 'docente':
       return '/reportes';
     default:

@@ -64,14 +64,11 @@ export const ForgotPasswordWidget = () => {
                 ¿Olvidaste tu contraseña?
               </h2>
               <p className="text-center text-xs text-text-muted mb-6 leading-relaxed">
-                Ingresa tu DNI y tu Correo electrónico registrado para enviarte las instrucciones de restablecimiento.
+                Ingresa tu DNI y tu Correo electrónico registrado para enviarte las instrucciones de
+                restablecimiento.
               </p>
 
-              <ForgotPasswordForm 
-                onSubmit={handleSubmit}
-                loading={loading}
-                error={error}
-              />
+              <ForgotPasswordForm onSubmit={handleSubmit} loading={loading} error={error} />
             </div>
           ) : (
             <div className="text-center py-2">
@@ -82,7 +79,8 @@ export const ForgotPasswordWidget = () => {
 
               <h2 className="text-text text-xl font-bold mb-2">¡Instrucciones enviadas!</h2>
               <p className="text-text-muted text-xs leading-relaxed mb-6">
-                Si los datos ingresados corresponden a un usuario activo, recibirás un correo de recuperación a la brevedad.
+                Si los datos ingresados corresponden a un usuario activo, recibirás un correo de
+                recuperación a la brevedad.
               </p>
 
               <Button

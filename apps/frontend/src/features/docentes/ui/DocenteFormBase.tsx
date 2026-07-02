@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { User, Briefcase, Plus, Trash2, Check, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
+import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
 import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
+import { Spinner } from '@shared/ui/Spinner';
+import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';
+import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
 
 interface Props {
   onCancel: () => void;
@@ -14,17 +18,13 @@ interface Props {
   isLoading: boolean;
   initialData?: DocenteFormData;
   instituciones: { id: string; nombre: string; nivel?: string }[];
-  defaultCargo?: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula';
+  defaultCargo?: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
   submitLabel?: string;
+  serverError?: string | null;
 }
 
-const CURSOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> = {
-  INICIAL: [
-    'Personal Social',
-    'Psicomotricidad',
-    'Comunicación',
-    'Descubrimiento del Mundo',
-  ],
+const CURSOS_POR_NIVEL: Record<string, string[]> = {
+  INICIAL: ['Personal Social', 'Psicomotricidad', 'Comunicación', 'Descubrimiento del Mundo'],
   PRIMARIA: [
     'Comunicación',
     'Matemática',
@@ -48,7 +48,8 @@ const CURSOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> 
   ],
 };
 
-export const GRADOS_POR_NIVEL: Record<'INICIAL' | 'PRIMARIA' | 'SECUNDARIA', string[]> = {
+/* eslint-disable-next-line react-refresh/only-export-components */
+export const GRADOS_POR_NIVEL: Record<string, string[]> = {
   INICIAL: ['3 años', '4 años', '5 años'],
   PRIMARIA: ['1°', '2°', '3°', '4°', '5°', '6°'],
   SECUNDARIA: ['1°', '2°', '3°', '4°', '5°'],
@@ -63,7 +64,7 @@ const INITIAL_FORM: DocenteFormData = {
   nivelEducativo: 'PRIMARIA',
   condicion: 'Nombrado',
   especialidad: '',
-  cargaHoraria: 30,
+  cargaHoraria: CARGA_HORARIA.DOCENTE,
   secciones: [],
   escala: 'I',
   institucionId: '',
@@ -79,17 +80,18 @@ export const DocenteFormBase = ({
   instituciones,
   defaultCargo = 'Director',
   submitLabel,
+  serverError,
 }: Props) => {
   const { user } = useUser();
   console.log('User context in DocenteFormBase:', user);
-  const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
+  const isDirectorIe = user?.role === 'director_institucion';
 
   const [form, setForm] = useState<DocenteFormData>(() => {
     if (initialData) return initialData;
-    
+
     let initialInstId = '';
     let initialNivel: DocenteFormData['nivelEducativo'] = 'PRIMARIA';
-    
+
     if (isDirectorIe && user?.institucion) {
       initialInstId = user.institucion;
       if (user.institucionNivel) {
@@ -100,12 +102,12 @@ export const DocenteFormBase = ({
     return {
       ...INITIAL_FORM,
       cargo: defaultCargo,
+      condicion: defaultCargo === 'Director' ? 'Designado' : 'Nombrado',
       institucionId: initialInstId,
       nivelEducativo: initialNivel,
     };
   });
 
-  const [submitted, setSubmitted] = useState(false);
   const [selectedGrado, setSelectedGrado] = useState(() => {
     const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
     return defaultGrados[0] || '';
@@ -114,26 +116,85 @@ export const DocenteFormBase = ({
 
   useEffect(() => {
     const defaultGrados = GRADOS_POR_NIVEL[form.nivelEducativo] || [];
-    setSelectedGrado(defaultGrados[0] || '');
+    setTimeout(() => setSelectedGrado(defaultGrados[0] || ''), 0);
   }, [form.nivelEducativo]);
 
   const set = <K extends keyof DocenteFormData>(key: K, value: DocenteFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  // Validación rápida con Zod para mostrar errores en tiempo real
-  const validationResult = docenteSchema.safeParse(form);
-  const errors: Record<string, string> = {};
+  const errors = useMemo(() => extractErrors(docenteSchema.safeParse(form)), [form]);
 
-  if (!validationResult.success) {
-    validationResult.error.issues.forEach((issue) => {
-      const path = issue.path[0] as string;
-      if (!errors[path]) {
-        errors[path] = issue.message;
+  const {
+    submitted,
+    persona,
+    searchingDni,
+    isDniLocked,
+    dniMessage,
+    dniBloqueadoPorRol,
+    showRoleConfirm,
+    setShowRoleConfirm,
+    handleSubmit,
+    handleConfirmRole,
+    dniOk,
+    roleCheck,
+  } = usePersonForm({
+    dni: form.dni,
+    isNew: !initialData,
+    rolObjetivo: form.cargo === 'Director' ? 'director' : 'docente',
+    onValidSubmit: () => onSubmit(form),
+    isLoading,
+    errors,
+    setPersonaFields: useCallback((persona) => {
+      setForm((prev) => {
+        const next = { ...prev };
+        next.nombres = persona.nombres;
+        next.apellidos = persona.apellidos;
+        next.correo = persona.correo ?? '';
+        next.celular = persona.telefono ?? '';
+        if (persona.docente) {
+          if (persona.docente.institucionId) {
+            next.institucionId = persona.docente.institucionId;
+          }
+          if (persona.docente.especialidad) {
+            next.especialidad = persona.docente.especialidad;
+          } else if (persona.docente.cursoAsignado) {
+            next.especialidad = persona.docente.cursoAsignado;
+          }
+          if (persona.docente.nivelEducativo) next.nivelEducativo = persona.docente.nivelEducativo.toUpperCase() as DocenteFormData['nivelEducativo'];
+          if (persona.docente.condicionLaboral) next.condicion = persona.docente.condicionLaboral as DocenteFormData['condicion'];
+          if (persona.docente.escalaMagisterial) {
+            const mapIntToRoman: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII' };
+            next.escala = (mapIntToRoman[persona.docente.escalaMagisterial] || '') as DocenteFormData['escala'];
+          }
+        }
+        return next;
+      });
+    }, []),
+    clearPersonaFields: useCallback(() => {
+      set('nombres', '');
+      set('apellidos', '');
+      set('correo', '');
+      set('celular', '');
+      set('especialidad', '');
+      set('institucionId', '');
+    }, []),
+  });
+
+  const showError = (key: keyof DocenteFormData) => {
+    if (key === 'celular' && esErrorCelular) return serverError ?? '';
+    return submitted ? errors[key] : '';
+  };
+
+  const opcionesIE = useMemo(() => {
+    const list = instituciones.map((i) => ({ value: i.id, label: i.nombre }));
+    if (persona?.docente?.institucion) {
+      const exists = list.some(i => i.value === persona.docente!.institucion!.id);
+      if (!exists) {
+        list.push({ value: persona.docente!.institucion!.id, label: persona.docente!.institucion!.nombre });
       }
-    });
-  }
-
-  const showError = (key: keyof DocenteFormData) => (submitted ? errors[key] : '');
+    }
+    return list;
+  }, [instituciones, persona?.docente?.institucion]);
 
   const handleAddSeccion = () => {
     const cleanGrado = selectedGrado.trim();
@@ -143,7 +204,9 @@ export const DocenteFormBase = ({
 
     const currentSecciones = form.secciones || [];
     const exists = currentSecciones.some(
-      (s) => s.grado.toLowerCase() === cleanGrado.toLowerCase() && s.seccion.toLowerCase() === cleanSeccion.toLowerCase()
+      (s) =>
+        s.grado.toLowerCase() === cleanGrado.toLowerCase() &&
+        s.seccion.toLowerCase() === cleanSeccion.toLowerCase(),
     );
     if (exists) return;
 
@@ -167,13 +230,16 @@ export const DocenteFormBase = ({
     );
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    if (!validationResult.success || isLoading) return;
-    onSubmit(form);
-  };
+  const celularRef = useRef<HTMLDivElement>(null);
+  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
 
-  const dniOk = /^\d{8}$/.test(form.dni);
+  useEffect(() => {
+    if (esErrorCelular && celularRef.current) {
+      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      celularRef.current.querySelector('input')?.focus();
+    }
+  }, [esErrorCelular]);
+
   const celularOk = /^9\d{8}$/.test(form.celular);
 
   return (
@@ -186,11 +252,13 @@ export const DocenteFormBase = ({
               label="DNI (8 dígitos)"
               required
               value={form.dni}
-              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, 8))}
+              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
               placeholder="Ej. 74859612"
               error={showError('dni')}
               adornment={
-                dniOk ? (
+                searchingDni ? (
+                  <Spinner size="sm" />
+                ) : dniOk ? (
                   <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
                 ) : undefined
               }
@@ -204,6 +272,7 @@ export const DocenteFormBase = ({
               onChange={(v) => set('nombres', v)}
               placeholder="Ej. Rosa Elena"
               error={showError('nombres')}
+              disabled={isDniLocked || dniBloqueadoPorRol}
             />
           </div>
           <div className="md:col-span-2">
@@ -214,9 +283,36 @@ export const DocenteFormBase = ({
               onChange={(v) => set('apellidos', v)}
               placeholder="Ej. Mamani Ccopa"
               error={showError('apellidos')}
+              disabled={isDniLocked || dniBloqueadoPorRol}
             />
           </div>
         </div>
+
+        {dniMessage && !searchingDni && (
+          <div className="mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-2">
+            <Check className="h-4 w-4" strokeWidth={2.5} />
+            {dniMessage}
+          </div>
+        )}
+
+        {persona && roleCheck.mensaje && (
+          <div
+            className={`mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border ${
+              roleCheck.bloquea
+                ? 'bg-rose-50 text-rose-700 border-rose-300'
+                : 'bg-amber-50 text-amber-800 border-amber-300'
+            }`}
+          >
+            <span className="font-extrabold uppercase tracking-wide text-[0.72rem]">
+              {roleCheck.bloquea ? 'Bloqueado' : 'Advertencia'}:
+            </span>{' '}
+            {roleCheck.mensaje}
+            {roleCheck.detalle && (
+              <span className="block mt-1 font-normal text-[0.72rem]">{roleCheck.detalle}</span>
+            )}
+          </div>
+        )}
+
         <div style={{ ...twoCols, marginTop: 18 }}>
           <TextField
             label="Correo Electrónico"
@@ -225,20 +321,24 @@ export const DocenteFormBase = ({
             onChange={(v) => set('correo', v)}
             placeholder="Ej. director@ie.edu.pe"
             error={showError('correo')}
+            disabled={isDniLocked || dniBloqueadoPorRol}
           />
-          <TextField
-            label="Número de Celular"
-            required
-            value={form.celular}
-            onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, 9))}
-            placeholder="Ej. 987654321"
-            error={showError('celular')}
-            adornment={
-              celularOk ? (
-                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-              ) : undefined
-            }
-          />
+          <div ref={celularRef}>
+            <TextField
+              label="Número de Celular"
+              required
+              value={form.celular}
+                onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
+              placeholder="Ej. 987654321"
+              error={showError('celular')}
+              disabled={isDniLocked || dniBloqueadoPorRol}
+              adornment={
+                celularOk ? (
+                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+                ) : undefined
+              }
+            />
+          </div>
         </div>
       </SectionCard>
 
@@ -248,7 +348,9 @@ export const DocenteFormBase = ({
           <div className="w-full">
             {isDirectorIe ? (
               <div className="flex flex-col gap-1 w-full">
-                <label className="text-xs font-bold text-text-muted">Institución de Destino (I.E.)</label>
+                <label className="text-xs font-bold text-text-muted">
+                  Institución de Destino (I.E.)
+                </label>
                 <div className="flex items-center h-9 px-3 rounded-lg border border-border bg-muted/30 text-text font-medium text-sm">
                   {user?.institucionNombre || 'I.E. No Asignada'}
                 </div>
@@ -259,9 +361,10 @@ export const DocenteFormBase = ({
                 required
                 value={form.institucionId}
                 onChange={(v) => set('institucionId', v)}
-                options={instituciones.map((i) => ({ value: i.id, label: i.nombre }))}
-                placeholder="Seleccione I.E."
+                options={opcionesIE}
+                placeholder="Seleccione la I.E."
                 error={showError('institucionId')}
+                disabled={isDirectorIe || dniBloqueadoPorRol || !!persona?.docente?.institucionId}
               />
             )}
           </div>
@@ -269,12 +372,25 @@ export const DocenteFormBase = ({
             label="Cargo / Rol"
             required
             value={form.cargo}
-            onChange={(v) => set('cargo', v as DocenteFormData['cargo'])}
+            onChange={(v) => {
+              const newCargo = v as DocenteFormData['cargo'];
+              setForm((prev) => ({
+                ...prev,
+                cargo: newCargo,
+                condicion: newCargo === 'Director' ? 'Designado' : 'Nombrado',
+              }));
+            }}
             options={(() => {
-              const opts = [
-                { value: 'Coordinador Pedagógico', label: 'Coordinador Pedagógico' },
-                { value: 'Docente de Aula', label: 'Docente de Aula' },
-              ];
+              const isSecundary = form.nivelEducativo === 'SECUNDARIA';
+              const opts = isSecundary
+                ? [
+                    { value: 'Coordinador Pedagógico', label: 'Coordinador Pedagógico' },
+                    { value: 'Jefe de Taller', label: 'Jefe de Taller' },
+                    { value: 'Docente de Aula', label: 'Docente de Aula' },
+                  ]
+                : [
+                    { value: 'Docente de Aula', label: 'Docente de Aula' },
+                  ];
               if (form.cargo === 'Director') {
                 opts.unshift({ value: 'Director', label: 'Director' });
               }
@@ -282,6 +398,7 @@ export const DocenteFormBase = ({
             })()}
             placeholder="Seleccione Cargo"
             error={showError('cargo')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
@@ -290,9 +407,18 @@ export const DocenteFormBase = ({
             required
             value={form.condicion}
             onChange={(v) => set('condicion', v as DocenteFormData['condicion'])}
-            options={CONDICION_LABORAL.map((c) => ({ value: c, label: c }))}
+            options={(() => {
+              if (form.cargo === 'Director') {
+                return ['Designado', 'Encargado', 'Por Función'].map((c) => ({
+                  value: c,
+                  label: c,
+                }));
+              }
+              return CONDICION_LABORAL.map((c) => ({ value: c, label: c }));
+            })()}
             placeholder="Seleccione Condición"
             error={showError('condicion')}
+            disabled={dniBloqueadoPorRol}
           />
           <SelectField
             label="Escala Magisterial"
@@ -302,6 +428,7 @@ export const DocenteFormBase = ({
             options={ESCALAS_MAGISTERIALES}
             placeholder="Seleccione Escala"
             error={showError('escala')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
         <div style={{ ...twoCols, marginTop: 18 }}>
@@ -317,19 +444,33 @@ export const DocenteFormBase = ({
               label="Nivel Educativo"
               required
               value={form.nivelEducativo}
-              onChange={(v) => set('nivelEducativo', v as DocenteFormData['nivelEducativo'])}
+              onChange={(v) => {
+                const nextNivel = v as DocenteFormData['nivelEducativo'];
+                setForm((prev) => ({
+                  ...prev,
+                  nivelEducativo: nextNivel,
+                  especialidad: nextNivel === 'SECUNDARIA' ? '' : 'General',
+                }));
+              }}
               options={NIVELES.map((n) => ({ value: n, label: NIVEL_LABEL[n] }))}
               placeholder="Seleccione Nivel"
               error={showError('nivelEducativo')}
+              disabled={dniBloqueadoPorRol}
             />
           )}
           <SelectField
             label="Especialidad / Mención"
-            required
-            value={form.especialidad}
+            required={form.nivelEducativo === 'SECUNDARIA'}
+            value={form.especialidad || ''}
             onChange={(v) => set('especialidad', v)}
             options={(() => {
-              const rawCourses = CURSOS_POR_NIVEL[form.nivelEducativo] || [];
+              if (form.nivelEducativo === 'PRIMARIA') {
+                return ['General', 'PIP', 'Educación Física'].map((c) => ({ value: c, label: c }));
+              }
+              if (form.nivelEducativo === 'INICIAL') {
+                return [{ value: 'General', label: 'General' }];
+              }
+              const rawCourses = CURSOS_POR_NIVEL['SECUNDARIA'] || [];
               const coursesList = [...rawCourses];
               if (form.especialidad && !coursesList.includes(form.especialidad)) {
                 coursesList.push(form.especialidad);
@@ -338,6 +479,7 @@ export const DocenteFormBase = ({
             })()}
             placeholder="Seleccione Especialidad"
             error={showError('especialidad')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
         <div style={{ marginTop: 18, maxWidth: 'calc(50% - 9px)', minWidth: 240 }}>
@@ -348,6 +490,7 @@ export const DocenteFormBase = ({
             onChange={(v) => set('cargaHoraria', Number(v.replace(/\D/g, '')))}
             placeholder="Ej. 30"
             error={showError('cargaHoraria')}
+            disabled={dniBloqueadoPorRol}
           />
         </div>
       </SectionCard>
@@ -364,7 +507,7 @@ export const DocenteFormBase = ({
                 label="Grado"
                 value={selectedGrado}
                 onChange={setSelectedGrado}
-                options={(GRADOS_POR_NIVEL[form.nivelEducativo] || []).map((g) => ({
+                options={(GRADOS_POR_NIVEL[form.nivelEducativo] || []).map((g: string) => ({
                   value: g,
                   label: g,
                 }))}
@@ -395,7 +538,9 @@ export const DocenteFormBase = ({
                 key={sec.id}
                 className="flex items-center gap-2 bg-muted/50 border border-border px-3 py-1.5 rounded-xl text-sm font-medium text-text"
               >
-                <span>{sec.grado} "{sec.seccion}"</span>
+                <span>
+                  {sec.grado} "{sec.seccion}"
+                </span>
                 <button
                   type="button"
                   onClick={() => handleRemoveSeccion(sec.id)}
@@ -419,10 +564,43 @@ export const DocenteFormBase = ({
         <FormButton variant="secondary" onClick={onCancel} disabled={isLoading}>
           Cancelar
         </FormButton>
-        <FormButton onClick={handleSubmit} disabled={isLoading}>
-          {isLoading ? 'Guardando...' : (submitLabel || 'Guardar Director/Docente')}
+        <FormButton
+          onClick={handleSubmit}
+          disabled={isLoading || dniBloqueadoPorRol}
+        >
+          {isLoading ? 'Guardando...' : submitLabel || 'Guardar Director/Docente'}
         </FormButton>
       </div>
+
+      {showRoleConfirm && persona && (
+        <ConfirmModal
+          title="Confirmar creación con rol adicional"
+          message={
+            <div className="text-xs text-slate-600 leading-relaxed space-y-2">
+              <p>
+                La persona <strong>{persona.nombres} {persona.apellidos}</strong> (DNI {persona.dni}) ya está registrada en el sistema.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-2.5 text-amber-800">
+                <p className="font-semibold">Roles actuales:</p>
+                <ul className="list-disc list-inside mt-1 text-[0.72rem]">
+                  {persona.roles.esDirector && <li>Director de I.E.</li>}
+                  {persona.roles.esCoordinadorPedagogico && <li>Coordinador Pedagógico</li>}
+                  {persona.roles.esJefeTaller && <li>Jefe de Taller</li>}
+                  {persona.roles.esDocenteAula && <li>Docente de Aula</li>}
+                  {persona.roles.esEspecialista && <li>{persona.roles.especialistaCargoActivo} ({persona.roles.especialistaNivelEducativo})</li>}
+                </ul>
+              </div>
+              <p>
+                Se creará un nuevo registro como <strong>{form.cargo}</strong> además de los roles existentes. ¿Desea continuar?
+              </p>
+            </div>
+          }
+          confirmLabel="Sí, crear con rol adicional"
+          cancelLabel="Cancelar"
+          onConfirm={handleConfirmRole}
+          onCancel={() => setShowRoleConfirm(false)}
+        />
+      )}
     </div>
   );
 };

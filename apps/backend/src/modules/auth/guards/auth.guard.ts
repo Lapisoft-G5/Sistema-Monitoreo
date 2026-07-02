@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -10,19 +11,23 @@ import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { JwtPayload } from '../services/auth-token.service.js';
 import { ALLOW_FIRST_LOGIN_KEY } from '../decorators/allow-first-login.decorator.js';
+import { SessionRepository } from '../repositories/session.repository.js';
+import { RlsGucService } from '../services/rls-guc.service.js';
 
 interface AuthenticatedRequest extends Request {
   cookies: Record<string, string>;
   user?: JwtPayload & { jti: string };
 }
-import { SessionRepository } from '../repositories/session.repository.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  private readonly logger = new Logger(AuthGuard.name);
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
     private readonly sessionRepository: SessionRepository,
+    private readonly rlsGucService: RlsGucService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -53,6 +58,12 @@ export class AuthGuard implements CanActivate {
           );
         }
       }
+
+      await this.rlsGucService.setSessionGucs(
+        payload.sub,
+        payload.role,
+        payload.institucion_id ?? '',
+      );
     } catch (err) {
       if (err instanceof ForbiddenException || err instanceof UnauthorizedException) {
         throw err;

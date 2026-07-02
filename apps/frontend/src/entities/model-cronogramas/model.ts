@@ -1,0 +1,19 @@
+export interface Cronograma {
+  id: string;
+  fechaHora: string; // ISO datetime
+  especialista: string;
+  especialistaInitials: string;
+  institucion: string;
+  docenteDirectivo: string;
+  tipo: 'DOCENTE' | 'DIRECTIVO';
+  nroVisita: string;
+  estado: 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'REPROGRAMADO' | 'CANCELADO' | 'ANULADO';
+  modalidad: string;
+  nivel: string;
+  observaciones?: string;
+  especialistaCargo?: string;
+  monitorId: string;
+  evaluadoId?: string;
+  institucionId: string;
+  monitorEspecialidades?: string[];
+}

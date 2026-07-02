@@ -1,7 +1,8 @@
 import { useSearchParams } from 'react-router-dom';
-import { NIVELES, ESTADOS } from '@entities/model-instituciones';
+import { NIVELES, ESTADOS, MODALIDAD_NIVEL_MAP } from '@entities/model-instituciones';
 import { FilterSelect } from '@shared/ui/Filter-Select';
 import { Card } from '@shared/ui/card';
+import { useUser } from '@entities/model-user';
 
 interface FilterInstitutionsProps {
   distritosOptions: string[];
@@ -9,6 +10,28 @@ interface FilterInstitutionsProps {
 
 export const FilterInstitutions = ({ distritosOptions }: FilterInstitutionsProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useUser();
+
+  const isJefeArea = user?.role === 'jefe_area';
+  const jefeNivel = user?.especialistaNivel;
+
+  const allowedNiveles = (() => {
+    if (!isJefeArea || !jefeNivel) {
+      return NIVELES;
+    }
+    const list: string[] = [];
+    if (jefeNivel === 'Inicial') {
+      list.push('Inicial');
+      list.push(...(MODALIDAD_NIVEL_MAP['EBE'] || []));
+    } else if (jefeNivel === 'Primaria') {
+      list.push('Primaria');
+    } else if (jefeNivel === 'Secundaria') {
+      list.push('Secundaria');
+      list.push(...(MODALIDAD_NIVEL_MAP['EBA'] || []));
+      list.push(...(MODALIDAD_NIVEL_MAP['CEPTRO'] || []));
+    }
+    return list;
+  })();
 
   // Leemos los filtros directamente desde la URL (?nivel=X&distrito=Y...)
   const nivel = searchParams.get('nivel') || '';
@@ -17,13 +40,13 @@ export const FilterInstitutions = ({ distritosOptions }: FilterInstitutionsProps
 
   const updateFilter = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
-    
+
     if (value) {
       newParams.set(key, value);
     } else {
       newParams.delete(key); // Si elige "Todos", limpiamos la URL
     }
-    
+
     newParams.set('page', '1'); // Cada vez que filtramos, reiniciamos a la página 1
     setSearchParams(newParams);
   };
@@ -35,7 +58,7 @@ export const FilterInstitutions = ({ distritosOptions }: FilterInstitutionsProps
           label="Nivel educativo"
           value={nivel}
           onChange={(v) => updateFilter('nivel', v)}
-          options={NIVELES}
+          options={allowedNiveles}
           allLabel="Todos los niveles"
         />
         <FilterSelect

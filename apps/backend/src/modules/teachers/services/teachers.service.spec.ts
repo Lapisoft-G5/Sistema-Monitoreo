@@ -22,14 +22,14 @@ describe('TeachersService', () => {
   let updateDocenteWithTransactionMock: jest.Mock<any>;
 
   beforeEach(async () => {
-    findInstitucionByIdMock = jest.fn();
-    findCargoByIdMock = jest.fn();
-    findDocenteByIdMock = jest.fn();
-    findDocentesMock = jest.fn();
-    findPersonaByEmailNotIdMock = jest.fn();
-    updateDocenteEstadoMock = jest.fn();
-    createDocenteWithTransactionMock = jest.fn();
-    updateDocenteWithTransactionMock = jest.fn();
+    findInstitucionByIdMock = jest.fn<any>();
+    findCargoByIdMock = jest.fn<any>();
+    findDocenteByIdMock = jest.fn<any>();
+    findDocentesMock = jest.fn<any>();
+    findPersonaByEmailNotIdMock = jest.fn<any>();
+    updateDocenteEstadoMock = jest.fn<any>();
+    createDocenteWithTransactionMock = jest.fn<any>();
+    updateDocenteWithTransactionMock = jest.fn<any>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -110,15 +110,16 @@ describe('TeachersService', () => {
     });
 
     it('should throw ForbiddenException if director_institucion tries to register in a different institution', async () => {
-      const directorForOtherSchool: CurrentUser = {
-        sub: 'director-uuid',
-        role: directorIeRole,
-        permissions: ['docentes:write'],
-        colegio_id: 'other-inst-uuid',
-      };
-      await expect(service.createDocente(defaultDto, directorForOtherSchool)).rejects.toThrow(
+      await expect(
+        service.createDocente(defaultDto, {
+          sub: 'dir-id',
+          role: RoleCode.DIRECTOR_INSTITUCION,
+          institucion_id: 'ie-diff',
+          permissions: ['docentes:write'],
+        }),
+      ).rejects.toThrow(
         new ForbiddenException(
-          'No tiene permisos para registrar un docente en otra institución educativa.',
+          'No tiene permisos para realizar esta acción en otra institución educativa.',
         ),
       );
     });
@@ -179,7 +180,7 @@ describe('TeachersService', () => {
       ).rejects.toThrow(new ForbiddenException('No tiene permisos para realizar esta acción.'));
     });
 
-    it('should throw ForbiddenException if director_ie has no assigned school', async () => {
+    it('should throw ForbiddenException if director_institucion has no assigned school', async () => {
       await expect(
         service.getDocentes({ sub: 'x', role: directorIeRole, permissions: ['docentes:read'] }),
       ).rejects.toThrow(
@@ -196,7 +197,7 @@ describe('TeachersService', () => {
         sub: 'director-uuid',
         role: directorIeRole,
         permissions: ['docentes:read'],
-        colegio_id: 'inst-uuid',
+        institucion_id: 'inst-uuid',
       };
       const mockList = [{ id: 'docente-1' }];
       findDocentesMock.mockResolvedValue(mockList);
@@ -218,6 +219,20 @@ describe('TeachersService', () => {
 
       expect(result).toEqual(mockTeachersList);
       expect(findDocentesMock).toHaveBeenCalledWith({});
+    });
+
+    it('should query teachers with especialistaNivel if user is jefe_area', async () => {
+      findDocentesMock.mockResolvedValue(mockTeachersList);
+
+      const result = await service.getDocentes({
+        sub: 'x',
+        role: RoleCode.JEFE_AREA,
+        permissions: ['docentes:read'],
+        especialista_nivel: 'Secundaria',
+      });
+
+      expect(result).toEqual(mockTeachersList);
+      expect(findDocentesMock).toHaveBeenCalledWith({ especialistaNivel: 'Secundaria' });
     });
   });
 
@@ -260,7 +275,7 @@ describe('TeachersService', () => {
       sub: 'director-uuid',
       role: directorIeRole,
       permissions: ['docentes:write'],
-      colegio_id: 'inst-uuid',
+      institucion_id: 'inst-uuid',
     };
 
     it('should throw ForbiddenException if user has invalid role', async () => {
@@ -288,10 +303,15 @@ describe('TeachersService', () => {
       });
 
       await expect(
-        service.updateDocente('docente-uuid', updateDto, mockDirectorIeUser),
+        service.updateDocente('d-1', updateDto, {
+          sub: 'dir-id',
+          role: RoleCode.DIRECTOR_INSTITUCION,
+          institucion_id: 'ie-diff',
+          permissions: ['docentes:write'],
+        }),
       ).rejects.toThrow(
         new ForbiddenException(
-          'No tiene permisos para editar un docente de otra institución educativa.',
+          'No tiene permisos para realizar esta acción en otra institución educativa.',
         ),
       );
     });
@@ -357,7 +377,7 @@ describe('TeachersService', () => {
       sub: 'director-uuid',
       role: directorIeRole,
       permissions: ['docentes:write'],
-      colegio_id: 'inst-uuid',
+      institucion_id: 'inst-uuid',
     };
 
     it('should throw ForbiddenException if user has invalid role', async () => {
@@ -384,9 +404,16 @@ describe('TeachersService', () => {
         institucionId: 'other-inst-uuid',
       });
 
-      await expect(service.bajaDocente('docente-uuid', mockDirectorIeUser)).rejects.toThrow(
+      await expect(
+        service.bajaDocente('d-1', {
+          sub: 'dir-id',
+          role: RoleCode.DIRECTOR_INSTITUCION,
+          institucion_id: 'ie-diff',
+          permissions: ['docentes:write'],
+        }),
+      ).rejects.toThrow(
         new ForbiddenException(
-          'No tiene permisos para dar de baja a un docente de otra institución educativa.',
+          'No tiene permisos para realizar esta acción en otra institución educativa.',
         ),
       );
     });

@@ -9,9 +9,9 @@ export class MailerService {
   private readonly emailFrom: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.emailFrom = this.configService.get<string>('EMAIL_FROM') || 'no-reply@ugel-lampa.gob.pe';
+    this.emailFrom = this.configService.get<string>('EMAIL_FROM') ?? 'no-reply@ugel-lampa.gob.pe';
     const host = this.configService.get<string>('SMTP_HOST');
-    const port = this.configService.get<number>('SMTP_PORT') || 1025; // Default for local Mailpit / MailHog
+    const port = this.configService.get<number>('SMTP_PORT') ?? 1025;
     const user = this.configService.get<string>('SMTP_USER');
     const pass = this.configService.get<string>('SMTP_PASS');
 
@@ -36,7 +36,13 @@ export class MailerService {
     }
   }
 
-  async sendMail(to: string, subject: string, text: string, html: string): Promise<void> {
+  async sendMail(
+    to: string,
+    subject: string,
+    text: string,
+    html: string,
+    attachments?: nodemailer.SendMailOptions['attachments']
+  ): Promise<void> {
     if (this.transporter) {
       try {
         await this.transporter.sendMail({
@@ -45,6 +51,7 @@ export class MailerService {
           subject,
           text,
           html,
+          attachments,
         });
         this.logger.log(`Correo enviado exitosamente a: ${to}`);
       } catch (error) {
@@ -68,7 +75,7 @@ export class MailerService {
   }
 
   async sendPasswordResetEmail(to: string, dni: string, token: string): Promise<void> {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
     const resetUrl = `${frontendUrl}/restablecer-password?token=${token}`;
 
     const subject = 'Recuperación de Contraseña - UGEL Lampa';
@@ -106,5 +113,88 @@ export class MailerService {
     `;
 
     await this.sendMail(to, subject, text, html);
+  }
+
+  async sendCronogramaVencidoEmail(
+    to: string,
+    fecha: string,
+    institucion: string,
+    docente: string,
+  ): Promise<void> {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+    const loginUrl = `${frontendUrl}/login`;
+
+    const subject = 'Recordatorio de Visita Pendiente - UGEL Lampa';
+    const text =
+      `Hola, le recordamos que la visita programada para el ${fecha} en la I.E. ${institucion} (Docente: ${docente}) se encuentra pendiente de ejecución.\n\n` +
+      `Por favor, ingrese al sistema para registrar la ficha o reprogramar la visita:\n${loginUrl}\n`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #1e3a8f; margin: 0;">UGEL Lampa</h2>
+          <p style="color: #64748b; font-size: 14px; margin: 5px 0 0 0;">Sistema de Monitoreo - Alerta Automática</p>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;" />
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">Estimado Monitor,</p>
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">Le recordamos que tiene una visita pendiente (vencida) que no ha sido completada ni reprogramada:</p>
+        <ul style="color: #334155; font-size: 14px;">
+          <li><strong>Fecha Programada:</strong> ${fecha}</li>
+          <li><strong>Institución Educativa:</strong> ${institucion}</li>
+          <li><strong>Docente Evaluado:</strong> ${docente}</li>
+        </ul>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${loginUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-size: 15px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block;">
+            Ir al Sistema
+          </a>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
+          Este es un aviso automático generado por el Sistema de Monitoreo.
+        </p>
+      </div>
+    `;
+
+    await this.sendMail(to, subject, text, html);
+  }
+
+  async sendResumenFichaEmail(
+    to: string,
+    docenteNombre: string,
+    pdfBuffer: Buffer,
+    pdfFileName: string,
+  ): Promise<void> {
+    const subject = 'Resultado de Ficha de Monitoreo - UGEL Lampa';
+    const text =
+      `Estimado(a) ${docenteNombre},\n\n` +
+      `Adjunto encontrará el informe en PDF con los resultados de su Ficha de Monitoreo.\n\n` +
+      `Atentamente,\nUGEL Lampa`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #1e3a8f; margin: 0;">UGEL Lampa</h2>
+          <p style="color: #64748b; font-size: 14px; margin: 5px 0 0 0;">Sistema de Monitoreo</p>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;" />
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">Estimado(a) <strong>${docenteNombre}</strong>,</p>
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">Su visita de monitoreo pedagógico ha concluido exitosamente y los resultados han sido registrados en el sistema.</p>
+        <p style="color: #334155; font-size: 15px; line-height: 1.6;">Adjunto a este correo encontrará un documento <strong>PDF oficial</strong> con el detalle de los niveles de logro alcanzados, sugerencias y compromisos de mejora establecidos.</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
+          Este es un aviso automático generado por el Sistema de Monitoreo. Por favor no responder a este remitente.
+        </p>
+      </div>
+    `;
+
+    const attachments = [
+      {
+        filename: pdfFileName,
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      },
+    ];
+
+    await this.sendMail(to, subject, text, html, attachments);
   }
 }

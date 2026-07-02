@@ -15,6 +15,10 @@ export class QueryInstitucionDto implements IQueryInstitucionRequest {
   @IsOptional()
   estado?: string;
 
+  @IsString()
+  @IsOptional()
+  modalidad?: string;
+
   @IsInt()
   @Min(1)
   @IsOptional()

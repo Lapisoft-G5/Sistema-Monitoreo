@@ -6,11 +6,19 @@ import {
   type InstitutionRawInput,
 } from '@features/institutions/ui/CreateInstitutionFormBase';
 import { type Institucion } from '@entities/model-instituciones';
-import { useInstitutionService, mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import {
+  useInstitutionService,
+  mapApiInstitucionToFrontend,
+} from '@features/institutions/institution-service';
 import { institutionsApi } from '@shared/api/institutions.api';
 import { Card } from '@shared/ui/card';
+import { Spinner } from '@shared/ui/Spinner';
 
-export const EditInstitutionCard = () => {
+interface EditInstitutionCardProps {
+  routePrefix?: string;
+}
+
+export const EditInstitutionCard = ({ routePrefix = '/instituciones/padron' }: EditInstitutionCardProps = {}) => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { updateInstitution, loading, error } = useInstitutionService();
@@ -42,8 +50,10 @@ export const EditInstitutionCard = () => {
   if (fetching) {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="text-text-muted text-sm font-medium">Cargando datos de la institución...</span>
+        <Spinner />
+        <span className="text-text-muted text-sm font-medium">
+          Cargando datos de la institución...
+        </span>
       </div>
     );
   }
@@ -65,14 +75,14 @@ export const EditInstitutionCard = () => {
     distrito: institucion.distrito,
     zona: institucion.zona || '',
     direccion: institucion.direccion,
-    modalidad: institucion.modalidad || 'Regular',
+    modalidad: institucion.modalidad || 'EBR',
   };
 
   const handleFormSubmit = async (formData: InstitutionRawInput) => {
     if (!id) return;
     const result = await updateInstitution(id, formData);
     if (result.success) {
-      navigate('/instituciones/padron');
+      navigate(routePrefix);
     }
   };
 
@@ -88,7 +98,7 @@ export const EditInstitutionCard = () => {
       <InstitutionFormBase
         initialData={initialData}
         onSubmit={handleFormSubmit}
-        onCancel={() => navigate('/instituciones/padron')}
+        onCancel={() => navigate(routePrefix)}
         isLoading={loading}
       />
     </Card>

@@ -1,24 +1,26 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { PAGINATION } from '@shared/config/constants';
 import { PageHeader } from '@shared/ui/pageHeader';
+import { Spinner } from '@shared/ui/Spinner';
 import { EditDocenteCard } from '@widgets/docentes';
-import { institutionsApi } from '@shared/api/institutions.api';
-import { mapApiInstitucionToFrontend } from '@features/institutions/institution-service';
+import { fetchInstituciones } from '@features/institutions/institution-service';
 import type { Institucion } from '@entities/model-instituciones';
 
 export const DocenteEditPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const backPath = location.state?.from || '/instituciones/docentes';
+
   const [instituciones, setInstituciones] = useState<Institucion[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchIes = async () => {
       setLoading(true);
-      const res = await institutionsApi.findAll({ limit: 1000 });
-      if (res.ok && res.data) {
-        setInstituciones(res.data.data.map(mapApiInstitucionToFrontend));
-      }
+      const mapped = await fetchInstituciones({ limit: PAGINATION.MAX_LIMIT });
+      setInstituciones(mapped);
       setLoading(false);
     };
     fetchIes();
@@ -27,7 +29,7 @@ export const DocenteEditPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando formulario...</span>
       </div>
     );
@@ -37,7 +39,7 @@ export const DocenteEditPage = () => {
     <div className="flex flex-col gap-6 max-w-[820px] mx-auto w-full animate-in fade-in-0 duration-300">
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('/instituciones/docentes')}
+          onClick={() => navigate(backPath)}
           className="p-2.5 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:bg-bg transition-colors cursor-pointer shadow-sm"
         >
           <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
@@ -53,7 +55,7 @@ export const DocenteEditPage = () => {
       <EditDocenteCard
         instituciones={instituciones}
         targetCargo="Docente de Aula"
-        routePrefix="/instituciones/docentes"
+        routePrefix={backPath}
         submitLabel="Guardar Docente"
       />
     </div>

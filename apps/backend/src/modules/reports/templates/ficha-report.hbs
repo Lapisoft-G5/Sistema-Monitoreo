@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ficha de Monitoreo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      margin: 0;
+      padding: 20px;
+      color: #000;
+    }
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .header-table td {
+      border: 1px solid #000;
+      padding: 5px;
+      text-align: center;
+      font-weight: bold;
+      background-color: #f3f4f6;
+    }
+    h2 {
+      text-align: center;
+      margin: 10px 0;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+      table-layout: fixed;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 4px;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+    th {
+      background-color: #e5e7eb;
+      font-weight: bold;
+    }
+    .section-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 10px 0 5px 0;
+      font-size: 12px;
+    }
+    .bg-gray {
+      background-color: #f3f4f6;
+      font-weight: bold;
+    }
+    .text-center {
+      text-align: center;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+    .signatures {
+      margin-top: 50px;
+      width: 100%;
+      text-align: center;
+    }
+    .signatures td {
+      border: none;
+      padding-top: 40px;
+    }
+    .signature-line {
+      border-top: 1px dotted #000;
+      width: 80%;
+      margin: 0 auto;
+      padding-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ENCABEZADO OFICIAL SIMULADO -->
+  <table class="header-table">
+    <tr>
+      <td>GOBIERNO REGIONAL PUNO</td>
+      <td>Dirección Regional de Educación</td>
+      <td>Dirección de Gestión Pedagógica</td>
+    </tr>
+  </table>
+  
+  <div style="text-align: center; font-style: italic; margin-bottom: 15px;">
+    Año de la recuperación y consolidación de la economía peruana
+  </div>
+
+  <h2>FICHA DE MONITOREO - {{ficha.anioAcademico}}</h2>
+
+  <!-- DATOS INSTITUCIÓN Y EVALUADO -->
+  <div class="section-title">DATOS DE LA INSTITUCIÓN EDUCATIVA Y DOCENTE:</div>
+  <table>
+    <tr>
+      <td class="bg-gray" width="20%">INSTITUCIÓN EDUCATIVA:</td>
+      <td width="50%">{{institucion.nombre}}</td>
+      <td class="bg-gray" width="15%">CÓD. MODULAR:</td>
+      <td width="15%">{{institucion.codigoModular}}</td>
+    </tr>
+    <tr>
+      <td class="bg-gray">APELLIDOS Y NOMBRES DEL DOCENTE:</td>
+      <td colspan="3">{{docente.nombres}} {{docente.apellidoPaterno}} {{docente.apellidoMaterno}}</td>
+    </tr>
+    <tr>
+      <td class="bg-gray">DNI:</td>
+      <td>{{docente.dni}}</td>
+      <td class="bg-gray">CELULAR:</td>
+      <td>{{docente.telefono}}</td>
+    </tr>
+  </table>
+
+  <!-- DATOS MONITOR -->
+  <div class="section-title">DATOS DEL MONITOR:</div>
+  <table>
+    <tr>
+      <td class="bg-gray" width="20%">APELLIDOS Y NOMBRES:</td>
+      <td colspan="3">{{monitor.nombres}} {{monitor.apellidoPaterno}} {{monitor.apellidoMaterno}}</td>
+    </tr>
+    <tr>
+      <td class="bg-gray" width="20%">CARGO:</td>
+      <td width="30%">Especialista en Educación</td>
+      <td class="bg-gray" width="15%">FECHA:</td>
+      <td width="35%">{{fechaFormat}}</td>
+    </tr>
+  </table>
+
+  <!-- NIVELES DE LOGRO LEYENDA -->
+  <div class="section-title">NIVELES DEL LOGRO:</div>
+  <table>
+    <tr class="text-center">
+      <th>NIVEL I<br>Inicio</th>
+      <th>NIVEL II<br>En Proceso</th>
+      <th>NIVEL III<br>Logro Esperado</th>
+      <th>NIVEL IV<br>Logro Destacado</th>
+    </tr>
+    <tr class="text-center" style="font-size: 10px;">
+      <td>Presenta deficiencias significativas o ausencia de la habilidad.</td>
+      <td>Evidencia avances, pero con limitaciones.</td>
+      <td>Cumple los criterios de manera adecuada.</td>
+      <td>Supera el nivel esperado con un desempeño sólido.</td>
+    </tr>
+  </table>
+
+  <!-- RÚBRICAS (RESPUESTAS) -->
+  <div class="section-title">RÚBRICAS DE MONITOREO</div>
+  <table>
+    <tr>
+      <th width="5%">N°</th>
+      <th width="45%">RÚBRICAS / DESEMPEÑOS</th>
+      <th width="10%">NIVEL</th>
+      <th width="40%">OBSERVACIONES</th>
+    </tr>
+    {{#each respuestas}}
+    <tr>
+      <td class="text-center">{{increment @index}}</td>
+      <td>{{this.nombre}}</td>
+      <td class="text-center"><b>{{this.nivel}}</b></td>
+      <td>{{this.observaciones}}</td>
+    </tr>
+    {{/each}}
+  </table>
+
+  <div class="page-break"></div>
+
+  <!-- CONSOLIDADO, OBSERVACIONES Y COMPROMISOS -->
+  <div class="section-title">CONSOLIDADO NIVELES DE LOGRO:</div>
+  <table>
+    <tr>
+      <th width="25%">NIVEL DE LOGRO ALCANZADO</th>
+      <th width="25%">PUNTAJE TOTAL</th>
+      <th width="25%">PROMEDIO</th>
+      <th width="25%">ESTADO</th>
+    </tr>
+    <tr class="text-center">
+      <td><b>{{ficha.nivelLogro}}</b></td>
+      <td><b>{{ficha.puntajeTotal}}</b></td>
+      <td><b>{{ficha.promedio}}</b></td>
+      <td><b>{{ficha.estado}}</b></td>
+    </tr>
+  </table>
+
+  <div class="section-title">OBSERVACIONES Y SUGERENCIAS DEL MONITOR:</div>
+  <table style="min-height: 100px;">
+    <tr>
+      <td style="padding: 10px;">
+        {{#if ficha.observaciones}}
+          {{ficha.observaciones}}
+        {{else}}
+          Ninguna registrada.
+        {{/if}}
+        <br><br>
+        {{#if ficha.sugerencias}}
+          <strong>Sugerencias:</strong><br>
+          {{ficha.sugerencias}}
+        {{/if}}
+      </td>
+    </tr>
+  </table>
+
+  <div class="section-title">COMPROMISOS DE MEJORA:</div>
+  <table style="min-height: 100px;">
+    <tr>
+      <td style="padding: 10px;">
+        {{#if ficha.compromisos}}
+          {{ficha.compromisos}}
+        {{else}}
+          Ningún compromiso registrado.
+        {{/if}}
+      </td>
+    </tr>
+  </table>
+
+  <!-- FIRMAS -->
+  <table class="signatures">
+    <tr>
+      <td width="33%">
+        <div class="signature-line">
+          Firma del Docente<br>
+          DNI: {{docente.dni}}
+        </div>
+      </td>
+      <td width="34%">
+        <div class="signature-line">
+          Firma del Director(a) IE
+        </div>
+      </td>
+      <td width="33%">
+        <div class="signature-line">
+          Firma del Especialista UGEL<br>
+          DNI: {{monitor.dni}}
+        </div>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

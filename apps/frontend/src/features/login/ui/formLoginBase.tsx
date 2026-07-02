@@ -53,7 +53,11 @@ export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLog
             disabled={isLoading}
             className="text-[#990537] hover:text-[#7a042c] text-xs flex items-center gap-1.5 cursor-pointer bg-transparent border-none font-semibold outline-none disabled:opacity-50"
           >
-            {showPass ? <EyeOff className="w-[14px] h-[14px]" /> : <Eye className="w-[14px] h-[14px]" />}
+            {showPass ? (
+              <EyeOff className="w-[14px] h-[14px]" />
+            ) : (
+              <Eye className="w-[14px] h-[14px]" />
+            )}
             {showPass ? 'ocultar' : 'mostrar'}
           </button>
         </div>
@@ -86,7 +90,7 @@ export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLog
       {/* Botón de Envío (Integrado al form para disparar el onSubmit nativo) */}
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || dni.length < 8 || password.length < 6}
         className="w-full py-3.5 bg-[#990537] hover:bg-[#80042e] disabled:bg-[#990537]/50 text-white font-bold text-sm tracking-wider rounded-xl transition-all shadow-md mt-2 cursor-pointer disabled:cursor-not-allowed border-none"
       >
         {isLoading ? 'Verificando...' : 'INICIO DE SESIÓN'}

@@ -1,28 +1,45 @@
 import { useState } from 'react';
-import type { Especialista, NivelInstitucion } from '@entities/model-especialistas';
-import { MOCK_ESPECIALISTAS } from '@entities/model-especialistas';
+import type { Especialista } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistasApi } from '@shared/api/especialistas.api';
+import type { IEspecialistaResponse, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
 
-import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
+export const fetchEspecialistas = async (query?: IQueryEspecialistaRequest): Promise<Especialista[]> => {
+  const res = await especialistasApi.findAll(query);
+  if (res.ok && res.data) {
+    return res.data.map(mapApiEspecialistaToFrontend);
+  }
+  return [];
+};
+
+export const fetchEspecialistaById = async (id: string): Promise<Especialista | null> => {
+  const res = await especialistasApi.findById(id);
+  if (res.ok && res.data) {
+    return mapApiEspecialistaToFrontend(res.data);
+  }
+  return null;
+};
 
 export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Especialista => {
   return {
     id: apiEsp.id,
+    personaId: apiEsp.personaId,
     nombres: apiEsp.persona.nombres,
     apellidos: apiEsp.persona.apellidos,
     dni: apiEsp.persona.dni,
     correo: apiEsp.persona.correo || '',
     celular: apiEsp.persona.telefono || '',
+    especialidades: apiEsp.especialidades || [],
     especialidad: apiEsp.especialidad || '',
-    niveles: apiEsp.nivelEducativo
-      ? (apiEsp.nivelEducativo.split(',').map((s: string) => s.trim()) as NivelInstitucion[])
-      : [],
+    especialidadesExtras: apiEsp.especialidadesExtras || [],
+    nivelEducativo: apiEsp.nivelEducativo,
+    modalidad: apiEsp.modalidad || 'EBR',
+    estado: apiEsp.estado,
     activo: apiEsp.estado === 'Activo',
     fechaCreacion: apiEsp.createdAt
       ? new Date(apiEsp.createdAt).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
-    condicionLaboral: (apiEsp.condicionLaboral as any) || 'Contratado',
+    condicionLaboral: apiEsp.condicionLaboral || 'Encargado',
     cargaLaboral: apiEsp.cargaLaboral || 40,
     escalaMagisterial: apiEsp.escalaMagisterial ?? undefined,
     cargo: apiEsp.cargo,
@@ -47,10 +64,13 @@ export const useEspecialistaService = () => {
         dni: formData.dni,
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        correo: formData.correo.trim() || undefined,
-        telefono: formData.celular.trim() || undefined,
-        especialidad: formData.especialidad?.trim() || 'General',
-        nivelEducativo: formData.niveles.join(', '),
+        correo: formData.correo?.trim() || undefined,
+        telefono: formData.celular?.trim() || undefined,
+        especialidades: formData.especialidades || undefined,
+        especialidad: formData.especialidad?.trim() || undefined,
+        especialidadesExtras: formData.especialidadesExtras || undefined,
+        nivelEducativo: formData.nivelEducativo,
+        modalidad: formData.modalidad,
         rolCode,
         cargo,
         condicionLaboral: formData.condicionLaboral,
@@ -61,10 +81,10 @@ export const useEspecialistaService = () => {
       const res = await especialistasApi.create(dto);
       if (res.ok && res.data) {
         const mapped = mapApiEspecialistaToFrontend(res.data);
-        MOCK_ESPECIALISTAS.push(mapped);
         return { success: true, data: mapped };
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al registrar el especialista.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al registrar el especialista.';
         setError(errMsg);
         return { success: false, error: res.error };
       }
@@ -89,11 +109,14 @@ export const useEspecialistaService = () => {
       const dto = {
         nombres: formData.nombres.trim(),
         apellidos: formData.apellidos.trim(),
-        correo: formData.correo.trim() || undefined,
-        telefono: formData.celular.trim() || undefined,
-        especialidad: formData.especialidad?.trim() || 'General',
-        nivelEducativo: formData.niveles.join(', '),
-        estado: formData.activo ?? true ? 'Activo' : 'Inactivo',
+        correo: formData.correo?.trim() || undefined,
+        telefono: formData.celular?.trim() || undefined,
+        especialidades: formData.especialidades || undefined,
+        especialidad: formData.especialidad?.trim() || undefined,
+        especialidadesExtras: formData.especialidadesExtras || undefined,
+        nivelEducativo: formData.nivelEducativo,
+        modalidad: formData.modalidad,
+        estado: (formData.activo ?? true) ? 'Activo' : 'Inactivo',
         rolCode,
         cargo,
         condicionLaboral: formData.condicionLaboral,
@@ -104,13 +127,10 @@ export const useEspecialistaService = () => {
       const res = await especialistasApi.update(id, dto);
       if (res.ok && res.data) {
         const mapped = mapApiEspecialistaToFrontend(res.data);
-        const index = MOCK_ESPECIALISTAS.findIndex((e) => e.id === id);
-        if (index !== -1) {
-          MOCK_ESPECIALISTAS[index] = mapped;
-        }
         return { success: true, data: mapped };
       } else {
-        const errMsg = (res.error as { message?: string })?.message || 'Error al actualizar el especialista.';
+        const errMsg =
+          (res.error as { message?: string })?.message || 'Error al actualizar el especialista.';
         setError(errMsg);
         return { success: false, error: res.error };
       }

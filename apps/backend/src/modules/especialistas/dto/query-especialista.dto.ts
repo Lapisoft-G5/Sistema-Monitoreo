@@ -13,4 +13,8 @@ export class QueryEspecialistaDto implements IQueryEspecialistaRequest {
   @IsString()
   @IsOptional()
   nivelEducativo?: string;
+
+  @IsString()
+  @IsOptional()
+  cargo?: string;
 }

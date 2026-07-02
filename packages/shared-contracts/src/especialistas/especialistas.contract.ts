@@ -1,12 +1,15 @@
 export interface IEspecialistaResponse {
   id: string;
   personaId: string;
-  especialidad: string;
+  especialidades?: string[] | null;
+  especialidad?: string | null;
+  especialidadesExtras?: string[] | null;
   nivelEducativo: string;
+  modalidad?: string | null;
   estado: string;
-  cargaLaboral?: number;
-  cargo?: string;
-  condicionLaboral?: string;
+  cargaLaboral?: number | null;
+  cargo: string;
+  condicionLaboral?: string | null;
   escalaMagisterial?: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -31,6 +34,7 @@ export interface IQueryEspecialistaRequest {
   estado?: string;
   especialidad?: string;
   nivelEducativo?: string;
+  cargo?: string;
 }
 
 export interface ICreateEspecialistaRequest {
@@ -39,10 +43,14 @@ export interface ICreateEspecialistaRequest {
   apellidos: string;
   correo?: string;
   telefono?: string;
-  especialidad: string;
+  /** 'Especialista' | 'Jefe de Área' | 'Jefe de Gestión' */
+  cargo: string;
+  modalidad: string;
+  especialidades?: string[];
+  especialidad?: string;
+  especialidadesExtras?: string[];
   nivelEducativo: string;
   rolCode: string;
-  cargo?: string;
   condicionLaboral?: string;
   cargaLaboral?: number;
   escalaMagisterial?: number | null;
@@ -53,11 +61,15 @@ export interface IUpdateEspecialistaRequest {
   apellidos: string;
   correo?: string;
   telefono?: string;
-  especialidad: string;
+  /** 'Especialista' | 'Jefe de Área' | 'Jefe de Gestión' */
+  cargo: string;
+  modalidad: string;
+  especialidades?: string[];
+  especialidad?: string;
+  especialidadesExtras?: string[];
   nivelEducativo: string;
   estado: string;
   rolCode: string;
-  cargo?: string;
   condicionLaboral?: string;
   cargaLaboral?: number;
   escalaMagisterial?: number | null;

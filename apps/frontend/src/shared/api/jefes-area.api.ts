@@ -1,141 +1,82 @@
+import { CARGA_HORARIA } from '@shared/config/constants';
+import { especialistasApi } from './especialistas.api.js';
 import type {
-  ICreateJefeAreaRequest,
-  IJefeAreaResponse,
-  IQueryJefeAreaRequest,
-  IUpdateJefeAreaRequest,
+  IEspecialistaResponse,
+  IQueryEspecialistaRequest,
 } from '@sistema-monitoreo/shared-contracts';
 
-const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export type IJefeAreaResponse = IEspecialistaResponse;
+export type IQueryJefeAreaRequest = IQueryEspecialistaRequest;
+export type ICreateJefeAreaRequest = Record<string, unknown>;
+export type IUpdateJefeAreaRequest = Record<string, unknown>;
 
 export const jefesAreaApi = {
-  findAll: async (query?: IQueryJefeAreaRequest): Promise<{ ok: boolean; data?: IJefeAreaResponse[]; error?: unknown }> => {
-    try {
-      const url = new URL(`${getApiBaseUrl()}/api/jefes-area`);
-      if (query) {
-        Object.entries(query).forEach(([key, val]) => {
-          if (val !== undefined && val !== null) {
-            url.searchParams.append(key, String(val));
-          }
-        });
-      }
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
-      return { ok: true, data };
-    } catch (err) {
-      return { ok: false, error: err };
-    }
+  findAll: async (
+    query?: IQueryJefeAreaRequest,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse[]; error?: unknown }> => {
+    return especialistasApi.findAll({ ...query, cargo: 'Jefe de Área' });
   },
 
-  findById: async (id: string): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/jefes-area/${id}`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
-      return { ok: true, data };
-    } catch (err) {
-      return { ok: false, error: err };
-    }
+  findById: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+    return especialistasApi.findById(id);
   },
 
-  create: async (dto: ICreateJefeAreaRequest): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/jefes-area`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dto),
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
-      return { ok: true, data };
-    } catch (err) {
-      return { ok: false, error: err };
-    }
+  create: async (
+    dto: Record<string, unknown>,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+    const specialistDto = {
+      dni: dto.dni as string,
+      nombres: dto.nombres as string,
+      apellidos: dto.apellidos as string,
+      correo: dto.correo as string,
+      telefono: dto.telefono as string,
+      cargo: 'Jefe de Área',
+      modalidad: 'EBR',
+      nivelEducativo: (dto.nivelEducativo as string) || 'Secundaria',
+      rolCode: (dto.rolCode as string) || 'jefe_area',
+      condicionLaboral: (dto.condicionLaboral as string) || 'Designado',
+      cargaLaboral: dto.cargaHoraria !== undefined ? Number(dto.cargaHoraria) : CARGA_HORARIA.JEFE_AREA,
+    };
+    return especialistasApi.create(specialistDto);
   },
 
-  update: async (id: string, dto: IUpdateJefeAreaRequest): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/jefes-area/${id}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dto),
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
-      return { ok: true, data };
-    } catch (err) {
-      return { ok: false, error: err };
-    }
+  update: async (
+    id: string,
+    dto: Record<string, unknown>,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+    const specialistDto = {
+      nombres: dto.nombres as string,
+      apellidos: dto.apellidos as string,
+      correo: dto.correo as string,
+      telefono: dto.telefono as string,
+      cargo: 'Jefe de Área',
+      modalidad: 'EBR',
+      nivelEducativo: (dto.nivelEducativo as string) || 'Secundaria',
+      estado: (dto.estado as string) || 'Activo',
+      rolCode: (dto.rolCode as string) || 'jefe_area',
+      condicionLaboral: (dto.condicionLaboral as string) || 'Designado',
+      cargaLaboral: dto.cargaHoraria !== undefined ? Number(dto.cargaHoraria) : CARGA_HORARIA.JEFE_AREA,
+    };
+    return especialistasApi.update(id, specialistDto);
   },
 
-  delete: async (id: string): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/jefes-area/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
-      return { ok: true, data };
-    } catch (err) {
-      return { ok: false, error: err };
-    }
+  delete: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+    return especialistasApi.delete(id);
   },
 
-  deactivate: async (id: string): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/jefes-area/${id}/baja`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
-      return { ok: true, data };
-    } catch (err) {
-      return { ok: false, error: err };
-    }
+  deactivate: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+    return especialistasApi.deactivate(id);
   },
 
-  activate: async (id: string): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/jefes-area/${id}/alta`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        return { ok: false, error: errJson };
-      }
-      const data = await response.json();
-      return { ok: true, data };
-    } catch (err) {
-      return { ok: false, error: err };
-    }
+  activate: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
+    return especialistasApi.activate(id);
   },
 };

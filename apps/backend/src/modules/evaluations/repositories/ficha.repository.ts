@@ -1,0 +1,104 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import type {
+  IFichaMonitoreo,
+  IFichaContexto,
+  IFichaRespuestaDesempeno,
+  IFichaRespuestaAspecto,
+  IFichaRespuestaEjeItem,
+  NivelLogro,
+  EstadoFicha,
+  IHistorialPedagogicoResponse,
+} from '@sistema-monitoreo/shared-contracts';
+
+export interface CreateFichaData {
+  cronogramaId: string;
+  plantillaId: string;
+  anioAcademico: number;
+  contexto: Omit<IFichaContexto, 'id'>;
+  creadoPorId: string;
+}
+
+export interface SaveRespuestaData {
+  fichaId: string;
+  desempenoId: string;
+  nivel: number;
+  observaciones?: string;
+  preguntaExtraRespuesta?: boolean;
+}
+
+export interface SaveRespuestaEjeItemData {
+  fichaId: string;
+  ejeItemId: string;
+  nivel: number;
+  evidenciaUrl?: string | null;
+}
+
+export interface SaveRespuestaAspectoData {
+  fichaId: string;
+  aspectoId: string;
+  marcado: boolean;
+}
+
+export interface FinalizarFichaData {
+  fichaId: string;
+  finalizadoPorId: string;
+  observaciones?: string;
+  sugerencias?: string;
+  compromisos?: string;
+}
+
+export interface CronogramaBasic {
+  id: string;
+  estado: string;
+  tipoMonitoreo: string;
+  fechaProgramada: Date;
+  evaluadoId: string;
+}
+
+export interface PlantillaBasic {
+  id: string;
+  estado: string;
+  tipoMonitoreo: string;
+  anioAcademico: number;
+  descripcion: string | null;
+}
+
+export abstract class FichaRepository {
+  abstract findByVisitaId(cronogramaId: string): Promise<IFichaMonitoreo | null>;
+  abstract findById(id: string): Promise<IFichaMonitoreo | null>;
+  abstract create(data: CreateFichaData): Promise<IFichaMonitoreo>;
+  abstract saveRespuestaDesempeno(data: SaveRespuestaData): Promise<IFichaRespuestaDesempeno>;
+  abstract saveRespuestaAspecto(data: SaveRespuestaAspectoData): Promise<IFichaRespuestaAspecto>;
+  abstract saveRespuestaEjeItem(data: SaveRespuestaEjeItemData): Promise<IFichaRespuestaEjeItem>;
+  abstract finalizar(
+    fichaId: string,
+    puntajeTotal: number,
+    promedio: number,
+    nivelLogro: NivelLogro,
+    finalizadaPorId: string,
+    observaciones?: string,
+    sugerencias?: string,
+    compromisos?: string,
+  ): Promise<IFichaMonitoreo>;
+  abstract plantillaEstaHistorica(plantillaId: string): Promise<boolean>;
+
+  abstract findPlantillaVigente(tipo: string, anio: number): Promise<PlantillaBasic | null>;
+  abstract findCronogramaBasicById(id: string): Promise<CronogramaBasic | null>;
+  abstract findCursoBasicById(id: string): Promise<{ id: string } | null>;
+  abstract findDocenteCursoByDocenteId(docenteId: string): Promise<{ cursoId: string } | null>;
+  abstract findFirstCursoBasic(): Promise<{ id: string } | null>;
+  abstract findPlantillaBasicById(id: string): Promise<PlantillaBasic | null>;
+  abstract updateCronogramaEstado(id: string, estado: string): Promise<void>;
+  abstract findRespuestaEjeItemByFichaAndEje(
+    fichaId: string,
+    ejeItemId: string,
+  ): Promise<{ nivel: number } | null>;
+  abstract migrarPlantilla(
+    fichaId: string,
+    nuevaPlantillaId: string,
+    oldDesempenos: Array<{ id: string; nivel: number }>,
+    oldAspectos: Array<{ id: string; marcado: boolean }>,
+  ): Promise<IFichaMonitoreo>;
+  abstract existsWithScope(id: string, scopeWhere: Record<string, unknown>): Promise<boolean>;
+  abstract getHistorial(evaluadoId: string): Promise<IHistorialPedagogicoResponse>;
+}

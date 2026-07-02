@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist",
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
@@ -23,6 +25,8 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
   },
+  "include": ["src/**/*", "test/**/*", "**/*.spec.ts"],
+  "exclude": ["node_modules", "dist"],
   "ts-node": {
     "compilerOptions": {
       "module": "CommonJS",

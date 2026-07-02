@@ -7,9 +7,12 @@ export interface ICreateDocenteRequest {
   institucionId: string;
   gradoAcademico?: string;
   nivelEducativo: string;
+  modalidad?: string;
+  especialidad?: string;
   cursoAsignado?: string;
   cargoId: string;
   condicionLaboral?: string;
+  cargaLaboral?: number;
   escalaMagisterial?: number;
   secciones?: { grado: string; seccion: string }[];
 }
@@ -21,9 +24,12 @@ export interface IUpdateDocenteRequest {
   telefono?: string;
   gradoAcademico?: string;
   nivelEducativo: string;
+  modalidad?: string;
+  especialidad?: string;
   cursoAsignado?: string;
   cargoId: string;
   condicionLaboral?: string;
+  cargaLaboral?: number;
   escalaMagisterial?: number;
   institucionId?: string;
   secciones?: { grado: string; seccion: string }[];
@@ -35,6 +41,8 @@ export interface IDocenteResponse {
   institucionId: string;
   gradoAcademico: string | null;
   nivelEducativo: string;
+  modalidad?: string | null;
+  especialidad?: string | null;
   cursoAsignado: string | null;
   condicionLaboral?: string | null;
   escalaMagisterial?: number | null;
@@ -54,6 +62,7 @@ export interface IDocenteResponse {
     cargoId: string;
     fechaInicio: Date | string;
     fechaFin: Date | string | null;
+    esPrincipal: boolean;
     cargo: {
       id: string;
       nombre: string;
@@ -63,6 +72,36 @@ export interface IDocenteResponse {
     id: string;
     grado: string;
     seccion: string;
+  }>;
+  evaluadorActual?: {
+    id: string;
+    evaluadorId: string;
+    evaluadorNombres: string;
+    evaluadorApellidos: string;
+  } | null;
+  docenteAreas?: Array<{
+    id: string;
+    areaId: string;
+    area: {
+      id: string;
+      nombre: string;
+    };
+  }>;
+  evaluadoresAsignados?: Array<{
+    id: string;
+    evaluadorId: string;
+    evaluador: {
+      id: string;
+      persona: { nombres: string; apellidos: string; };
+    }
+  }>;
+  docentesAevaluar?: Array<{
+    id: string;
+    evaluadoId: string;
+    evaluado: {
+      id: string;
+      persona: { nombres: string; apellidos: string; };
+    }
   }>;
 }
 

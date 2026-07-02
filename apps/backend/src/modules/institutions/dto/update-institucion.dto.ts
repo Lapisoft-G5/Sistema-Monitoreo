@@ -1,5 +1,6 @@
 import { IsOptional, IsString, IsNotEmpty, Length, Matches } from 'class-validator';
 import { IUpdateInstitucionRequest } from '@sistema-monitoreo/shared-contracts';
+import { IsValidNivelForModalidad } from '../../../common/validators/modalidad-nivel.validator.js';
 
 export class UpdateInstitucionDto implements IUpdateInstitucionRequest {
   @IsString()
@@ -10,6 +11,7 @@ export class UpdateInstitucionDto implements IUpdateInstitucionRequest {
   @IsString()
   @IsOptional()
   @IsNotEmpty({ message: 'El nivel educativo no puede estar vacío' })
+  @IsValidNivelForModalidad('modalidad')
   nivelEducativo?: string;
 
   @IsString()
@@ -56,4 +58,3 @@ export class UpdateInstitucionDto implements IUpdateInstitucionRequest {
   @IsOptional()
   modalidad?: string;
 }
-

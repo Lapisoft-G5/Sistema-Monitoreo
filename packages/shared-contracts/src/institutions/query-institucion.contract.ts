@@ -4,6 +4,7 @@ export interface IQueryInstitucionRequest {
   nombre?: string;
   nivelEducativo?: string;
   estado?: string;
+  modalidad?: string;
   limit?: string | number;
   offset?: string | number;
 }

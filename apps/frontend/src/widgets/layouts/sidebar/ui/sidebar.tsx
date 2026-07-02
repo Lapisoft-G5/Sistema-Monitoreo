@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user';
-import { ROLE_PERMISSIONS } from '@shared/constants/roles';
+import { ROLE_PERMISSIONS, ROLE_LABELS } from '@shared/constants/roles';
 import type { MenuItem } from '@shared/constants/roles';
-import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight, Compass, BarChart3 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
 
@@ -15,7 +15,7 @@ export const Sidebar = () => {
   const { user, logout } = useUser();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>(['monitoreo']);
 
@@ -48,7 +48,7 @@ export const Sidebar = () => {
               UGEL Lampa
             </span>
             <span className="text-text-muted text-[0.63rem] whitespace-nowrap">
-              Gestión Pedagógica
+              {user ? ROLE_LABELS[user.role] : 'Jefe de Gestión'}
             </span>
           </div>
         )}
@@ -63,24 +63,58 @@ export const Sidebar = () => {
         </Button>
       </div>
 
-
-
       {/* ── Navegación Dinámica ── */}
       <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
-        {SIDEBAR_CONFIG.filter((item) => has(item.id as string)).map((item) => {
+        {(user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller'
+          ? [
+              {
+                id: 'monitoreo',
+                label: 'Monitoreo',
+                icon: <Compass className="h-[18px] w-[18px]" />,
+                children: [
+                  { id: 'monitoreo_calendario', label: 'Calendario', path: '/monitoreo/calendario' },
+                ],
+              },
+              {
+                id: 'reportes',
+                label: 'Mis Reportes',
+                icon: <BarChart3 className="h-[18px] w-[18px]" />,
+                path: '/reportes',
+                children: [],
+              },
+            ]
+          : SIDEBAR_CONFIG.filter((item) => {
+              const isDirector = user?.role === 'director_institucion';
+              const isSecundary = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
+              if (
+                (item.id === 'instituciones_coordinadores' || item.id === 'instituciones_jefes_taller') &&
+                isDirector &&
+                !isSecundary
+              ) {
+                return false;
+              }
+              return has(item.id as string);
+            })
+        ).map((item) => {
           const visibleChildren = item.children.filter((c) => has(c.id as string));
           const isOpen = openMenus.includes(item.id as string);
-          
+
           // Lógica de estado activo por ruta (URL)
-          const isActive = item.path 
+          const isActive = item.path
             ? location.pathname.startsWith(item.path)
             : visibleChildren.some((c) => location.pathname.startsWith(c.path));
 
-          const displayLabel = item.id === 'instituciones_docentes'
-            ? (isJefeArea ? 'Directores' : 'Docentes')
-            : item.id === 'instituciones_coordinadores'
-            ? (isJefeArea ? 'Jefes de Gestión' : 'Coordinadores')
-            : item.label;
+          const displayLabel =
+            item.id === 'instituciones_docentes'
+              ? isJefeArea || user?.role === 'jefe_gestion'
+                ? 'Directores'
+                : 'Docentes'
+              : item.id === 'monitoreo' &&
+                (user?.role === 'jefe_gestion' || user?.role === 'director_institucion')
+                ? 'Plan Monitoreo'
+                : item.id === 'reportes' && user?.role === 'docente'
+                  ? 'Mis Reportes'
+                  : item.label;
 
           const triggerClasses = `
             w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border-none
@@ -97,7 +131,9 @@ export const Sidebar = () => {
               <span className="flex-shrink-0 flex">{item.icon}</span>
               {!collapsed && <span className="flex-1 truncate">{displayLabel}</span>}
               {!collapsed && visibleChildren.length > 0 && (
-                <span className={`text-text-dim flex transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+                <span
+                  className={`text-text-dim flex transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                >
                   <ChevronDown className="h-3.5 w-3.5" />
                 </span>
               )}
@@ -107,7 +143,12 @@ export const Sidebar = () => {
           // Renderizado con submenú (Collapsible)
           if (visibleChildren.length > 0) {
             return (
-              <Collapsible key={item.id} open={isOpen} onOpenChange={() => toggleMenu(item.id as string)} className="flex flex-col">
+              <Collapsible
+                key={item.id}
+                open={isOpen}
+                onOpenChange={() => toggleMenu(item.id as string)}
+                className="flex flex-col"
+              >
                 <CollapsibleTrigger asChild title={collapsed ? displayLabel : undefined}>
                   <button className={triggerClasses}>{TriggerContent}</button>
                 </CollapsibleTrigger>

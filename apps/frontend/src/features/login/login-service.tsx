@@ -31,7 +31,7 @@ export const useLoginService = () => {
   // 4. Efecto del temporizador: Corre en segundo plano si el usuario está bloqueado
   useEffect(() => {
     if (!isPenalized) return;
-    
+
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -42,32 +42,30 @@ export const useLoginService = () => {
         return prev - 1;
       });
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, [isPenalized]);
 
   // 5. La función principal que será llamada por el formulario
   const login = async (dni: string, password: string) => {
-    // Protección frontal
-    if (isPenalized) {
-      const msg = 'Sistema penalizado temporalmente';
-      setError(msg);
-      return { success: false, error: msg };
-    }
-
     setLoading(true);
     setError(null);
 
     // Llamada a la capa shared/api
     const { ok, data, error: apiError } = await authApi.login(dni, password);
-    
+
     setLoading(false);
 
     // Manejo de fracaso
     if (!ok || !data) {
-      interface ApiLoginError { failedLoginAttempts?: number; lockedUntil?: string; message?: string; }
+      interface ApiLoginError {
+        failedLoginAttempts?: number;
+        lockedUntil?: string;
+        message?: string;
+      }
       const errJson = (apiError || {}) as ApiLoginError;
-      const nextAttempts = errJson.failedLoginAttempts !== undefined ? errJson.failedLoginAttempts : attempts + 1;
+      const nextAttempts =
+        errJson.failedLoginAttempts !== undefined ? errJson.failedLoginAttempts : attempts + 1;
       setAttempts(nextAttempts);
 
       if (nextAttempts >= MAX_ATTEMPTS || errJson.lockedUntil) {
@@ -76,11 +74,12 @@ export const useLoginService = () => {
           ? new Date(errJson.lockedUntil).getTime()
           : Date.now() + PENALIZATION_TIME_SECONDS * 1000;
 
-        const calculatedPenaltyTime = Math.max(0, Math.ceil((expiryTime - Date.now()) / 1000)) || PENALIZATION_TIME_SECONDS;
+        const calculatedPenaltyTime =
+          Math.max(0, Math.ceil((expiryTime - Date.now()) / 1000)) || PENALIZATION_TIME_SECONDS;
         localStorage.setItem('ugel_penalty_expiry', expiryTime.toString());
         setTimeLeft(calculatedPenaltyTime);
         setShowFailedModal(false);
-        
+
         const blockMsg = errJson.message || 'Demasiados intentos fallidos. Acceso bloqueado.';
         setError(blockMsg);
         return { success: false, error: blockMsg };
@@ -109,6 +108,10 @@ export const useLoginService = () => {
       institucion: data.user.institucion,
       institucionNombre: data.user.institucionNombre,
       institucionNivel: data.user.institucionNivel,
+      especialistaId: data.user.especialistaId,
+      especialistaNivel: data.user.especialistaNivel,
+      especialistaModalidad: data.user.especialistaModalidad,
+      especialistaEspecialidades: data.user.especialistaEspecialidades,
       distrito: data.user.distrito,
     });
 
@@ -125,6 +128,6 @@ export const useLoginService = () => {
     timeLeft,
     showFailedModal,
     setShowFailedModal,
-    MAX_ATTEMPTS
+    MAX_ATTEMPTS,
   };
 };

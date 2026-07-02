@@ -1,7 +1,7 @@
 export type CondicionLaboral = 'Nombrado' | 'Contratado';
 
-// Condición laboral específica del Director : Asignado, Encargado o Por función.
-export type CondicionDirectiva = 'Asignado' | 'Encargado' | 'Por función';
+// Condición laboral específica del Director : Designado, Encargado o Por Función.
+export type CondicionDirectiva = 'Designado' | 'Encargado' | 'Por Función';
 
 export type EscalaMagisterial = 'I' | 'II' | 'III' | 'IV' | 'V' | 'VI' | 'VII' | 'VIII';
 
@@ -29,5 +29,18 @@ export interface Docente {
   institucionId: string; // Relación con I.E.
   activo: boolean;
   fechaCreacion: string;
-  cargo: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula';
+  cargo: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
+  cargosList?: Array<{
+    id: string;
+    nombre: string;
+    fechaInicio: string;
+    fechaFin: string | null;
+    esPrincipal: boolean;
+  }>;
+  evaluadorActual?: {
+    id: string;
+    evaluadorId: string;
+    evaluadorNombres: string;
+    evaluadorApellidos: string;
+  } | null;
 }

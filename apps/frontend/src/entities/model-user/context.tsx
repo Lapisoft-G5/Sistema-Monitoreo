@@ -28,6 +28,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const handleInvalidation = () => {
       setUser(null);
+      // Redirigir al login. Usamos window.location en lugar de useNavigate porque
+      // este provider se renderiza fuera del Router context.
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.assign('/login');
+      }
     };
     window.addEventListener('auth-invalidation', handleInvalidation);
     return () => window.removeEventListener('auth-invalidation', handleInvalidation);
@@ -49,7 +54,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     // invalidando el acceso actual. Forzamos la redirección al login limpiando el estado local.
     const res = await authApi.changePassword(newPassword);
     if (!res.ok) {
-      throw new Error((res.error as { message?: string })?.message || 'Error al cambiar contraseña');
+      throw new Error(
+        (res.error as { message?: string })?.message || 'Error al cambiar contraseña',
+      );
     }
 
     setUser(null);

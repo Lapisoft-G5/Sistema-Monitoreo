@@ -40,6 +40,17 @@ export class TeachersController {
     return this.teachersService.createDocente(dto, req.user);
   }
 
+  @Post('persona/:personaId/transicion-a-docente')
+  @RequirePermissions('docentes:write')
+  @HttpCode(HttpStatus.OK)
+  async transicionRolADocente(
+    @Param('personaId') personaId: string,
+    @Body() dto: CreateDocenteDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<DocenteEntity> {
+    return this.teachersService.transicionRolADocente(personaId, dto, req.user);
+  }
+
   @Get()
   @RequirePermissions('docentes:read')
   @HttpCode(HttpStatus.OK)
@@ -52,6 +63,13 @@ export class TeachersController {
   @HttpCode(HttpStatus.OK)
   async findCargos(): Promise<any[]> {
     return this.teachersService.getCargos();
+  }
+
+  @Get('buscar/:dni')
+  @RequirePermissions('docentes:read')
+  @HttpCode(HttpStatus.OK)
+  async findByDni(@Param('dni') dni: string, @Req() req: AuthenticatedRequest): Promise<any> {
+    return this.teachersService.findPersonaByDni(dni, req.user);
   }
 
   @Put(':id')
@@ -99,5 +117,26 @@ export class TeachersController {
     };
   }> {
     return this.teachersService.altaDocente(id, req.user);
+  }
+
+  @Get(':evaluadorId/asignaciones')
+  @RequirePermissions('docentes:read')
+  @HttpCode(HttpStatus.OK)
+  async getAsignaciones(
+    @Param('evaluadorId') evaluadorId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<any[]> {
+    return this.teachersService.getAsignaciones(evaluadorId, req.user);
+  }
+
+  @Post(':evaluadorId/asignaciones')
+  @RequirePermissions('docentes:write')
+  @HttpCode(HttpStatus.OK)
+  async saveAsignaciones(
+    @Param('evaluadorId') evaluadorId: string,
+    @Body() dto: { evaluadoIds: string[] },
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.teachersService.saveAsignaciones(evaluadorId, dto.evaluadoIds, req.user);
   }
 }

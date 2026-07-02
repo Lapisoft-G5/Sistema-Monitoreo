@@ -55,6 +55,17 @@ export class EspecialistaController {
     return this.service.create(dto, req.user);
   }
 
+  @Post('persona/:personaId/transicion-a-especialista')
+  @RequirePermissions('especialistas:write')
+  @HttpCode(HttpStatus.CREATED)
+  async transicionRolAEspecialista(
+    @Param('personaId') personaId: string,
+    @Body() dto: CreateEspecialistaDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IEspecialistaResponse> {
+    return this.service.transicionRolAEspecialista(personaId, dto, req.user);
+  }
+
   @Put(':id')
   @RequirePermissions('especialistas:write')
   @HttpCode(HttpStatus.OK)

@@ -40,3 +40,6 @@ Thumbs.db
 .agents/
 mejora:txt
 skills-lock.json
+AGENTS.md
+
+*.pdf

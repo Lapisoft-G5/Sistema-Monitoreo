@@ -22,12 +22,12 @@ Aplica a este monorepo (PNPM Workspaces) y debe seguirse desde el primer día de
 
 ## 1. Requisitos previos
 
-| Herramienta | Versión mínima | Notas |
-|-------------|----------------|-------|
-| Node.js | 22+ | Se recomienda usar `.nvmrc` (24.16.0) |
-| pnpm | 11+ | Gestor de paquetes del monorepo |
-| Docker | Cualquier versión estable | Para levantar PostgreSQL local |
-| Git | 2.40+ | — |
+| Herramienta | Versión mínima            | Notas                                 |
+| ----------- | ------------------------- | ------------------------------------- |
+| Node.js     | 22+                       | Se recomienda usar `.nvmrc` (24.16.0) |
+| pnpm        | 11+                       | Gestor de paquetes del monorepo       |
+| Docker      | Cualquier versión estable | Para levantar PostgreSQL local        |
+| Git         | 2.40+                     | —                                     |
 
 ---
 
@@ -71,13 +71,13 @@ main
       └── release/<versión>
 ```
 
-| Rama | Propósito | ¿Quién puede hacer push directo? |
-|------|-----------|----------------------------------|
-| `main` | Código en producción | **Nadie** — solo vía MR aprobada |
-| `develop` | Integración continua del equipo | **Nadie** — solo vía MR |
-| `feature/<nombre>` | Nueva funcionalidad del sprint | El autor de la rama |
-| `fix/<nombre>` | Corrección de error | El autor de la rama |
-| `release/<versión>` | Preparación de release | Tech Lead + Gestor de Configuración |
+| Rama                | Propósito                       | ¿Quién puede hacer push directo?    |
+| ------------------- | ------------------------------- | ----------------------------------- |
+| `main`              | Código en producción            | **Nadie** — solo vía MR aprobada    |
+| `develop`           | Integración continua del equipo | **Nadie** — solo vía MR             |
+| `feature/<nombre>`  | Nueva funcionalidad del sprint  | El autor de la rama                 |
+| `fix/<nombre>`      | Corrección de error             | El autor de la rama                 |
+| `release/<versión>` | Preparación de release          | Tech Lead + Gestor de Configuración |
 
 ### Convención de nombres de ramas
 
@@ -174,17 +174,17 @@ Este proyecto sigue la especificación [Conventional Commits](https://www.conven
 
 ### Tipos permitidos
 
-| Tipo | Cuándo usarlo |
-|------|---------------|
-| `feat` | Nueva funcionalidad visible para el usuario o el sistema |
-| `fix` | Corrección de un error |
-| `docs` | Solo cambios en documentación |
-| `style` | Formato, espaciado, punto y coma — sin cambio de lógica |
-| `refactor` | Cambio de código sin corregir bugs ni añadir features |
-| `test` | Añadir o corregir pruebas |
-| `chore` | Cambios en build, tooling, dependencias, CI/CD |
-| `perf` | Mejora de rendimiento |
-| `ci` | Cambios en configuración de CI/CD |
+| Tipo       | Cuándo usarlo                                            |
+| ---------- | -------------------------------------------------------- |
+| `feat`     | Nueva funcionalidad visible para el usuario o el sistema |
+| `fix`      | Corrección de un error                                   |
+| `docs`     | Solo cambios en documentación                            |
+| `style`    | Formato, espaciado, punto y coma — sin cambio de lógica  |
+| `refactor` | Cambio de código sin corregir bugs ni añadir features    |
+| `test`     | Añadir o corregir pruebas                                |
+| `chore`    | Cambios en build, tooling, dependencias, CI/CD           |
+| `perf`     | Mejora de rendimiento                                    |
+| `ci`       | Cambios en configuración de CI/CD                        |
 
 ### Ámbitos recomendados
 
@@ -281,6 +281,7 @@ pnpm --filter backend prisma:studio     # Abrir Prisma Studio
 ```
 
 > Para correr un comando en un workspace específico:
+>
 > ```bash
 > pnpm --filter frontend <comando>
 > pnpm --filter backend <comando>
@@ -346,9 +347,11 @@ backend   →  shared-types, shared-contracts, shared-validation, shared-utils
 ## 10. Preguntas frecuentes
 
 ### ¿Puedo hacer push directo a develop?
+
 No. Todo cambio entra por MR con al menos 1 aprobación.
 
 ### ¿Qué hago si mi rama tiene conflictos con develop?
+
 ```bash
 git fetch origin
 git rebase origin/develop
@@ -356,9 +359,11 @@ git rebase origin/develop
 git rebase --continue
 git push origin feature/<nombre> --force-with-lease
 ```
+
 Usar `--force-with-lease` en lugar de `--force`: es más seguro porque falla si alguien más subió cambios.
 
 ### ¿Dónde instalo una nueva dependencia?
+
 ```bash
 # En el workspace correcto, no en raíz
 pnpm --filter backend add <paquete>
@@ -369,16 +374,20 @@ pnpm add -w <paquete>
 ```
 
 ### ¿Puedo commitear el pnpm-lock.yaml?
+
 Sí, siempre. El lockfile es parte del repo y garantiza reproducibilidad.
 Nunca lo edites manualmente.
 
 ### ¿Cómo agrego un tipo compartido?
+
 En `packages/shared-types/src/index.ts`. Luego importa con:
+
 ```typescript
 import type { MiTipo } from '@monitoring/shared-types';
 ```
 
 ### ¿Qué hago si rompí algo en develop?
+
 Abre un `fix/<nombre>` de inmediato, notifica al equipo en el canal,
 y abre MR con urgencia. No intentes arreglarlo con commits directos.
 

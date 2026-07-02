@@ -13,6 +13,8 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ICreateDocenteRequest } from '@sistema-monitoreo/shared-contracts';
+import { IsValidNivelForModalidad } from '../../../common/validators/modalidad-nivel.validator.js';
+import { IsValidEspecialidadForNivel } from '../../../common/validators/especialidad.validator.js';
 
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -65,10 +67,22 @@ export class CreateDocenteDto implements ICreateDocenteRequest {
   @MaxLength(50, { message: 'El grado académico no puede exceder los 50 caracteres' })
   gradoAcademico?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  modalidad?: string;
+
   @IsString()
   @IsNotEmpty({ message: 'El nivel educativo es requerido' })
   @MaxLength(50, { message: 'El nivel educativo no puede exceder los 50 caracteres' })
+  @IsValidNivelForModalidad('modalidad')
   nivelEducativo!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @IsValidEspecialidadForNivel('nivelEducativo')
+  especialidad?: string;
 
   @IsOptional()
   @IsString()
@@ -82,6 +96,10 @@ export class CreateDocenteDto implements ICreateDocenteRequest {
   @IsOptional()
   @IsString()
   condicionLaboral?: string;
+
+  @IsOptional()
+  @IsInt()
+  cargaLaboral?: number;
 
   @IsOptional()
   @IsInt()

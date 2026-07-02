@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm --filter @sistema-monitoreo/shared-contracts run build && pnpm --filter frontend run build",
+  "outputDirectory": "apps/frontend/dist",
+  "installCommand": "pnpm install",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

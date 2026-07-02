@@ -32,10 +32,11 @@ export const FilterDocentes = ({ docentes }: FilterDocentesProps) => {
     setSearchParams(newParams);
   };
 
-  const isDirectorIe = user?.role === 'director_institucion' || user?.role === 'director_ie';
-  const currentNivel = isDirectorIe && user?.institucionNivel
-    ? user.institucionNivel.toUpperCase()
-    : searchParams.get('nivelEducativo')?.toUpperCase() || null;
+  const isDirectorIe = user?.role === 'director_institucion';
+  const currentNivel =
+    isDirectorIe && user?.institucionNivel
+      ? user.institucionNivel.toUpperCase()
+      : searchParams.get('nivelEducativo')?.toUpperCase() || null;
 
   const filteredDocentes = currentNivel
     ? docentes.filter((d) => d.nivelEducativo?.toUpperCase() === currentNivel)
@@ -43,7 +44,9 @@ export const FilterDocentes = ({ docentes }: FilterDocentesProps) => {
 
   // Obtener secciones únicas ordenadas de los docentes en mocks filtrados por nivel
   const seccionesOptions = Array.from(
-    new Set(filteredDocentes.flatMap((d) => (d.secciones || []).map((s) => `${s.grado} ${s.seccion}`)))
+    new Set(
+      filteredDocentes.flatMap((d) => (d.secciones || []).map((s) => `${s.grado} ${s.seccion}`)),
+    ),
   ).sort();
 
   return (

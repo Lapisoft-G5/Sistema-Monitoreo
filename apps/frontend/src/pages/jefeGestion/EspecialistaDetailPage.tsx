@@ -5,8 +5,8 @@ import { type Especialista } from '@entities/model-especialistas';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
-import { especialistasApi } from '@shared/api/especialistas.api';
-import { mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
+import { Spinner } from '@shared/ui/Spinner';
+import { fetchEspecialistaById } from '@features/especialistas/especialista-service';
 
 export const EspecialistaDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,13 +19,8 @@ export const EspecialistaDetailPage = () => {
     const fetchDetail = async () => {
       if (!id) return;
       setLoading(true);
-      const res = await especialistasApi.findById(id);
-      if (res.ok && res.data) {
-        setEspecialista(mapApiEspecialistaToFrontend(res.data));
-      } else {
-        console.error('Error fetching specialist details:', res.error);
-        setEspecialista(null);
-      }
+      const esp = await fetchEspecialistaById(id);
+      setEspecialista(esp);
       setLoading(false);
     };
 
@@ -35,8 +30,10 @@ export const EspecialistaDetailPage = () => {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="text-text-muted text-sm font-medium">Cargando ficha de especialista...</span>
+        <Spinner />
+        <span className="text-text-muted text-sm font-medium">
+          Cargando ficha de especialista...
+        </span>
       </div>
     );
   }
@@ -45,7 +42,9 @@ export const EspecialistaDetailPage = () => {
     return (
       <div className="w-full max-w-[820px] mx-auto text-center py-20 bg-surface border border-border rounded-2xl shadow-sm mt-6">
         <h2 className="text-xl font-bold text-text mb-2">Especialista no encontrado</h2>
-        <p className="text-text-muted mb-6">El código identificador {id} no existe o no tiene permisos de acceso.</p>
+        <p className="text-text-muted mb-6">
+          El código identificador {id} no existe o no tiene permisos de acceso.
+        </p>
         <button
           onClick={() => navigate('/especialistas')}
           className="px-5 py-2.5 bg-bg border border-border rounded-xl font-semibold text-text hover:bg-muted transition-colors cursor-pointer"
@@ -95,19 +94,27 @@ export const EspecialistaDetailPage = () => {
 
             <div className="flex flex-col gap-3.5">
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Apellidos y Nombres</span>
-                <span className="text-base font-bold text-text">{especialista.apellidos}, {especialista.nombres}</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Apellidos y Nombres
+                </span>
+                <span className="text-base font-bold text-text">
+                  {especialista.apellidos}, {especialista.nombres}
+                </span>
               </div>
 
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">DNI</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  DNI
+                </span>
                 <span className="text-sm font-semibold text-text">{especialista.dni}</span>
               </div>
 
               <div className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-xl border border-border/40">
                 <Mail className="w-4.5 h-4.5 text-text-muted" />
                 <div className="flex flex-col">
-                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">Correo Institucional</span>
+                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
+                    Correo Institucional
+                  </span>
                   <span className="text-xs font-semibold text-text">{especialista.correo}</span>
                 </div>
               </div>
@@ -115,7 +122,9 @@ export const EspecialistaDetailPage = () => {
               <div className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-xl border border-border/40">
                 <Phone className="w-4.5 h-4.5 text-text-muted" />
                 <div className="flex flex-col">
-                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">Teléfono de Contacto</span>
+                  <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
+                    Teléfono de Contacto
+                  </span>
                   <span className="text-xs font-semibold text-text">{especialista.celular}</span>
                 </div>
               </div>
@@ -134,36 +143,86 @@ export const EspecialistaDetailPage = () => {
 
             <div className="flex flex-col gap-3.5">
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">Cargo</span>
-                <Badge variant="default" className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide">
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
+                  Cargo
+                </span>
+                <Badge
+                  variant="default"
+                  className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide"
+                >
                   {especialista.cargo || 'Especialista'}
                 </Badge>
               </div>
 
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Condición Laboral</span>
-                <span className="text-sm font-semibold text-text">{especialista.condicionLaboral || 'No especificada'}</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Condición Laboral
+                </span>
+                <span className="text-sm font-semibold text-text">
+                  {especialista.condicionLaboral || 'No especificada'}
+                </span>
               </div>
 
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Carga Laboral</span>
-                <span className="text-sm font-semibold text-text">{especialista.cargaLaboral || 40} horas</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Carga Laboral
+                </span>
+                <span className="text-sm font-semibold text-text">
+                  {especialista.cargaLaboral || 40} horas
+                </span>
               </div>
 
-              {especialista.escalaMagisterial !== undefined && especialista.escalaMagisterial !== null && (
+              {especialista.escalaMagisterial !== undefined &&
+                especialista.escalaMagisterial !== null && (
+                  <div>
+                    <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                      Escala Magisterial
+                    </span>
+                    <span className="text-sm font-semibold text-text">
+                      Escala {especialista.escalaMagisterial}
+                    </span>
+                  </div>
+                )}
+
+              <div>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
+                  Especialidad Principal
+                </span>
+                {especialista.especialidad ? (
+                  <Badge
+                    variant="default"
+                    className="text-xs px-2.5 py-0.5 uppercase font-bold bg-primary/10 text-primary border border-primary/20"
+                  >
+                    {especialista.especialidad}
+                  </Badge>
+                ) : (
+                  <span className="text-sm font-semibold text-text">No especificada</span>
+                )}
+              </div>
+
+              {especialista.nivelEducativo === 'Secundaria' && especialista.especialidadesExtras && especialista.especialidadesExtras.length > 0 && (
                 <div>
-                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Escala Magisterial</span>
-                  <span className="text-sm font-semibold text-text">Escala {especialista.escalaMagisterial}</span>
+                  <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block mb-1">
+                    Especialidades Extras / Temporales
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {especialista.especialidadesExtras.map((esp) => (
+                      <Badge
+                        key={esp}
+                        variant="secondary"
+                        className="text-[0.65rem] px-2 py-0 uppercase font-bold"
+                      >
+                        {esp}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
 
               <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Especialidad</span>
-                <span className="text-sm font-semibold text-text">{especialista.especialidad || 'No especificada'}</span>
-              </div>
-
-              <div>
-                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">Estado</span>
+                <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
+                  Estado
+                </span>
                 <Badge
                   variant={especialista.activo ? 'default' : 'secondary'}
                   className={`text-[0.65rem] py-0 px-2 uppercase font-bold mt-1 ${
@@ -188,17 +247,19 @@ export const EspecialistaDetailPage = () => {
         </div>
 
         <div className="flex flex-wrap gap-2.5">
-          {especialista.niveles.map((n) => (
-            <div
-              key={n}
-              className="flex items-center gap-1.5 bg-muted/30 border border-border/80 px-3.5 py-2 rounded-xl text-xs font-bold text-text"
-            >
+          {especialista.nivelEducativo && (
+            <div className="flex items-center gap-1.5 bg-muted/30 border border-border/80 px-3.5 py-2 rounded-xl text-xs font-bold text-text">
               <BadgeCheck className="w-4 h-4 text-green-500 shrink-0" />
-              <span>{n}</span>
+              <span>
+                {especialista.nivelEducativo}
+                {especialista.modalidad ? ` - ${especialista.modalidad}` : ''}
+              </span>
             </div>
-          ))}
-          {especialista.niveles.length === 0 && (
-            <span className="text-xs text-text-muted italic">No se han registrado niveles educativos.</span>
+          )}
+          {!especialista.nivelEducativo && (
+            <span className="text-xs text-text-muted italic">
+              No se han registrado niveles educativos.
+            </span>
           )}
         </div>
       </Card>

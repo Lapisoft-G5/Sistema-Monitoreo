@@ -1,0 +1,89 @@
+import { useState } from 'react';
+import { FormButton } from '@shared/ui/form-controls';
+import { plantillaSchema } from '@entities/model-plantillas/validator';
+import { PlantillaCabecera } from './PlantillaCabecera';
+import { PlantillaDesempenos } from './PlantillaDesempenos';
+import { PlantillaEjesItems } from './PlantillaEjesItems';
+import type { PlantillaFormState } from './PlantillaForm';
+
+interface Props {
+  initialData: PlantillaFormState;
+  onCancel: () => void;
+  onSubmit: (data: PlantillaFormState) => void;
+  isLoading?: boolean;
+}
+
+export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading = false }: Props) => {
+  const [form, setForm] = useState<PlantillaFormState>(initialData);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  const patch = (p: Partial<PlantillaFormState>) => {
+    setForm((prev) => ({ ...prev, ...p }));
+  };
+
+  const handleSubmit = () => {
+    setSubmitted(true);
+
+    // Validar usando el esquema Zod real del dominio
+    const validationResult = plantillaSchema.safeParse(form);
+
+    if (!validationResult.success) {
+      const localizedErrors: Record<string, string> = {};
+      validationResult.error.issues.forEach((issue) => {
+        const path = issue.path.join('.');
+        localizedErrors[path] = issue.message;
+      });
+      setErrors(localizedErrors);
+      return;
+    }
+
+    setErrors({});
+    onSubmit(form);
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      {submitted && Object.keys(errors).length > 0 && (
+        <div className="p-4 bg-destructive/10 text-destructive rounded-2xl border border-destructive/20 text-sm">
+          <p className="font-bold mb-1">Por favor, corrige los errores en la rúbrica:</p>
+          <ul className="list-disc list-inside">
+            {Object.values(errors).slice(0, 3).map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+            {Object.keys(errors).length > 3 && <li>Y otros {Object.keys(errors).length - 3} errores más...</li>}
+          </ul>
+        </div>
+      )}
+
+      <PlantillaCabecera
+        tipoMonitoreo={form.tipoMonitoreo}
+        anioAcademico={form.anioAcademico}
+        baremo={form.baremo}
+        niveles={form.niveles}
+        onChange={patch}
+        isEditMode={true}
+      />
+
+      <PlantillaDesempenos
+        desempenos={form.desempenos}
+        niveles={form.niveles}
+        onChange={(desempenos) => patch({ desempenos })}
+      />
+
+      <PlantillaEjesItems
+        ejeItems={form.ejeItems}
+        onChange={(ejeItems) => patch({ ejeItems })}
+      />
+
+      <div className="flex justify-end gap-3">
+        <FormButton variant="secondary" onClick={onCancel} disabled={isLoading}>
+          Cancelar
+        </FormButton>
+        <FormButton onClick={handleSubmit} disabled={isLoading}>
+          {isLoading ? 'Guardando Cambios...' : 'Modificar Plantilla'}
+        </FormButton>
+      </div>
+    </div>
+  );
+};

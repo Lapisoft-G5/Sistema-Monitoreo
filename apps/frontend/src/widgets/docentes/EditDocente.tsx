@@ -6,11 +6,12 @@ import { type Docente } from '@entities/model-docentes';
 import { useDocenteService, mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 import { teachersApi } from '@shared/api/teachers.api';
 import { Card } from '@shared/ui/card';
+import { Spinner } from '@shared/ui/Spinner';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 
 interface Props {
   instituciones: { id: string; nombre: string }[];
-  targetCargo?: 'Director' | 'Coordinador Pedagógico' | 'Docente de Aula';
+  targetCargo?: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
   routePrefix?: string;
   submitLabel?: string;
 }
@@ -55,7 +56,7 @@ export const EditDocenteCard = ({
   if (fetching) {
     return (
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando datos del personal...</span>
       </div>
     );

@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
+import { Spinner } from '@shared/ui/Spinner';
 import { useNavigate } from 'react-router-dom';
 
 import { FilterEspecialistas } from '@features/especialistas';
 import { EspecialistasStatsWidget, EspecialistasTableWidget } from '@widgets/especialistas';
-import { especialistasApi } from '@shared/api/especialistas.api';
-import { mapApiEspecialistaToFrontend } from '@features/especialistas/especialista-service';
+import { fetchEspecialistas } from '@features/especialistas/especialista-service';
 import type { Especialista } from '@entities/model-especialistas';
 
 export const EspecialistasPage = () => {
@@ -15,28 +15,22 @@ export const EspecialistasPage = () => {
   const [especialistas, setEspecialistas] = useState<Especialista[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchEspecialistas = async () => {
+  const loadEspecialistas = async () => {
     setLoading(true);
-    const res = await especialistasApi.findAll();
-    if (res.ok && res.data) {
-      const mapped = res.data.map(mapApiEspecialistaToFrontend);
-      // Keep only those that are not Jefes de Área, matching the original behavior
-      const filtered = mapped.filter((esp) => esp.rolCode !== 'jefe_area');
-      setEspecialistas(filtered);
-    } else {
-      console.error('Error loading specialists from API:', res.error);
-    }
+    const mapped = await fetchEspecialistas({ cargo: 'Especialista' });
+    const filtered = mapped.filter((esp) => esp.cargo === 'Especialista');
+    setEspecialistas(filtered);
     setLoading(false);
   };
 
   useEffect(() => {
-    Promise.resolve().then(() => fetchEspecialistas());
+    Promise.resolve().then(() => loadEspecialistas());
   }, []);
 
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner />
         <span className="text-text-muted text-sm font-medium">Cargando especialistas...</span>
       </div>
     );

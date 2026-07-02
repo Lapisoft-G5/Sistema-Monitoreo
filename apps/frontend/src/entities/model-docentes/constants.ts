@@ -2,12 +2,12 @@ import type { CondicionDirectiva, CondicionLaboral, EscalaMagisterial } from './
 
 export const CONDICION_LABORAL: CondicionLaboral[] = ['Nombrado', 'Contratado'];
 
-export const CONDICION_DIRECTIVA: CondicionDirectiva[] = ['Asignado', 'Encargado', 'Por función'];
+export const CONDICION_DIRECTIVA: CondicionDirectiva[] = ['Designado', 'Encargado', 'Por Función'];
 
 export const CONDICION_DIRECTIVA_COLOR: Record<CondicionDirectiva, string> = {
-  Asignado: '#22c55e', // Verde
+  Designado: '#22c55e', // Verde
   Encargado: '#f59e0b', // Ámbar
-  'Por función': '#3b82f6', // Azul
+  'Por Función': '#3b82f6', // Azul
 };
 
 export const ESCALAS_MAGISTERIALES: { value: EscalaMagisterial; label: string }[] = [
@@ -21,11 +21,12 @@ export const ESCALAS_MAGISTERIALES: { value: EscalaMagisterial; label: string }[
   { value: 'VIII', label: 'VIII — Octava Escala' },
 ];
 
-export const CARGOS = ['Director', 'Coordinador Pedagógico', 'Docente de Aula'] as const;
+export const CARGOS = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller', 'Docente de Aula'] as const;
 export type CargoDocente = (typeof CARGOS)[number];
 
 export const CARGO_COLOR: Record<CargoDocente, string> = {
   Director: '#22c55e', // Green
   'Coordinador Pedagógico': '#3b82f6', // Blue
+  'Jefe de Taller': '#f59e0b', // Amber/Orange
   'Docente de Aula': '#6b7280', // Gray
 };

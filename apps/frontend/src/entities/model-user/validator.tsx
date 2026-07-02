@@ -20,6 +20,8 @@ export const userSchema = z.object({
     'director_institucion',
     'docente',
     'invitado',
+    'admin',
+    'superusuario',
   ]),
   institucion: z.string().optional(),
   distrito: z.string().optional(),

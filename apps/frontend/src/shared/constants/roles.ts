@@ -8,7 +8,8 @@ export type UserRole =
   | 'director_institucion'
   | 'docente'
   | 'invitado'
-  | 'admin';
+  | 'admin'
+  | 'superusuario';
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   director_ugel: 'Director UGEL',
@@ -21,6 +22,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   docente: 'Docente',
   invitado: 'Invitado',
   admin: 'Administrador del Sistema',
+  superusuario: 'Super Administrador',
 };
 
 export type MenuItem =
@@ -41,7 +43,9 @@ export type MenuItem =
   | 'especialistas'
   | 'jefes_area'
   | 'reportes'
-  | 'configuracion';
+  | 'reportes'
+  | 'configuracion'
+  | 'superadmin';
 
 const BASE_PERMISSIONS: MenuItem[] = ['reportes'];
 
@@ -123,6 +127,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes',
     'configuracion',
   ],
+  superusuario: ['superadmin'],
 };
 
 const READ_ONLY_ROLES: UserRole[] = ['invitado'];
@@ -138,6 +143,8 @@ export const getDefaultLandingPage = (role: UserRole): string => {
   switch (role) {
     case 'admin':
       return '/dashboard';
+    case 'superusuario':
+      return '/superadmin';
     case 'jefe_area':
       return '/instituciones/padron';
     case 'jefe_gestion':

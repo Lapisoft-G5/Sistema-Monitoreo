@@ -4,6 +4,8 @@ import { LoggerModule } from 'nestjs-pino';
 import { validate } from './config/env.validation.js';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { HealthModule } from './shared/health/health.module.js';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
 import { StorageModule } from './shared/storage/storage.module.js';
@@ -16,6 +18,7 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module.js';
 import { SchedulingModule } from './modules/scheduling/scheduling.module.js';
 import { EvaluationsModule } from './modules/evaluations/evaluations.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
+import { SuperuserModule } from './modules/superuser/superuser.module.js';
 
 @Module({
   imports: [
@@ -39,6 +42,8 @@ import { ReportsModule } from './modules/reports/reports.module.js';
         limit: 100,
       },
     ]),
+    ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
     PrismaModule,
     StorageModule,
     HealthModule,
@@ -51,6 +56,7 @@ import { ReportsModule } from './modules/reports/reports.module.js';
     SchedulingModule,
     EvaluationsModule,
     ReportsModule,
+    SuperuserModule,
   ],
   providers: [
     {

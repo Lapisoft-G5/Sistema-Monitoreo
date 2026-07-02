@@ -14,15 +14,15 @@ Este documento detalla el análisis del estado actual del sistema, enfocado en l
   - Backend: Directorio `apps/backend/src/modules/teachers/` (Controladores y servicios).
   - Frontend: `apps/frontend/src/pages/director/` para la interfaz.
 - **Lista de Tareas (Qué modificar):**
-  - [ ] **Base de Datos:** (SC-10) Crear modelo `Area` y vincularlo a `Especialidad` y `Docente` (vía `DocenteArea`) para clasificar en Ciencias/Letras.
-  - [ ] **Base de Datos:** (SC-10) Crear tabla `AsignacionEvaluador` que conecte un `evaluadorId` (Docente con cargo) con un `evaluadoId` (Docente).
+  - [x] **Base de Datos:** (SC-10) Crear modelo `Area` y vincularlo a `Especialidad` y `Docente` (vía `DocenteArea`) para clasificar en Ciencias/Letras.
+  - [x] **Base de Datos:** (SC-10) Crear tabla `AsignacionEvaluador` que conecte un `evaluadorId` (Docente con cargo) con un `evaluadoId` (Docente).
   - [ ] **Backend/DB:** (SC-10) Sincronizar perfiles: Cuando se asigne rol jerárquico a un Docente, crearle un perfil de `Especialista` (si no existe) para que pueda fungir como `monitorId` en los Cronogramas sin necesidad de refactorizar la DB de Cronogramas.
   - [ ] **Backend/DB:** Manejar la asignación de cargos jerárquicos mediante `$transaction` en Prisma para cerrar `fechaFin` de cargos anteriores.
-  - [ ] **Shared-Contracts:** Crear/Actualizar DTOs (`AsignarCargoDocenteDTO` y DTOs de grupos de áreas) en el workspace.
+  - [x] **Shared-Contracts:** Crear/Actualizar DTOs (`AsignarCargoDocenteDTO` y DTOs de grupos de áreas) en el workspace.
   - [ ] **Backend:** Crear endpoints en `teachers.controller.ts` para asignar docentes a evaluadores y listar la plana agrupada por áreas.
   - [ ] **Backend:** Validar mediante guardias que el usuario (Director) actúe solo sobre su misma IE.
-  - [ ] **Frontend:** Añadir componente/widget interactivo (selector dual o drag & drop) en la vista de Director.
-  - [ ] **Frontend:** Añadir validaciones en el cliente y feedback visual (toasts/alertas) tras editar en caliente estas asignaciones.
+  - [x] **Frontend:** Añadir componente/widget interactivo (selector dual o drag & drop) en la vista de Director.
+  - [x] **Frontend:** Añadir validaciones en el cliente y feedback visual (toasts/alertas) tras editar en caliente estas asignaciones.
 
 ---
 
@@ -34,17 +34,17 @@ Este documento detalla el análisis del estado actual del sistema, enfocado en l
   - Base de Datos: `schema.prisma` (Modelos `PlanMonitoreo`, `PlanCoberturaIe`).
   - Backend: `apps/backend/src/modules/monitoring/` o en un módulo dedicado a catálogos/planes.
 - **Lista de Tareas (Qué modificar):**
-  - [ ] **Backend:** Actualizar endpoints `GET` de listado de planes/plantillas para interceptar el rol del usuario actual.
-  - [ ] **Backend:** Implementar lógica para UGEL: Permitir ver planes globales y de todas sus II.EE. **(SC-12: Exclusivo para Jefe de Gestión, filtrando por estado Vigente/Histórico)**.
-  - [ ] **Backend:** Implementar lógica para IE: Limitar vista estrictamente a su `institucionId` y a los planes de UGEL donde figuren en `PlanCoberturaIe`.
-  - [ ] **Backend/DB:** Optimizar las consultas de Prisma (`findMany`) para usar `select` e `include` reduciendo la carga de datos de instituciones anidadas.
-  - [ ] **Shared-Contracts:** Refinar los contratos de respuesta (`PlanMonitoreoResponseDTO`) para excluir o incluir nodos sensibles dependiendo de los permisos.
-  - [ ] **Frontend:** Crear o adaptar la tabla/vista de "Planes de Monitoreo" en los dashboards de UGEL y Director.
-  - [ ] **Frontend:** Consumir el nuevo endpoint de listado global/restringido y renderizar botones de descarga o previsualización.
+  - [x] **Backend:** Actualizar endpoints `GET` de listado de planes/plantillas para interceptar el rol del usuario actual.
+  - [x] **Backend:** Implementar lógica para UGEL: Permitir ver planes globales y de todas sus II.EE. **(SC-12: Exclusivo para Jefe de Gestión, filtrando por estado Vigente/Histórico)**.
+  - [x] **Backend:** Implementar lógica para IE: Limitar vista estrictamente a su `institucionId` y a los planes de UGEL donde figuren en `PlanCoberturaIe`.
+  - [x] **Backend/DB:** Optimizar las consultas de Prisma (`findMany`) para usar `select` e `include` reduciendo la carga de datos de instituciones anidadas.
+  - [x] **Shared-Contracts:** Refinar los contratos de respuesta (`PlanMonitoreoResponseDTO`) para excluir o incluir nodos sensibles dependiendo de los permisos.
+  - [x] **Frontend:** Crear o adaptar la tabla/vista de "Planes de Monitoreo" en los dashboards de UGEL y Director.
+  - [x] **Frontend:** Consumir el nuevo endpoint de listado global/restringido y renderizar botones de descarga o previsualización.
 
 ---
 
-## 3. (Sprint 4) Estructuración de la base de datos de compromisos de mejora
+## 3. (Sprint 4) Estructuración de la base de datos de compromisos de mejora (DEPRECATED)
 **Historia:** Backend de compromisos de mejora.
 - **Lo que hay:** Actualmente, el modelo `FichaMonitoreo` (línea 680 del esquema) maneja los compromisos de mejora como un simple campo escalar de texto: `compromisos String? @db.Text`.
 - **Estado actual:** La estructura no está normalizada (no está en 3NF). No se puede dar trazabilidad a los compromisos individuales, ni marcar si se cumplieron o no, ni asignarles plazos.
@@ -70,12 +70,12 @@ Este documento detalla el análisis del estado actual del sistema, enfocado en l
   - Backend: `apps/backend/src/modules/monitoring/` (posiblemente un nuevo endpoint en `monitoring.controller.ts`).
   - Frontend: Modales correspondientes a la Ficha en `apps/frontend/src/features/` o `apps/frontend/src/widgets/`.
 - **Lista de Tareas (Qué modificar):**
-  - [ ] **Shared-Contracts:** Definir `HistorialPedagogicoDTO` para tipar estrictamente lo que devolverá el servidor.
-  - [ ] **Backend:** Crear endpoint `GET /fichas/historial/:evaluadoId`.
-  - [ ] **Backend/DB:** Escribir query Prisma altamente optimizada para extraer solo campos vitales (`select: { promedio: true, nivelLogro: true, fecha: true, observaciones: true }`) de fichas finalizadas, ordenadas cronológicamente.
-  - [ ] **Frontend:** Conectar la petición asíncrona (con React Query) en el componente de la Ficha.
-  - [ ] **Frontend:** Inyectar los datos en el modal existente para visualizar el historial sin crear vistas nuevas.
-  - [ ] **Frontend:** Añadir un componente visual (como un gráfico sencillo o una línea de tiempo) para mostrar visualmente la progresión del docente a lo largo de las visitas.
+  - [x] **Shared-Contracts:** Definir `HistorialPedagogicoDTO` para tipar estrictamente lo que devolverá el servidor.
+  - [x] **Backend:** Crear endpoint `GET /fichas/historial/:evaluadoId`.
+  - [x] **Backend/DB:** Escribir query Prisma altamente optimizada para extraer solo campos vitales (`select: { promedio: true, nivelLogro: true, fecha: true, observaciones: true }`) de fichas finalizadas, ordenadas cronológicamente.
+  - [x] **Frontend:** Conectar la petición asíncrona (con React Query) en el componente de la Ficha.
+  - [x] **Frontend:** Inyectar los datos en el modal existente para visualizar el historial sin crear vistas nuevas.
+  - [x] **Frontend:** Añadir un componente visual (como un gráfico sencillo o una línea de tiempo) para mostrar visualmente la progresión del docente a lo largo de las visitas.
 
 ---
 
@@ -87,14 +87,14 @@ Este documento detalla el análisis del estado actual del sistema, enfocado en l
   - Archivo `package.json` del backend (para validar dependencias futuras).
   - Nuevo módulo: `apps/backend/src/modules/reports/`.
 - **Lista de Tareas (Qué modificar):**
-  - [ ] **Configuración:** Instalar librería para generación PDF (ej. `puppeteer`, `pdfkit`, `html-pdf-node`).
-  - [ ] **Backend:** Instalar `@nestjs/schedule` para tareas cronometradas (alertas).
-  - [ ] **Backend:** Crear y diseñar plantillas (templates HTML/Handlebars) para la estructura visual oficial del PDF en la carpeta del módulo de reportes.
-  - [ ] **Backend:** Construir servicio generador de PDF que interpole la data del modelo de Prisma en la plantilla oficial.
-  - [ ] **Base de Datos:** Evaluar añadir una tabla o campo (ej. `recordatoriosEnviados` en `Cronograma`) para evitar que el CRON Job envíe alertas duplicadas.
-  - [ ] **Backend:** Implementar CRON job (`@Cron`) para iterar sobre la base de datos buscando cronogramas vencidos y emitir alertas.
-  - [ ] **Frontend:** Integrar un botón de "Descargar PDF" en la vista de ficha completada o en el histórico.
-  - [ ] **Frontend:** Manejar el Blob/Buffer del PDF para forzar su descarga en el navegador del usuario.
+  - [x] **Configuración:** Instalar librería para generación PDF (ej. `puppeteer`, `pdfkit`, `html-pdf-node`).
+  - [x] **Backend:** Instalar `@nestjs/schedule` para tareas cronometradas (alertas).
+  - [x] **Backend:** Crear y diseñar plantillas (templates HTML/Handlebars) para la estructura visual oficial del PDF en la carpeta del módulo de reportes.
+  - [x] **Backend:** Construir servicio generador de PDF que interpole la data del modelo de Prisma en la plantilla oficial.
+  - [x] **Base de Datos:** Evaluar añadir una tabla o campo (ej. `recordatoriosEnviados` en `Cronograma`) para evitar que el CRON Job envíe alertas duplicadas.
+  - [x] **Backend:** Implementar CRON job (`@Cron`) para iterar sobre la base de datos buscando cronogramas vencidos y emitir alertas.
+  - [x] **Frontend:** Integrar un botón de "Descargar PDF" en la vista de ficha completada o en el histórico.
+  - [x] **Frontend:** Manejar el Blob/Buffer del PDF para forzar su descarga en el navegador del usuario.
 
 ---
 
@@ -106,13 +106,12 @@ Este documento detalla el análisis del estado actual del sistema, enfocado en l
   - Dependencias: `apps/backend/package.json`.
   - Backend: `apps/backend/src/modules/monitoring/services/` (donde se cierra la ficha) y posiblemente un módulo de notificaciones.
 - **Lista de Tareas (Qué modificar):**
-  - [ ] **Backend:** Integrar el servicio generador de reportes (Historia 5) dentro del flujo de `Finalizar Ficha`.
-  - [ ] **Backend:** Generar el PDF en memoria (Buffer) cuando la ficha cambie a estado "FINALIZADO".
-  - [ ] **Backend:** Consumir el servicio de `nodemailer` para enviar el correo adjuntando el buffer del PDF.
-  - [ ] **Backend:** Implementar transacciones o manejo de colas asíncronas (ej. BullMQ) para que la lentitud o un fallo de red SMTP no bloquee al cliente ni aborte la finalización de la Ficha.
-  - [ ] **Backend/DB:** Registrar un evento de tipo "EMAIL_ENVIADO" en el modelo ya existente `LogAuditoria` para trazar si el docente recibió su correo con éxito.
-  - [ ] **Frontend:** (Opcional) Proveer un toggle "Enviar resumen por correo" en el formulario de finalización de ficha, si se requiere control manual.
-  - [ ] **Frontend:** Mostrar notificaciones de éxito (toast) garantizando al usuario que el informe fue enviado correctamente.
+  - [x] **Backend:** Integrar el servicio generador de reportes (Historia 5) dentro del flujo de `Finalizar Ficha`.
+  - [x] **Backend:** Generar el PDF en memoria (Buffer) cuando la ficha cambie a estado "FINALIZADO".
+  - [x] **Backend:** Consumir el servicio de `nodemailer` para enviar el correo adjuntando el buffer del PDF.
+  - [x] **Backend:** Implementar transacciones o manejo de colas asíncronas (ej. BullMQ / EventEmitter) para que la lentitud o un fallo de red SMTP no bloquee al cliente ni aborte la finalización de la Ficha.
+  - [x] **Backend/DB:** Registrar un evento de tipo "EMAIL_ENVIADO" en el modelo ya existente `LogAuditoria` para trazar si el docente recibió su correo con éxito.
+  - [x] **Frontend:** Mostrar notificaciones de éxito (toast) garantizando al usuario que el informe fue enviado correctamente.
 
 ---
 
@@ -159,11 +158,11 @@ Esta sección está destinada a registrar iteraciones, pivotes o ajustes de requ
   - **Historia Afectada:** 1 (Deuda Sprint 3 - Asignación de Docentes por Especialidad)
   - **Descripción del Cambio:** El Director debe designar docentes específicos a sus Coordinadores Pedagógicos y Jefes de Taller según especialidad (grupo Ciencias o grupo Letras). No hay límite de docentes asignables y puede modificarse en cualquier momento del año.
   - **Impacto y Nuevas Tareas (Análisis Técnico de Brechas):**
-    - [ ] **Brecha en DB (Áreas):** Se debe crear el modelo `Area` y relacionarlo con `Especialidad` y `Docente` (garantizando compatibilidad) para agrupar por Ciencias, Letras, etc.
-    - [ ] **Brecha en DB (Jerarquía):** No existe relación `evaluador-evaluado` entre docentes. Se debe crear un nuevo modelo (ej. `AsignacionEvaluador`).
+    - [x] **Brecha en DB (Áreas):** Se debe crear el modelo `Area` y relacionarlo con `Especialidad` y `Docente` (garantizando compatibilidad) para agrupar por Ciencias, Letras, etc.
+    - [x] **Brecha en DB (Jerarquía):** No existe relación `evaluador-evaluado` entre docentes. Se debe crear un nuevo modelo (ej. `AsignacionEvaluador`).
     - [ ] **Brecha de Arquitectura (Monitoreo):** Para que un `Docente` actúe como monitor sin alterar el `Cronograma`, se le debe instanciar un perfil de `Especialista` anclado a su misma `Persona` al momento de asignarle el cargo evaluativo (Director/Coordinador).
     - [ ] **Backend:** Proveer endpoints cruzados (Docentes x Especialidad x Área) para que el frontend pueda construir los selectores de Ciencias/Letras.
-    - [ ] **Frontend:** Implementar la interfaz requerida (selector dual interactivo) en la vista del Director, permitiendo distribución sin límites y edición en caliente.
+    - [x] **Frontend:** Implementar la interfaz requerida (selector dual interactivo) en la vista del Director, permitiendo distribución sin límites y edición en caliente.
 
 - `[ ]` **SC-11:** Restringir visibilidad y evaluación según docentes asignados (RBAC dinámico).
   - **Fecha:** 28/06/2026
@@ -182,10 +181,10 @@ Esta sección está destinada a registrar iteraciones, pivotes o ajustes de requ
   - **Historia Afectada:** 2 (Deuda Sprint 3 - Visibilidad Cruzada UGEL/II.EE)
   - **Descripción del Cambio:** El Jefe de Gestión (UGEL) tendrá acceso de solo lectura y descarga a los planes y plantillas creados por todas las II.EE., excluyendo estrictamente los documentos en estado "Borrador" (solo Vigentes e Históricos). El Jefe de Área no tendrá este acceso.
   - **Impacto y Nuevas Tareas:**
-    - [ ] **Backend:** Refinar los endpoints `GET` de planes/plantillas para interceptar específicamente el rol `Jefe de Gestión` y aplicar la cláusula `WHERE estado IN ('Vigente', 'Historico')`.
-    - [ ] **Backend:** Garantizar en los Guards/Decorators que roles como `Jefe de Área` reciban `403 Forbidden` si intentan consultar documentos de II.EE.
-    - [ ] **Backend:** Asegurar que los endpoints de `PUT`, `PATCH`, `DELETE` bloqueen firmemente los intentos de la UGEL de modificar documentos pertenecientes a una Institución Educativa.
-    - [ ] **Frontend:** Adaptar la tabla de visualización de documentos en la vista del Jefe de Gestión para renderizar solo los botones de "Ver" y "Descargar PDF", deshabilitando o escondiendo opciones de edición sobre los planes de las IEs.
+    - [x] **Backend:** Refinar los endpoints `GET` de planes/plantillas para interceptar específicamente el rol `Jefe de Gestión` y aplicar la cláusula `WHERE estado IN ('Vigente', 'Historico')`.
+    - [x] **Backend:** Garantizar en los Guards/Decorators que roles como `Jefe de Área` reciban `403 Forbidden` si intentan consultar documentos de II.EE.
+    - [x] **Backend:** Asegurar que los endpoints de `PUT`, `PATCH`, `DELETE` bloqueen firmemente los intentos de la UGEL de modificar documentos pertenecientes a una Institución Educativa.
+    - [x] **Frontend:** Adaptar la tabla de visualización de documentos en la vista del Jefe de Gestión para renderizar solo los botones de "Ver" y "Descargar PDF", deshabilitando o escondiendo opciones de edición sobre los planes de las IEs.
 
 - `[ ]` **SC-13:** Protección de data histórica (Soft Delete) vs Eliminación Física.
   - **Fecha:** 28/06/2026
@@ -199,14 +198,14 @@ Esta sección está destinada a registrar iteraciones, pivotes o ajustes de requ
     - [ ] **Frontend:** En la tabla de plantillas, reemplazar la acción de eliminar directa por un diálogo/botón de advertencia cuando la plantilla es "Vigente" o "Histórica", notificando al usuario que el borrado será lógico para no perder trazabilidad.
     - [ ] **Frontend:** Ocultar o deshabilitar el botón de borrar en borradores ajenos (validando el Creador).
 
-- `[ ]` **SC-14:** Creación de Superusuario Único para asignación de altos cargos UGEL.
+- `[x]` **SC-14:** Creación de Superusuario Único para asignación de altos cargos UGEL.
   - **Fecha:** 28/06/2026
   - **Solicitado por:** Cliente (Sprint Review 03)
   - **Historia Afectada:** Transversal / Módulo de Administración de Usuarios.
   - **Descripción del Cambio:** Creación de un rol `Superusuario` único (registrado directo en BD). Su única facultad será asignar los roles jerárquicos máximos: `Jefe de Gestión` y `Director de UGEL`. No tendrá acceso al resto del sistema y el sistema deberá garantizar que solo exista 1 cuenta activa de este tipo.
   - **Impacto y Nuevas Tareas:**
-    - [ ] **Base de Datos:** Crear un script (`seeders`) o migración que inyecte directamente en base de datos la cuenta del superusuario y su rol asociado.
-    - [ ] **Backend:** Implementar restricciones (constraints/guards) que rechacen la creación de un segundo superusuario a nivel de base de datos o lógica de negocio.
-    - [ ] **Backend:** Crear un controlador exclusivo (`superuser.controller.ts`) con endpoints limitados a listar cuentas y asignar los roles de "Jefe de Gestión" y "Director UGEL".
-    - [ ] **Backend:** Aplicar un *Guard* estricto que prohíba al superusuario acceder a endpoints de catálogos, monitoreo, profesores, etc.
-    - [ ] **Frontend:** Crear una interfaz/dashboard aislada y minimalista ("Superadmin Panel") sin la barra de navegación estándar, que contenga únicamente el módulo de asignación de estos dos roles críticos.
+    - [x] **Base de Datos:** Crear un script (`seeders`) o migración que inyecte directamente en base de datos la cuenta del superusuario y su rol asociado.
+    - [x] **Backend:** Implementar restricciones (constraints/guards) que rechacen la creación de un segundo superusuario a nivel de base de datos o lógica de negocio.
+    - [x] **Backend:** Crear un controlador exclusivo (`superuser.controller.ts`) con endpoints limitados a listar cuentas y asignar los roles de "Jefe de Gestión" y "Director UGEL".
+    - [x] **Backend:** Aplicar un *Guard* estricto que prohíba al superusuario acceder a endpoints de catálogos, monitoreo, profesores, etc.
+    - [x] **Frontend:** Crear una interfaz/dashboard aislada y minimalista ("Superadmin Panel") sin la barra de navegación estándar, que contenga únicamente el módulo de asignación de estos dos roles críticos.

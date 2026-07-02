@@ -35,3 +35,30 @@ export async function request<T>(
     return text as unknown as T;
   }
 }
+
+export async function requestBlob(
+  path: string,
+  init?: RequestInit,
+): Promise<Blob> {
+  const reqHeaders = new Headers(init?.headers);
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    credentials: 'include',
+    ...init,
+    headers: reqHeaders,
+  });
+  
+  if (!response.ok) {
+    const errText = await response.text();
+    let errMessage = response.statusText;
+    try {
+      const errJson = JSON.parse(errText);
+      errMessage = errJson.message || errJson.code || errMessage;
+    } catch {
+      if (errText) errMessage = errText;
+    }
+    throw new Error(errMessage || `HTTP ${response.status}`);
+  }
+  
+  return await response.blob();
+}

@@ -15,6 +15,14 @@ import { validarDNI, validarEmail, validarEdadPlausible } from './_lib/helpers.j
 
 const USERS = [
   {
+    "dni": "00000000",
+    "firstName": "Super",
+    "lastName": "Administrador",
+    "email": "superadmin@ugel.gob.pe",
+    "role": "superusuario",
+    "fechaNacimiento": "1980-01-01"
+  },
+  {
     "dni": "40000001",
     "firstName": "Carlos",
     "lastName": "Mendoza Quispe",

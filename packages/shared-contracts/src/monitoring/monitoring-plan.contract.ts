@@ -13,6 +13,10 @@ export interface IMonitoringPlanResponse {
   deleted?: boolean;
   deletedAt?: string | null;
   institucionesCubiertas?: IPlanInstitucionCubierta[];
+  institucion?: {
+    nombre: string;
+    codigoModular: string;
+  };
 }
 
 export interface IPlanInstitucionCubierta {

@@ -95,3 +95,13 @@ export interface IFinalizarFichaRequest {
 export interface IMigrarPlantillaRequest {
   plantillaId: string;
 }
+
+export interface IHistorialItem {
+  id: string; // ID de la ficha
+  fecha: string; // Fecha de la visita (cronograma)
+  promedio: number;
+  nivelLogro: string; // INICIO | EN_PROCESO | LOGRO_ESPERADO | LOGRO_DESTACADO
+  observaciones: string | null;
+}
+
+export type IHistorialPedagogicoResponse = IHistorialItem[];

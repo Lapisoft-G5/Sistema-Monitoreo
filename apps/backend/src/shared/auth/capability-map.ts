@@ -92,6 +92,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
   ],
   [RoleCode.DOCENTE]: [],
   [RoleCode.INVITADO]: ['dashboard:read'],
+  [RoleCode.SUPERUSUARIO]: ['superadmin:access'],
 };
 
 /** Permisos derivados del cargo ACTIVO del Especialista (campo Especialista.cargo). */

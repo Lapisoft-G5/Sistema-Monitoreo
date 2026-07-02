@@ -8,7 +8,8 @@ export type UserRole =
   | 'director_institucion'
   | 'docente'
   | 'invitado'
-  | 'admin';
+  | 'admin'
+  | 'superusuario';
 
 // 2. Diccionario de constantes para usar en la UI (ej. en selects o tablas)
 export const USER_ROLES_LABELS: Record<UserRole, string> = {
@@ -22,6 +23,7 @@ export const USER_ROLES_LABELS: Record<UserRole, string> = {
   docente: 'Docente',
   invitado: 'Invitado',
   admin: 'Administrador del Sistema',
+  superusuario: 'Super Administrador',
 };
 
 // 3. Agrupaciones lógicas de roles para facilitar la validación

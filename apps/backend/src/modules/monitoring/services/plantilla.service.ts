@@ -29,10 +29,23 @@ export class PlantillaService {
 
   async findAll(filters?: QueryPlantillaDto, session?: SessionUser): Promise<IPlantilla[]> {
     const scopedFilters = { ...filters };
-    if (session && this.isDirector(session) && session.institucionId) {
-      scopedFilters.institucionId = session.institucionId;
+    if (session) {
+      if (this.isDirector(session) && session.institucionId) {
+        scopedFilters.institucionId = session.institucionId;
+      } else if (session.role === RoleCode.JEFE_AREA) {
+        scopedFilters.rolAutorAlCrear = 'jefe_gestion'; // Solo plantillas UGEL
+      }
+      // JEFE_GESTION no tiene filtro restrictivo aquí, puede ver UGEL e IE
     }
-    return this.repository.findAll(scopedFilters);
+    
+    let plantillas = await this.repository.findAll(scopedFilters);
+
+    if (session?.role === RoleCode.JEFE_GESTION) {
+      // JEFE_GESTION no debe ver plantillas 'Borrador' de las II.EE.
+      plantillas = plantillas.filter(p => !(p.rolAutorAlCrear === 'director_ie' && p.estado === 'Borrador'));
+    }
+
+    return plantillas;
   }
 
   async findById(id: string, session?: SessionUser): Promise<IPlantilla> {

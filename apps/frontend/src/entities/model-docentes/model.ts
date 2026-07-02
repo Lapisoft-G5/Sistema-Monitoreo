@@ -37,4 +37,10 @@ export interface Docente {
     fechaFin: string | null;
     esPrincipal: boolean;
   }>;
+  evaluadorActual?: {
+    id: string;
+    evaluadorId: string;
+    evaluadorNombres: string;
+    evaluadorApellidos: string;
+  } | null;
 }

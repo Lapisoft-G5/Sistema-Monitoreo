@@ -9,11 +9,16 @@ import {
   Trophy,
   Upload,
   Eye,
-  Trash2
+  Trash2,
+  Download,
+  Activity
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { API_BASE_URL } from '@shared/config/api';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
+import { HistorialChart } from './HistorialChart';
+import { useDescargarPdf } from '../hooks/use-ficha-monitoreo';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { AREAS_CURRICULARES } from '@sistema-monitoreo/shared-contracts';
@@ -143,6 +148,9 @@ export const LlenarFichaForm = ({
   const [contextoSeccion, setContextoSeccion] = useState<string>('');
   const [contextoAlumnos, setContextoAlumnos] = useState<number | ''>('');
   const [contextoAlumnosNee, setContextoAlumnosNee] = useState<number | ''>('');
+
+  const [activeTab, setActiveTab] = useState<'FICHA' | 'HISTORIAL'>('FICHA');
+  const { descargar, isPending: isDownloading } = useDescargarPdf();
 
   useEffect(() => {
     if (isOpen && visit) {
@@ -292,6 +300,13 @@ export const LlenarFichaForm = ({
         cantidadEstudiantesNee: Number(contextoAlumnosNee) || 0,
       } : undefined
     });
+    
+    // Toast indicating email automation
+    toast.success('Ficha finalizada con éxito', {
+      description: 'El PDF oficial se está generando y enviando por correo al docente evaluado de forma automática.',
+      duration: 6000,
+      icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+    });
   };
 
   // Calificación consolidada
@@ -368,12 +383,26 @@ export const LlenarFichaForm = ({
               {template.tipoMonitoreo} ({template.anioAcademico})
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            {isCompleted && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-primary text-primary hover:bg-primary/5 text-xs font-bold gap-1.5 cursor-pointer shadow-sm"
+                onClick={() => descargar(visit.id)}
+                disabled={isDownloading}
+              >
+                <Download className="h-4 w-4" />
+                {isDownloading ? 'Generando PDF...' : 'Descargar PDF'}
+              </Button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="px-6 py-3 bg-primary-light border-b border-primary/5 text-xs text-slate-600 font-bold grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -456,11 +485,47 @@ export const LlenarFichaForm = ({
           </div>
         )}
 
+        {visit.tipo === 'DOCENTE' && (
+          <div className="flex items-center gap-6 px-6 pt-3 border-b border-border bg-white">
+            <button
+              onClick={() => setActiveTab('FICHA')}
+              className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
+                activeTab === 'FICHA'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <FileText className="h-4.5 w-4.5" />
+              Rúbricas de Ficha
+            </button>
+            <button
+              onClick={() => setActiveTab('HISTORIAL')}
+              className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
+                activeTab === 'HISTORIAL'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Activity className="h-4.5 w-4.5" />
+              Historial Pedagógico
+            </button>
+          </div>
+        )}
+
         {/* Contenedor con scroll interno — engloba cuerpo + comentarios + calificación */}
         <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="flex flex-col md:flex-row min-h-[300px]">
-          {/* Sidebar: Desempeños */}
-          <div className="w-full md:w-80 border-r border-border p-4 overflow-y-auto space-y-2 bg-slate-50/50">
+        
+        {activeTab === 'HISTORIAL' && visit.evaluadoId && (
+          <div className="p-6">
+            <HistorialChart evaluadoId={visit.evaluadoId} />
+          </div>
+        )}
+
+        {activeTab === 'FICHA' && (
+          <>
+            <div className="flex flex-col md:flex-row min-h-[300px]">
+            {/* Sidebar: Desempeños */}
+            <div className="w-full md:w-80 border-r border-border p-4 overflow-y-auto space-y-2 bg-slate-50/50">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">
               Criterios / Desempeños a Evaluar
             </span>
@@ -961,7 +1026,8 @@ export const LlenarFichaForm = ({
             </div>
           </div>
         )}
-
+          </>
+        )} {/* fin FICHA */}
         </div> {/* fin scroll interno */}
 
         {/* Pie del Modal */}

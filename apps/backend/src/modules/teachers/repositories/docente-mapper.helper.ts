@@ -9,9 +9,13 @@ type DocenteWithRelations = Prisma.DocenteGetPayload<{
     docenteSecciones: true;
     docenteEspecialidades: { include: { especialidad: true } };
   };
-}>;
+}> & {
+  evaluadoresAsignados?: any[];
+};
 
 export function mapDocente(docente: DocenteWithRelations): DocenteEntity {
+  const asig = docente.evaluadoresAsignados?.[0];
+
   return {
     id: docente.id,
     personaId: docente.personaId,
@@ -55,5 +59,11 @@ export function mapDocente(docente: DocenteWithRelations): DocenteEntity {
         grado: ds.grado,
         seccion: ds.seccion,
       })) || [],
+    evaluadorActual: asig ? {
+      id: asig.id,
+      evaluadorId: asig.evaluadorId,
+      evaluadorNombres: asig.evaluador.persona.nombres,
+      evaluadorApellidos: asig.evaluador.persona.apellidos,
+    } : null,
   };
 }

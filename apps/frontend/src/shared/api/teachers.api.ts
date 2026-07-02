@@ -95,6 +95,39 @@ export const teachersApi = {
     }
   },
 
+  findPersonaByDni: async (dni: string): Promise<{ ok: boolean; data?: any; error?: unknown }> => {
+    try {
+      const data = await request<any>(`/api/docentes/buscar/${dni}`);
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
+
+  getAsignaciones: async (evaluadorId: string): Promise<{ ok: boolean; data?: any[]; error?: unknown }> => {
+    try {
+      const data = await request<any[]>(`/api/docentes/${evaluadorId}/asignaciones`);
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
+
+  saveAsignaciones: async (
+    evaluadorId: string,
+    evaluadoIds: string[],
+  ): Promise<{ ok: boolean; data?: { success: boolean; message: string }; error?: unknown }> => {
+    try {
+      const data = await request<{ success: boolean; message: string }>(`/api/docentes/${evaluadorId}/asignaciones`, {
+        method: 'POST',
+        body: JSON.stringify({ evaluadoIds }),
+      });
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
+
   finalizeCargo: async (
     docenteId: string,
     docenteCargoId: string,

@@ -18,6 +18,7 @@ export async function buildPlantilla(
         },
       },
       ejesItems: { orderBy: { orden: 'asc' } },
+      institucion: { select: { nombre: true, codigoModular: true } },
     },
   });
   if (!plantilla) {
@@ -73,5 +74,11 @@ export async function buildPlantilla(
     })),
     createdAt: plantilla.createdAt.toISOString(),
     updatedAt: plantilla.updatedAt.toISOString(),
+    institucion: plantilla.institucion
+      ? {
+          nombre: plantilla.institucion.nombre,
+          codigoModular: plantilla.institucion.codigoModular,
+        }
+      : undefined,
   };
 }

@@ -57,4 +57,5 @@ export interface Plantilla {
   creadoPorRole?: 'jefe_gestion' | 'director_ie';
   creadoPorId?: string;
   ieId?: string;
+  institucionNombre?: string;
 }

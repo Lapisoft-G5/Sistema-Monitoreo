@@ -9,6 +9,14 @@ const DOCENTE_INCLUDE = {
   docenteCursos: { include: { curso: true } },
   docenteEspecialidades: { include: { especialidad: true } },
   docenteSecciones: true,
+  evaluadoresAsignados: {
+    where: { isActive: true },
+    include: {
+      evaluador: {
+        include: { persona: true }
+      }
+    }
+  },
 } as const;
 
 export async function findDocenteById(prisma: PrismaService, id: string) {

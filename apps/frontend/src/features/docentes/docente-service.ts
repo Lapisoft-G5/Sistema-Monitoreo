@@ -104,6 +104,7 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
       : new Date().toISOString().split('T')[0],
     cargo: cargoName as Docente['cargo'],
     cargosList,
+    evaluadorActual: apiDoc.evaluadorActual || null,
   };
 };
 

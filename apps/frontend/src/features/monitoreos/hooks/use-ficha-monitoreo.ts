@@ -121,3 +121,33 @@ export const useMigrarPlantilla = () => {
 // Re-export del helper para que las paginas lo usen
 export { toFichaError };
 
+export const useGetHistorialPedagogico = (evaluadoId: string | undefined) =>
+  useQuery({
+    queryKey: ['fichas', 'historial', evaluadoId],
+    queryFn: () => fichasApi.getHistorial(evaluadoId!),
+    enabled: !!evaluadoId,
+  });
+
+export const useDescargarPdf = () => {
+  const mutation = useMutation({
+    mutationFn: (fichaId: string) => fichasApi.descargarPdf(fichaId),
+  });
+
+  const descargar = async (fichaId: string, customFileName?: string) => {
+    const blob = await mutation.mutateAsync(fichaId);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = customFileName || `Ficha_Monitoreo_${fichaId.split('-')[0]}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  return {
+    ...mutation,
+    descargar,
+  };
+};
+

@@ -14,7 +14,13 @@ import { useUser } from '@entities/model-user';
 export const PlanMonitoreoAnualPage = () => {
   const { user } = useUser();
   const isDirector = user?.role === 'director_institucion';
+  const isJefeGestion = user?.role === 'jefe_gestion';
   const defaultEntity = isDirector ? 'IE' : 'UGEL';
+
+  const canEditPlan = (plan: any) => {
+    if (isJefeGestion && plan.tipoEntidad === 'IE') return false;
+    return true;
+  };
 
   // --- Estados de Vista ---
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -354,36 +360,40 @@ export const PlanMonitoreoAnualPage = () => {
                           <Eye className="w-3.5 h-3.5" />
                           Ver
                         </a>
-                        {plan.estado === 'Activo' ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
-                            className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
-                            title="Desactivar Plan"
-                          >
-                            <PowerOff className="w-4 h-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
-                            className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/15 transition-colors rounded-lg cursor-pointer"
-                            title="Reactivar Plan"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                          </Button>
+                        {canEditPlan(plan) && (
+                          <>
+                            {plan.estado === 'Activo' ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
+                                className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                                title="Desactivar Plan"
+                              >
+                                <PowerOff className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
+                                className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/15 transition-colors rounded-lg cursor-pointer"
+                                title="Reactivar Plan"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => { setLocalHardDeleteError(null); setDeletePlanHardId(plan.id); }}
+                              className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                              title="Eliminar por completo"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => { setLocalHardDeleteError(null); setDeletePlanHardId(plan.id); }}
-                          className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
-                          title="Eliminar por completo"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -454,36 +464,40 @@ export const PlanMonitoreoAnualPage = () => {
                         <Eye className="w-3.5 h-3.5" />
                         Ver
                       </a>
-                      {plan.estado === 'Activo' ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
-                          className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
-                          title="Desactivar Plan"
-                        >
-                          <PowerOff className="w-4 h-4" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
-                          className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/15 transition-colors rounded-lg cursor-pointer"
-                          title="Reactivar Plan"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                        </Button>
+                      {canEditPlan(plan) && (
+                        <>
+                          {plan.estado === 'Activo' ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
+                              className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                              title="Desactivar Plan"
+                            >
+                              <PowerOff className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => { setLocalToggleError(null); setDeletePlanId(plan.id); }}
+                              className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/15 transition-colors rounded-lg cursor-pointer"
+                              title="Reactivar Plan"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => { setLocalHardDeleteError(null); setDeletePlanHardId(plan.id); }}
+                            className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
+                            title="Eliminar por completo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => { setLocalHardDeleteError(null); setDeletePlanHardId(plan.id); }}
-                        className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
-                        title="Eliminar por completo"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>

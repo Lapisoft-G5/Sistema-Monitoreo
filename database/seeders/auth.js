@@ -23,6 +23,7 @@ const ROLES = [
   { code: 'jefe_taller', name: 'Jefe de Taller', description: 'Jefe de Taller de Secundaria' },
   { code: 'docente', name: 'Docente', description: 'Docente de Aula' },
   { code: 'invitado', name: 'Invitado', description: 'Usuario de Consulta e Invitado' },
+  { code: 'superusuario', name: 'Super Administrador', description: 'Superusuario para asignación de altos cargos' },
 ];
 
 const PERMISOS = [
@@ -35,6 +36,7 @@ const PERMISOS = [
   { codigo: 'monitoreo:execute', nombre: 'Realizar Monitoreo', descripcion: 'Permite ejecutar y registrar fichas de monitoreo' },
   { codigo: 'reports:read', nombre: 'Ver Reportes', descripcion: 'Permite visualizar reportes del sistema. El ScopeFilter del service decide el ámbito (todo / scope / propio).' },
   { codigo: 'dashboard:read', nombre: 'Ver Dashboard', descripcion: 'Permite visualizar el panel de control y estadísticas' },
+  { codigo: 'superadmin:access', nombre: 'Acceso de Superusuario', descripcion: 'Permite asignar altos cargos (Jefe Gestión, Director UGEL)' },
 ];
 
 const ROL_PERMISOS = {
@@ -70,6 +72,7 @@ const ROL_PERMISOS = {
   ],
   docente: ['reports:read'],
   invitado: ['dashboard:read'],
+  superusuario: ['superadmin:access'],
 };
 
 export async function seedAuth() {

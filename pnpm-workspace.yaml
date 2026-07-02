@@ -13,4 +13,5 @@ allowBuilds:
   esbuild: true
   msw: true
   prisma: true
+  puppeteer: true
   unrs-resolver: true

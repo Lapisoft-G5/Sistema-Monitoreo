@@ -5,6 +5,8 @@ export * from './auth/reset-password.contract.js';
 export * from './auth/logout.contract.js';
 export * from './auth/refresh-token.contract.js';
 export * from './teachers/teachers.contract.js';
+export * from './teachers/areas.contract.js';
+export * from './teachers/asignaciones.contract.js';
 export * from './institutions/create-institucion.contract.js';
 export * from './institutions/query-institucion.contract.js';
 export * from './institutions/update-institucion.contract.js';

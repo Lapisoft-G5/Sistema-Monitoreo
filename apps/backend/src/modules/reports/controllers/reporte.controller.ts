@@ -53,6 +53,19 @@ export class ReporteController {
     res.send(html);
   }
 
+  @Get('ficha/:id/pdf')
+  @RequirePermissions('reports:read')
+  @Header('Content-Type', 'application/pdf')
+  async exportarFichaPDF(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: any,
+    @Res() res: Response,
+  ): Promise<void> {
+    const pdfBuffer = await this.service.exportarFichaPDF(id, this.toSession(req));
+    res.setHeader('Content-Disposition', `attachment; filename="ficha_${id}.pdf"`);
+    res.send(pdfBuffer);
+  }
+
   private toSession(req: any): any {
     if (!req.user) {
       throw new ForbiddenException('Sesion no encontrada.');

@@ -8,4 +8,5 @@ export enum RoleCode {
   JEFE_TALLER = 'jefe_taller',
   DOCENTE = 'docente',
   INVITADO = 'invitado',
+  SUPERUSUARIO = 'superusuario',
 }

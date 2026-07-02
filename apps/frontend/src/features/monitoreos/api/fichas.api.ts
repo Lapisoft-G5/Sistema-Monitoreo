@@ -1,5 +1,5 @@
-import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
-import { request } from '@shared/config/api';
+import type { IFichaMonitoreo, IHistorialPedagogicoResponse } from '@sistema-monitoreo/shared-contracts';
+import { request, requestBlob } from '@shared/config/api';
 
 export interface CreateFichaInput {
   cronogramaId: string;
@@ -67,4 +67,10 @@ export const fichasApi = {
       method: 'POST',
       body: JSON.stringify({ plantillaId }),
     }),
+
+  getHistorial: (evaluadoId: string) =>
+    request<IHistorialPedagogicoResponse>(`/api/fichas/historial/${evaluadoId}`),
+
+  descargarPdf: (fichaId: string) =>
+    requestBlob(`/api/reportes/ficha/${fichaId}/pdf`),
 };

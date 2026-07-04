@@ -18,7 +18,6 @@ import { Badge } from '@shared/ui/badge';
 import { Spinner } from '@shared/ui/Spinner';
 import { fetchDocenteById } from '@features/docentes/docente-service';
 import { fetchInstitucionById } from '@features/institutions/institution-service';
-import { AsignacionEvaluadorWidget } from '@features/docentes/ui/AsignacionEvaluadorWidget';
 
 export const DocenteDetailPage = () => {
   const { id } = useParams<{ id: string }>();

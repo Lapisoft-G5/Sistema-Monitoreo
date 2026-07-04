@@ -32,6 +32,7 @@ export class PlantillaService {
     if (session) {
       if (this.isDirector(session) && session.institucionId) {
         scopedFilters.institucionId = session.institucionId;
+        scopedFilters.tipoMonitoreo = 'DOCENTE';
       } else if (session.role === RoleCode.JEFE_AREA) {
         scopedFilters.rolAutorAlCrear = 'jefe_gestion'; // Solo plantillas UGEL
       }
@@ -40,9 +41,24 @@ export class PlantillaService {
     
     let plantillas = await this.repository.findAll(scopedFilters);
 
-    if (session?.role === RoleCode.JEFE_GESTION) {
-      // JEFE_GESTION no debe ver plantillas 'Borrador' de las II.EE.
-      plantillas = plantillas.filter(p => !(p.rolAutorAlCrear === 'director_ie' && p.estado === 'Borrador'));
+    if (session) {
+      const isUgelRole =
+        session.role === RoleCode.JEFE_GESTION ||
+        session.role === RoleCode.JEFE_AREA ||
+        session.role === RoleCode.DIRECTOR_UGEL ||
+        session.role === RoleCode.ESPECIALISTA;
+
+      if (isUgelRole) {
+        // UGEL no debe ver plantillas 'Borrador' de las II.EE.
+        plantillas = plantillas.filter(
+          (p) => !(p.rolAutorAlCrear === 'director_ie' && p.estado === 'Borrador'),
+        );
+      } else if (this.isDirector(session)) {
+        // IE no debe ver plantillas 'Borrador' de la UGEL
+        plantillas = plantillas.filter(
+          (p) => !(p.rolAutorAlCrear === 'jefe_gestion' && p.estado === 'Borrador'),
+        );
+      }
     }
 
     return plantillas;

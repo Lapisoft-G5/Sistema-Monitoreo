@@ -73,6 +73,7 @@ export const Sidebar = () => {
                 icon: <Compass className="h-[18px] w-[18px]" />,
                 children: [
                   { id: 'monitoreo_calendario', label: 'Calendario', path: '/monitoreo/calendario' },
+                  { id: 'monitoreo_reportes', label: 'Fichas Completadas', path: '/monitoreo/reportes' },
                 ],
               },
               {

@@ -59,7 +59,7 @@ export function guardModificacion(plantilla: IPlantilla, session: SessionUser): 
   if (isDirector(session) && plantilla.rolAutorAlCrear === 'jefe_gestion') {
     throw new ForbiddenException('Los Directores IE no pueden modificar plantillas UGEL.');
   }
-  if (session.role === RoleCode.JEFE_GESTION && plantilla.rolAutorAlCrear === 'director_ie') {
-    throw new ForbiddenException('Los Jefes de Gestion no pueden modificar plantillas de las II.EE.');
+  if (!isDirector(session) && plantilla.rolAutorAlCrear === 'director_ie') {
+    throw new ForbiddenException('Los usuarios de UGEL no pueden modificar plantillas de las II.EE.');
   }
 }

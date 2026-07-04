@@ -8,6 +8,9 @@ import { EntityTable } from '@shared/ui/EntityTable';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { TableCell, TableHead, TableRow } from '@shared/ui/table';
 import { Badge } from '@shared/ui/badge';
+import { AlertDialog, AlertDialogContent } from '@shared/ui/alert-dialog';
+import { AsignacionEvaluadorWidget } from '@features/docentes/ui/AsignacionEvaluadorWidget';
+import { X } from 'lucide-react';
 
 import { teachersApi } from '@shared/api/teachers.api';
 
@@ -69,6 +72,7 @@ export const DocentesTableWidget = ({
   const [deletingDoc, setDeletingDoc] = useState<Docente | null>(null);
   const [restoringDoc, setRestoringDoc] = useState<Docente | null>(null);
   const [finalizingDoc, setFinalizingDoc] = useState<Docente | null>(null);
+  const [assigningDoc, setAssigningDoc] = useState<Docente | null>(null);
 
   const pagination = useEntityTable({ data: docentes, filterFn: docenteFilter(targetCargo) });
 
@@ -226,9 +230,11 @@ export const DocentesTableWidget = ({
                   onEdit={doc.activo && !isCargoFinalized ? () => { onEdit?.(doc); navigate(`${routePrefix}/${doc.id}/editar`); } : undefined}
                   onRestore={!isMonitorCargo && !doc.activo ? () => setRestoringDoc(doc) : undefined}
                   onFinalize={doc.activo && !isCargoFinalized ? () => handleFinalizeClick(doc) : undefined}
+                  onAssign={(targetCargo === 'Coordinador Pedagógico' || targetCargo === 'Jefe de Taller') && doc.activo && !isCargoFinalized ? () => setAssigningDoc(doc) : undefined}
                   viewTitle="Ver ficha"
                   restoreTitle="Reactivar docente"
                   finalizeTitle={isMonitorCargo ? `Finalizar Cargo de ${targetCargo}` : 'Desactivar docente'}
+                  assignTitle="Asignar Docentes"
                 />
               </TableCell>
             </TableRow>
@@ -269,6 +275,27 @@ export const DocentesTableWidget = ({
           onConfirm={confirmFinalizeCargo}
           onCancel={() => setFinalizingDoc(null)}
         />
+      )}
+
+      {assigningDoc && (
+        <AlertDialog open={true} onOpenChange={(open) => { if (!open) setAssigningDoc(null); }}>
+          <AlertDialogContent className="!max-w-5xl !w-[90vw] p-0 overflow-hidden bg-transparent border-0 shadow-none">
+             <div className="relative bg-white rounded-xl shadow-xl w-full h-[85vh] flex flex-col overflow-hidden">
+               <div className="absolute top-2 right-2 z-10">
+                 <button onClick={() => setAssigningDoc(null)} className="flex items-center justify-center h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 cursor-pointer border-none outline-none">
+                   <X className="h-4 w-4 text-slate-500" />
+                 </button>
+               </div>
+               <div className="p-4 pt-8 flex-1 overflow-hidden flex flex-col">
+                 <AsignacionEvaluadorWidget
+                   evaluadorId={assigningDoc.id}
+                   evaluadorNombre={`${assigningDoc.nombres} ${assigningDoc.apellidos}`}
+                   evaluadorCargo={targetCargo}
+                 />
+               </div>
+             </div>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

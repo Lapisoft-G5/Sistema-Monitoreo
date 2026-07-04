@@ -18,10 +18,12 @@ import { API_BASE_URL } from '@shared/config/api';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { HistorialChart } from './HistorialChart';
-import { useDescargarPdf } from '../hooks/use-ficha-monitoreo';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { AREAS_CURRICULARES } from '@sistema-monitoreo/shared-contracts';
+import { useReactToPrint } from 'react-to-print';
+import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
+import { useRef } from 'react';
 
 interface LlenarFichaFormProps {
   isOpen: boolean;
@@ -150,7 +152,9 @@ export const LlenarFichaForm = ({
   const [contextoAlumnosNee, setContextoAlumnosNee] = useState<number | ''>('');
 
   const [activeTab, setActiveTab] = useState<'FICHA' | 'HISTORIAL'>('FICHA');
-  const { descargar, isPending: isDownloading } = useDescargarPdf();
+
+  const printRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({ contentRef: printRef });
 
   useEffect(() => {
     if (isOpen && visit) {
@@ -369,8 +373,23 @@ export const LlenarFichaForm = ({
 
   const calificacion = isCompleted ? calcularCalificacion() : null;
 
+  const currentFichaState = {
+    checkedAspects,
+    selectedLevels,
+    generalComments,
+    sugerencias,
+    compromisos,
+    rubricComments,
+    preguntaExtraAnswers,
+    respuestasEjeItem,
+    evidenciaUrls,
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-200">
+      <div style={{ display: 'none' }}>
+        <FichaPrintable ref={printRef} visit={visit} template={template} fichaState={currentFichaState} />
+      </div>
       <Card className="bg-surface w-full max-w-[1250px] border border-border rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-5 border-b border-border bg-slate-50 flex items-center justify-between">
           <div className="space-y-1">
@@ -389,11 +408,10 @@ export const LlenarFichaForm = ({
                 variant="outline"
                 size="sm"
                 className="border-primary text-primary hover:bg-primary/5 text-xs font-bold gap-1.5 cursor-pointer shadow-sm"
-                onClick={() => descargar(visit.id)}
-                disabled={isDownloading}
+                onClick={() => handlePrint()}
               >
                 <Download className="h-4 w-4" />
-                {isDownloading ? 'Generando PDF...' : 'Descargar PDF'}
+                Imprimir / PDF
               </Button>
             )}
             <button

@@ -43,17 +43,25 @@ const ESTADO_OPTIONS = [
   { value: 'Historico', label: 'Histórico' },
 ];
 
-export const PlantillasCatalog = () => {
+interface PlantillasCatalogProps {
+  institucionId?: string;
+}
+
+export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}) => {
   const navigate = useNavigate();
   const { user } = useUser();
   const isDirector = user?.role === 'director_institucion';
 
-  const { data: plantillas = [], isLoading, isError, error, refetch } = usePlantillasList();
+  const { data: plantillas = [], isLoading, isError, error, refetch } = usePlantillasList({ institucionId });
   const cambiarEstado = useCambiarEstadoPlantilla();
   const eliminar = useEliminarPlantilla();
   const duplicar = useDuplicarPlantilla();
 
   const visiblePlantillas = useMemo(() => {
+    if (institucionId) {
+      return plantillas.filter((p) => p.ieId === institucionId);
+    }
+
     if (isDirector) {
       return plantillas.filter(
         (p) =>
@@ -237,15 +245,17 @@ export const PlantillasCatalog = () => {
             </div>
           </div>
 
-          <div className="w-full md:w-60">
-            <SelectField
-              label="Tipo de Ficha"
-              value={filterTipo}
-              onChange={(val) => setFilterTipo(val)}
-              placeholder="Todos los tipos"
-              options={TIPO_OPTIONS}
-            />
-          </div>
+          {!institucionId && !isDirector && (
+            <div className="w-full md:w-60">
+              <SelectField
+                label="Tipo de Ficha"
+                value={filterTipo}
+                onChange={(val) => setFilterTipo(val)}
+                placeholder="Todos los tipos"
+                options={TIPO_OPTIONS}
+              />
+            </div>
+          )}
 
           <div className="w-full md:w-44">
             <SelectField
@@ -404,12 +414,14 @@ export const PlantillasCatalog = () => {
           {filteredPlantillas.map((plantilla) => {
             const isDocente = plantilla.tipoMonitoreo === 'Monitoreo Docente';
             const isGeneral = !plantilla.creadoPorRole || plantilla.creadoPorRole === 'jefe_gestion';
-            const canManage = !isDirector || (plantilla.creadoPorRole === 'director_ie' && plantilla.ieId === user?.institucion);
+            const canManage = isDirector
+              ? plantilla.creadoPorRole === 'director_ie' && plantilla.ieId === user?.institucion
+              : isGeneral;
 
             return (
               <Card
                 key={plantilla.id}
-                className="bg-surface border border-border rounded-2xl p-5 hover:shadow-md transition-all duration-300 flex flex-col justify-between gap-5 group relative"
+                className="bg-surface border border-border rounded-2xl p-5 hover:shadow-md transition-all duration-300 flex flex-col gap-5 group relative h-full"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -419,7 +431,7 @@ export const PlantillasCatalog = () => {
                       </Badge>
                       <Badge
                         variant="outline"
-                        className={`text-[9px] font-bold px-2 py-0.5 border shadow-sm truncate max-w-[150px] ${
+                        className={`text-[9px] font-bold px-2 py-0.5 border shadow-sm line-clamp-1 break-all max-w-[180px] leading-tight ${
                           isGeneral
                             ? 'bg-slate-50 text-slate-600 border-slate-200'
                             : 'bg-purple-50 text-purple-700 border-purple-200'

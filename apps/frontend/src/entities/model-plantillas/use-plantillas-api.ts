@@ -13,7 +13,7 @@ import { mapIPlantillaListToPlantillaList, mapIPlantillaToPlantilla } from './ma
  * niveles/desempenos que difieren.
  */
 
-export const usePlantillasList = (filters?: { anioAcademico?: number; estado?: EstadoPlantilla; tipoMonitoreo?: TipoPlantilla }) =>
+export const usePlantillasList = (filters?: { anioAcademico?: number; estado?: EstadoPlantilla; tipoMonitoreo?: TipoPlantilla; institucionId?: string }) =>
   useQuery({
     queryKey: ['plantillas', filters],
     queryFn: async () => {

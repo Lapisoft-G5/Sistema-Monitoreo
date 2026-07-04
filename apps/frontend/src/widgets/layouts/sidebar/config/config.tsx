@@ -44,6 +44,7 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
       { id: 'monitoreo_plan_anual', label: 'Plan Monitoreo Anual', path: '/monitoreo/plan-anual' },
       { id: 'monitoreo_cronograma', label: 'Cronograma', path: '/monitoreo/cronograma' },
       { id: 'monitoreo_calendario', label: 'Calendario', path: '/monitoreo/calendario' },
+      { id: 'monitoreo_reportes', label: 'Fichas Completadas', path: '/monitoreo/reportes' },
     ],
   },
   {

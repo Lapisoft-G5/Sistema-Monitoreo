@@ -80,8 +80,8 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
   );
 
   return (
-    <Card className="w-full bg-surface border-border shadow-sm rounded-xl overflow-hidden mt-6">
-      <CardHeader className="border-b border-border bg-slate-50 p-4">
+    <Card className="w-full h-full flex flex-col bg-surface border-border shadow-sm rounded-xl overflow-hidden">
+      <CardHeader className="border-b border-border bg-slate-50 p-4 shrink-0">
         <CardTitle className="text-sm font-bold text-slate-800 flex items-center justify-between">
           <span>
             Docentes asignados a <span className="text-primary">{evaluadorNombre}</span> ({evaluadorCargo})
@@ -91,8 +91,8 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-4 flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
+      <CardContent className="p-4 flex flex-col gap-4 flex-1 overflow-hidden">
+        <div className="flex items-center justify-between gap-4 shrink-0">
           <div className="w-full max-w-sm">
             <TextField
               label=""
@@ -117,11 +117,11 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
         </div>
 
         {loading ? (
-          <div className="py-8 flex justify-center">
+          <div className="py-8 flex justify-center flex-1">
             <span className="text-slate-500 text-xs animate-pulse">Cargando docentes...</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 overflow-y-auto pr-1 pb-4 flex-1 content-start">
             {filteredDocentes.map((docente) => {
               const isAsignado = asignados.includes(docente.id);
               const isAssignedToOther = docente.evaluadorActual && docente.evaluadorActual.evaluadorId !== evaluadorId;

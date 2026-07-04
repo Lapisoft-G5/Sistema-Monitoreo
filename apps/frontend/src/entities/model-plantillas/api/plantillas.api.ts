@@ -53,7 +53,7 @@ export interface UpdatePlantillaInput {
 }
 
 export const plantillasApi = {
-  findAll: (query?: { anioAcademico?: number; tipoMonitoreo?: TipoPlantilla; estado?: EstadoPlantilla }) => {
+  findAll: (query?: { anioAcademico?: number; tipoMonitoreo?: TipoPlantilla; estado?: EstadoPlantilla; institucionId?: string }) => {
     const params = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([k, v]) => {

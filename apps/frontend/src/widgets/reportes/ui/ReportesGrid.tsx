@@ -6,9 +6,7 @@ import {
   User,
   Download,
   Eye,
-  Clock,
-  AlertCircle,
-  CheckCircle2
+  AlertCircle
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/shared/ui/button';
@@ -20,7 +18,6 @@ import type { Plantilla } from '@/entities/model-plantillas';
 import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
 import { LlenarFichaForm } from '@/features/monitoreos';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
-import { reportesApi } from '@/shared/api/reportes.api';
 
 interface IFichaRespuestaDesempenoConPreguntaExtra {
   id: string;
@@ -138,10 +135,6 @@ export const ReportesGrid = ({
   const [selectedVisit, setSelectedVisit] = useState<BackendReportVisit | null>(null);
   const [showFichaModal, setShowFichaModal] = useState<boolean>(false);
 
-  // PDF download mock triggers
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-
   const { data: backendFicha } = useQuery({
     queryKey: ['ficha-completada', selectedVisit?.id],
     queryFn: () => {
@@ -222,31 +215,13 @@ export const ReportesGrid = ({
 
   const handleDownloadPDF = (visit: BackendReportVisit, e: React.MouseEvent) => {
     e.stopPropagation();
-    const hasBackendData = 'nivelLogro' in visit;
-    if (hasBackendData) {
-      const exportUrl = reportesApi.fichaHTMLUrl(visit.id);
-      window.open(exportUrl, '_blank');
-      return;
-    }
-
-    setDownloadingId(visit.id);
-    setTimeout(() => {
-      setDownloadingId(null);
-      setToastMessage(`Ficha de Monitoreo - ${visit.institucion.split(' - ')[0]} descargada con éxito en PDF.`);
-      setTimeout(() => setToastMessage(null), 4000);
-    }, 1500);
+    // Abrimos el modal. Desde el modal, que sí carga la data, se puede generar el PDF.
+    setSelectedVisit(visit);
+    setShowFichaModal(true);
   };
 
   return (
     <div className="space-y-6">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs font-bold py-3 px-5 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2 animate-in slide-in-from-bottom-5 duration-300">
-          <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       {/* Panel de Filtros */}
       <Card className="p-5 border border-border bg-surface shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-border pb-3">
@@ -466,15 +441,10 @@ export const ReportesGrid = ({
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={(e) => handleDownloadPDF(visit, e)}
-                          disabled={downloadingId === visit.id}
                           className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                           title="Descargar PDF"
                         >
-                          {downloadingId === visit.id ? (
-                            <Clock className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Download className="h-3.5 w-3.5" />
-                          )}
+                          <Download className="h-3.5 w-3.5" />
                         </button>
                         <Button
                           variant="outline"
@@ -597,15 +567,10 @@ export const ReportesGrid = ({
                               </Button>
                               <button
                                 onClick={(e) => handleDownloadPDF(visit, e)}
-                                disabled={downloadingId === visit.id}
                                 className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                                 title="Descargar PDF"
                               >
-                                {downloadingId === visit.id ? (
-                                  <Clock className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <Download className="h-3.5 w-3.5" />
-                                )}
+                                <Download className="h-3.5 w-3.5" />
                               </button>
                             </div>
                           </td>

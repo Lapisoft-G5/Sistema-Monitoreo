@@ -6,6 +6,7 @@ import { Spinner } from '@shared/ui/Spinner';
 import { fetchInstitucionById } from '@features/institutions/institution-service';
 
 import { InstitutionProfileWidget } from '@widgets/institutions/ViewInstitution';
+import { PlantillasCatalog } from '@widgets/plantillas';
 
 export const InstitutionDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -71,6 +72,14 @@ export const InstitutionDetailPage = () => {
         onBack={() => navigate(backPath)}
         onEdit={() => navigate(`/instituciones/${id}/editar`, { state: { from: backPath } })}
       />
+
+      {/* Sección de Plantillas de Monitoreo de la I.E. */}
+      <div className="mt-8 animate-in fade-in-0 duration-300">
+        <h2 className="text-lg font-bold text-slate-800 mb-4 px-1">Plantillas de Monitoreo de la Institución</h2>
+        <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+          <PlantillasCatalog institucionId={institucion.id} />
+        </div>
+      </div>
     </div>
   );
 };

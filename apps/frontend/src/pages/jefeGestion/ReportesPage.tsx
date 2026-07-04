@@ -283,14 +283,14 @@ export const ReportesPage = () => {
             title={
               isMyReportsPath
                 ? 'Mis Reportes de Monitoreo'
-                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller'
+                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller' || user?.role === 'director_institucion'
                   ? 'Fichas de Monitoreo Completadas'
                   : 'Fichas Completadas en Cuadrícula'
             }
             description={
               isMyReportsPath
                 ? 'Bandeja para visualizar y descargar las fichas técnicas de los monitoreos realizados a su persona.'
-                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller'
+                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller' || user?.role === 'director_institucion'
                   ? 'Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por usted.'
                   : 'Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por los especialistas.'
             }

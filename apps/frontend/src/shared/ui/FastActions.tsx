@@ -1,4 +1,4 @@
-import { Eye, Pencil, Trash2, RotateCcw, UserMinus } from 'lucide-react';
+import { Eye, Pencil, Trash2, RotateCcw, UserMinus, UserPlus } from 'lucide-react';
 import { Button } from './button';
 
 interface FastActionsProps {
@@ -7,11 +7,13 @@ interface FastActionsProps {
   onDelete?: () => void;
   onRestore?: () => void;
   onFinalize?: () => void;
+  onAssign?: () => void;
   viewTitle?: string;
   editTitle?: string;
   deleteTitle?: string;
   restoreTitle?: string;
   finalizeTitle?: string;
+  assignTitle?: string;
 }
 
 export const FastActions = ({
@@ -20,14 +22,30 @@ export const FastActions = ({
   onDelete,
   onRestore,
   onFinalize,
+  onAssign,
   viewTitle = 'Ver detalle',
   editTitle = 'Editar',
   deleteTitle = 'Eliminar',
   restoreTitle = 'Reactivar',
   finalizeTitle = 'Finalizar Cargo',
+  assignTitle = 'Asignar Docentes',
 }: FastActionsProps) => {
   return (
     <div className="flex items-center justify-end gap-1">
+      {onAssign && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAssign();
+          }}
+          className="h-8 w-8 cursor-pointer rounded-lg text-text-muted hover:text-primary hover:bg-primary/10"
+          title={assignTitle}
+        >
+          <UserPlus className="h-4 w-4" />
+        </Button>
+      )}
       {onView && (
         <Button
           variant="ghost"

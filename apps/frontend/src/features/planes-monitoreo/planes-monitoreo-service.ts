@@ -94,5 +94,21 @@ export const usePlanesMonitoreo = () => {
     }
   };
 
-  return { planes, loading, error, actionLoading, fetchPlanes, uploadPlan, toggleEstado, hardDeletePlan };
+  const viewPlanPdf = async (id: string) => {
+    setActionLoading(true);
+    setError(null);
+    try {
+      const blob = await planesMonitoreoApi.downloadArchivo(id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      // No revoke the URL immediately because the new tab needs to load it
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Error al obtener el documento.';
+      setError(errMsg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  return { planes, loading, error, actionLoading, fetchPlanes, uploadPlan, toggleEstado, hardDeletePlan, viewPlanPdf };
 };

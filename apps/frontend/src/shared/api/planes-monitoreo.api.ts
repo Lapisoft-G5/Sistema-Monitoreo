@@ -1,5 +1,5 @@
 import type { IMonitoringPlanResponse, IPlanInstitucionCubierta } from '@sistema-monitoreo/shared-contracts';
-import { request, API_BASE_URL } from '../config/api.js';
+import { request, requestBlob, API_BASE_URL } from '../config/api.js';
 
 export const planesMonitoreoApi = {
   findAll: (query?: { search?: string; anioAcademico?: number; tipoEntidad?: string; estado?: string }) => {
@@ -35,4 +35,6 @@ export const planesMonitoreoApi = {
     }),
 
   archivoUrl: (id: string) => `${API_BASE_URL}/api/planes-monitoreo/${id}/archivo`,
+
+  downloadArchivo: (id: string) => requestBlob(`/api/planes-monitoreo/${id}/archivo`),
 };

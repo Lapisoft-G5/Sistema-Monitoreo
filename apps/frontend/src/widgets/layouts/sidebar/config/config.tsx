@@ -8,6 +8,7 @@ import {
   BarChart3,
   ClipboardList,
   Settings,
+  Shield,
 } from 'lucide-react';
 import type { MenuItem } from '@shared/constants/roles';
 
@@ -93,8 +94,10 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     id: 'plantillas',
     label: 'Plantillas de Monitoreo',
     icon: <ClipboardList className="h-[18px] w-[18px]" />,
-    path: '/plantillas',
-    children: [],
+    children: [
+      { id: 'plantillas_ugel', label: 'UGEL', path: '/plantillas?filtro=ugel' },
+      { id: 'plantillas_ies', label: 'Instituciones', path: '/plantillas?filtro=ie' },
+    ],
   },
   {
     id: 'reportes',
@@ -109,5 +112,14 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     icon: <Settings className="h-[18px] w-[18px]" />,
     path: '/configuracion',
     children: [],
+  },
+  {
+    id: 'superadmin',
+    label: 'Superadmin Panel',
+    icon: <Shield className="h-[18px] w-[18px]" />,
+    children: [
+      { id: 'superadmin_director', label: 'Director UGEL', path: '/superadmin/director' },
+      { id: 'superadmin_jefe', label: 'Jefe de Gestión', path: '/superadmin/jefe' },
+    ],
   },
 ];

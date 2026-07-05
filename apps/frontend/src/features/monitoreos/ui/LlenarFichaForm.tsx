@@ -286,6 +286,27 @@ export const LlenarFichaForm = ({
       );
       return;
     }
+
+    const missingComments = template.desempenos.filter((d) => !rubricComments[d.id] || rubricComments[d.id].trim() === '');
+    if (missingComments.length > 0) {
+      alert(
+        `Faltan justificaciones. Por favor ingrese un comentario u observación que justifique la evaluación para: \n${missingComments
+          .map((m) => `• ${m.nombre.substring(0, 45)}...`)
+          .join('\n')}`
+      );
+      return;
+    }
+
+    if (!sugerencias || sugerencias.trim() === '') {
+      alert('Las sugerencias son obligatorias para finalizar la ficha.');
+      return;
+    }
+
+    if (!compromisos || compromisos.trim() === '') {
+      alert('Los compromisos son obligatorios para finalizar la ficha.');
+      return;
+    }
+
     onFinalize?.(visit.id, {
       checkedAspects,
       selectedLevels,
@@ -383,6 +404,13 @@ export const LlenarFichaForm = ({
     preguntaExtraAnswers,
     respuestasEjeItem,
     evidenciaUrls,
+    contexto: visit.tipo === 'DOCENTE' ? {
+      areaCurricular: contextoArea,
+      grado: contextoGrado,
+      seccion: contextoSeccion,
+      cantidadEstudiantes: Number(contextoAlumnos) || 0,
+      cantidadEstudiantesNee: Number(contextoAlumnosNee) || 0,
+    } : undefined
   };
 
   return (

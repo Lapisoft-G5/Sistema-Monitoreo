@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search,
   Eye,
@@ -57,26 +57,35 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
   const eliminar = useEliminarPlantilla();
   const duplicar = useDuplicarPlantilla();
 
-  const visiblePlantillas = useMemo(() => {
-    if (institucionId) {
-      return plantillas.filter((p) => p.ieId === institucionId);
-    }
+  const [searchParams] = useSearchParams();
+  const filtroUrl = searchParams.get('filtro');
 
-    if (isDirector) {
-      return plantillas.filter(
+  const visiblePlantillas = useMemo(() => {
+    let result = plantillas;
+
+    if (institucionId) {
+      result = result.filter((p) => p.ieId === institucionId);
+    } else if (isDirector) {
+      result = result.filter(
         (p) =>
           !p.creadoPorRole ||
           p.creadoPorRole === 'jefe_gestion' ||
           (p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion),
       );
+    } else if (user?.role === 'jefe_gestion') {
+      result = plantillas;
+    } else {
+      result = result.filter((p) => !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion');
     }
-    
-    if (user?.role === 'jefe_gestion') {
-      return plantillas;
+
+    if (filtroUrl === 'ugel') {
+      result = result.filter(p => !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion');
+    } else if (filtroUrl === 'ie') {
+      result = result.filter(p => p.creadoPorRole === 'director_ie');
     }
-    
-    return plantillas.filter((p) => !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion');
-  }, [plantillas, isDirector, user]);
+
+    return result;
+  }, [plantillas, isDirector, user, institucionId, filtroUrl]);
 
   const [searchText, setSearchText] = useState('');
   const [filterTipo, setFilterTipo] = useState('Todos');

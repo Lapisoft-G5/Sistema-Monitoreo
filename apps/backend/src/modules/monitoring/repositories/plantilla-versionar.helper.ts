@@ -78,15 +78,19 @@ export async function versionarConClon(
     }
 
     const desempenosFinales = data.data.desempenos
-      ? data.data.desempenos
+      ? data.data.desempenos.map(d => ({
+          ...d,
+          id: randomUUID(),
+          aspectos: d.aspectos.map(a => ({ ...a, id: randomUUID() }))
+        }))
       : original.desempenos.map((d) => ({
-          id: d.id,
+          id: randomUUID(),
           nombre: d.nombre,
           descripcionCorta: d.descripcionCorta,
           preguntaExtra: d.preguntaExtra,
           orden: d.orden,
           aspectos: d.aspectos.map((a) => ({
-            id: a.id,
+            id: randomUUID(),
             descripcion: a.descripcion,
             orden: a.orden,
           })),

@@ -35,6 +35,8 @@ export type MenuItem =
   | 'monitoreo_cronograma'
   | 'monitoreo_calendario'
   | 'plantillas'
+  | 'plantillas_ugel'
+  | 'plantillas_ies'
   | 'instituciones'
   | 'instituciones_padron'
   | 'instituciones_docentes'
@@ -45,7 +47,9 @@ export type MenuItem =
   | 'reportes'
   | 'reportes'
   | 'configuracion'
-  | 'superadmin';
+  | 'superadmin'
+  | 'superadmin_director'
+  | 'superadmin_jefe';
 
 const BASE_PERMISSIONS: MenuItem[] = ['reportes'];
 
@@ -53,6 +57,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   admin: [
     'dashboard', 'monitoreo', 'monitoreo_plan', 'monitoreo_gestion', 'monitoreo_reportes',
     'monitoreo_plan_anual', 'monitoreo_cronograma', 'monitoreo_calendario', 'plantillas',
+    'plantillas_ugel', 'plantillas_ies',
     'instituciones', 'instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores',
     'instituciones_jefes_taller', 'especialistas', 'jefes_area', 'reportes', 'configuracion'
   ],
@@ -65,6 +70,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_cronograma',
     'monitoreo_calendario',
     'plantillas',
+    'plantillas_ugel',
+    'plantillas_ies',
     'especialistas',
     'jefes_area',
     'reportes',
@@ -103,6 +110,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_cronograma',
     'monitoreo_calendario',
     'plantillas',
+    'plantillas_ugel',
+    'plantillas_ies',
     'instituciones_docentes',
     'instituciones_coordinadores',
     'instituciones_jefes_taller',
@@ -119,6 +128,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_gestion',
     'monitoreo_reportes',
     'plantillas',
+    'plantillas_ugel',
+    'plantillas_ies',
     'instituciones',
     'instituciones_padron',
     'instituciones_docentes',
@@ -127,7 +138,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes',
     'configuracion',
   ],
-  superusuario: ['superadmin'],
+  superusuario: ['superadmin', 'superadmin_director', 'superadmin_jefe'],
 };
 
 const READ_ONLY_ROLES: UserRole[] = ['invitado'];

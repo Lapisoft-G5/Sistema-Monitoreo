@@ -457,6 +457,29 @@ export const CronogramaPage = () => {
       return;
     }
 
+    const [datePart, timePart] = formFechaHora.split('T');
+
+    if (!editCronogramaId) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+      const currentDay = String(now.getDate()).padStart(2, '0');
+      const currentDateStr = `${currentYear}-${currentMonth}-${currentDay}`;
+      const currentHourStr = String(now.getHours()).padStart(2, '0');
+      const currentMinStr = String(now.getMinutes()).padStart(2, '0');
+      const currentTimeStr = `${currentHourStr}:${currentMinStr}`;
+
+      if (datePart < currentDateStr) {
+        setFormError('La fecha programada no puede ser anterior a la fecha actual.');
+        return;
+      } else if (datePart === currentDateStr) {
+        if (timePart < currentTimeStr) {
+          setFormError('La hora programada no puede ser anterior a la hora actual.');
+          return;
+        }
+      }
+    }
+
     const matchedEsp = especialistas.find(e => e.nombre === formEspecialista);
     const matchedInst = instituciones.find(i => i.nombre === formInstitucion);
     const matchedDoc = docentes.find(d => `${d.nombres} ${d.apellidos}` === formDocente.trim());

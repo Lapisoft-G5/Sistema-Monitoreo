@@ -256,6 +256,14 @@ export async function crearVisita(
 
   if (fechaStr < hoyStr) {
     throw new BadRequestException('La fecha programada no puede ser anterior a la fecha actual.');
+  } else if (fechaStr === hoyStr) {
+    const currentHourStr = String(peruDate.getUTCHours()).padStart(2, '0');
+    const currentMinStr = String(peruDate.getUTCMinutes()).padStart(2, '0');
+    const currentTimeStr = `${currentHourStr}:${currentMinStr}`;
+    
+    if (dto.horaInicio < currentTimeStr) {
+      throw new BadRequestException('La hora programada no puede ser anterior a la hora actual.');
+    }
   }
 
   // Validar orden cronológico entre visitas del mismo evaluado

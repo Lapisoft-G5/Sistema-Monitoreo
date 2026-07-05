@@ -978,6 +978,104 @@ export const LlenarFichaForm = ({
           </div>
         </div>
 
+        {/* Evidencia General */}
+        <div className="p-5 border-t border-border bg-white">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-4">
+            Evidencia del Monitoreo
+          </span>
+          <div className="mt-2">
+            {evidenciaUrls['GENERAL'] ? (
+              <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 max-w-[400px]">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-red-100 text-red-500 rounded-lg flex items-center justify-center shrink-0">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-700">Evidencia Cargada</p>
+                    <p className="text-[10px] text-slate-400 truncate w-40">evidencia-monitoreo.png</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="h-8 gap-2" asChild>
+                    <a href={evidenciaUrls['GENERAL']} target="_blank" rel="noreferrer">
+                      <Eye className="h-3.5 w-3.5" />
+                      Ver
+                    </a>
+                  </Button>
+                  {!isCompleted && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200" 
+                      onClick={() => {
+                        setEvidenciaUrls((prev) => {
+                          const next = { ...prev };
+                          delete next['GENERAL'];
+                          localStorage.setItem(
+                            `sistema-monitoreo:ficha-state:${visit.id}`,
+                            JSON.stringify({
+                              checkedAspects,
+                              selectedLevels,
+                              generalComments,
+                              sugerencias,
+                              compromisos,
+                              rubricComments,
+                              preguntaExtraAnswers,
+                              respuestasEjeItem,
+                              evidenciaUrls: next,
+                            })
+                          );
+                          return next;
+                        });
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ) : !isCompleted ? (
+              <label className="inline-flex items-center justify-center gap-2 w-full max-w-[240px] h-[40px] rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-bold cursor-pointer hover:border-primary hover:text-primary hover:bg-primary/3 transition-all duration-150">
+                <Upload className="h-4 w-4" />
+                Subir evidencia fotográfica
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setEvidenciaUrls((prev) => {
+                        const next = { ...prev, GENERAL: reader.result as string };
+                        localStorage.setItem(
+                          `sistema-monitoreo:ficha-state:${visit.id}`,
+                          JSON.stringify({
+                            checkedAspects,
+                            selectedLevels,
+                            generalComments,
+                            sugerencias,
+                            compromisos,
+                            rubricComments,
+                            preguntaExtraAnswers,
+                            respuestasEjeItem,
+                            evidenciaUrls: next,
+                          })
+                        );
+                        return next;
+                      });
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+            ) : (
+              <span className="text-[11px] text-slate-300 italic block">— Sin evidencias cargadas</span>
+            )}
+          </div>
+        </div>
+
         {/* CONSOLIDADO DE NIVELES DE LOGRO */}
         {calificacion && (
           <div className="p-5 border-t border-border" style={{ backgroundColor: calificacion.nivelBg + 'cc' }}>

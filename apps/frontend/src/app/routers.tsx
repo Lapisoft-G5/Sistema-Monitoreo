@@ -22,9 +22,16 @@ export const router = createBrowserRouter([
       ...adminRoutes,
       ...jefeGestionRoutes,
       ...especialistaRoutes,
+      {
+        path: 'superadmin',
+        children: [
+          { path: 'director', element: <SuperadminPanel targetRole="director_ugel" /> },
+          { path: 'jefe', element: <SuperadminPanel targetRole="jefe_gestion" /> },
+        ]
+      }
     ],
   },
-  { path: '/superadmin', element: <SuperadminPanel /> },
+
   { path: '/login', element: <LoginPage /> },
   { path: '/recuperar-password', element: <ForgotPasswordPage /> },
   { path: '/restablecer-password', element: <ResetPasswordPage /> },

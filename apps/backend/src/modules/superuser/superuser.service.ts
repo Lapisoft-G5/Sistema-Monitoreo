@@ -11,7 +11,14 @@ export class SuperuserService {
     const usuarios = await this.prisma.usuario.findMany({
       where: {
         rol: {
-          codigo: { not: RoleCode.SUPERUSUARIO },
+          codigo: {
+            in: [
+              RoleCode.ESPECIALISTA,
+              RoleCode.JEFE_AREA,
+              RoleCode.JEFE_GESTION,
+              RoleCode.DIRECTOR_UGEL,
+            ],
+          },
         },
       },
       include: {
@@ -53,6 +60,15 @@ export class SuperuserService {
       throw new BadRequestException('No se puede modificar el rol de un superusuario.');
     }
 
+    if (
+      (usuario.rol.codigo === RoleCode.DIRECTOR_UGEL && roleCode === RoleCode.JEFE_GESTION) ||
+      (usuario.rol.codigo === RoleCode.JEFE_GESTION && roleCode === RoleCode.DIRECTOR_UGEL)
+    ) {
+      throw new BadRequestException(
+        'El usuario actual ostenta un alto cargo directivo. Debe ser relevado de su cargo actual antes de asumir otro.',
+      );
+    }
+
     const newRole = await this.prisma.role.findUnique({
       where: { codigo: roleCode },
     });
@@ -61,15 +77,39 @@ export class SuperuserService {
       throw new NotFoundException('El rol solicitado no existe en el catálogo.');
     }
 
-    const updatedUser = await this.prisma.usuario.update({
-      where: { id: usuarioId },
-      data: {
-        rolId: newRole.id,
-      },
-      include: {
-        persona: true,
-        rol: true,
-      },
+    const baseEspecialistaRole = await this.prisma.role.findUnique({
+      where: { codigo: RoleCode.ESPECIALISTA },
+    });
+
+    if (!baseEspecialistaRole) {
+      throw new NotFoundException('El rol de Especialista base no existe.');
+    }
+
+    // Usar una transacción para asegurar consistencia
+    const updatedUser = await this.prisma.$transaction(async (tx) => {
+      // 1. Demoler a quien actualmente tenga el rol solicitado (si hay alguien)
+      const currentUserWithRole = await tx.usuario.findFirst({
+        where: { rolId: newRole.id },
+      });
+
+      if (currentUserWithRole && currentUserWithRole.id !== usuarioId) {
+        await tx.usuario.update({
+          where: { id: currentUserWithRole.id },
+          data: { rolId: baseEspecialistaRole.id },
+        });
+      }
+
+      // 2. Asignar el nuevo rol al usuario objetivo
+      return tx.usuario.update({
+        where: { id: usuarioId },
+        data: {
+          rolId: newRole.id,
+        },
+        include: {
+          persona: true,
+          rol: true,
+        },
+      });
     });
 
     return {

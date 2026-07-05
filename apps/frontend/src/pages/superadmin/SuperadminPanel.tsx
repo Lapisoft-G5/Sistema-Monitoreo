@@ -2,13 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGetCandidatos, useAsignarRol } from './use-superadmin';
 import { useUser } from '@entities/model-user';
-import { Shield, LogOut, CheckCircle2, UserCog, Search, AlertCircle } from 'lucide-react';
+import { CheckCircle2, UserCog, Search, AlertCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { toast } from 'sonner';
 
-export const SuperadminPanel = () => {
-  const { user, isAuthenticated, logout } = useUser();
+interface SuperadminPanelProps {
+  targetRole: 'director_ugel' | 'jefe_gestion';
+}
+
+export const SuperadminPanel = ({ targetRole }: SuperadminPanelProps) => {
+  const { user, isAuthenticated } = useUser();
   const navigate = useNavigate();
   const { data: candidatos, isLoading, isError } = useGetCandidatos();
   const asignarRolMutation = useAsignarRol();
@@ -40,36 +44,26 @@ export const SuperadminPanel = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center">
-      <header className="w-full max-w-5xl px-6 py-6 flex justify-between items-center mt-6 bg-white rounded-xl shadow-sm border border-slate-100">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-red-100 text-red-600 rounded-lg">
-            <Shield className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Superadmin Panel</h1>
-            <p className="text-sm text-slate-500">Gestión de Altos Cargos UGEL</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-sm font-medium text-slate-700">{user?.nombres} {user?.apellidos}</p>
-            <p className="text-xs text-slate-500">DNI: {user?.dni}</p>
-          </div>
-          <Button variant="outline" className="gap-2" onClick={logout}>
-            <LogOut className="h-4 w-4" />
-            Cerrar Sesión
-          </Button>
-        </div>
-      </header>
-
-      <main className="w-full max-w-5xl px-6 py-8 mt-4 bg-white rounded-xl shadow-sm border border-slate-100 mb-10 flex-1">
+    <div className="max-w-5xl mx-auto w-full flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+          {targetRole === 'director_ugel' ? 'Designar Director UGEL' : 'Designar Jefe de Gestión'}
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Asignación y gestión del cargo de {targetRole === 'director_ugel' ? 'Director de la UGEL' : 'Jefe de Gestión Pedagógica'}.
+        </p>
+      </div>
         
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-            <UserCog className="h-5 w-5 text-indigo-500" />
-            Directorio de Personal
-          </h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              <UserCog className="h-5 w-5 text-indigo-500" />
+              Directorio de Personal
+            </h2>
+            <Button variant="outline" size="sm" onClick={() => navigate('/especialistas')} className="h-8">
+              Registrar Nuevo
+            </Button>
+          </div>
           <div className="relative w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input 
@@ -81,10 +75,10 @@ export const SuperadminPanel = () => {
           </div>
         </div>
 
-        <div className="bg-slate-50 p-4 rounded-lg mb-6 flex items-start gap-3 border border-blue-100">
+        <div className="bg-slate-50 p-4 rounded-lg flex items-start gap-3 border border-blue-100">
           <AlertCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
           <p className="text-sm text-blue-800">
-            <strong>Atención:</strong> Esta interfaz es de uso exclusivo para asignar al Director de la UGEL y al Jefe de Gestión Pedagógica. Seleccione a la persona en la lista y haga clic en el cargo correspondiente.
+            <strong>Atención:</strong> Esta interfaz es de uso exclusivo para asignar al {targetRole === 'director_ugel' ? 'Director de la UGEL' : 'Jefe de Gestión Pedagógica'}. Al asignar este cargo a una nueva persona, el funcionario anterior regresará automáticamente a su rol de Especialista base.
           </p>
         </div>
 
@@ -125,27 +119,21 @@ export const SuperadminPanel = () => {
                         {candidato.rolActual}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right space-x-2">
+                    <td className="px-4 py-3 text-right">
                       <Button 
                         size="sm" 
-                        variant={candidato.rolCodigo === 'jefe_gestion' ? "default" : "outline"}
-                        className={candidato.rolCodigo === 'jefe_gestion' ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
-                        disabled={asignarRolMutation.isPending || candidato.rolCodigo === 'jefe_gestion'}
-                        onClick={() => handleAssignRole(candidato.id, 'jefe_gestion')}
+                        variant={candidato.rolCodigo === targetRole ? "default" : "outline"}
+                        className={candidato.rolCodigo === targetRole ? (targetRole === 'jefe_gestion' ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-amber-600 hover:bg-amber-700 text-white") : ""}
+                        disabled={
+                          asignarRolMutation.isPending || 
+                          candidato.rolCodigo === targetRole || 
+                          (targetRole === 'director_ugel' && candidato.rolCodigo === 'jefe_gestion') ||
+                          (targetRole === 'jefe_gestion' && candidato.rolCodigo === 'director_ugel')
+                        }
+                        onClick={() => handleAssignRole(candidato.id, targetRole)}
                       >
-                        {candidato.rolCodigo === 'jefe_gestion' && <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
-                        Jefe de Gestión
-                      </Button>
-                      
-                      <Button 
-                        size="sm" 
-                        variant={candidato.rolCodigo === 'director_ugel' ? "default" : "outline"}
-                        className={candidato.rolCodigo === 'director_ugel' ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}
-                        disabled={asignarRolMutation.isPending || candidato.rolCodigo === 'director_ugel'}
-                        onClick={() => handleAssignRole(candidato.id, 'director_ugel')}
-                      >
-                        {candidato.rolCodigo === 'director_ugel' && <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
-                        Director UGEL
+                        {candidato.rolCodigo === targetRole && <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
+                        {targetRole === 'director_ugel' ? 'Designar Director' : 'Designar Jefe'}
                       </Button>
                     </td>
                   </tr>
@@ -162,7 +150,6 @@ export const SuperadminPanel = () => {
             </table>
           </div>
         )}
-      </main>
-    </div>
+      </div>
   );
 };

@@ -4,7 +4,15 @@ import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 
+export function validarAnioAcademico(anioAcademico: number): void {
+  const currentYear = new Date().getFullYear();
+  if (anioAcademico !== currentYear) {
+    throw new BadRequestException(`Solo se permiten plantillas (creación/duplicación) para el año actual (${currentYear}).`);
+  }
+}
+
 export function validarReglas(dto: CreatePlantillaDto): void {
+  validarAnioAcademico(dto.anioAcademico);
   const nivelesSet = new Set(dto.niveles.map((n) => n.nivelRomano));
   if (nivelesSet.size !== 4) {
     throw new BadRequestException(

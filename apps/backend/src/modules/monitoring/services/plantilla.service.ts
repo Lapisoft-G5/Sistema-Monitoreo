@@ -17,6 +17,7 @@ import {
   resolveAutor,
   guardVisibilidad,
   guardModificacion,
+  validarAnioAcademico,
 } from './plantilla-service.validator.js';
 
 @Injectable()
@@ -60,6 +61,10 @@ export class PlantillaService {
         );
       }
     }
+
+    // Filtro global: No mostrar borradores de años anteriores (Regla de negocio)
+    const currentYear = new Date().getFullYear();
+    plantillas = plantillas.filter(p => !(p.estado === 'Borrador' && p.anioAcademico !== currentYear));
 
     return plantillas;
   }
@@ -205,6 +210,9 @@ export class PlantillaService {
     const original = await this.repository.findById(id);
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
 
+    const targetAnio = anioAcademico ?? new Date().getFullYear();
+    validarAnioAcademico(targetAnio);
+
     const { rolAutorAlCrear, institucionId } = resolveAutor(session);
 
     if (!institucionId && session.role === RoleCode.DIRECTOR_INSTITUCION) {
@@ -222,7 +230,7 @@ export class PlantillaService {
       rolAutorAlCrear,
       institucionId,
       descripcion,
-      anioAcademico,
+      targetAnio,
     );
   }
 }

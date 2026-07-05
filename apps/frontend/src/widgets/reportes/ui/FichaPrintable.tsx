@@ -11,8 +11,17 @@ interface FichaPrintableProps {
     generalComments: string;
     sugerencias?: string;
     compromisos?: string;
+    rubricComments?: Record<string, string>;
     preguntaExtraAnswers?: Record<string, boolean>;
     respuestasEjeItem?: Record<string, number>;
+    evidenciaUrls?: Record<string, string>;
+    contexto?: {
+      areaCurricular: string;
+      grado: string;
+      seccion: string;
+      cantidadEstudiantes: number;
+      cantidadEstudiantesNee: number;
+    };
   };
 }
 
@@ -37,27 +46,138 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
     return (
       <div ref={ref} className="p-8 bg-white text-black font-sans text-[12px] leading-snug w-full">
         {/* Encabezado */}
-        <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
-          <div>
-            <h1 className="text-xl font-bold uppercase tracking-wide">
-              FICHA DE {template.tipoMonitoreo.toUpperCase()} - {template.anioAcademico}
-            </h1>
-            <p className="text-sm font-semibold text-slate-600 mt-1">
-              {template.descripcion}
-            </p>
-          </div>
-          <div className="text-right text-xs">
-            <p><span className="font-bold">Fecha de Reporte:</span> {new Date().toLocaleDateString()}</p>
-          </div>
+        <div className="text-center italic text-[10px] mb-2">
+          Año de la recuperación y consolidación de la economía peruana
         </div>
+        <h2 className="text-center text-sm font-bold uppercase mb-4">
+          FICHA DE {template.tipoMonitoreo.toUpperCase()} {template.anioAcademico}
+        </h2>
 
-        {/* Metadatos */}
-        <div className="grid grid-cols-2 gap-4 border border-slate-300 rounded p-4 mb-6 bg-slate-50">
-          <div><span className="font-bold text-slate-700">I.E. Monitoreada:</span> {visit.institucion}</div>
-          <div><span className="font-bold text-slate-700">Docente/Directivo:</span> {visit.docenteDirectivo}</div>
-          <div><span className="font-bold text-slate-700">Especialista a cargo:</span> {visit.especialista}</div>
-          <div><span className="font-bold text-slate-700">Fecha de Ejecución:</span> {formatVisitDate(visit.fechaHora)}</div>
-        </div>
+        <style>{`
+          .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 10px; }
+          .pdf-table td { border: 1px solid #000; padding: 3px 5px; }
+          .pdf-table .bg-gray { background-color: #f0f4f8; font-weight: bold; }
+          .pdf-section-title { font-weight: bold; text-transform: uppercase; margin-bottom: 2px; font-size: 11px; }
+        `}</style>
+
+        {/* DATOS DE LA INSTITUCIÓN EDUCATIVA */}
+        <div className="pdf-section-title">DATOS DE LA INSTITUCIÓN EDUCATIVA:</div>
+        <table className="pdf-table">
+          <tbody>
+            <tr>
+              <td className="bg-gray" style={{ width: '20%' }}>UGEL:</td>
+              <td colSpan={5}>UGEL LAMPA</td>
+            </tr>
+            <tr>
+              <td className="bg-gray">INSTITUCIÓN EDUCATIVA:</td>
+              <td colSpan={5}>{visit.institucion}</td>
+            </tr>
+            <tr>
+              <td className="bg-gray">MODALIDAD:</td>
+              <td style={{ width: '20%' }}>{visit.modalidad || ''}</td>
+              <td className="bg-gray" style={{ width: '10%' }}>NIVEL:</td>
+              <td style={{ width: '20%' }}>{visit.nivel || ''}</td>
+              <td className="bg-gray" style={{ width: '10%' }}>ÁREA:</td>
+              <td style={{ width: '20%' }}>{fichaState.contexto?.areaCurricular || ''}</td>
+            </tr>
+            <tr>
+              <td className="bg-gray">APELLIDOS Y NOMBRES DEL DIRECTOR(A):</td>
+              <td colSpan={5}></td>
+            </tr>
+            <tr>
+              <td className="bg-gray">DNI:</td>
+              <td></td>
+              <td className="bg-gray">E-MAIL:</td>
+              <td colSpan={2}></td>
+              <td><span className="font-bold">N° CELULAR:</span> </td>
+            </tr>
+            <tr>
+              <td className="bg-gray">ENCARGADO:</td>
+              <td></td>
+              <td className="bg-gray">DESIGNADO:</td>
+              <td colSpan={2}></td>
+              <td><span className="font-bold">ENC. X FUNCIONES:</span> </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* DATOS DEL DOCENTE MONITOREADO */}
+        <div className="pdf-section-title">DATOS DEL DOCENTE MONITOREADO:</div>
+        <table className="pdf-table">
+          <tbody>
+            <tr>
+              <td className="bg-gray" style={{ width: '30%' }}>APELLIDOS Y NOMBRES DEL DOCENTE:</td>
+              <td colSpan={5}>{visit.docenteDirectivo}</td>
+            </tr>
+            <tr>
+              <td className="bg-gray">DNI:</td>
+              <td></td>
+              <td className="bg-gray">E-MAIL:</td>
+              <td colSpan={2}></td>
+              <td><span className="font-bold">N° CELULAR:</span> </td>
+            </tr>
+            <tr>
+              <td className="bg-gray">CONTRATADO:</td>
+              <td></td>
+              <td className="bg-gray">NOMBRADO:</td>
+              <td colSpan={2}></td>
+              <td><span className="font-bold">OTRO:</span> </td>
+            </tr>
+            <tr>
+              <td className="bg-gray">MODALIDAD:</td>
+              <td>{visit.modalidad || ''}</td>
+              <td className="bg-gray">NIVEL:</td>
+              <td colSpan={2}>{visit.nivel || ''}</td>
+              <td><span className="font-bold">ÁREA:</span> {fichaState.contexto?.areaCurricular || ''}</td>
+            </tr>
+            <tr>
+              <td className="bg-gray">GRADO:</td>
+              <td>{fichaState.contexto?.grado || ''}</td>
+              <td className="bg-gray">SECCIÓN:</td>
+              <td>{fichaState.contexto?.seccion || ''}</td>
+              <td><span className="font-bold">CANT. ESTUDIANTES:</span> {fichaState.contexto?.cantidadEstudiantes || ''}</td>
+              <td><span className="font-bold">NEE:</span> {fichaState.contexto?.cantidadEstudiantesNee || ''}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* DATOS DEL(OS) MONITOR(ES) */}
+        <div className="pdf-section-title">DATOS DEL(OS) MONITOR(ES):</div>
+        <table className="pdf-table">
+          <tbody>
+            <tr>
+              <td className="bg-gray" style={{ width: '20%' }}>APELLIDOS Y NOMBRES:</td>
+              <td colSpan={5}>
+                <span className="mr-4">DREP ( )</span>
+                <span className="mr-4">UGEL (X) {visit.especialista}</span>
+                <span className="mr-4">DIRECTOR IE ( )</span>
+                <span>COORDINADOR ( )</span>
+              </td>
+            </tr>
+            <tr>
+              <td className="bg-gray">DNI:</td>
+              <td style={{ width: '15%' }}></td>
+              <td className="bg-gray" style={{ width: '15%' }}>E-MAIL:</td>
+              <td colSpan={2}></td>
+              <td><span className="font-bold">N° CELULAR:</span> </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* FECHA Y DURACIÓN */}
+        <div className="pdf-section-title">FECHA Y DURACIÓN:</div>
+        <table className="pdf-table" style={{ marginBottom: '20px' }}>
+          <tbody>
+            <tr>
+              <td className="bg-gray" style={{ width: '10%' }}>FECHA:</td>
+              <td>{formatVisitDate(visit.fechaHora)}</td>
+              <td className="bg-gray" style={{ width: '15%' }}>HORA INICIO:</td>
+              <td></td>
+              <td className="bg-gray" style={{ width: '15%' }}>HORA FINAL:</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
 
         {/* Desempeños */}
         <div className="space-y-6">
@@ -65,7 +185,6 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           
           {template.desempenos.map((des, idx) => {
             const selectedLevelVal = fichaState.selectedLevels[des.id];
-            const rubDetail = des.rubrica?.find((r) => r.nivel === selectedLevelVal);
             const levelConfig = template.niveles.find((n) => n.nivel === selectedLevelVal);
             
             return (
@@ -94,9 +213,9 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
 
                 {/* Justificación del Nivel */}
                 {selectedLevelVal && (
-                  <div className="text-xs border-l-2 pl-3" style={{ borderColor: levelConfig?.color || '#475569' }}>
-                    <p className="font-bold mb-1">Descripción del nivel alcanzado ({levelConfig?.denominacion}):</p>
-                    <p className="text-slate-700">{rubDetail?.descripcion || 'Sin descripción en rúbrica'}</p>
+                  <div className="text-xs border-l-2 pl-3 mt-3" style={{ borderColor: levelConfig?.color || '#475569' }}>
+                    <p className="font-bold mb-1 text-slate-700">Justificación y Evidencias:</p>
+                    <p className="text-slate-800 whitespace-pre-wrap">{fichaState.rubricComments?.[des.id] || 'Sin justificación registrada.'}</p>
                   </div>
                 )}
               </div>
@@ -150,6 +269,75 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
             </div>
           </div>
         </div>
+
+        {/* Consolidado */}
+        {(() => {
+          const romanToNum = (r: string) => ({ I: 1, II: 2, III: 3, IV: 4 }[r as string] ?? 0);
+          const numDesempenos = template.desempenos.length;
+          const puntajeMax = numDesempenos * 4;
+          const puntajeMin = numDesempenos * 1;
+          const puntajeTotal = template.desempenos.reduce(
+            (acc, d) => acc + romanToNum(fichaState.selectedLevels[d.id] || ''),
+            0
+          );
+          
+          let nivel = '';
+          if (numDesempenos === 5) {
+            if (puntajeTotal >= 5 && puntajeTotal <= 7) nivel = 'INICIO';
+            else if (puntajeTotal >= 8 && puntajeTotal <= 12) nivel = 'EN PROCESO';
+            else if (puntajeTotal >= 13 && puntajeTotal <= 17) nivel = 'LOGRO ESPERADO';
+            else if (puntajeTotal >= 18) nivel = 'LOGRO DESTACADO';
+          } else if (numDesempenos > 0) {
+            if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.25)) nivel = 'INICIO';
+            else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.50)) nivel = 'EN PROCESO';
+            else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.75)) nivel = 'LOGRO ESPERADO';
+            else nivel = 'LOGRO DESTACADO';
+          }
+
+          return (
+            <div className="mt-8 break-inside-avoid">
+              <div className="pdf-section-title">CONSOLIDADO DE NIVELES DE LOGRO:</div>
+              <table className="pdf-table" style={{ marginBottom: '20px' }}>
+                <tbody>
+                  <tr>
+                    <td className="bg-gray text-center w-32">ASPECTOS</td>
+                    {template.desempenos.map((d, i) => (
+                      <td key={d.id} className="bg-gray text-center w-12">D{i + 1}</td>
+                    ))}
+                    {template.ejesItems?.map((e, i) => (
+                      <td key={e.id} className="bg-gray text-center w-12">R{template.desempenos.length + i + 1}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="bg-gray text-center">PUNTAJE</td>
+                    {template.desempenos.map((d) => (
+                      <td key={`puntaje-${d.id}`} className="text-center font-bold">
+                        {fichaState.selectedLevels[d.id] ? romanToNum(fichaState.selectedLevels[d.id]) : ''}
+                      </td>
+                    ))}
+                    {template.ejesItems?.map((e) => (
+                      <td key={`puntaje-${e.id}`} className="text-center font-bold">
+                        {fichaState.respuestasEjeItem?.[e.id] || ''}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="bg-gray text-center">TOTAL</td>
+                    <td colSpan={template.desempenos.length + (template.ejesItems?.length || 0)} className="text-center font-bold text-sm">
+                      {puntajeTotal > 0 ? puntajeTotal : ''}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="bg-gray text-center">NIVEL DE LOGRO</td>
+                    <td colSpan={template.desempenos.length + (template.ejesItems?.length || 0)} className="text-center font-bold text-sm">
+                      {nivel}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
 
         {/* Firmas */}
         <div className="mt-16 pt-8 break-inside-avoid">

@@ -572,8 +572,6 @@ export const CronogramaPage = () => {
     let ocupados: Set<number>;
     let anulados: Set<number>;
     let maxNonAnulado = 0;
-    let totalCount: number;
-
     if (selectedDocente) {
       const visitasDelEvaluado = cronogramas.filter(
         (c) => c.evaluadoId === selectedDocente.id && c.tipo === formTipo,
@@ -598,7 +596,7 @@ export const CronogramaPage = () => {
       ocupados = new Set();
       anulados = new Set();
     }
-    totalCount = Math.max(5, maxNonAnulado + 1);
+    const totalCount = Math.max(5, maxNonAnulado + 1);
 
     return Array.from({ length: totalCount }, (_, i) => {
       const num = i + 1;

@@ -95,18 +95,18 @@ export const teachersApi = {
     }
   },
 
-  findPersonaByDni: async (dni: string): Promise<{ ok: boolean; data?: any; error?: unknown }> => {
+  findPersonaByDni: async (dni: string): Promise<{ ok: boolean; data?: unknown; error?: unknown }> => {
     try {
-      const data = await request<any>(`/api/docentes/buscar/${dni}`);
+      const data = await request<unknown>(`/api/docentes/buscar/${dni}`);
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };
     }
   },
 
-  getAsignaciones: async (evaluadorId: string): Promise<{ ok: boolean; data?: any[]; error?: unknown }> => {
+  getAsignaciones: async (evaluadorId: string): Promise<{ ok: boolean; data?: { evaluadoId: string }[]; error?: unknown }> => {
     try {
-      const data = await request<any[]>(`/api/docentes/${evaluadorId}/asignaciones`);
+      const data = await request<{ evaluadoId: string }[]>(`/api/docentes/${evaluadorId}/asignaciones`);
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };

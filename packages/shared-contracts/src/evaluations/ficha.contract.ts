@@ -60,6 +60,7 @@ export interface IFichaMonitoreo {
   observaciones: string | null;
   sugerencias: string | null;
   compromisos: string | null;
+  evidenciaGeneral: string | null;
   requiereMigracion: boolean;
   plantillaHistoricaId: string | null;
   createdAt: string;

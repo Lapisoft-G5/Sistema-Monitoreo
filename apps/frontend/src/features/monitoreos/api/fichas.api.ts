@@ -56,10 +56,10 @@ export const fichasApi = {
     });
   },
 
-  finalizar: (fichaId: string, observaciones?: string, sugerencias?: string, compromisos?: string) =>
+  finalizar: (fichaId: string, observaciones?: string, sugerencias?: string, compromisos?: string, evidenciaGeneral?: string) =>
     request<IFichaMonitoreo>(`/api/fichas/${fichaId}/finalizar`, {
       method: 'PATCH',
-      body: JSON.stringify({ observaciones, sugerencias, compromisos }),
+      body: JSON.stringify({ observaciones, sugerencias, compromisos, evidenciaGeneral }),
     }),
 
   migrarPlantilla: (fichaId: string, plantillaId: string) =>

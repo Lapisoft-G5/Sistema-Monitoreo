@@ -207,6 +207,7 @@ export class PrismaFichaRepository implements FichaRepository {
     observaciones?: string,
     sugerencias?: string,
     compromisos?: string,
+    evidenciaGeneral?: string,
   ): Promise<IFichaMonitoreo> {
     await this.prisma.fichaMonitoreo.update({
       where: { id: fichaId },
@@ -220,6 +221,7 @@ export class PrismaFichaRepository implements FichaRepository {
         observaciones,
         sugerencias,
         compromisos,
+        evidenciaGeneral,
       },
     });
     return this.buildFicha(fichaId);

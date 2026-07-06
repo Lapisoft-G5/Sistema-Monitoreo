@@ -196,6 +196,11 @@ export const ReportesGrid = ({
         }
       });
 
+      // Map general evidence from backend field to the GENERAL key
+      if (backendFicha.evidenciaGeneral) {
+        evidenciaUrls['GENERAL'] = backendFicha.evidenciaGeneral;
+      }
+
       return {
         checkedAspects,
         selectedLevels,

@@ -93,4 +93,8 @@ export class FinalizarFichaDto {
   @IsOptional()
   @IsString()
   compromisos?: string;
+
+  @IsOptional()
+  @IsString()
+  evidenciaGeneral?: string;
 }

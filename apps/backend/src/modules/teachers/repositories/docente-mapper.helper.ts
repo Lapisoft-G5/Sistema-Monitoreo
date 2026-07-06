@@ -59,11 +59,13 @@ export function mapDocente(docente: DocenteWithRelations): DocenteEntity {
         grado: ds.grado,
         seccion: ds.seccion,
       })) || [],
-    evaluadorActual: asig ? {
-      id: asig.id,
-      evaluadorId: asig.evaluadorId,
-      evaluadorNombres: asig.evaluador.persona.nombres,
-      evaluadorApellidos: asig.evaluador.persona.apellidos,
-    } : null,
+    evaluadorActual: asig
+      ? {
+          id: asig.id,
+          evaluadorId: asig.evaluadorId,
+          evaluadorNombres: asig.evaluador.persona.nombres,
+          evaluadorApellidos: asig.evaluador.persona.apellidos,
+        }
+      : null,
   };
 }

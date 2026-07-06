@@ -41,7 +41,7 @@ export class MailerService {
     subject: string,
     text: string,
     html: string,
-    attachments?: nodemailer.SendMailOptions['attachments']
+    attachments?: nodemailer.SendMailOptions['attachments'],
   ): Promise<void> {
     if (this.transporter) {
       try {

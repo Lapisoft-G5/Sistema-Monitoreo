@@ -54,7 +54,11 @@ export class FichaFinalizadaListener {
       if (!email) {
         this.logger.warn(`El docente ${nombreCompleto} no tiene correo. Abortando envio.`);
         // Opcional: Registrar en LogAuditoria el error de correo faltante
-        await this.logAuditoria(usuarioId, 'EMAIL_ENVIADO', 'FALLO: El docente no tiene correo asignado.');
+        await this.logAuditoria(
+          usuarioId,
+          'EMAIL_ENVIADO',
+          'FALLO: El docente no tiene correo asignado.',
+        );
         return;
       }
 
@@ -70,15 +74,18 @@ export class FichaFinalizadaListener {
       await this.logAuditoria(
         usuarioId,
         'EMAIL_ENVIADO',
-        `Correo con PDF enviado exitosamente a ${email} para la ficha ${ficha.id}.`
+        `Correo con PDF enviado exitosamente a ${email} para la ficha ${ficha.id}.`,
       );
     } catch (error) {
-      this.logger.error(`Error al procesar el envío de correo para la ficha ${event.fichaId}`, error);
+      this.logger.error(
+        `Error al procesar el envío de correo para la ficha ${event.fichaId}`,
+        error,
+      );
       try {
         await this.logAuditoria(
           event.session.id,
           'EMAIL_ENVIADO',
-          `FALLO: Error al enviar correo - ${error instanceof Error ? error.message : String(error)}`
+          `FALLO: Error al enviar correo - ${error instanceof Error ? error.message : String(error)}`,
         );
       } catch (logError) {
         this.logger.error('Error al intentar guardar el log de fallo', logError);

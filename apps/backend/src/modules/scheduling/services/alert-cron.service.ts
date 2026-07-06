@@ -49,7 +49,9 @@ export class AlertCronService {
         return;
       }
 
-      this.logger.log(`Se encontraron ${vencidos.length} cronograma(s) vencido(s). Procesando alertas...`);
+      this.logger.log(
+        `Se encontraron ${vencidos.length} cronograma(s) vencido(s). Procesando alertas...`,
+      );
 
       for (const cronograma of vencidos) {
         try {
@@ -74,7 +76,9 @@ export class AlertCronService {
 
             this.logger.log(`Alerta enviada para el cronograma ${cronograma.id} a ${emailMonitor}`);
           } else {
-            this.logger.warn(`El monitor del cronograma ${cronograma.id} no tiene un correo registrado.`);
+            this.logger.warn(
+              `El monitor del cronograma ${cronograma.id} no tiene un correo registrado.`,
+            );
           }
         } catch (err) {
           this.logger.error(`Fallo al procesar la alerta para el cronograma ${cronograma.id}`, err);

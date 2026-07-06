@@ -7,7 +7,9 @@ import type { SessionUser } from '../../../shared/types/session-user.js';
 export function validarAnioAcademico(anioAcademico: number): void {
   const currentYear = new Date().getFullYear();
   if (anioAcademico !== currentYear) {
-    throw new BadRequestException(`Solo se permiten plantillas (creación/duplicación) para el año actual (${currentYear}).`);
+    throw new BadRequestException(
+      `Solo se permiten plantillas (creación/duplicación) para el año actual (${currentYear}).`,
+    );
   }
 }
 
@@ -58,8 +60,14 @@ export function guardVisibilidad(plantilla: IPlantilla, session?: SessionUser): 
   if (session.role === RoleCode.JEFE_AREA && plantilla.rolAutorAlCrear === 'director_ie') {
     throw new ForbiddenException('El Jefe de Area no tiene acceso a las plantillas de II.EE.');
   }
-  if (session.role === RoleCode.JEFE_GESTION && plantilla.rolAutorAlCrear === 'director_ie' && plantilla.estado === 'Borrador') {
-    throw new ForbiddenException('El Jefe de Gestion no tiene acceso a plantillas Borrador de las II.EE.');
+  if (
+    session.role === RoleCode.JEFE_GESTION &&
+    plantilla.rolAutorAlCrear === 'director_ie' &&
+    plantilla.estado === 'Borrador'
+  ) {
+    throw new ForbiddenException(
+      'El Jefe de Gestion no tiene acceso a plantillas Borrador de las II.EE.',
+    );
   }
 }
 
@@ -68,6 +76,8 @@ export function guardModificacion(plantilla: IPlantilla, session: SessionUser): 
     throw new ForbiddenException('Los Directores IE no pueden modificar plantillas UGEL.');
   }
   if (!isDirector(session) && plantilla.rolAutorAlCrear === 'director_ie') {
-    throw new ForbiddenException('Los usuarios de UGEL no pueden modificar plantillas de las II.EE.');
+    throw new ForbiddenException(
+      'Los usuarios de UGEL no pueden modificar plantillas de las II.EE.',
+    );
   }
 }

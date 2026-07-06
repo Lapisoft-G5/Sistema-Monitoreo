@@ -13,9 +13,9 @@ const DOCENTE_INCLUDE = {
     where: { isActive: true },
     include: {
       evaluador: {
-        include: { persona: true }
-      }
-    }
+        include: { persona: true },
+      },
+    },
   },
 } as const;
 

@@ -39,7 +39,7 @@ export class PlantillaService {
       }
       // JEFE_GESTION no tiene filtro restrictivo aquí, puede ver UGEL e IE
     }
-    
+
     let plantillas = await this.repository.findAll(scopedFilters);
 
     if (session) {
@@ -64,7 +64,9 @@ export class PlantillaService {
 
     // Filtro global: No mostrar borradores de años anteriores (Regla de negocio)
     const currentYear = new Date().getFullYear();
-    plantillas = plantillas.filter(p => !(p.estado === 'Borrador' && p.anioAcademico !== currentYear));
+    plantillas = plantillas.filter(
+      (p) => !(p.estado === 'Borrador' && p.anioAcademico !== currentYear),
+    );
 
     return plantillas;
   }

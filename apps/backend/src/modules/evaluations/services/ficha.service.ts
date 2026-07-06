@@ -1,5 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { IFichaMonitoreo, IHistorialPedagogicoResponse } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IFichaMonitoreo,
+  IHistorialPedagogicoResponse,
+} from '@sistema-monitoreo/shared-contracts';
 import { FichaRepository } from '../repositories/ficha.repository.js';
 import { STORAGE_SERVICE, type StorageService } from '../../../shared/storage/storage.constants.js';
 import { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
@@ -87,7 +90,7 @@ export class FichaService {
     session: SessionUser,
   ): Promise<IFichaMonitoreo> {
     const result = await finalizar(this.repository, this.baremoService, fichaId, dto, session);
-    
+
     // Emitir evento de forma asíncrona
     this.eventEmitter.emit('ficha.finalizada', {
       fichaId: result.id,

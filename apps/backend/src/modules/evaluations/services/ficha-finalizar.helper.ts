@@ -34,6 +34,7 @@ export async function finalizar(
     dto.observaciones,
     dto.sugerencias,
     dto.compromisos,
+    dto.evidenciaGeneral,
   );
 
   await repository.updateCronogramaEstado(ficha.cronogramaId, 'COMPLETADO');

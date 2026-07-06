@@ -401,7 +401,7 @@ const {
           await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
         }
       }
-      await fichasApi.finalizar(ficha.id, data.generalComments, data.sugerencias, data.compromisos);
+      await fichasApi.finalizar(ficha.id, data.generalComments, data.sugerencias, data.compromisos, data.evidenciaUrls?.['GENERAL']);
       setShowFichaModal(false);
     } catch (err: unknown) {
       const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string; message?: string } }; message?: string };

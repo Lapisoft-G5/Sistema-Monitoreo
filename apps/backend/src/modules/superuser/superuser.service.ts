@@ -44,7 +44,9 @@ export class SuperuserService {
 
   async asignarRol(usuarioId: string, roleCode: string) {
     if (roleCode !== RoleCode.DIRECTOR_UGEL && roleCode !== RoleCode.JEFE_GESTION) {
-      throw new BadRequestException('El superusuario solo puede asignar roles de Director UGEL o Jefe de Gestión.');
+      throw new BadRequestException(
+        'El superusuario solo puede asignar roles de Director UGEL o Jefe de Gestión.',
+      );
     }
 
     const usuario = await this.prisma.usuario.findUnique({
@@ -119,7 +121,7 @@ export class SuperuserService {
         id: updatedUser.id,
         rolActual: updatedUser.rol.nombre,
         rolCodigo: updatedUser.rol.codigo,
-      }
+      },
     };
   }
 }

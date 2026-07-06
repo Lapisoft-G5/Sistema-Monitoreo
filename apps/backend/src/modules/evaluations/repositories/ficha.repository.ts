@@ -79,6 +79,7 @@ export abstract class FichaRepository {
     observaciones?: string,
     sugerencias?: string,
     compromisos?: string,
+    evidenciaGeneral?: string,
   ): Promise<IFichaMonitoreo>;
   abstract plantillaEstaHistorica(plantillaId: string): Promise<boolean>;
 

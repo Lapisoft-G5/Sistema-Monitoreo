@@ -194,7 +194,7 @@ export const DocenteFormBase = ({
       }
     }
     return list;
-  }, [instituciones, persona?.docente?.institucion]);
+  }, [instituciones, persona]);
 
   const handleAddSeccion = () => {
     const cleanGrado = selectedGrado.trim();

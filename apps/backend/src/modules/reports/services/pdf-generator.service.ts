@@ -15,12 +15,19 @@ export class PdfGeneratorService {
 
   async generatePdfFromTemplate(templateName: string, data: any): Promise<Buffer> {
     this.logger.log(`Generando PDF para plantilla ${templateName}`);
-    
+
     let browser: puppeteer.Browser | null = null;
-    
+
     try {
       // 1. Cargar el HTML de la plantilla
-      const templatePath = path.join(process.cwd(), 'src', 'modules', 'reports', 'templates', `${templateName}.hbs`);
+      const templatePath = path.join(
+        process.cwd(),
+        'src',
+        'modules',
+        'reports',
+        'templates',
+        `${templateName}.hbs`,
+      );
       const templateHtml = fs.readFileSync(templatePath, 'utf8');
 
       // 2. Compilar e interpolar con Handlebars
@@ -34,12 +41,12 @@ export class PdfGeneratorService {
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-gpu'
-        ]
+          '--disable-gpu',
+        ],
       });
 
       const page = await browser.newPage();
-      
+
       // Ajustar contenido e inyectar el HTML
       await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
 
@@ -51,8 +58,8 @@ export class PdfGeneratorService {
           top: '20px',
           bottom: '20px',
           left: '20px',
-          right: '20px'
-        }
+          right: '20px',
+        },
       });
 
       // Retorna un Uint8Array (Node.js Buffer is a subclass)

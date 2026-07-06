@@ -20,7 +20,9 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
         let targetStr = 'duplicado';
         const target = exception.meta?.target;
 
-        this.logger.warn(`[P2002 Debug] meta.target=${JSON.stringify(target)} message=${exception.message}`);
+        this.logger.warn(
+          `[P2002 Debug] meta.target=${JSON.stringify(target)} message=${exception.message}`,
+        );
 
         if (Array.isArray(target) && target.length > 0) {
           targetStr = String(target[0]);
@@ -40,7 +42,8 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
         }
 
         if (!targetStr || targetStr === 'duplicado') {
-          message = 'El valor ingresado ya está en uso. Verifique los campos únicos (DNI, correo, celular).';
+          message =
+            'El valor ingresado ya está en uso. Verifique los campos únicos (DNI, correo, celular).';
           break;
         }
 
@@ -48,7 +51,8 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
         targetStr = targetStr.replace(/[()"'`\s]/g, '');
 
         if (targetStr === 'telefono' || targetStr === 'celular') {
-          message = 'El número de celular/teléfono ingresado ya está registrado por otra persona. Verifique e intente nuevamente.';
+          message =
+            'El número de celular/teléfono ingresado ya está registrado por otra persona. Verifique e intente nuevamente.';
         } else {
           if (targetStr === 'correo' || targetStr === 'email') targetStr = 'correo electrónico';
           if (targetStr === 'dni') targetStr = 'DNI';

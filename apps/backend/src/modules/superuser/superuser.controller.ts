@@ -1,4 +1,13 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { SuperuserService } from './superuser.service.js';
 import { AuthGuard } from '../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';

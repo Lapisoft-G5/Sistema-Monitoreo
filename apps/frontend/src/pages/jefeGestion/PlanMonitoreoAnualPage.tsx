@@ -17,7 +17,7 @@ export const PlanMonitoreoAnualPage = () => {
   const isJefeGestion = user?.role === 'jefe_gestion';
   const defaultEntity = isDirector ? 'IE' : 'UGEL';
 
-  const canEditPlan = (plan: any) => {
+  const canEditPlan = (plan: { tipoEntidad: string }) => {
     if (isJefeGestion && plan.tipoEntidad === 'IE') return false;
     return true;
   };

@@ -56,6 +56,7 @@ export function fromPrismaFicha(ficha: FichaMonitoreoPayload): IFichaMonitoreo {
     observaciones: ficha.observaciones,
     sugerencias: ficha.sugerencias || null,
     compromisos: ficha.compromisos || null,
+    evidenciaGeneral: ficha.evidenciaGeneral || null,
     requiereMigracion,
     plantillaHistoricaId: requiereMigracion ? ficha.plantillaId : null,
     createdAt: ficha.createdAt.toISOString(),

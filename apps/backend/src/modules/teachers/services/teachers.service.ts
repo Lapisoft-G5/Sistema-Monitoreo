@@ -328,18 +328,28 @@ export class TeachersService {
         throw new NotFoundException(`El docente evaluado con ID ${evaluadoId} no existe.`);
       }
       if (evaluado.institucionId !== evaluador.institucionId) {
-        throw new ConflictException(`El docente ${evaluado.persona.nombres} no pertenece a la misma institución que el evaluador.`);
+        throw new ConflictException(
+          `El docente ${evaluado.persona.nombres} no pertenece a la misma institución que el evaluador.`,
+        );
       }
     }
 
     // Verificar conflictos: ¿Algún docente ya tiene otro evaluador activo?
     if (evaluadoIds.length > 0) {
-      const conflictos = await this.teachersRepository.checkAsignacionesConflict(evaluadorId, evaluadoIds);
+      const conflictos = await this.teachersRepository.checkAsignacionesConflict(
+        evaluadorId,
+        evaluadoIds,
+      );
       if (conflictos.length > 0) {
-        const nombresConflicto = conflictos.map(c => 
-          `${c.evaluado.persona.nombres} ${c.evaluado.persona.apellidos} (Asignado a: ${c.evaluador.persona.nombres} ${c.evaluador.persona.apellidos})`
-        ).join(', ');
-        throw new ConflictException(`Los siguientes docentes ya están asignados a otro evaluador: ${nombresConflicto}`);
+        const nombresConflicto = conflictos
+          .map(
+            (c) =>
+              `${c.evaluado.persona.nombres} ${c.evaluado.persona.apellidos} (Asignado a: ${c.evaluador.persona.nombres} ${c.evaluador.persona.apellidos})`,
+          )
+          .join(', ');
+        throw new ConflictException(
+          `Los siguientes docentes ya están asignados a otro evaluador: ${nombresConflicto}`,
+        );
       }
     }
 

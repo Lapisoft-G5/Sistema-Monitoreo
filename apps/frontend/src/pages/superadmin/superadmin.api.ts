@@ -14,7 +14,7 @@ export interface Candidato {
 export const superadminApi = {
   getCandidatos: () => request<Candidato[]>('/api/superadmin/candidatos'),
   asignarRol: (usuarioId: string, roleCode: string) => 
-    request<{ success: boolean; message: string; usuario: any }>(`/api/superadmin/asignar-rol/${usuarioId}`, {
+    request<{ success: boolean; message: string; usuario: unknown }>(`/api/superadmin/asignar-rol/${usuarioId}`, {
       method: 'PATCH',
       body: JSON.stringify({ role: roleCode }),
     }),

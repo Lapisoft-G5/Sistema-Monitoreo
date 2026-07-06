@@ -37,12 +37,12 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
         // Cargar asignados reales
         const res = await teachersApi.getAsignaciones(evaluadorId);
         if (res.ok && res.data) {
-          const asignadosIds = res.data.map((a: any) => a.evaluadoId);
+          const asignadosIds = res.data.map((a: { evaluadoId: string }) => a.evaluadoId);
           setAsignados(asignadosIds);
         } else {
           setAsignados([]);
         }
-      } catch (err) {
+      } catch {
         toast.error('Error al cargar docentes de aula');
       } finally {
         setLoading(false);
@@ -68,7 +68,7 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
       } else {
         toast.error('Error al guardar las asignaciones');
       }
-    } catch (err) {
+    } catch {
       toast.error('Error al guardar las asignaciones');
     } finally {
       setIsSaving(false);

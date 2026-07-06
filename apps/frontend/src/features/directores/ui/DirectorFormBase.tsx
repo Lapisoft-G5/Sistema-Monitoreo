@@ -144,7 +144,7 @@ export const DirectorFormBase = ({
       }
     }
     return list;
-  }, [instituciones, persona?.docente?.institucion]);
+  }, [instituciones, persona]);
 
   return (
     <div className="bg-bg p-0 flex flex-col gap-5 text-text animate-in fade-in-0 duration-300">

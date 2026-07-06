@@ -66,7 +66,12 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
     // Fetch Completed Ficha if available to get finalizadaAt
     const { data: backendFicha } = useQuery({
       queryKey: ['ficha-completada', visit.id],
-      queryFn: () => fichasApi.findByVisita(visit.id),
+      queryFn: () => {
+        const hasBackendData = 'nivelLogro' in visit;
+        return hasBackendData
+          ? fichasApi.findById(visit.id)
+          : fichasApi.findByVisita(visit.id);
+      },
       enabled: !!visit.id && visit.estado === 'COMPLETADO',
     });
 

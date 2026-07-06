@@ -260,7 +260,7 @@ export async function crearVisita(
     const currentHourStr = String(peruDate.getUTCHours()).padStart(2, '0');
     const currentMinStr = String(peruDate.getUTCMinutes()).padStart(2, '0');
     const currentTimeStr = `${currentHourStr}:${currentMinStr}`;
-    
+
     if (dto.horaInicio < currentTimeStr) {
       throw new BadRequestException('La hora programada no puede ser anterior a la hora actual.');
     }

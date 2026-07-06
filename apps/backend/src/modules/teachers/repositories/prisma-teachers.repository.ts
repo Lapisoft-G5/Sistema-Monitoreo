@@ -69,9 +69,9 @@ export class PrismaTeachersRepository implements TeachersRepository {
         evaluado: {
           include: {
             persona: true,
-          }
+          },
         },
-      }
+      },
     });
   }
 
@@ -85,14 +85,14 @@ export class PrismaTeachersRepository implements TeachersRepository {
         },
       });
 
-      const activasIds = activas.map(a => a.evaluadoId);
+      const activasIds = activas.map((a) => a.evaluadoId);
 
       // 2. Determinar cuáles desactivar (están en activas pero no en evaluadoIds)
-      const aDesactivar = activas.filter(a => !evaluadoIds.includes(a.evaluadoId));
+      const aDesactivar = activas.filter((a) => !evaluadoIds.includes(a.evaluadoId));
       if (aDesactivar.length > 0) {
         await tx.asignacionEvaluador.updateMany({
           where: {
-            id: { in: aDesactivar.map(a => a.id) },
+            id: { in: aDesactivar.map((a) => a.id) },
           },
           data: {
             isActive: false,
@@ -102,10 +102,10 @@ export class PrismaTeachersRepository implements TeachersRepository {
       }
 
       // 3. Determinar cuáles crear (están en evaluadoIds pero no en activas)
-      const aCrearIds = evaluadoIds.filter(id => !activasIds.includes(id));
+      const aCrearIds = evaluadoIds.filter((id) => !activasIds.includes(id));
       if (aCrearIds.length > 0) {
         await tx.asignacionEvaluador.createMany({
-          data: aCrearIds.map(evaluadoId => ({
+          data: aCrearIds.map((evaluadoId) => ({
             evaluadorId,
             evaluadoId,
             isActive: true,
@@ -126,15 +126,15 @@ export class PrismaTeachersRepository implements TeachersRepository {
       include: {
         evaluador: {
           include: {
-            persona: true
-          }
+            persona: true,
+          },
         },
         evaluado: {
           include: {
-            persona: true
-          }
-        }
-      }
+            persona: true,
+          },
+        },
+      },
     });
   }
 }

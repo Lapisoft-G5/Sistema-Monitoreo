@@ -22,6 +22,9 @@ export interface EspecialistaLite {
   cargo: string;
   especialidades?: string[];
   activo: boolean;
+  dni?: string;
+  correo?: string;
+  celular?: string;
 }
 
 export interface InstitucionLite {
@@ -31,6 +34,11 @@ export interface InstitucionLite {
   nivelEducativo: string;
   estado: string;
   activo: boolean;
+  codigoModular?: string;
+  director?: string;
+  directorDni?: string;
+  directorTelefono?: string;
+  directorCorreo?: string;
 }
 
 function getInitials(name: string) {
@@ -92,6 +100,9 @@ export const useCronogramasData = (enabled = true) => {
       cargo: e.cargo || 'Especialista',
       especialidades: e.especialidades || [],
       activo: e.estado === 'Activo',
+      dni: e.persona.dni,
+      correo: e.persona.correo || '',
+      celular: e.persona.telefono || '',
     }));
   }, [espQuery.data]);
 
@@ -105,6 +116,11 @@ export const useCronogramasData = (enabled = true) => {
       nivelEducativo: i.nivelEducativo,
       estado: i.estado || 'Inactiva',
       activo: i.estado === 'Activa' || i.estado === 'Activo',
+      codigoModular: i.codigoModular,
+      director: i.director,
+      directorDni: i.directorDni,
+      directorTelefono: i.directorTelefono,
+      directorCorreo: i.directorCorreo,
     }));
   }, [instQuery.data]);
 

@@ -24,6 +24,7 @@ import { AREAS_CURRICULARES } from '@sistema-monitoreo/shared-contracts';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
 import { useRef } from 'react';
+import { safeSetLocalStorage } from '@/shared/lib/utils';
 
 interface LlenarFichaFormProps {
   isOpen: boolean;
@@ -123,6 +124,61 @@ const formatVisitDate = (fechaHoraStr: string) => {
   } catch {
     return fechaHoraStr;
   }
+};
+
+const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(event.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(event.target?.result as string);
+              return;
+            }
+            const reader2 = new FileReader();
+            reader2.onloadend = () => {
+              resolve(reader2.result as string);
+            };
+            reader2.readAsDataURL(blob);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error('Error al cargar la imagen en memoria.'));
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Error al leer el archivo.'));
+    reader.readAsDataURL(file);
+  });
 };
 
 export const LlenarFichaForm = ({
@@ -866,7 +922,7 @@ export const LlenarFichaForm = ({
                                 setEvidenciaUrls((prev) => {
                                   const next = { ...prev };
                                   delete next[item.id];
-                                  localStorage.setItem(
+                                  safeSetLocalStorage(
                                     `sistema-monitoreo:ficha-state:${visit.id}`,
                                     JSON.stringify({
                                       checkedAspects,
@@ -918,7 +974,7 @@ export const LlenarFichaForm = ({
                               const result = await fichasApi.subirEvidenciaEjeItem(ficha.id, item.id, file);
                               setEvidenciaUrls((prev) => {
                                 const next = { ...prev, [item.id]: result.evidenciaUrl };
-                                localStorage.setItem(
+                                safeSetLocalStorage(
                                   `sistema-monitoreo:ficha-state:${visit.id}`,
                                   JSON.stringify({
                                     checkedAspects,
@@ -1011,7 +1067,7 @@ export const LlenarFichaForm = ({
                         setEvidenciaUrls((prev) => {
                           const next = { ...prev };
                           delete next['GENERAL'];
-                          localStorage.setItem(
+                          safeSetLocalStorage(
                             `sistema-monitoreo:ficha-state:${visit.id}`,
                             JSON.stringify({
                               checkedAspects,
@@ -1042,14 +1098,14 @@ export const LlenarFichaForm = ({
                   type="file"
                   className="hidden"
                   accept=".jpg,.jpeg,.png"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
+                    try {
+                      const compressedBase64 = await compressImage(file);
                       setEvidenciaUrls((prev) => {
-                        const next = { ...prev, GENERAL: reader.result as string };
-                        localStorage.setItem(
+                        const next = { ...prev, GENERAL: compressedBase64 };
+                        safeSetLocalStorage(
                           `sistema-monitoreo:ficha-state:${visit.id}`,
                           JSON.stringify({
                             checkedAspects,
@@ -1065,8 +1121,10 @@ export const LlenarFichaForm = ({
                         );
                         return next;
                       });
-                    };
-                    reader.readAsDataURL(file);
+                    } catch (err) {
+                      console.error('Error compressing image:', err);
+                      toast.error('Error al procesar la imagen.');
+                    }
                   }}
                 />
               </label>

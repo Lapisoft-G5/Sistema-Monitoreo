@@ -118,7 +118,9 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           Año de la recuperación y consolidación de la economía peruana
         </div>
         <h2 className="text-center text-sm font-bold uppercase mb-4">
-          FICHA DE {template.tipoMonitoreo.toUpperCase()} {template.anioAcademico}
+          {visit.tipo === 'DIRECTIVO' 
+            ? `FICHA DE MONITOREO AL DIRECTOR - ${template.anioAcademico}` 
+            : `FICHA DE MONITOREO DOCENTE - ${template.anioAcademico}`}
         </h2>
 
         <style>{`
@@ -202,11 +204,11 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
                 </tr>
                 <tr>
                   <td className="bg-gray">ENCARGADO:</td>
-                  <td>{directorCondicion === 'Encargado' ? 'X' : ''}</td>
+                  <td>{(directorCondicion === 'Encargado' || directorCondicion === 'Por Función') ? 'X' : ''}</td>
                   <td className="bg-gray">DESIGNADO:</td>
                   <td>{directorCondicion === 'Designado' ? 'X' : ''}</td>
-                  <td className="bg-gray">ENC. X FUNCIONES:</td>
-                  <td>{directorCondicion === 'Por Función' ? 'X' : ''}</td>
+                  <td className="bg-gray">NOMBRADO:</td>
+                  <td>{directorCondicion === 'Nombrado' ? 'X' : ''}</td>
                 </tr>
               </tbody>
             </table>
@@ -226,31 +228,31 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
               </colgroup>
               <tbody>
                 <tr>
-                  <td className="bg-gray" colSpan={2}>APELLIDOS Y NOMBRES MONITOR(A) DREP:</td>
-                  <td colSpan={6}>{esp?.cargo === 'DREP' ? esp.nombre : ''}</td>
+                  <td className="bg-gray" colSpan={3}>APELLIDOS Y NOMBRES MONITOR(A) DREP</td>
+                  <td colSpan={5}>{esp?.cargo === 'DREP' ? esp.nombre : ''}</td>
                 </tr>
                 <tr>
-                  <td className="bg-gray">DNI:</td>
+                  <td className="bg-gray">DNI</td>
                   <td>{esp?.cargo === 'DREP' ? esp.dni : ''}</td>
-                  <td className="bg-gray">CARGO:</td>
+                  <td className="bg-gray">CARGO</td>
                   <td>{esp?.cargo === 'DREP' ? esp.cargo : ''}</td>
-                  <td className="bg-gray">E-MAIL:</td>
+                  <td className="bg-gray">E-MAIL</td>
                   <td>{esp?.cargo === 'DREP' ? esp.correo : ''}</td>
-                  <td className="bg-gray">N° CELULAR:</td>
+                  <td className="bg-gray">N° CELULAR</td>
                   <td>{esp?.cargo === 'DREP' ? esp.celular : ''}</td>
                 </tr>
                 <tr>
-                  <td className="bg-gray" colSpan={2}>APELLIDOS Y NOMBRES MONITOR(A) UGEL:</td>
-                  <td colSpan={6}>{esp?.cargo !== 'DREP' ? visit.especialista : ''}</td>
+                  <td className="bg-gray" colSpan={3}>APELLIDOS Y NOMBRES MONITOR(A) UGEL</td>
+                  <td colSpan={5}>{esp?.cargo !== 'DREP' ? visit.especialista : ''}</td>
                 </tr>
                 <tr>
-                  <td className="bg-gray">DNI:</td>
+                  <td className="bg-gray">DNI</td>
                   <td>{esp?.cargo !== 'DREP' ? esp?.dni : ''}</td>
-                  <td className="bg-gray">CARGO:</td>
+                  <td className="bg-gray">CARGO</td>
                   <td>{esp?.cargo !== 'DREP' ? esp?.cargo : ''}</td>
-                  <td className="bg-gray">E-MAIL:</td>
+                  <td className="bg-gray">E-MAIL</td>
                   <td>{esp?.cargo !== 'DREP' ? esp?.correo : ''}</td>
-                  <td className="bg-gray">N° CELULAR:</td>
+                  <td className="bg-gray">N° CELULAR</td>
                   <td>{esp?.cargo !== 'DREP' ? esp?.celular : ''}</td>
                 </tr>
               </tbody>

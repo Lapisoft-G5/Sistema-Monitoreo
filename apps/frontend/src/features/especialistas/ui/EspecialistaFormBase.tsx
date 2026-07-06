@@ -16,6 +16,8 @@ interface Props {
   initialData?: EspecialistaFormData;
   isJefeArea?: boolean;
   serverError?: string | null;
+  isSuperadminCreate?: boolean;
+  targetRole?: 'director_ugel' | 'jefe_gestion';
 }
 
 const INITIAL_FORM: EspecialistaFormData = {
@@ -43,6 +45,8 @@ export const EspecialistaFormBase = ({
   initialData,
   isJefeArea = false,
   serverError,
+  isSuperadminCreate = false,
+  targetRole,
 }: Props) => {
   // Ajuste de inicialización en base a si esJefeArea es verdadero
   const defaultForm = {
@@ -284,196 +288,250 @@ export const EspecialistaFormBase = ({
         icon={<Briefcase className="w-5 h-5" />}
         title="Detalles Profesionales / Laborales"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px]">
-          <SelectField
-            label="Cargo *"
-            required
-            value={form.cargo}
-            onChange={(v) => set('cargo', v as "Jefe de Área" | "Jefe de Gestión" | "Especialista")}
-            options={[
-              { value: 'Especialista', label: 'Especialista' },
-              { value: 'Jefe de Área', label: 'Jefe de Área' },
-              { value: 'Jefe de Gestión', label: 'Jefe de Gestión' },
-            ]}
-            disabled={true}
-            placeholder="Seleccione Cargo"
-            error={showError('cargo')}
-          />
-          <SelectField
-            label="Condición Laboral *"
-            required
-            value={form.condicionLaboral}
-            onChange={(v) => set('condicionLaboral', v as "Destacado" | "Designado" | "Encargado")}
-            options={[
-              { value: 'Encargado', label: 'Encargado' },
-              { value: 'Destacado', label: 'Destacado' },
-              { value: 'Designado', label: 'Designado' },
-            ]}
-            placeholder="Seleccione Condición"
-            error={showError('condicionLaboral')}
-            disabled={dniBloqueadoPorRol}
-          />
-        </div>
+        {isSuperadminCreate ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px]">
+              <SelectField
+                label="Cargo *"
+                required
+                value={form.cargo}
+                onChange={(v) => set('cargo', v as "Jefe de Área" | "Jefe de Gestión" | "Especialista")}
+                options={
+                  targetRole === 'director_ugel'
+                    ? [{ value: 'Especialista', label: 'Director UGEL' }]
+                    : [{ value: 'Jefe de Gestión', label: 'Jefe de Gestión' }]
+                }
+                disabled={true}
+                placeholder="Seleccione Cargo"
+                error={showError('cargo')}
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
-          <SelectField
-            label="Modalidad *"
-            required
-            value={form.modalidad}
-            onChange={(v) => {
-              const levels = MODALIDAD_NIVEL_MAP[v] || [];
-              setForm((prev) => ({
-                ...prev,
-                modalidad: v as "EBR" | "EBA" | "EBE" | "CEPTRO",
-                nivelEducativo: levels[0] || '',
-                especialidades: [],
-                especialidad: '',
-                especialidadesExtras: [],
-              }));
-            }}
-            options={[
-              { value: 'EBR', label: 'EBR (Básica Regular)' },
-              { value: 'EBA', label: 'EBA (Básica Alternativa)' },
-              { value: 'EBE', label: 'EBE (Básica Especial)' },
-              { value: 'CEPTRO', label: 'CEPTRO (Técnico Productiva)' },
-            ]}
-            placeholder="Seleccione Modalidad"
-            error={showError('modalidad')}
-            disabled={dniBloqueadoPorRol}
-          />
-          <SelectField
-            label="Nivel Educativo *"
-            required
-            value={form.nivelEducativo}
-            onChange={(v) => {
-              setForm((prev) => ({
-                ...prev,
-                nivelEducativo: v,
-                especialidades: [],
-                especialidad: '',
-                especialidadesExtras: [],
-              }));
-            }}
-            options={availableNiveles.map((n) => ({ value: n, label: n }))}
-            placeholder="Seleccione Nivel"
-            error={showError('nivelEducativo')}
-            disabled={dniBloqueadoPorRol}
-          />
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
+              <SelectField
+                label="Escala Magisterial"
+                value={form.escalaMagisterial?.toString() || 'none'}
+                onChange={(v) => set('escalaMagisterial', v === 'none' ? undefined : Number(v))}
+                options={[
+                  { value: 'none', label: 'Ninguna / No aplica' },
+                  { value: '1', label: 'Escala I' },
+                  { value: '2', label: 'Escala II' },
+                  { value: '3', label: 'Escala III' },
+                  { value: '4', label: 'Escala IV' },
+                  { value: '5', label: 'Escala V' },
+                  { value: '6', label: 'Escala VI' },
+                  { value: '7', label: 'Escala VII' },
+                  { value: '8', label: 'Escala VIII' },
+                ]}
+                placeholder="Seleccione Escala Magisterial"
+                error={showError('escalaMagisterial')}
+                disabled={dniBloqueadoPorRol}
+              />
+              <TextField
+                label="Carga Laboral (Horas) *"
+                required
+                value={form.cargaLaboral?.toString() || ''}
+                onChange={(v) => set('cargaLaboral', v ? Number(v.replace(/\D/g, '')) : 40)}
+                placeholder="Ej. 40"
+                error={showError('cargaLaboral')}
+                disabled={dniBloqueadoPorRol}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px]">
+              <SelectField
+                label="Cargo *"
+                required
+                value={form.cargo}
+                onChange={(v) => set('cargo', v as "Jefe de Área" | "Jefe de Gestión" | "Especialista")}
+                options={[
+                  { value: 'Especialista', label: 'Especialista' },
+                  { value: 'Jefe de Área', label: 'Jefe de Área' },
+                  { value: 'Jefe de Gestión', label: 'Jefe de Gestión' },
+                ]}
+                disabled={true}
+                placeholder="Seleccione Cargo"
+                error={showError('cargo')}
+              />
+              <SelectField
+                label="Condición Laboral *"
+                required
+                value={form.condicionLaboral}
+                onChange={(v) => set('condicionLaboral', v as "Destacado" | "Designado" | "Encargado")}
+                options={[
+                  { value: 'Encargado', label: 'Encargado' },
+                  { value: 'Destacado', label: 'Destacado' },
+                  { value: 'Designado', label: 'Designado' },
+                ]}
+                placeholder="Seleccione Condición"
+                error={showError('condicionLaboral')}
+                disabled={dniBloqueadoPorRol}
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
-          <SelectField
-            label="Escala Magisterial"
-            value={form.escalaMagisterial?.toString() || 'none'}
-            onChange={(v) => set('escalaMagisterial', v === 'none' ? undefined : Number(v))}
-            options={[
-              { value: 'none', label: 'Ninguna / No aplica' },
-              { value: '1', label: 'Escala I' },
-              { value: '2', label: 'Escala II' },
-              { value: '3', label: 'Escala III' },
-              { value: '4', label: 'Escala IV' },
-              { value: '5', label: 'Escala V' },
-              { value: '6', label: 'Escala VI' },
-              { value: '7', label: 'Escala VII' },
-              { value: '8', label: 'Escala VIII' },
-            ]}
-            placeholder="Seleccione Escala Magisterial"
-            error={showError('escalaMagisterial')}
-            disabled={dniBloqueadoPorRol}
-          />
-          {/* Especialidad principal */}
-          {isPrimaria && (
-            <SelectField
-              label="Especialidad"
-              value={form.especialidad || 'none'}
-              onChange={(v) => set('especialidad', v === 'none' ? '' : v)}
-              options={[
-                { value: 'none', label: 'Ninguna / No aplica' },
-                { value: 'PIP', label: 'PIP (Profesor de Innovación Pedagógica)' },
-                { value: 'Educación Física', label: 'Educación Física' },
-              ]}
-              placeholder="Seleccione Especialidad"
-              error={showError('especialidad')}
-            />
-          )}
-          {isSecundaria && (
-            <TextField
-              label="Especialidad Principal *"
-              required
-              value={form.especialidad || ''}
-              onChange={(v) => set('especialidad', v)}
-              placeholder="Ej. Matemática, CTA, Comunicación..."
-              error={showError('especialidad')}
-            />
-          )}
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
+              <SelectField
+                label="Modalidad *"
+                required
+                value={form.modalidad}
+                onChange={(v) => {
+                  const levels = MODALIDAD_NIVEL_MAP[v] || [];
+                  setForm((prev) => ({
+                    ...prev,
+                    modalidad: v as "EBR" | "EBA" | "EBE" | "CEPTRO",
+                    nivelEducativo: levels[0] || '',
+                    especialidades: [],
+                    especialidad: '',
+                    especialidadesExtras: [],
+                  }));
+                }}
+                options={[
+                  { value: 'EBR', label: 'EBR (Básica Regular)' },
+                  { value: 'EBA', label: 'EBA (Básica Alternativa)' },
+                  { value: 'EBE', label: 'EBE (Básica Especial)' },
+                  { value: 'CEPTRO', label: 'CEPTRO (Técnico Productiva)' },
+                ]}
+                placeholder="Seleccione Modalidad"
+                error={showError('modalidad')}
+                disabled={dniBloqueadoPorRol}
+              />
+              <SelectField
+                label="Nivel Educativo *"
+                required
+                value={form.nivelEducativo}
+                onChange={(v) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    nivelEducativo: v,
+                    especialidades: [],
+                    especialidad: '',
+                    especialidadesExtras: [],
+                  }));
+                }}
+                options={availableNiveles.map((n) => ({ value: n, label: n }))}
+                placeholder="Seleccione Nivel"
+                error={showError('nivelEducativo')}
+                disabled={dniBloqueadoPorRol}
+              />
+            </div>
 
-        {/* Especialidades Extras (solo visible en Secundaria) */}
-        {isSecundaria && (
-          <div className="flex flex-col gap-1.5 mt-[18px]">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wide">
-              Especialidades Extras / Temporales
-              <span className="ml-1 text-text-muted font-normal normal-case">(Opcional)</span>
-            </label>
-            {/* Tags actuales */}
-            {especialidadesExtras.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-1">
-                {especialidadesExtras.map((esp) => (
-                  <span
-                    key={esp}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
+              <SelectField
+                label="Escala Magisterial"
+                value={form.escalaMagisterial?.toString() || 'none'}
+                onChange={(v) => set('escalaMagisterial', v === 'none' ? undefined : Number(v))}
+                options={[
+                  { value: 'none', label: 'Ninguna / No aplica' },
+                  { value: '1', label: 'Escala I' },
+                  { value: '2', label: 'Escala II' },
+                  { value: '3', label: 'Escala III' },
+                  { value: '4', label: 'Escala IV' },
+                  { value: '5', label: 'Escala V' },
+                  { value: '6', label: 'Escala VI' },
+                  { value: '7', label: 'Escala VII' },
+                  { value: '8', label: 'Escala VIII' },
+                ]}
+                placeholder="Seleccione Escala Magisterial"
+                error={showError('escalaMagisterial')}
+                disabled={dniBloqueadoPorRol}
+              />
+              {/* Especialidad principal */}
+              {isPrimaria && (
+                <SelectField
+                  label="Especialidad"
+                  value={form.especialidad || 'none'}
+                  onChange={(v) => set('especialidad', v === 'none' ? '' : v)}
+                  options={[
+                    { value: 'none', label: 'Ninguna / No aplica' },
+                    { value: 'PIP', label: 'PIP (Profesor de Innovación Pedagógica)' },
+                    { value: 'Educación Física', label: 'Educación Física' },
+                  ]}
+                  placeholder="Seleccione Especialidad"
+                  error={showError('especialidad')}
+                />
+              )}
+              {isSecundaria && (
+                <TextField
+                  label="Especialidad Principal *"
+                  required
+                  value={form.especialidad || ''}
+                  onChange={(v) => set('especialidad', v)}
+                  placeholder="Ej. Matemática, CTA, Comunicación..."
+                  error={showError('especialidad')}
+                />
+              )}
+            </div>
+
+            {/* Especialidades Extras (solo visible en Secundaria) */}
+            {isSecundaria && (
+              <div className="flex flex-col gap-1.5 mt-[18px]">
+                <label className="text-xs font-semibold text-text-muted uppercase tracking-wide">
+                  Especialidades Extras / Temporales
+                  <span className="ml-1 text-text-muted font-normal normal-case">(Opcional)</span>
+                </label>
+                {/* Tags actuales */}
+                {especialidadesExtras.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-1">
+                    {especialidadesExtras.map((esp) => (
+                      <span
+                        key={esp}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                      >
+                        {esp}
+                        <button
+                          type="button"
+                          onClick={() => removeEspecialidad(esp)}
+                          className="hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Input para agregar */}
+                <div className="flex gap-2 max-w-md">
+                  <input
+                    ref={newEspRef}
+                    type="text"
+                    value={newEspecialidad}
+                    onChange={(e) => setNewEspecialidad(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addEspecialidad();
+                      }
+                    }}
+                    placeholder="Ej. Historia, Inglés..."
+                    className="flex-1 text-sm bg-surface border border-border rounded-lg px-3 py-2 text-text placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={addEspecialidad}
+                    className="flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
                   >
-                    {esp}
-                    <button
-                      type="button"
-                      onClick={() => removeEspecialidad(esp)}
-                      className="hover:text-red-500 transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-                ))}
+                    <Plus className="w-3.5 h-3.5" />
+                    Agregar
+                  </button>
+                </div>
               </div>
             )}
-            {/* Input para agregar */}
-            <div className="flex gap-2 max-w-md">
-              <input
-                ref={newEspRef}
-                type="text"
-                value={newEspecialidad}
-                onChange={(e) => setNewEspecialidad(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addEspecialidad();
-                  }
-                }}
-                placeholder="Ej. Historia, Inglés..."
-                className="flex-1 text-sm bg-surface border border-border rounded-lg px-3 py-2 text-text placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors"
-              />
-              <button
-                type="button"
-                onClick={addEspecialidad}
-                className="flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Agregar
-              </button>
-            </div>
-          </div>
-        )}
 
-        <div className="mt-[18px]">
-          <TextField
-            label="Carga Laboral (Horas) *"
-            required
-            value={form.cargaLaboral?.toString() || ''}
-            onChange={(v) => set('cargaLaboral', v ? Number(v.replace(/\D/g, '')) : 40)}
-            placeholder="Ej. 40"
-            error={showError('cargaLaboral')}
-            disabled={dniBloqueadoPorRol}
-          />
-        </div>
+            <div className="mt-[18px]">
+              <TextField
+                label="Carga Laboral (Horas) *"
+                required
+                value={form.cargaLaboral?.toString() || ''}
+                onChange={(v) => set('cargaLaboral', v ? Number(v.replace(/\D/g, '')) : 40)}
+                placeholder="Ej. 40"
+                error={showError('cargaLaboral')}
+                disabled={dniBloqueadoPorRol}
+              />
+            </div>
+          </>
+        )}
       </SectionCard>
 
       {/* Botones de Envío */}

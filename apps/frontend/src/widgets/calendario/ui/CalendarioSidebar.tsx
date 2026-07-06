@@ -23,6 +23,7 @@ import { useUser } from '@/entities/model-user';
 import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
 import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
 import { FEATURES } from '@shared/config/features';
+import { safeSetLocalStorage } from '@/shared/lib/utils';
 import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm
@@ -264,7 +265,7 @@ const {
       evidenciaUrls: {},
     };
     if (!FEATURES.apiOnly) {
-      localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+      safeSetLocalStorage(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
     }
   };
 
@@ -291,7 +292,7 @@ const {
   ) => {
     // Persistir localmente (UX inmediata)
     if (!FEATURES.apiOnly) {
-      localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+      safeSetLocalStorage(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
     }
     qc.setQueryData(['cronogramas'], (prev: any) =>
       Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'EN_PROCESO' } : c)) : prev
@@ -368,7 +369,7 @@ const {
       };
     }
   ) => {
-    localStorage.setItem(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
+    safeSetLocalStorage(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
     qc.setQueryData(['cronogramas'], (prev: any) =>
       Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'COMPLETADO' } : c)) : prev
     );
@@ -713,7 +714,7 @@ const {
                             evidenciaUrls,
                             contexto: ficha.contexto,
                           };
-                          localStorage.setItem(`sistema-monitoreo:ficha-state:${selectedVisit.id}`, JSON.stringify(mappedData));
+                          safeSetLocalStorage(`sistema-monitoreo:ficha-state:${selectedVisit.id}`, JSON.stringify(mappedData));
                         } else {
                           simulateFichaLlena(selectedVisit.id);
                         }

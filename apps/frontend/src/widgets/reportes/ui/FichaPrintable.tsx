@@ -1,6 +1,9 @@
 import { forwardRef } from 'react';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
+import { useCronogramasData } from '@/features/cronogramas/hooks/use-cronogramas-data';
+import { useQuery } from '@tanstack/react-query';
+import { fichasApi } from '@/features/monitoreos/api/fichas.api';
 
 interface FichaPrintableProps {
   visit: Cronograma;
@@ -41,8 +44,73 @@ const formatVisitDate = (fechaHoraStr: string) => {
   }
 };
 
+const getLevelStyle = (level: string) => {
+  switch (level) {
+    case 'I':
+      return { backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' };
+    case 'II':
+      return { backgroundColor: '#ffedd5', color: '#c2410c', border: '1px solid #fdba74' };
+    case 'III':
+      return { backgroundColor: '#dcfce7', color: '#166534', border: '1px solid #86efac' };
+    case 'IV':
+      return { backgroundColor: '#ccfbf1', color: '#0f766e', border: '1px solid #99f6e4' };
+    default:
+      return { backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' };
+  }
+};
+
 export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
   ({ visit, template, fichaState }, ref) => {
+    const { docentes, especialistas, instituciones } = useCronogramasData();
+
+    // Fetch Completed Ficha if available to get finalizadaAt
+    const { data: backendFicha } = useQuery({
+      queryKey: ['ficha-completada', visit.id],
+      queryFn: () => fichasApi.findByVisita(visit.id),
+      enabled: !!visit.id && visit.estado === 'COMPLETADO',
+    });
+
+    // Match Docente
+    const doc = docentes?.find((d) => d.id === visit.evaluadoId) ||
+                docentes?.find((d) => `${d.nombres} ${d.apellidos}`.toLowerCase() === visit.docenteDirectivo?.toLowerCase());
+
+    // Match Especialista (Monitor)
+    const esp = especialistas?.find((e) => e.id === visit.monitorId) ||
+                especialistas?.find((e) => e.nombre.toLowerCase() === visit.especialista?.toLowerCase());
+
+    // Match Institucion
+    const inst = instituciones?.find((i) => i.id === visit.institucionId) ||
+                 instituciones?.find((i) => i.nombre.toLowerCase() === visit.institucion?.toLowerCase());
+
+    // Match Director
+    const dirDocente = docentes?.find((d) => d.institucionId === visit.institucionId && d.cargo === 'Director') ||
+                       (inst?.director ? docentes?.find((d) => `${d.nombres} ${d.apellidos}`.toLowerCase() === inst.director?.toLowerCase()) : undefined);
+
+    const directorNombre = visit.tipo === 'DIRECTIVO'
+      ? visit.docenteDirectivo
+      : (dirDocente ? `${dirDocente.nombres} ${dirDocente.apellidos}` : inst?.director || '');
+
+    const directorDni = visit.tipo === 'DIRECTIVO'
+      ? (doc?.dni || '')
+      : (dirDocente?.dni || inst?.directorDni || '');
+
+    const directorCorreo = visit.tipo === 'DIRECTIVO'
+      ? (doc?.correo || '')
+      : (dirDocente?.correo || inst?.directorCorreo || '');
+
+    const directorCelular = visit.tipo === 'DIRECTIVO'
+      ? (doc?.celular || '')
+      : (dirDocente?.celular || inst?.directorTelefono || '');
+
+    const directorCondicion = visit.tipo === 'DIRECTIVO'
+      ? (doc?.condicion || '')
+      : (dirDocente?.condicion || '');
+
+    // Get Hora Final
+    const horaFinalVal = backendFicha?.finalizadaAt
+      ? new Date(backendFicha.finalizadaAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true })
+      : '';
+
     return (
       <div ref={ref} className="p-8 bg-white text-black font-sans text-[12px] leading-snug w-full">
         {/* Encabezado */}
@@ -50,93 +118,142 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           Año de la recuperación y consolidación de la economía peruana
         </div>
         <h2 className="text-center text-sm font-bold uppercase mb-4">
-          FICHA DE {template.tipoMonitoreo.toUpperCase()} {template.anioAcademico}
+          {visit.tipo === 'DIRECTIVO' 
+            ? `FICHA DE MONITOREO AL DIRECTOR - ${template.anioAcademico}` 
+            : `FICHA DE MONITOREO DOCENTE - ${template.anioAcademico}`}
         </h2>
 
         <style>{`
-          @page { size: portrait; margin: 15mm; }
-          .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 10px; }
-          .pdf-table td { border: 1px solid #000; padding: 3px 5px; }
-          .pdf-table .bg-gray { background-color: #f0f4f8; font-weight: bold; }
-          .pdf-section-title { font-weight: bold; text-transform: uppercase; margin-bottom: 2px; font-size: 11px; }
+          @page {
+            size: portrait;
+            margin: 15mm;
+          }
+          .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            font-size: 10px;
+            table-layout: fixed;
+          }
+          .pdf-table td {
+            border: 1px solid #cbd5e1;
+            padding: 4px 6px;
+            word-break: break-word;
+            vertical-align: middle;
+          }
+          .pdf-table .bg-gray {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            color: #334155;
+          }
+          .pdf-section-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            font-size: 10.5px;
+            color: #1e293b;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 2px;
+            margin-top: 16px;
+          }
         `}</style>
 
         {visit.tipo === 'DIRECTIVO' ? (
           <>
             {/* DATOS DE LA INSTITUCIÓN EDUCATIVA */}
             <div className="pdf-section-title">DATOS DE LA INSTITUCIÓN EDUCATIVA:</div>
-            <table className="pdf-table">
+            <table className="pdf-table table-fixed w-full">
+              <colgroup>
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+              </colgroup>
               <tbody>
                 <tr>
-                  <td className="bg-gray" style={{ width: '20%' }}>UGEL:</td>
+                  <td className="bg-gray">UGEL:</td>
                   <td colSpan={5}>UGEL LAMPA</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">INSTITUCIÓN EDUCATIVA:</td>
                   <td colSpan={3}>{visit.institucion}</td>
-                  <td className="bg-gray" style={{ width: '15%' }}>CÓD. MODULAR:</td>
-                  <td style={{ width: '20%' }}></td>
+                  <td className="bg-gray">CÓD. MODULAR:</td>
+                  <td>{inst?.codigoModular || ''}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">MODALIDAD:</td>
-                  <td style={{ width: '25%' }}>{visit.modalidad || ''}</td>
-                  <td className="bg-gray" style={{ width: '10%' }}>NIVEL:</td>
-                  <td style={{ width: '20%' }}>{visit.nivel || ''}</td>
-                  <td className="bg-gray" style={{ width: '10%' }}>ÁREA:</td>
-                  <td style={{ width: '15%' }}>{fichaState.contexto?.areaCurricular || ''}</td>
+                  <td>{visit.modalidad || ''}</td>
+                  <td className="bg-gray">NIVEL:</td>
+                  <td>{visit.nivel || ''}</td>
+                  <td className="bg-gray">ÁREA:</td>
+                  <td>{fichaState.contexto?.areaCurricular || ''}</td>
                 </tr>
                 <tr>
-                  <td className="bg-gray">APELLIDOS Y NOMBRES DEL DIRECTOR(A):</td>
-                  <td colSpan={5}>{visit.docenteDirectivo}</td>
+                  <td className="bg-gray" colSpan={2}>APELLIDOS Y NOMBRES DEL DIRECTOR(A):</td>
+                  <td colSpan={4}>{directorNombre}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">DNI:</td>
-                  <td></td>
+                  <td>{directorDni}</td>
                   <td className="bg-gray">E-MAIL:</td>
-                  <td colSpan={2}></td>
-                  <td><span className="font-bold">N° CELULAR:</span> </td>
+                  <td>{directorCorreo}</td>
+                  <td className="bg-gray">N° CELULAR:</td>
+                  <td>{directorCelular}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">ENCARGADO:</td>
-                  <td></td>
+                  <td>{(directorCondicion === 'Encargado' || directorCondicion === 'Por Función') ? 'X' : ''}</td>
                   <td className="bg-gray">DESIGNADO:</td>
-                  <td colSpan={2}></td>
-                  <td><span className="font-bold">NOMBRADO:</span> </td>
+                  <td>{directorCondicion === 'Designado' ? 'X' : ''}</td>
+                  <td className="bg-gray">NOMBRADO:</td>
+                  <td>{directorCondicion === 'Nombrado' ? 'X' : ''}</td>
                 </tr>
               </tbody>
             </table>
 
             {/* DATOS DEL MONITOR */}
             <div className="pdf-section-title">DATOS DEL MONITOR:</div>
-            <table className="pdf-table">
+            <table className="pdf-table table-fixed w-full">
+              <colgroup>
+                <col className="w-1/8" style={{ width: '12.5%' }} />
+                <col className="w-1/8" style={{ width: '12.5%' }} />
+                <col className="w-1/8" style={{ width: '12.5%' }} />
+                <col className="w-1/8" style={{ width: '12.5%' }} />
+                <col className="w-1/8" style={{ width: '12.5%' }} />
+                <col className="w-1/8" style={{ width: '12.5%' }} />
+                <col className="w-1/8" style={{ width: '12.5%' }} />
+                <col className="w-1/8" style={{ width: '12.5%' }} />
+              </colgroup>
               <tbody>
                 <tr>
-                  <td className="bg-gray" style={{ width: '30%' }}>APELLIDOS Y NOMBRES MONITOR(A) DREP</td>
-                  <td colSpan={7}></td>
+                  <td className="bg-gray" colSpan={3}>APELLIDOS Y NOMBRES MONITOR(A) DREP</td>
+                  <td colSpan={5}>{esp?.cargo === 'DREP' ? esp.nombre : ''}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">DNI</td>
-                  <td></td>
+                  <td>{esp?.cargo === 'DREP' ? esp.dni : ''}</td>
                   <td className="bg-gray">CARGO</td>
-                  <td></td>
+                  <td>{esp?.cargo === 'DREP' ? esp.cargo : ''}</td>
                   <td className="bg-gray">E-MAIL</td>
-                  <td></td>
+                  <td>{esp?.cargo === 'DREP' ? esp.correo : ''}</td>
                   <td className="bg-gray">N° CELULAR</td>
-                  <td></td>
+                  <td>{esp?.cargo === 'DREP' ? esp.celular : ''}</td>
                 </tr>
                 <tr>
-                  <td className="bg-gray" style={{ width: '30%' }}>APELLIDOS Y NOMBRES MONITOR(A) UGEL</td>
-                  <td colSpan={7}>{visit.especialista}</td>
+                  <td className="bg-gray" colSpan={3}>APELLIDOS Y NOMBRES MONITOR(A) UGEL</td>
+                  <td colSpan={5}>{esp?.cargo !== 'DREP' ? visit.especialista : ''}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">DNI</td>
-                  <td></td>
+                  <td>{esp?.cargo !== 'DREP' ? esp?.dni : ''}</td>
                   <td className="bg-gray">CARGO</td>
-                  <td></td>
+                  <td>{esp?.cargo !== 'DREP' ? esp?.cargo : ''}</td>
                   <td className="bg-gray">E-MAIL</td>
-                  <td></td>
+                  <td>{esp?.cargo !== 'DREP' ? esp?.correo : ''}</td>
                   <td className="bg-gray">N° CELULAR</td>
-                  <td></td>
+                  <td>{esp?.cargo !== 'DREP' ? esp?.celular : ''}</td>
                 </tr>
               </tbody>
             </table>
@@ -145,10 +262,18 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           <>
             {/* DATOS DE LA INSTITUCIÓN EDUCATIVA (DOCENTE) */}
             <div className="pdf-section-title">DATOS DE LA INSTITUCIÓN EDUCATIVA:</div>
-            <table className="pdf-table">
+            <table className="pdf-table table-fixed w-full">
+              <colgroup>
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+              </colgroup>
               <tbody>
                 <tr>
-                  <td className="bg-gray" style={{ width: '20%' }}>UGEL:</td>
+                  <td className="bg-gray">UGEL:</td>
                   <td colSpan={5}>UGEL LAMPA</td>
                 </tr>
                 <tr>
@@ -157,92 +282,119 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
                 </tr>
                 <tr>
                   <td className="bg-gray">MODALIDAD:</td>
-                  <td style={{ width: '20%' }}>{visit.modalidad || ''}</td>
-                  <td className="bg-gray" style={{ width: '10%' }}>NIVEL:</td>
-                  <td style={{ width: '20%' }}>{visit.nivel || ''}</td>
-                  <td className="bg-gray" style={{ width: '10%' }}>ÁREA:</td>
-                  <td style={{ width: '20%' }}>{fichaState.contexto?.areaCurricular || ''}</td>
+                  <td>{visit.modalidad || ''}</td>
+                  <td className="bg-gray">NIVEL:</td>
+                  <td>{visit.nivel || ''}</td>
+                  <td className="bg-gray">ÁREA:</td>
+                  <td>{fichaState.contexto?.areaCurricular || ''}</td>
                 </tr>
                 <tr>
-                  <td className="bg-gray">APELLIDOS Y NOMBRES DEL DIRECTOR(A):</td>
-                  <td colSpan={5}></td>
+                  <td className="bg-gray" colSpan={2}>APELLIDOS Y NOMBRES DEL DIRECTOR(A):</td>
+                  <td colSpan={4}>{directorNombre}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">DNI:</td>
-                  <td></td>
+                  <td>{directorDni}</td>
                   <td className="bg-gray">E-MAIL:</td>
-                  <td colSpan={2}></td>
-                  <td><span className="font-bold">N° CELULAR:</span> </td>
+                  <td>{directorCorreo}</td>
+                  <td className="bg-gray">N° CELULAR:</td>
+                  <td>{directorCelular}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">ENCARGADO:</td>
-                  <td></td>
+                  <td>{directorCondicion === 'Encargado' ? 'X' : ''}</td>
                   <td className="bg-gray">DESIGNADO:</td>
-                  <td colSpan={2}></td>
-                  <td><span className="font-bold">ENC. X FUNCIONES:</span> </td>
+                  <td>{directorCondicion === 'Designado' ? 'X' : ''}</td>
+                  <td className="bg-gray">ENC. X FUNCIONES:</td>
+                  <td>{directorCondicion === 'Por Función' ? 'X' : ''}</td>
                 </tr>
               </tbody>
             </table>
 
             {/* DATOS DEL DOCENTE MONITOREADO */}
             <div className="pdf-section-title">DATOS DEL DOCENTE MONITOREADO:</div>
-            <table className="pdf-table">
+            <table className="pdf-table table-fixed w-full">
+              <colgroup>
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+              </colgroup>
               <tbody>
                 <tr>
-                  <td className="bg-gray" style={{ width: '30%' }}>APELLIDOS Y NOMBRES DEL DOCENTE:</td>
-                  <td colSpan={5}>{visit.docenteDirectivo}</td>
+                  <td className="bg-gray" colSpan={2}>APELLIDOS Y NOMBRES DEL DOCENTE:</td>
+                  <td colSpan={4}>{visit.docenteDirectivo}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">DNI:</td>
-                  <td></td>
+                  <td>{doc?.dni || ''}</td>
                   <td className="bg-gray">E-MAIL:</td>
-                  <td colSpan={2}></td>
-                  <td><span className="font-bold">N° CELULAR:</span> </td>
+                  <td>{doc?.correo || ''}</td>
+                  <td className="bg-gray">N° CELULAR:</td>
+                  <td>{doc?.celular || ''}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">CONTRATADO:</td>
-                  <td></td>
+                  <td>{doc?.condicion === 'Contratado' ? 'X' : ''}</td>
                   <td className="bg-gray">NOMBRADO:</td>
-                  <td colSpan={2}></td>
-                  <td><span className="font-bold">OTRO:</span> </td>
+                  <td>{doc?.condicion === 'Nombrado' ? 'X' : ''}</td>
+                  <td className="bg-gray">OTRO:</td>
+                  <td>{doc?.condicion !== 'Nombrado' && doc?.condicion !== 'Contratado' && doc?.condicion ? 'X' : ''}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">MODALIDAD:</td>
                   <td>{visit.modalidad || ''}</td>
                   <td className="bg-gray">NIVEL:</td>
-                  <td colSpan={2}>{visit.nivel || ''}</td>
-                  <td><span className="font-bold">ÁREA:</span> {fichaState.contexto?.areaCurricular || ''}</td>
+                  <td>{visit.nivel || ''}</td>
+                  <td className="bg-gray">ÁREA:</td>
+                  <td>{fichaState.contexto?.areaCurricular || ''}</td>
                 </tr>
                 <tr>
                   <td className="bg-gray">GRADO:</td>
                   <td>{fichaState.contexto?.grado || ''}</td>
                   <td className="bg-gray">SECCIÓN:</td>
                   <td>{fichaState.contexto?.seccion || ''}</td>
-                  <td><span className="font-bold">CANT. ESTUDIANTES:</span> {fichaState.contexto?.cantidadEstudiantes || ''}</td>
-                  <td><span className="font-bold">NEE:</span> {fichaState.contexto?.cantidadEstudiantesNee || ''}</td>
+                  <td className="bg-gray">CANT. ESTUDIANTES:</td>
+                  <td>{fichaState.contexto?.cantidadEstudiantes || ''}</td>
+                </tr>
+                <tr>
+                  <td className="bg-gray">NEE:</td>
+                  <td>{fichaState.contexto?.cantidadEstudiantesNee || ''}</td>
+                  <td colSpan={4}></td>
                 </tr>
               </tbody>
             </table>
 
             {/* DATOS DEL(OS) MONITOR(ES) */}
             <div className="pdf-section-title">DATOS DEL(OS) MONITOR(ES):</div>
-            <table className="pdf-table">
+            <table className="pdf-table table-fixed w-full">
+              <colgroup>
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+                <col className="w-1/6" style={{ width: '16.666%' }} />
+              </colgroup>
               <tbody>
                 <tr>
-                  <td className="bg-gray" style={{ width: '20%' }}>APELLIDOS Y NOMBRES:</td>
+                  <td className="bg-gray" colSpan={1}>APELLIDOS Y NOMBRES:</td>
                   <td colSpan={5}>
-                    <span className="mr-4">DREP ( )</span>
-                    <span className="mr-4">UGEL (X) {visit.especialista}</span>
-                    <span className="mr-4">DIRECTOR IE ( )</span>
-                    <span>COORDINADOR ( )</span>
+                    <span className="mr-4">DREP ({esp?.cargo === 'DREP' ? 'X' : ' '})</span>
+                    <span className="mr-4">UGEL ({esp?.cargo !== 'DREP' && esp?.cargo !== 'Director' && esp?.cargo !== 'Coordinador Pedagógico' && esp?.cargo !== 'Jefe de Taller' ? 'X' : ' '}) {visit.especialista}</span>
+                    <span className="mr-4">DIRECTOR IE ({esp?.cargo === 'Director' ? 'X' : ' '})</span>
+                    <span>COORDINADOR ({esp?.cargo === 'Coordinador Pedagógico' || esp?.cargo === 'Jefe de Taller' ? 'X' : ' '})</span>
                   </td>
                 </tr>
                 <tr>
                   <td className="bg-gray">DNI:</td>
-                  <td style={{ width: '15%' }}></td>
-                  <td className="bg-gray" style={{ width: '15%' }}>E-MAIL:</td>
-                  <td colSpan={2}></td>
-                  <td><span className="font-bold">N° CELULAR:</span> </td>
+                  <td>{esp?.dni || ''}</td>
+                  <td className="bg-gray">E-MAIL:</td>
+                  <td>{esp?.correo || ''}</td>
+                  <td className="bg-gray">N° CELULAR:</td>
+                  <td>{esp?.celular || ''}</td>
                 </tr>
               </tbody>
             </table>
@@ -251,19 +403,27 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
 
         {/* FECHA Y DURACIÓN */}
         <div className="pdf-section-title">FECHA Y DURACIÓN:</div>
-        <table className="pdf-table" style={{ marginBottom: '20px' }}>
+        <table className="pdf-table table-fixed w-full" style={{ marginBottom: '20px' }}>
+          <colgroup>
+            <col className="w-1/6" style={{ width: '16.666%' }} />
+            <col className="w-1/6" style={{ width: '16.666%' }} />
+            <col className="w-1/6" style={{ width: '16.666%' }} />
+            <col className="w-1/6" style={{ width: '16.666%' }} />
+            <col className="w-1/6" style={{ width: '16.666%' }} />
+            <col className="w-1/6" style={{ width: '16.666%' }} />
+          </colgroup>
           <tbody>
             <tr>
-              <td className="bg-gray" style={{ width: '10%' }}>FECHA:</td>
+              <td className="bg-gray">FECHA:</td>
               <td>{formatVisitDate(visit.fechaHora)}</td>
-              <td className="bg-gray" style={{ width: '15%' }}>HORA INICIO:</td>
+              <td className="bg-gray">HORA INICIO:</td>
               <td>{
                 !isNaN(new Date(visit.fechaHora).getTime()) 
                   ? new Date(visit.fechaHora).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) 
                   : ''
               }</td>
-              <td className="bg-gray" style={{ width: '15%' }}>HORA FINAL:</td>
-              <td></td>
+              <td className="bg-gray">HORA FINAL:</td>
+              <td>{horaFinalVal}</td>
             </tr>
           </tbody>
         </table>
@@ -274,7 +434,7 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           
           {template.desempenos.map((des, idx) => {
             const selectedLevelVal = fichaState.selectedLevels[des.id];
-            const levelConfig = template.niveles.find((n) => n.nivel === selectedLevelVal);
+            const levelStyle = selectedLevelVal ? getLevelStyle(selectedLevelVal) : null;
             
             return (
               <div key={des.id} className="border border-slate-200 rounded p-4 break-inside-avoid">
@@ -282,14 +442,34 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
                   <h3 className="font-bold text-[13px]">
                     {idx + 1}. {des.nombre}
                   </h3>
-                  {selectedLevelVal && (
-                    <div className="shrink-0 px-3 py-1 rounded text-white font-bold text-xs" style={{ backgroundColor: levelConfig?.color || '#475569' }}>
+                  {selectedLevelVal && levelStyle && (
+                    <div className="shrink-0 px-3 py-0.5 rounded font-bold text-xs" style={{ backgroundColor: levelStyle.backgroundColor, color: levelStyle.color, border: levelStyle.border }}>
                       Nivel {selectedLevelVal}
                     </div>
                   )}
                 </div>
                 
                 <p className="text-slate-600 italic mb-3">{des.descripcionCorta}</p>
+
+                {/* Aspectos Evaluados */}
+                {des.aspectos && des.aspectos.length > 0 && (
+                  <div className="mt-3 mb-3 text-[11px]">
+                    <p className="font-bold text-slate-700 mb-1">Aspectos a Considerar:</p>
+                    <div className="space-y-1 pl-2">
+                      {des.aspectos.map((asp) => {
+                        const isChecked = !!fichaState.checkedAspects[asp.id];
+                        return (
+                          <div key={asp.id} className="flex items-start gap-2 text-slate-800">
+                            <span className="text-[13px] leading-none select-none font-mono text-slate-500">
+                              {isChecked ? '☑' : '☐'}
+                            </span>
+                            <span>{asp.descripcion}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Respuesta a Pregunta Extra */}
                 {des.preguntaExtra && (
@@ -301,8 +481,8 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
                 )}
 
                 {/* Justificación del Nivel */}
-                {selectedLevelVal && (
-                  <div className="text-xs border-l-2 pl-3 mt-3" style={{ borderColor: levelConfig?.color || '#475569' }}>
+                {selectedLevelVal && levelStyle && (
+                  <div className="text-xs border-l-2 pl-3 mt-3" style={{ borderColor: levelStyle.color }}>
                     <p className="font-bold mb-1 text-slate-700">Justificación y Evidencias:</p>
                     <p className="text-slate-800 whitespace-pre-wrap">{fichaState.rubricComments?.[des.id] || 'Sin justificación registrada.'}</p>
                   </div>

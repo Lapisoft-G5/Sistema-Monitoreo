@@ -24,6 +24,7 @@ import { AREAS_CURRICULARES } from '@sistema-monitoreo/shared-contracts';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
 import { useRef } from 'react';
+import { safeSetLocalStorage } from '@/shared/lib/utils';
 
 interface LlenarFichaFormProps {
   isOpen: boolean;
@@ -125,6 +126,61 @@ const formatVisitDate = (fechaHoraStr: string) => {
   }
 };
 
+const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(event.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(event.target?.result as string);
+              return;
+            }
+            const reader2 = new FileReader();
+            reader2.onloadend = () => {
+              resolve(reader2.result as string);
+            };
+            reader2.readAsDataURL(blob);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error('Error al cargar la imagen en memoria.'));
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Error al leer el archivo.'));
+    reader.readAsDataURL(file);
+  });
+};
+
 export const LlenarFichaForm = ({
   isOpen,
   onClose,
@@ -152,6 +208,7 @@ export const LlenarFichaForm = ({
   const [contextoAlumnosNee, setContextoAlumnosNee] = useState<number | ''>('');
 
   const [activeTab, setActiveTab] = useState<'FICHA' | 'HISTORIAL'>('FICHA');
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printRef });
@@ -866,7 +923,7 @@ export const LlenarFichaForm = ({
                                 setEvidenciaUrls((prev) => {
                                   const next = { ...prev };
                                   delete next[item.id];
-                                  localStorage.setItem(
+                                  safeSetLocalStorage(
                                     `sistema-monitoreo:ficha-state:${visit.id}`,
                                     JSON.stringify({
                                       checkedAspects,
@@ -918,7 +975,7 @@ export const LlenarFichaForm = ({
                               const result = await fichasApi.subirEvidenciaEjeItem(ficha.id, item.id, file);
                               setEvidenciaUrls((prev) => {
                                 const next = { ...prev, [item.id]: result.evidenciaUrl };
-                                localStorage.setItem(
+                                safeSetLocalStorage(
                                   `sistema-monitoreo:ficha-state:${visit.id}`,
                                   JSON.stringify({
                                     checkedAspects,
@@ -996,11 +1053,14 @@ export const LlenarFichaForm = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="h-8 gap-2" asChild>
-                    <a href={evidenciaUrls['GENERAL']} target="_blank" rel="noreferrer">
-                      <Eye className="h-3.5 w-3.5" />
-                      Ver
-                    </a>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 gap-2"
+                    onClick={() => setPreviewImageUrl(evidenciaUrls['GENERAL'])}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Ver
                   </Button>
                   {!isCompleted && (
                     <Button 
@@ -1011,7 +1071,7 @@ export const LlenarFichaForm = ({
                         setEvidenciaUrls((prev) => {
                           const next = { ...prev };
                           delete next['GENERAL'];
-                          localStorage.setItem(
+                          safeSetLocalStorage(
                             `sistema-monitoreo:ficha-state:${visit.id}`,
                             JSON.stringify({
                               checkedAspects,
@@ -1042,14 +1102,14 @@ export const LlenarFichaForm = ({
                   type="file"
                   className="hidden"
                   accept=".jpg,.jpeg,.png"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
+                    try {
+                      const compressedBase64 = await compressImage(file);
                       setEvidenciaUrls((prev) => {
-                        const next = { ...prev, GENERAL: reader.result as string };
-                        localStorage.setItem(
+                        const next = { ...prev, GENERAL: compressedBase64 };
+                        safeSetLocalStorage(
                           `sistema-monitoreo:ficha-state:${visit.id}`,
                           JSON.stringify({
                             checkedAspects,
@@ -1065,8 +1125,10 @@ export const LlenarFichaForm = ({
                         );
                         return next;
                       });
-                    };
-                    reader.readAsDataURL(file);
+                    } catch (err) {
+                      console.error('Error compressing image:', err);
+                      toast.error('Error al procesar la imagen.');
+                    }
                   }}
                 />
               </label>
@@ -1220,6 +1282,35 @@ export const LlenarFichaForm = ({
           </div>
         </div>
       </Card>
+
+      {previewImageUrl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative">
+            <button
+              onClick={() => setPreviewImageUrl(null)}
+              className="absolute top-4 right-4 h-9 w-9 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full flex items-center justify-center transition-all z-10"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <span className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                Vista Previa de Evidencia
+              </span>
+            </div>
+            <div className="flex-1 overflow-auto p-6 bg-slate-50 flex items-center justify-center min-h-[300px]">
+              <img
+                src={previewImageUrl}
+                alt="Vista previa de evidencia"
+                className="max-w-full max-h-[60vh] object-contain rounded-lg border border-slate-200 shadow-sm"
+              />
+            </div>
+            <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50/50">
+              <Button onClick={() => setPreviewImageUrl(null)}>Cerrar</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

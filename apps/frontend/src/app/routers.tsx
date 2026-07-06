@@ -10,6 +10,7 @@ import { especialistaRoutes } from '@/pages/especialista/especialista.routes';
 import { directorUgelRoutes } from '@/pages/directorUgel/directorUgel.routes';
 import { RootRedirect } from './RootRedirect';
 import { SuperadminPanel } from '@/pages/superadmin/SuperadminPanel';
+import { SuperadminCreatePage } from '@/pages/superadmin/SuperadminCreatePage';
 
 export const router = createBrowserRouter([
   {
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
         path: 'superadmin',
         children: [
           { path: 'director', element: <SuperadminPanel targetRole="director_ugel" /> },
+          { path: 'director/nuevo', element: <SuperadminCreatePage targetRole="director_ugel" /> },
           { path: 'jefe', element: <SuperadminPanel targetRole="jefe_gestion" /> },
         ]
       }

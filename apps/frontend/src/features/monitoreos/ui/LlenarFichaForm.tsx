@@ -1123,29 +1123,37 @@ export const LlenarFichaForm = ({
               {Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length}/3 imágenes
             </span>
           </div>
-          <div className="flex flex-wrap gap-3 mt-2">
+          <div className="mt-2 flex flex-col gap-2">
             {(['GENERAL_1', 'GENERAL_2', 'GENERAL_3'] as const).map((slot, idx) => {
               const url = evidenciaUrls[slot];
               const totalLoaded = Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length;
               if (url) {
                 return (
-                  <div key={slot} className="flex flex-col items-center gap-2 p-3 border border-slate-200 rounded-xl bg-slate-50 w-[180px]">
-                    <div className="relative w-full h-24 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer" onClick={() => setPreviewImageUrl(url)}>
-                      <img src={url} alt={`Evidencia ${idx + 1}`} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                        <Eye className="h-5 w-5 text-white" />
+                  <div key={slot} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 max-w-[400px]">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-red-100 text-red-500 rounded-lg flex items-center justify-center shrink-0">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">Evidencia {idx + 1} Cargada</p>
+                        <p className="text-[10px] text-slate-400 truncate w-40">evidencia-monitoreo-{idx + 1}.png</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 w-full">
-                      <p className="text-[10px] font-bold text-slate-500 flex-1">Imagen {idx + 1}</p>
-                      <Button variant="outline" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-primary" onClick={() => setPreviewImageUrl(url)}>
-                        <Eye className="h-3 w-3" />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-2"
+                        onClick={() => setPreviewImageUrl(url)}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        Ver
                       </Button>
                       {!isCompleted && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 border-red-200"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
                           onClick={() => {
                             setEvidenciaUrls((prev) => {
                               const next = { ...prev };
@@ -1158,7 +1166,7 @@ export const LlenarFichaForm = ({
                             });
                           }}
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -1167,9 +1175,9 @@ export const LlenarFichaForm = ({
               }
               if (!isCompleted && !url && totalLoaded < 3) {
                 return (
-                  <label key={slot} className="flex flex-col items-center justify-center gap-2 w-[180px] h-[136px] rounded-xl border-2 border-dashed border-slate-200 text-[11px] text-slate-400 font-bold cursor-pointer hover:border-primary hover:text-primary hover:bg-primary/3 transition-all duration-150">
-                    <Upload className="h-5 w-5" />
-                    Agregar imagen {idx + 1}
+                  <label key={slot} className="inline-flex items-center justify-center gap-2 w-full max-w-[240px] h-[40px] rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-bold cursor-pointer hover:border-primary hover:text-primary hover:bg-primary/3 transition-all duration-150">
+                    <Upload className="h-4 w-4" />
+                    Subir evidencia {idx + 1}
                     <input
                       type="file"
                       className="hidden"

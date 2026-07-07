@@ -123,16 +123,14 @@ export const SuperadminPanel = ({ targetRole }: SuperadminPanelProps) => {
           </div>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          {targetRole === 'director_ugel' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/superadmin/director/nuevo')}
-              className="h-8 shrink-0 font-semibold cursor-pointer"
-            >
-              Registrar Nuevo
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(targetRole === 'director_ugel' ? '/superadmin/director/nuevo' : '/superadmin/jefe/nuevo')}
+            className="h-8 shrink-0 font-semibold cursor-pointer"
+          >
+            Registrar Nuevo
+          </Button>
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
             <Input 

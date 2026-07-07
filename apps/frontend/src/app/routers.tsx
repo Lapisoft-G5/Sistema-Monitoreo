@@ -29,6 +29,7 @@ export const router = createBrowserRouter([
           { path: 'director', element: <SuperadminPanel targetRole="director_ugel" /> },
           { path: 'director/nuevo', element: <SuperadminCreatePage targetRole="director_ugel" /> },
           { path: 'jefe', element: <SuperadminPanel targetRole="jefe_gestion" /> },
+          { path: 'jefe/nuevo', element: <SuperadminCreatePage targetRole="jefe_gestion" /> },
         ]
       }
     ],

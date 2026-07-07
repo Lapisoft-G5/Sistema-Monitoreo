@@ -42,7 +42,11 @@ export class EspecialistaService {
   ): Promise<IEspecialistaResponse> {
     // ── Regla 1: Solo Director UGEL o Jefe de Área pueden crear Jefes de Gestión
     if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
-      if (currentUser.role !== RoleCode.DIRECTOR_UGEL && currentUser.role !== RoleCode.JEFE_AREA) {
+      if (
+        currentUser.role !== RoleCode.DIRECTOR_UGEL &&
+        currentUser.role !== RoleCode.JEFE_AREA &&
+        currentUser.role !== RoleCode.SUPERUSUARIO
+      ) {
         throw new ForbiddenException(
           'No tiene privilegios suficientes para crear un perfil de Jefe de Gestión.',
         );
@@ -124,7 +128,11 @@ export class EspecialistaService {
   ): Promise<IEspecialistaResponse> {
     // ── Regla 1: Solo Director UGEL o Jefe de Área pueden modificar Jefes de Gestión
     if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
-      if (currentUser.role !== RoleCode.DIRECTOR_UGEL && currentUser.role !== RoleCode.JEFE_AREA) {
+      if (
+        currentUser.role !== RoleCode.DIRECTOR_UGEL &&
+        currentUser.role !== RoleCode.JEFE_AREA &&
+        currentUser.role !== RoleCode.SUPERUSUARIO
+      ) {
         throw new ForbiddenException(
           'No tiene privilegios suficientes para actualizar un perfil de Jefe de Gestión.',
         );
@@ -221,7 +229,11 @@ export class EspecialistaService {
     currentUser: JwtPayload,
   ): Promise<IEspecialistaResponse> {
     if ((dto.cargo as CargoNombre) === CargoNombre.JEFE_GESTION) {
-      if (currentUser.role !== RoleCode.DIRECTOR_UGEL && currentUser.role !== RoleCode.JEFE_AREA) {
+      if (
+        currentUser.role !== RoleCode.DIRECTOR_UGEL &&
+        currentUser.role !== RoleCode.JEFE_AREA &&
+        currentUser.role !== RoleCode.SUPERUSUARIO
+      ) {
         throw new ForbiddenException(
           'No tiene privilegios suficientes para crear un perfil de Jefe de Gestión.',
         );

@@ -1,12 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
-import { Search, X, AlertCircle, Save } from 'lucide-react';
+import { Search, AlertCircle, Save, CheckCircle2 } from 'lucide-react';
 import { TextField } from '@shared/ui/form-controls';
 import type { Docente } from '@entities/model-docentes';
 import { fetchDocentes } from '@features/docentes/docente-service';
 import { teachersApi } from '@shared/api/teachers.api';
 import { toast } from 'sonner';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@shared/ui/table';
+import { Badge } from '@shared/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@shared/ui/alert-dialog';
 
 interface AsignacionEvaluadorWidgetProps {
   evaluadorId: string;
@@ -24,6 +42,7 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     const loadDocentes = async () => {
@@ -64,7 +83,7 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
     try {
       const res = await teachersApi.saveAsignaciones(evaluadorId, asignados);
       if (res.ok) {
-        toast.success(res.data?.message || 'Asignaciones guardadas correctamente');
+        setShowSuccessModal(true);
       } else {
         toast.error('Error al guardar las asignaciones');
       }
@@ -76,7 +95,7 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
   };
 
   const filteredDocentes = docentes.filter((d) =>
-    `${d.nombres} ${d.apellidos} ${d.especialidad}`.toLowerCase().includes(search.toLowerCase())
+    `${d.nombres} ${d.apellidos} ${d.especialidad} ${d.dni}`.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -98,7 +117,7 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
               label=""
               value={search}
               onChange={setSearch}
-              placeholder="Buscar por nombre o especialidad..."
+              placeholder="Buscar por nombre, especialidad o DNI..."
               adornment={<Search className="w-4 h-4 text-slate-400" />}
             />
           </div>
@@ -121,59 +140,117 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
             <span className="text-slate-500 text-xs animate-pulse">Cargando docentes...</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 overflow-y-auto pr-1 pb-4 flex-1 content-start">
-            {filteredDocentes.map((docente) => {
-              const isAsignado = asignados.includes(docente.id);
-              const isAssignedToOther = docente.evaluadorActual && docente.evaluadorActual.evaluadorId !== evaluadorId;
-              
-              return (
-                <div
-                  key={docente.id}
-                  onClick={() => !isAssignedToOther && toggleAsignacion(docente.id)}
-                  className={`p-3 border rounded-lg transition-all flex items-start gap-3 select-none ${
-                    isAsignado
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary/20 cursor-pointer'
-                      : isAssignedToOther
-                      ? 'border-slate-200 bg-slate-100 opacity-70 cursor-not-allowed'
-                      : 'border-slate-200 hover:border-primary/40 bg-white hover:bg-slate-50 cursor-pointer'
-                  }`}
-                >
-                  <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                    isAsignado ? 'bg-primary border-primary text-white' : isAssignedToOther ? 'border-slate-300 bg-slate-200' : 'border-slate-300 bg-white'
-                  }`}>
-                    {isAsignado && <X className="w-3 h-3" style={{ transform: 'rotate(45deg)' }} />}
-                  </div>
-                  <div className="flex flex-col min-w-0 w-full">
-                    <span className="text-xs font-bold text-slate-800 truncate">
-                      {docente.apellidos}, {docente.nombres}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-500 truncate">
-                      DNI: {docente.dni}
-                    </span>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-[10px] font-semibold text-slate-400 truncate">
-                        Esp: {docente.especialidad}
-                      </span>
-                      {isAssignedToOther && (
-                        <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded truncate max-w-[100px]" title={`Asignado a: ${docente.evaluadorActual?.evaluadorNombres}`}>
-                          Ocupado
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            
-            {filteredDocentes.length === 0 && (
-              <div className="col-span-full py-8 flex flex-col items-center justify-center text-slate-400 gap-2 border border-dashed border-slate-200 rounded-lg">
-                <AlertCircle className="w-6 h-6" />
-                <span className="text-xs font-semibold">No se encontraron docentes de aula.</span>
-              </div>
-            )}
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
+            <div className="overflow-y-auto flex-1">
+              <Table>
+                <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                  <TableRow>
+                    <TableHead className="w-[120px] pl-5 font-semibold text-text">DNI</TableHead>
+                    <TableHead className="font-semibold text-text">Apellidos y Nombres</TableHead>
+                    <TableHead className="font-semibold text-text">Especialidad</TableHead>
+                    <TableHead className="font-semibold text-text">Estado</TableHead>
+                    <TableHead className="text-right pr-5 font-semibold text-text">Acción</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDocentes.map((docente) => {
+                    const isAsignado = asignados.includes(docente.id);
+                    const isAssignedToOther = !!(docente.evaluadorActual && docente.evaluadorActual.evaluadorId !== evaluadorId);
+                    
+                    return (
+                      <TableRow key={docente.id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="pl-5 font-semibold text-text">{docente.dni}</TableCell>
+                        <TableCell className="font-bold text-text text-sm">
+                          {docente.apellidos}, {docente.nombres}
+                        </TableCell>
+                        <TableCell className="text-text-muted text-sm font-medium">
+                          {docente.especialidad || '—'}
+                        </TableCell>
+                        <TableCell>
+                          {isAsignado ? (
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[0.65rem] py-0.5 px-2.5 uppercase font-bold">
+                              Asignado
+                            </Badge>
+                          ) : isAssignedToOther ? (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[0.65rem] py-0.5 px-2.5 uppercase font-bold max-w-[200px] truncate" title={`Asignado a: ${docente.evaluadorActual?.evaluadorNombres}`}>
+                              Ocupado por: {docente.evaluadorActual?.evaluadorNombres}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-[0.65rem] py-0.5 px-2.5 uppercase font-bold">
+                              Disponible
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right pr-5">
+                          {isAsignado ? (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="font-semibold cursor-pointer h-7 text-xs bg-red-600 hover:bg-red-700 text-white"
+                              onClick={() => toggleAsignacion(docente.id)}
+                            >
+                              Quitar
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="font-semibold cursor-pointer h-7 text-xs text-primary border-primary/20 hover:bg-primary/5 hover:text-primary-hover"
+                              disabled={isAssignedToOther}
+                              onClick={() => toggleAsignacion(docente.id)}
+                            >
+                              Asignar
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+
+                  {filteredDocentes.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-32 text-center text-text-muted">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <AlertCircle className="w-6 h-6 text-slate-400" />
+                          <span className="text-xs font-semibold text-slate-400">No se encontraron docentes de aula.</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
       </CardContent>
+
+      {showSuccessModal && (
+        <AlertDialog open={true} onOpenChange={setShowSuccessModal}>
+          <AlertDialogContent>
+            <AlertDialogHeader className="flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-lg font-bold text-slate-800">
+                  ¡Asignaciones Guardadas!
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-text-muted mt-2">
+                  Los docentes han sido asignados correctamente a <strong>{evaluadorNombre}</strong>.
+                </AlertDialogDescription>
+              </div>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-4 flex justify-center sm:justify-center">
+              <AlertDialogAction
+                onClick={() => setShowSuccessModal(false)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2 rounded-lg cursor-pointer"
+              >
+                Aceptar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Card>
   );
 };

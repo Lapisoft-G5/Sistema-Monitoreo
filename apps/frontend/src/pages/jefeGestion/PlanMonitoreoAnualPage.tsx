@@ -13,9 +13,12 @@ import { useUser } from '@entities/model-user';
 
 export const PlanMonitoreoAnualPage = () => {
   const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion';
+  const isSchoolStaffUser =
+    user?.role === 'director_institucion' ||
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
   const isJefeGestion = user?.role === 'jefe_gestion';
-  const defaultEntity = isDirector ? 'IE' : 'UGEL';
+  const defaultEntity = isSchoolStaffUser ? 'IE' : 'UGEL';
 
   const canEditPlan = (plan: { tipoEntidad: string }) => {
     if (isJefeGestion && plan.tipoEntidad === 'IE') return false;

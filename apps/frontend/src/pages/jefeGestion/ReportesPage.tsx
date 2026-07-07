@@ -88,7 +88,7 @@ export const ReportesPage = () => {
   // ── Filtrado de Fichas Completadas (Backend con Fallback Local) ──
   const completedVisits = useMemo<BackendReportVisit[]>(() => {
     if (fichasCompletadasData?.data && fichasCompletadasData.data.length > 0) {
-      return fichasCompletadasData.data.map((f) => ({
+      let list = fichasCompletadasData.data.map((f) => ({
         id: f.id, // Ficha ID
         cronogramaId: f.cronogramaId,
         fechaHora: f.fechaEjecucion,
@@ -112,11 +112,33 @@ export const ReportesPage = () => {
         institucionId: f.institucionId,
         evaluadoId: f.evaluadoId,
       }));
+
+      if (isEvaluatedView) {
+        const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
+        list = list.filter((v) => {
+          const visitDocente = v.docenteDirectivo.toLowerCase();
+          return (
+            userFullName.includes(visitDocente) ||
+            visitDocente.includes(userFullName)
+          );
+        });
+      } else {
+        const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
+        list = list.filter((v) => {
+          const visitDocente = v.docenteDirectivo.toLowerCase();
+          return !(
+            userFullName.includes(visitDocente) ||
+            visitDocente.includes(userFullName)
+          );
+        });
+      }
+      return list;
     }
 
     let list = cronogramas.filter((c) => c.estado === 'COMPLETADO');
+    const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
+
     if (isEvaluatedView) {
-      const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
       list = list.filter((v) => {
         const visitDocente = v.docenteDirectivo.toLowerCase();
         return (
@@ -124,27 +146,37 @@ export const ReportesPage = () => {
           visitDocente.includes(userFullName)
         );
       });
-    } else if (
-      user?.role === 'especialista' ||
-      user?.role === 'jefe_area' ||
-      user?.role === 'coordinador_pedagogico' ||
-      user?.role === 'jefe_taller'
-    ) {
-      const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
+    } else {
+      // Exclude own reports from completed sheets list for school evaluators
       list = list.filter((v) => {
-        const visitEspecialista = v.especialista.toLowerCase();
-        return (
-          userFullName.includes(visitEspecialista) ||
-          visitEspecialista.includes(userFullName) ||
-          visitEspecialista.includes(user.nombres.toLowerCase())
+        const visitDocente = v.docenteDirectivo.toLowerCase();
+        return !(
+          userFullName.includes(visitDocente) ||
+          visitDocente.includes(userFullName)
         );
       });
-    } else if (user?.role === 'director_institucion') {
-      list = list.filter((v) => {
-        const userSchool = (user.institucionNombre || '').toLowerCase();
-        const visitSchool = v.institucion.toLowerCase();
-        return visitSchool.includes(userSchool) || userSchool.includes(visitSchool);
-      });
+
+      if (
+        user?.role === 'especialista' ||
+        user?.role === 'jefe_area' ||
+        user?.role === 'coordinador_pedagogico' ||
+        user?.role === 'jefe_taller'
+      ) {
+        list = list.filter((v) => {
+          const visitEspecialista = v.especialista.toLowerCase();
+          return (
+            userFullName.includes(visitEspecialista) ||
+            visitEspecialista.includes(userFullName) ||
+            visitEspecialista.includes(user.nombres.toLowerCase())
+          );
+        });
+      } else if (user?.role === 'director_institucion') {
+        list = list.filter((v) => {
+          const userSchool = (user.institucionNombre || '').toLowerCase();
+          const visitSchool = v.institucion.toLowerCase();
+          return visitSchool.includes(userSchool) || userSchool.includes(visitSchool);
+        });
+      }
     }
     return list;
   }, [fichasCompletadasData, cronogramas, user, isEvaluatedView]);

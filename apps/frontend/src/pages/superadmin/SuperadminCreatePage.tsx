@@ -15,10 +15,9 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
   const { createEspecialista, loading, error } = useEspecialistaService();
 
   const handleFormSubmit = async (formData: EspecialistaFormData) => {
-    // Para jefe_gestion el cargo es "Jefe de Gestión". Para director_ugel es "Especialista" en la tabla especialistas
-    const cargo = targetRole === 'jefe_gestion' ? 'Jefe de Gestión' : 'Especialista';
-    
-    const result = await createEspecialista(formData, targetRole, cargo);
+    // Registramos como Especialista base. 
+    // Luego el Super Administrador lo designa desde la tabla de candidatos.
+    const result = await createEspecialista(formData, 'especialista', 'Especialista');
     if (result.success) {
       navigate(targetRole === 'director_ugel' ? '/superadmin/director' : '/superadmin/jefe');
     }
@@ -26,10 +25,8 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
 
   const esErrorCelular = error?.toLowerCase().includes('celular') || error?.toLowerCase().includes('teléfono');
 
-  const title = targetRole === 'director_ugel' ? 'Registrar Nuevo Director UGEL' : 'Registrar Nuevo Jefe de Gestión';
-  const description = targetRole === 'director_ugel' 
-    ? 'Complete los datos para dar de alta al nuevo Director de la UGEL en el sistema.' 
-    : 'Complete los datos para dar de alta al nuevo Jefe de Gestión Pedagógica en el sistema.';
+  const title = 'Registrar Nuevo Especialista';
+  const description = 'Complete los datos para registrar un nuevo especialista en el sistema.';
   const backPath = targetRole === 'director_ugel' ? '/superadmin/director' : '/superadmin/jefe';
 
   const initialData: EspecialistaFormData = {
@@ -43,9 +40,9 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
     especialidadesExtras: [],
     nivelEducativo: 'Primaria',
     modalidad: 'EBR',
-    cargo: targetRole === 'jefe_gestion' ? ('Jefe de Gestión' as const) : ('Especialista' as const),
+    cargo: 'Especialista' as const,
     activo: true,
-    condicionLaboral: targetRole === 'jefe_gestion' ? ('Designado' as const) : ('Encargado' as const),
+    condicionLaboral: 'Encargado' as const,
     cargaLaboral: 40,
     escalaMagisterial: undefined,
   };
@@ -81,8 +78,6 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
           isLoading={loading}
           initialData={initialData}
           serverError={error}
-          isSuperadminCreate={true}
-          targetRole={targetRole}
         />
       </Card>
     </div>

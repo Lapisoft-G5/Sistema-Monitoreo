@@ -1123,7 +1123,7 @@ export const LlenarFichaForm = ({
               {Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length}/3 imágenes
             </span>
           </div>
-          <div className="mt-2 flex flex-col gap-2">
+          <div className="mt-2 flex flex-row flex-wrap gap-2">
             {(['GENERAL_1', 'GENERAL_2', 'GENERAL_3'] as const).map((slot, idx) => {
               const url = evidenciaUrls[slot];
               const totalLoaded = Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length;

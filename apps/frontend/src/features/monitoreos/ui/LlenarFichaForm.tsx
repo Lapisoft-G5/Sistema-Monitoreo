@@ -613,42 +613,45 @@ export const LlenarFichaForm = ({
               </div>
             </div>
 
-            {sugerenciasAreas.length > 0 && (
-              <div className="px-6 pb-2 pt-1 flex flex-wrap gap-2 items-center text-xs animate-in fade-in slide-in-from-top-1 duration-200">
-                <span className="text-slate-500 font-semibold">Área curricular sugerida del docente:</span>
-                {sugerenciasAreas.map((area, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setContextoArea(area);
-                      toast.success(`Se sugirió el área ${area}`);
-                    }}
-                    className="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-200 text-emerald-700 font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-                  >
-                    {area}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {evaluadoDocente && evaluadoDocente.secciones && evaluadoDocente.secciones.length > 0 && (
-              <div className="px-6 pb-3 pt-1 flex flex-wrap gap-2 items-center text-xs animate-in fade-in slide-in-from-top-1 duration-200">
-                <span className="text-slate-500 font-semibold">Grado y Sección sugeridos del docente:</span>
-                {evaluadoDocente.secciones.map((sec: SeccionDocente, idx: number) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setContextoGrado(sec.grado);
-                      setContextoSeccion(sec.seccion);
-                      toast.success(`Se sugirió ${sec.grado} - Sección ${sec.seccion}`);
-                    }}
-                    className="px-2.5 py-1 rounded bg-primary-light hover:bg-primary-hover hover:text-white border border-primary/20 text-primary font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-                  >
-                    {sec.grado} - {sec.seccion}
-                  </button>
-                ))}
+            {(sugerenciasAreas.length > 0 || (evaluadoDocente && evaluadoDocente.secciones && evaluadoDocente.secciones.length > 0)) && (
+              <div className="px-6 pb-3 pt-1 grid grid-cols-2 gap-x-6 text-xs animate-in fade-in slide-in-from-top-1 duration-200">
+                {sugerenciasAreas.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    <span className="text-slate-500 font-semibold w-full">Área sugerida:</span>
+                    {sugerenciasAreas.map((area, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setContextoArea(area);
+                          toast.success(`Se sugirió el área ${area}`);
+                        }}
+                        className="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-200 text-emerald-700 font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                      >
+                        {area}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {evaluadoDocente && evaluadoDocente.secciones && evaluadoDocente.secciones.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    <span className="text-slate-500 font-semibold w-full">Grado y Sección sugeridos:</span>
+                    {evaluadoDocente.secciones.map((sec: SeccionDocente, idx: number) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setContextoGrado(sec.grado);
+                          setContextoSeccion(sec.seccion);
+                          toast.success(`Se sugirió ${sec.grado} - Sección ${sec.seccion}`);
+                        }}
+                        className="px-2.5 py-1 rounded bg-primary-light hover:bg-primary-hover hover:text-white border border-primary/20 text-primary font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                      >
+                        {sec.grado} - {sec.seccion}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

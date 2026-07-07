@@ -20,11 +20,11 @@ import { Card } from '@/shared/ui/card';
 import { HistorialChart } from './HistorialChart';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { AREAS_CURRICULARES } from '@sistema-monitoreo/shared-contracts';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
+import { fetchDocenteById } from '@features/docentes/docente-service';
 
 interface LlenarFichaFormProps {
   isOpen: boolean;
@@ -301,6 +301,38 @@ export const LlenarFichaForm = ({
     }
   }, [isOpen, visit, template, initialState]);
 
+  useEffect(() => {
+    if (isOpen && visit && visit.evaluadoId) {
+      const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
+      let hasSavedContext = false;
+      if (savedState) {
+        try {
+          const parsed = JSON.parse(savedState);
+          if (parsed.contexto?.areaCurricular || parsed.contexto?.grado || parsed.contexto?.seccion) {
+            hasSavedContext = true;
+          }
+        } catch (e) {
+          console.warn('Error parsing saved state', e);
+        }
+      }
+      if (initialState?.contexto?.areaCurricular || initialState?.contexto?.grado || initialState?.contexto?.seccion) {
+        hasSavedContext = true;
+      }
+
+      if (!hasSavedContext) {
+        fetchDocenteById(visit.evaluadoId).then((doc) => {
+          if (doc) {
+            setContextoArea(doc.especialidad || 'General');
+            if (doc.secciones && doc.secciones.length > 0) {
+              setContextoGrado(doc.secciones[0].grado || '');
+              setContextoSeccion(doc.secciones[0].seccion || '');
+            }
+          }
+        });
+      }
+    }
+  }, [isOpen, visit, initialState]);
+
   const activeFichaDesempeno = useMemo(() => {
     if (!template) return null;
     return template.desempenos.find((d) => d.id === fichaSelectedDesempenoId) || null;
@@ -519,50 +551,33 @@ export const LlenarFichaForm = ({
           <div className="px-6 py-4 bg-slate-50 border-b border-border text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Área Curricular</label>
-              {(() => {
-                const key = visit.nivel?.toUpperCase() === 'INICIAL' || visit.modalidad === 'EBE' ? 'INICIAL'
-                  : visit.modalidad?.toUpperCase() === 'EBA' ? 'EBA'
-                  : visit.modalidad?.toUpperCase() === 'CEPTRO' ? 'CEPTRO'
-                  : visit.nivel?.toUpperCase() || 'PRIMARIA';
-                const areas = AREAS_CURRICULARES[key] || AREAS_CURRICULARES.PRIMARIA;
-                return (
-                  <select value={contextoArea} onChange={(e) => setContextoArea(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
-                    <option value="">Seleccione...</option>
-                    {areas.map((a) => <option key={a} value={a}>{a}</option>)}
-                    <option value="Otro">Otro</option>
-                  </select>
-                );
-              })()}
+              <input
+                type="text"
+                value={contextoArea}
+                onChange={(e) => setContextoArea(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
+                placeholder="Ej. Matemática"
+              />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Grado</label>
-              <select value={contextoGrado} onChange={(e) => setContextoGrado(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
-                <option value="">Seleccione...</option>
-                <option value="3 años">3 años (Inicial)</option>
-                <option value="4 años">4 años (Inicial)</option>
-                <option value="5 años">5 años (Inicial)</option>
-                <option value="1er Grado">1er Grado</option>
-                <option value="2do Grado">2do Grado</option>
-                <option value="3er Grado">3er Grado</option>
-                <option value="4to Grado">4to Grado</option>
-                <option value="5to Grado">5to Grado</option>
-                <option value="6to Grado">6to Grado</option>
-                <option value="Otro">Otro</option>
-              </select>
+              <input
+                type="text"
+                value={contextoGrado}
+                onChange={(e) => setContextoGrado(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
+                placeholder="Ej. 1er Grado"
+              />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Sección</label>
-              <select value={contextoSeccion} onChange={(e) => setContextoSeccion(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
-                <option value="">Seleccione...</option>
-                <option value="Única">Única</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="E">E</option>
-                <option value="F">F</option>
-                <option value="Otro">Otro</option>
-              </select>
+              <input
+                type="text"
+                value={contextoSeccion}
+                onChange={(e) => setContextoSeccion(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
+                placeholder="Ej. A"
+              />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>

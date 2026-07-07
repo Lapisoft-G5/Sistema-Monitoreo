@@ -25,6 +25,7 @@ import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
 import { fetchDocenteById } from '@features/docentes/docente-service';
+import type { Docente, SeccionDocente } from '@entities/model-docentes';
 
 interface LlenarFichaFormProps {
   isOpen: boolean;
@@ -206,6 +207,7 @@ export const LlenarFichaForm = ({
   const [contextoSeccion, setContextoSeccion] = useState<string>('');
   const [contextoAlumnos, setContextoAlumnos] = useState<number | ''>('');
   const [contextoAlumnosNee, setContextoAlumnosNee] = useState<number | ''>('');
+  const [evaluadoDocente, setEvaluadoDocente] = useState<Docente | null>(null);
 
   const [activeTab, setActiveTab] = useState<'FICHA' | 'HISTORIAL'>('FICHA');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -257,7 +259,8 @@ export const LlenarFichaForm = ({
                 setContextoAlumnosNee(parsed.contexto.cantidadEstudiantesNee);
               }
             }, 0);
-          } catch {
+          } catch (e) {
+            console.warn('Error parsing saved state', e);
             setTimeout(() => {
               setCheckedAspects({});
               setSelectedLevels({});
@@ -303,33 +306,41 @@ export const LlenarFichaForm = ({
 
   useEffect(() => {
     if (isOpen && visit && visit.evaluadoId) {
-      const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
-      let hasSavedContext = false;
-      if (savedState) {
-        try {
-          const parsed = JSON.parse(savedState);
-          if (parsed.contexto?.areaCurricular || parsed.contexto?.grado || parsed.contexto?.seccion) {
-            hasSavedContext = true;
-          }
-        } catch (e) {
-          console.warn('Error parsing saved state', e);
-        }
-      }
-      if (initialState?.contexto?.areaCurricular || initialState?.contexto?.grado || initialState?.contexto?.seccion) {
-        hasSavedContext = true;
-      }
+      fetchDocenteById(visit.evaluadoId).then((doc) => {
+        if (doc) {
+          setTimeout(() => {
+            setEvaluadoDocente(doc);
 
-      if (!hasSavedContext) {
-        fetchDocenteById(visit.evaluadoId).then((doc) => {
-          if (doc) {
-            setContextoArea(doc.especialidad || 'General');
-            if (doc.secciones && doc.secciones.length > 0) {
-              setContextoGrado(doc.secciones[0].grado || '');
-              setContextoSeccion(doc.secciones[0].seccion || '');
+            const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
+            let hasSavedContext = false;
+            if (savedState) {
+              try {
+                const parsed = JSON.parse(savedState);
+                if (parsed.contexto?.areaCurricular || parsed.contexto?.grado || parsed.contexto?.seccion) {
+                  hasSavedContext = true;
+                }
+              } catch (e) {
+                console.warn('Error parsing saved state', e);
+              }
             }
-          }
-        });
-      }
+            if (initialState?.contexto?.areaCurricular || initialState?.contexto?.grado || initialState?.contexto?.seccion) {
+              hasSavedContext = true;
+            }
+
+            if (!hasSavedContext) {
+              setContextoArea(doc.especialidad || 'General');
+              if (doc.secciones && doc.secciones.length > 0) {
+                setContextoGrado(doc.secciones[0].grado || '');
+                setContextoSeccion(doc.secciones[0].seccion || '');
+              }
+            }
+          }, 0);
+        }
+      });
+    } else {
+      setTimeout(() => {
+        setEvaluadoDocente(null);
+      }, 0);
     }
   }, [isOpen, visit, initialState]);
 
@@ -548,49 +559,71 @@ export const LlenarFichaForm = ({
         </div>
 
         {visit.tipo === 'DOCENTE' && !isCompleted && (
-          <div className="px-6 py-4 bg-slate-50 border-b border-border text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Área Curricular</label>
-              <input
-                type="text"
-                value={contextoArea}
-                onChange={(e) => setContextoArea(e.target.value)}
-                className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
-                placeholder="Ej. Matemática"
-              />
+          <div className="bg-slate-50 border-b border-border">
+            <div className="px-6 pt-4 pb-2 text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Área Curricular</label>
+                <input
+                  type="text"
+                  value={contextoArea}
+                  onChange={(e) => setContextoArea(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
+                  placeholder="Ej. Matemática"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Grado</label>
+                <input
+                  type="text"
+                  value={contextoGrado}
+                  onChange={(e) => setContextoGrado(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
+                  placeholder="Ej. 1er Grado"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Sección</label>
+                <input
+                  type="text"
+                  value={contextoSeccion}
+                  onChange={(e) => setContextoSeccion(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
+                  placeholder="Ej. A"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>
+                <input type="number" min="0" max="50" value={contextoAlumnos} onChange={(e) => {
+                  const val = e.target.value ? Number(e.target.value) : '';
+                  if (val !== '' && val > 50) return;
+                  setContextoAlumnos(val);
+                }} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Est. NEE (Opcional)</label>
+                <input type="number" min="0" value={contextoAlumnosNee} onChange={(e) => setContextoAlumnosNee(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Grado</label>
-              <input
-                type="text"
-                value={contextoGrado}
-                onChange={(e) => setContextoGrado(e.target.value)}
-                className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
-                placeholder="Ej. 1er Grado"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Sección</label>
-              <input
-                type="text"
-                value={contextoSeccion}
-                onChange={(e) => setContextoSeccion(e.target.value)}
-                className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
-                placeholder="Ej. A"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>
-              <input type="number" min="0" max="50" value={contextoAlumnos} onChange={(e) => {
-                const val = e.target.value ? Number(e.target.value) : '';
-                if (val !== '' && val > 50) return;
-                setContextoAlumnos(val);
-              }} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Est. NEE (Opcional)</label>
-              <input type="number" min="0" value={contextoAlumnosNee} onChange={(e) => setContextoAlumnosNee(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
-            </div>
+
+            {evaluadoDocente && evaluadoDocente.secciones && evaluadoDocente.secciones.length > 0 && (
+              <div className="px-6 pb-3 pt-1 flex flex-wrap gap-2 items-center text-xs animate-in fade-in slide-in-from-top-1 duration-200">
+                <span className="text-slate-500 font-semibold">Grado y Sección sugeridos del docente:</span>
+                {evaluadoDocente.secciones.map((sec: SeccionDocente, idx: number) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setContextoGrado(sec.grado);
+                      setContextoSeccion(sec.seccion);
+                      toast.success(`Se sugirió ${sec.grado} - Sección ${sec.seccion}`);
+                    }}
+                    className="px-2.5 py-1 rounded bg-primary-light hover:bg-primary-hover hover:text-white border border-primary/20 text-primary font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                  >
+                    {sec.grado} - {sec.seccion}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         {visit.tipo === 'DOCENTE' && isCompleted && (

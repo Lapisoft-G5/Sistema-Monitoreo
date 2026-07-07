@@ -15,9 +15,10 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
   const { createEspecialista, loading, error } = useEspecialistaService();
 
   const handleFormSubmit = async (formData: EspecialistaFormData) => {
-    // Registramos como Especialista base. 
-    // Luego el Super Administrador lo designa desde la tabla de candidatos.
-    const result = await createEspecialista(formData, 'especialista', 'Especialista');
+    // Registramos directamente con el rol y cargo destino.
+    const roleCode = targetRole === 'director_ugel' ? 'director_ugel' : 'jefe_gestion';
+    const cargo = targetRole === 'director_ugel' ? 'Especialista' : 'Jefe de Gestión';
+    const result = await createEspecialista(formData, roleCode, cargo);
     if (result.success) {
       navigate(targetRole === 'director_ugel' ? '/superadmin/director' : '/superadmin/jefe');
     }
@@ -40,9 +41,9 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
     especialidadesExtras: [],
     nivelEducativo: 'Primaria',
     modalidad: 'EBR',
-    cargo: 'Especialista' as const,
+    cargo: targetRole === 'jefe_gestion' ? ('Jefe de Gestión' as const) : ('Especialista' as const),
     activo: true,
-    condicionLaboral: 'Encargado' as const,
+    condicionLaboral: targetRole === 'jefe_gestion' ? ('Nombrado' as const) : ('Encargado' as const),
     cargaLaboral: 40,
     escalaMagisterial: undefined,
   };
@@ -78,6 +79,8 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
           isLoading={loading}
           initialData={initialData}
           serverError={error}
+          isSuperadminCreate={true}
+          targetRole={targetRole}
         />
       </Card>
     </div>

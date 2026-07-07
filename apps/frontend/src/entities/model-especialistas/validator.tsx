@@ -30,7 +30,7 @@ export const especialistaSchema = z.object({
   especialidad: z.string().optional(),
   especialidadesExtras: z.array(z.string()).optional(),
   activo: z.boolean().optional(),
-  condicionLaboral: z.enum(['Encargado', 'Destacado', 'Designado'], {
+  condicionLaboral: z.enum(['Encargado', 'Destacado', 'Designado', 'Nombrado', 'Contratado'], {
     message: 'Debe seleccionar la condición laboral',
   }),
   cargaLaboral: z.preprocess(

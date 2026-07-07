@@ -112,7 +112,7 @@ export const EspecialistaFormBase = ({
     roleCheck,
   } = usePersonForm({
     dni: form.dni,
-    isNew: !initialData,
+    isNew: !initialData || !initialData.dni,
     rolObjetivo: form.cargo === 'Jefe de Área'
       ? 'jefe_area'
       : form.cargo === 'Jefe de Gestión'

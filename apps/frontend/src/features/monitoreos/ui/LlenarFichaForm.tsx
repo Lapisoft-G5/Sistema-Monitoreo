@@ -349,6 +349,14 @@ export const LlenarFichaForm = ({
     return template.desempenos.find((d) => d.id === fichaSelectedDesempenoId) || null;
   }, [template, fichaSelectedDesempenoId]);
 
+  const sugerenciasAreas = useMemo(() => {
+    if (!evaluadoDocente || !evaluadoDocente.especialidad) return [];
+    return evaluadoDocente.especialidad
+      .split(',')
+      .map((c: string) => c.trim())
+      .filter(Boolean);
+  }, [evaluadoDocente]);
+
   if (!isOpen || !visit || !template) return null;
 
   const isCompleted = visit.estado === 'COMPLETADO';
@@ -604,6 +612,25 @@ export const LlenarFichaForm = ({
                 <input type="number" min="0" value={contextoAlumnosNee} onChange={(e) => setContextoAlumnosNee(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
               </div>
             </div>
+
+            {sugerenciasAreas.length > 0 && (
+              <div className="px-6 pb-2 pt-1 flex flex-wrap gap-2 items-center text-xs animate-in fade-in slide-in-from-top-1 duration-200">
+                <span className="text-slate-500 font-semibold">Área curricular sugerida del docente:</span>
+                {sugerenciasAreas.map((area, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setContextoArea(area);
+                      toast.success(`Se sugirió el área ${area}`);
+                    }}
+                    className="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-200 text-emerald-700 font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                  >
+                    {area}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {evaluadoDocente && evaluadoDocente.secciones && evaluadoDocente.secciones.length > 0 && (
               <div className="px-6 pb-3 pt-1 flex flex-wrap gap-2 items-center text-xs animate-in fade-in slide-in-from-top-1 duration-200">

@@ -15,10 +15,10 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
   const { createEspecialista, loading, error } = useEspecialistaService();
 
   const handleFormSubmit = async (formData: EspecialistaFormData) => {
-    // Para jefe_gestion el cargo es "Jefe de Gestión". Para director_ugel es "Especialista" en la tabla especialistas
-    const cargo = targetRole === 'jefe_gestion' ? 'Jefe de Gestión' : 'Especialista';
-    
-    const result = await createEspecialista(formData, targetRole, cargo);
+    // Registramos directamente con el rol y cargo destino.
+    const roleCode = targetRole === 'director_ugel' ? 'director_ugel' : 'jefe_gestion';
+    const cargo = targetRole === 'director_ugel' ? 'Especialista' : 'Jefe de Gestión';
+    const result = await createEspecialista(formData, roleCode, cargo);
     if (result.success) {
       navigate(targetRole === 'director_ugel' ? '/superadmin/director' : '/superadmin/jefe');
     }
@@ -26,10 +26,8 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
 
   const esErrorCelular = error?.toLowerCase().includes('celular') || error?.toLowerCase().includes('teléfono');
 
-  const title = targetRole === 'director_ugel' ? 'Registrar Nuevo Director UGEL' : 'Registrar Nuevo Jefe de Gestión';
-  const description = targetRole === 'director_ugel' 
-    ? 'Complete los datos para dar de alta al nuevo Director de la UGEL en el sistema.' 
-    : 'Complete los datos para dar de alta al nuevo Jefe de Gestión Pedagógica en el sistema.';
+  const title = 'Registrar Nuevo Especialista';
+  const description = 'Complete los datos para registrar un nuevo especialista en el sistema.';
   const backPath = targetRole === 'director_ugel' ? '/superadmin/director' : '/superadmin/jefe';
 
   const initialData: EspecialistaFormData = {
@@ -45,7 +43,7 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
     modalidad: 'EBR',
     cargo: targetRole === 'jefe_gestion' ? ('Jefe de Gestión' as const) : ('Especialista' as const),
     activo: true,
-    condicionLaboral: targetRole === 'jefe_gestion' ? ('Designado' as const) : ('Encargado' as const),
+    condicionLaboral: targetRole === 'jefe_gestion' ? ('Nombrado' as const) : ('Encargado' as const),
     cargaLaboral: 40,
     escalaMagisterial: undefined,
   };

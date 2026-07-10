@@ -24,14 +24,18 @@ import {
 export class PlantillaService {
   constructor(private readonly repository: PlantillaRepository) {}
 
-  private isDirector(session: SessionUser): boolean {
-    return session.role === RoleCode.DIRECTOR_INSTITUCION;
+  private isSchoolStaff(session: SessionUser): boolean {
+    return (
+      session.role === RoleCode.DIRECTOR_INSTITUCION ||
+      session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
+      session.role === RoleCode.JEFE_TALLER
+    );
   }
 
   async findAll(filters?: QueryPlantillaDto, session?: SessionUser): Promise<IPlantilla[]> {
     const scopedFilters = { ...filters };
     if (session) {
-      if (this.isDirector(session) && session.institucionId) {
+      if (this.isSchoolStaff(session) && session.institucionId) {
         scopedFilters.institucionId = session.institucionId;
         scopedFilters.tipoMonitoreo = 'DOCENTE';
       } else if (session.role === RoleCode.JEFE_AREA) {
@@ -54,11 +58,21 @@ export class PlantillaService {
         plantillas = plantillas.filter(
           (p) => !(p.rolAutorAlCrear === 'director_ie' && p.estado === 'Borrador'),
         );
-      } else if (this.isDirector(session)) {
+      } else if (this.isSchoolStaff(session)) {
         // IE no debe ver plantillas 'Borrador' de la UGEL
         plantillas = plantillas.filter(
           (p) => !(p.rolAutorAlCrear === 'jefe_gestion' && p.estado === 'Borrador'),
         );
+
+        // Coordinador y Jefe de Taller no deben ver las plantillas de la UGEL (solo de su IE)
+        if (
+          session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
+          session.role === RoleCode.JEFE_TALLER
+        ) {
+          plantillas = plantillas.filter(
+            (p) => p.institucionId === session.institucionId && p.rolAutorAlCrear === 'director_ie',
+          );
+        }
       }
     }
 
@@ -166,9 +180,14 @@ export class PlantillaService {
     if (!original) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
     guardModificacion(original, session);
 
-    if (session.role !== RoleCode.JEFE_GESTION && session.role !== RoleCode.DIRECTOR_INSTITUCION) {
+    const isSchoolStaffUser =
+      session.role === RoleCode.DIRECTOR_INSTITUCION ||
+      session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
+      session.role === RoleCode.JEFE_TALLER;
+
+    if (session.role !== RoleCode.JEFE_GESTION && !isSchoolStaffUser) {
       throw new ForbiddenException(
-        'Solo el Jefe de Gestion o el Director IE pueden eliminar plantillas.',
+        'Solo el Jefe de Gestion, Director IE, Coordinador o Jefe de Taller pueden eliminar plantillas.',
       );
     }
 
@@ -217,13 +236,18 @@ export class PlantillaService {
 
     const { rolAutorAlCrear, institucionId } = resolveAutor(session);
 
-    if (!institucionId && session.role === RoleCode.DIRECTOR_INSTITUCION) {
-      throw new ForbiddenException('Director IE sin institucionId en sesion.');
+    if (!institucionId && this.isSchoolStaff(session)) {
+      throw new ForbiddenException('Usuario de IE sin institucionId en sesion.');
     }
 
-    if (session.role !== RoleCode.JEFE_GESTION && session.role !== RoleCode.DIRECTOR_INSTITUCION) {
+    const isSchoolStaffUserDupl =
+      session.role === RoleCode.DIRECTOR_INSTITUCION ||
+      session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
+      session.role === RoleCode.JEFE_TALLER;
+
+    if (session.role !== RoleCode.JEFE_GESTION && !isSchoolStaffUserDupl) {
       throw new ForbiddenException(
-        'Solo Jefe de Gestion o Directores IE pueden duplicar plantillas.',
+        'Solo Jefe de Gestion, Directores IE, Coordinadores o Jefes de Taller pueden duplicar plantillas.',
       );
     }
     return this.repository.clone(

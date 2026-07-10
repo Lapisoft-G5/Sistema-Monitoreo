@@ -31,15 +31,19 @@ export function validarReglas(dto: CreatePlantillaDto): void {
   }
 }
 
-function isDirector(session: SessionUser): boolean {
-  return session.role === RoleCode.DIRECTOR_INSTITUCION;
+function isSchoolStaff(session: SessionUser): boolean {
+  return (
+    session.role === RoleCode.DIRECTOR_INSTITUCION ||
+    session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
+    session.role === RoleCode.JEFE_TALLER
+  );
 }
 
 export function resolveAutor(session: SessionUser): {
   rolAutorAlCrear: 'jefe_gestion' | 'director_ie';
   institucionId: string | null;
 } {
-  if (isDirector(session)) {
+  if (isSchoolStaff(session)) {
     return {
       rolAutorAlCrear: 'director_ie',
       institucionId: session.institucionId ?? null,
@@ -50,11 +54,20 @@ export function resolveAutor(session: SessionUser): {
 
 export function guardVisibilidad(plantilla: IPlantilla, session?: SessionUser): void {
   if (!session) return;
-  if (isDirector(session) && plantilla.rolAutorAlCrear === 'jefe_gestion') {
+
+  // Coordinador y Jefe de Taller no ven plantillas de la UGEL
+  if (
+    (session.role === RoleCode.COORDINADOR_PEDAGOGICO || session.role === RoleCode.JEFE_TALLER) &&
+    plantilla.rolAutorAlCrear === 'jefe_gestion'
+  ) {
+    throw new ForbiddenException('No tiene permisos para ver esta plantilla.');
+  }
+
+  if (isSchoolStaff(session) && plantilla.rolAutorAlCrear === 'jefe_gestion') {
     // Directores ven plantillas UGEL
     return;
   }
-  if (isDirector(session) && plantilla.institucionId !== session.institucionId) {
+  if (isSchoolStaff(session) && plantilla.institucionId !== session.institucionId) {
     throw new ForbiddenException('No tiene permisos para ver esta plantilla.');
   }
   if (session.role === RoleCode.JEFE_AREA && plantilla.rolAutorAlCrear === 'director_ie') {
@@ -72,12 +85,22 @@ export function guardVisibilidad(plantilla: IPlantilla, session?: SessionUser): 
 }
 
 export function guardModificacion(plantilla: IPlantilla, session: SessionUser): void {
-  if (isDirector(session) && plantilla.rolAutorAlCrear === 'jefe_gestion') {
-    throw new ForbiddenException('Los Directores IE no pueden modificar plantillas UGEL.');
+  if (isSchoolStaff(session) && plantilla.rolAutorAlCrear === 'jefe_gestion') {
+    throw new ForbiddenException(
+      'Los Directores e integrantes de la IE no pueden modificar plantillas UGEL.',
+    );
   }
-  if (!isDirector(session) && plantilla.rolAutorAlCrear === 'director_ie') {
+  if (!isSchoolStaff(session) && plantilla.rolAutorAlCrear === 'director_ie') {
     throw new ForbiddenException(
       'Los usuarios de UGEL no pueden modificar plantillas de las II.EE.',
     );
+  }
+
+  // Coordinador y Jefe de Taller solo pueden modificar las plantillas creadas por ellos mismos
+  if (
+    (session.role === RoleCode.COORDINADOR_PEDAGOGICO || session.role === RoleCode.JEFE_TALLER) &&
+    plantilla.autorId !== session.id
+  ) {
+    throw new ForbiddenException('No tiene permisos para modificar esta plantilla.');
   }
 }

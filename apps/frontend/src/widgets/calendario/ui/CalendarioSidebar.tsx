@@ -170,9 +170,23 @@ const {
     // Priority 1: plantilla de la IE (para roles institucionales)
     let matchedTemplate: (typeof plantillas)[number] | undefined;
     if (isInstitucionRole && user.institucion) {
-      matchedTemplate = plantillas.find(
-        (p) => matchTypeAndEstado(p) && p.creadoPorRole === 'director_ie' && p.ieId === user.institucion,
-      );
+      // Priorizar la plantilla creada por el propio evaluador (coordinador o jefe de taller)
+      if (user.role === 'coordinador_pedagogico' || user.role === 'jefe_taller') {
+        matchedTemplate = plantillas.find(
+          (p) =>
+            matchTypeAndEstado(p) &&
+            p.creadoPorRole === 'director_ie' &&
+            p.ieId === user.institucion &&
+            p.creadoPorId === user.id,
+        );
+      }
+
+      // Si no se encontró plantilla propia, buscar la de la IE (director_ie)
+      if (!matchedTemplate) {
+        matchedTemplate = plantillas.find(
+          (p) => matchTypeAndEstado(p) && p.creadoPorRole === 'director_ie' && p.ieId === user.institucion,
+        );
+      }
     }
 
     // Priority 2: plantilla UGEL

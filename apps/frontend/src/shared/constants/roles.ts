@@ -62,7 +62,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'instituciones_jefes_taller', 'especialistas', 'jefes_area', 'reportes', 'configuracion'
   ],
 
-  director_ugel: ['dashboard', 'reportes'],
+  director_ugel: ['dashboard', 'reportes', 'monitoreo_reportes'],
 
   jefe_gestion: [
     'monitoreo',
@@ -75,6 +75,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'especialistas',
     'jefes_area',
     'reportes',
+    'monitoreo_reportes',
     'instituciones_padron',
     'instituciones_docentes',
   ],
@@ -86,23 +87,32 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_cronograma',
     'monitoreo_calendario',
     'reportes',
+    'monitoreo_reportes',
   ],
 
   coordinador_pedagogico: [
     'monitoreo',
+    'monitoreo_plan_anual',
+    'monitoreo_cronograma',
     'monitoreo_calendario',
     'monitoreo_reportes',
+    'plantillas',
+    'plantillas_ies',
     'reportes',
   ],
 
   jefe_taller: [
     'monitoreo',
+    'monitoreo_plan_anual',
+    'monitoreo_cronograma',
     'monitoreo_calendario',
     'monitoreo_reportes',
+    'plantillas',
+    'plantillas_ies',
     'reportes',
   ],
 
-  especialista: ['monitoreo', 'monitoreo_calendario', 'reportes'],
+  especialista: ['monitoreo', 'monitoreo_calendario', 'reportes', 'monitoreo_reportes'],
 
   director_institucion: [
     'monitoreo',

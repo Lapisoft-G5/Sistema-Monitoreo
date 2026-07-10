@@ -20,11 +20,12 @@ import { Card } from '@/shared/ui/card';
 import { HistorialChart } from './HistorialChart';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { AREAS_CURRICULARES } from '@sistema-monitoreo/shared-contracts';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
+import { fetchDocenteById } from '@features/docentes/docente-service';
+import type { Docente, SeccionDocente } from '@entities/model-docentes';
 
 interface LlenarFichaFormProps {
   isOpen: boolean;
@@ -206,6 +207,7 @@ export const LlenarFichaForm = ({
   const [contextoSeccion, setContextoSeccion] = useState<string>('');
   const [contextoAlumnos, setContextoAlumnos] = useState<number | ''>('');
   const [contextoAlumnosNee, setContextoAlumnosNee] = useState<number | ''>('');
+  const [evaluadoDocente, setEvaluadoDocente] = useState<Docente | null>(null);
 
   const [activeTab, setActiveTab] = useState<'FICHA' | 'HISTORIAL'>('FICHA');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -257,7 +259,8 @@ export const LlenarFichaForm = ({
                 setContextoAlumnosNee(parsed.contexto.cantidadEstudiantesNee);
               }
             }, 0);
-          } catch {
+          } catch (e) {
+            console.warn('Error parsing saved state', e);
             setTimeout(() => {
               setCheckedAspects({});
               setSelectedLevels({});
@@ -301,10 +304,58 @@ export const LlenarFichaForm = ({
     }
   }, [isOpen, visit, template, initialState]);
 
+  useEffect(() => {
+    if (isOpen && visit && visit.evaluadoId) {
+      fetchDocenteById(visit.evaluadoId).then((doc) => {
+        if (doc) {
+          setTimeout(() => {
+            setEvaluadoDocente(doc);
+
+            const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
+            let hasSavedContext = false;
+            if (savedState) {
+              try {
+                const parsed = JSON.parse(savedState);
+                if (parsed.contexto?.areaCurricular || parsed.contexto?.grado || parsed.contexto?.seccion) {
+                  hasSavedContext = true;
+                }
+              } catch (e) {
+                console.warn('Error parsing saved state', e);
+              }
+            }
+            if (initialState?.contexto?.areaCurricular || initialState?.contexto?.grado || initialState?.contexto?.seccion) {
+              hasSavedContext = true;
+            }
+
+            if (!hasSavedContext) {
+              setContextoArea(doc.especialidad || 'General');
+              if (doc.secciones && doc.secciones.length > 0) {
+                setContextoGrado(doc.secciones[0].grado || '');
+                setContextoSeccion(doc.secciones[0].seccion || '');
+              }
+            }
+          }, 0);
+        }
+      });
+    } else {
+      setTimeout(() => {
+        setEvaluadoDocente(null);
+      }, 0);
+    }
+  }, [isOpen, visit, initialState]);
+
   const activeFichaDesempeno = useMemo(() => {
     if (!template) return null;
     return template.desempenos.find((d) => d.id === fichaSelectedDesempenoId) || null;
   }, [template, fichaSelectedDesempenoId]);
+
+  const sugerenciasAreas = useMemo(() => {
+    if (!evaluadoDocente || !evaluadoDocente.especialidad) return [];
+    return evaluadoDocente.especialidad
+      .split(',')
+      .map((c: string) => c.trim())
+      .filter(Boolean);
+  }, [evaluadoDocente]);
 
   if (!isOpen || !visit || !template) return null;
 
@@ -516,66 +567,93 @@ export const LlenarFichaForm = ({
         </div>
 
         {visit.tipo === 'DOCENTE' && !isCompleted && (
-          <div className="px-6 py-4 bg-slate-50 border-b border-border text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Área Curricular</label>
-              {(() => {
-                const key = visit.nivel?.toUpperCase() === 'INICIAL' || visit.modalidad === 'EBE' ? 'INICIAL'
-                  : visit.modalidad?.toUpperCase() === 'EBA' ? 'EBA'
-                  : visit.modalidad?.toUpperCase() === 'CEPTRO' ? 'CEPTRO'
-                  : visit.nivel?.toUpperCase() || 'PRIMARIA';
-                const areas = AREAS_CURRICULARES[key] || AREAS_CURRICULARES.PRIMARIA;
-                return (
-                  <select value={contextoArea} onChange={(e) => setContextoArea(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
-                    <option value="">Seleccione...</option>
-                    {areas.map((a) => <option key={a} value={a}>{a}</option>)}
-                    <option value="Otro">Otro</option>
-                  </select>
-                );
-              })()}
+          <div className="bg-slate-50 border-b border-border">
+            <div className="px-6 pt-4 pb-2 text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Área Curricular</label>
+                <input
+                  type="text"
+                  value={contextoArea}
+                  onChange={(e) => setContextoArea(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
+                  placeholder="Ej. Matemática"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Grado</label>
+                <input
+                  type="text"
+                  value={contextoGrado}
+                  onChange={(e) => setContextoGrado(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
+                  placeholder="Ej. 1er Grado"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Sección</label>
+                <input
+                  type="text"
+                  value={contextoSeccion}
+                  onChange={(e) => setContextoSeccion(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
+                  placeholder="Ej. A"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>
+                <input type="number" min="0" max="50" value={contextoAlumnos} onChange={(e) => {
+                  const val = e.target.value ? Number(e.target.value) : '';
+                  if (val !== '' && val > 50) return;
+                  setContextoAlumnos(val);
+                }} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500">Est. NEE (Opcional)</label>
+                <input type="number" min="0" value={contextoAlumnosNee} onChange={(e) => setContextoAlumnosNee(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Grado</label>
-              <select value={contextoGrado} onChange={(e) => setContextoGrado(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
-                <option value="">Seleccione...</option>
-                <option value="3 años">3 años (Inicial)</option>
-                <option value="4 años">4 años (Inicial)</option>
-                <option value="5 años">5 años (Inicial)</option>
-                <option value="1er Grado">1er Grado</option>
-                <option value="2do Grado">2do Grado</option>
-                <option value="3er Grado">3er Grado</option>
-                <option value="4to Grado">4to Grado</option>
-                <option value="5to Grado">5to Grado</option>
-                <option value="6to Grado">6to Grado</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Sección</label>
-              <select value={contextoSeccion} onChange={(e) => setContextoSeccion(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
-                <option value="">Seleccione...</option>
-                <option value="Única">Única</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="E">E</option>
-                <option value="F">F</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>
-              <input type="number" min="0" max="50" value={contextoAlumnos} onChange={(e) => {
-                const val = e.target.value ? Number(e.target.value) : '';
-                if (val !== '' && val > 50) return;
-                setContextoAlumnos(val);
-              }} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">Est. NEE (Opcional)</label>
-              <input type="number" min="0" value={contextoAlumnosNee} onChange={(e) => setContextoAlumnosNee(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
-            </div>
+
+            {(sugerenciasAreas.length > 0 || (evaluadoDocente && evaluadoDocente.secciones && evaluadoDocente.secciones.length > 0)) && (
+              <div className="px-6 pb-3 pt-1 grid grid-cols-2 gap-x-6 text-xs animate-in fade-in slide-in-from-top-1 duration-200">
+                {sugerenciasAreas.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    <span className="text-slate-500 font-semibold w-full">Área sugerida:</span>
+                    {sugerenciasAreas.map((area, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setContextoArea(area);
+                          toast.success(`Se sugirió el área ${area}`);
+                        }}
+                        className="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-200 text-emerald-700 font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                      >
+                        {area}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {evaluadoDocente && evaluadoDocente.secciones && evaluadoDocente.secciones.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    <span className="text-slate-500 font-semibold w-full">Grado y Sección sugeridos:</span>
+                    {evaluadoDocente.secciones.map((sec: SeccionDocente, idx: number) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setContextoGrado(sec.grado);
+                          setContextoSeccion(sec.seccion);
+                          toast.success(`Se sugirió ${sec.grado} - Sección ${sec.seccion}`);
+                        }}
+                        className="px-2.5 py-1 rounded bg-primary-light hover:bg-primary-hover hover:text-white border border-primary/20 text-primary font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                      >
+                        {sec.grado} - {sec.seccion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
         {visit.tipo === 'DOCENTE' && isCompleted && (
@@ -1037,102 +1115,98 @@ export const LlenarFichaForm = ({
 
         {/* Evidencia General */}
         <div className="p-5 border-t border-border bg-white">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-4">
-            Evidencia del Monitoreo
-          </span>
-          <div className="mt-2">
-            {evidenciaUrls['GENERAL'] ? (
-              <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 max-w-[400px]">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-red-100 text-red-500 rounded-lg flex items-center justify-center shrink-0">
-                    <FileText className="h-5 w-5" />
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+              Evidencia del Monitoreo
+            </span>
+            <span className="text-[10px] text-slate-400 font-semibold">
+              {Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length}/3 imágenes
+            </span>
+          </div>
+          <div className="mt-2 flex flex-row flex-wrap gap-2">
+            {(['GENERAL_1', 'GENERAL_2', 'GENERAL_3'] as const).map((slot, idx) => {
+              const url = evidenciaUrls[slot];
+              const totalLoaded = Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length;
+              if (url) {
+                return (
+                  <div key={slot} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 max-w-[400px]">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-red-100 text-red-500 rounded-lg flex items-center justify-center shrink-0">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">Evidencia {idx + 1} Cargada</p>
+                        <p className="text-[10px] text-slate-400 truncate w-40">evidencia-monitoreo-{idx + 1}.png</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-2"
+                        onClick={() => setPreviewImageUrl(url)}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        Ver
+                      </Button>
+                      {!isCompleted && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                          onClick={() => {
+                            setEvidenciaUrls((prev) => {
+                              const next = { ...prev };
+                              delete next[slot];
+                              safeSetLocalStorage(
+                                `sistema-monitoreo:ficha-state:${visit.id}`,
+                                JSON.stringify({ checkedAspects, selectedLevels, generalComments, sugerencias, compromisos, rubricComments, preguntaExtraAnswers, respuestasEjeItem, evidenciaUrls: next })
+                              );
+                              return next;
+                            });
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-700">Evidencia Cargada</p>
-                    <p className="text-[10px] text-slate-400 truncate w-40">evidencia-monitoreo.png</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 gap-2"
-                    onClick={() => setPreviewImageUrl(evidenciaUrls['GENERAL'])}
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    Ver
-                  </Button>
-                  {!isCompleted && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200" 
-                      onClick={() => {
-                        setEvidenciaUrls((prev) => {
-                          const next = { ...prev };
-                          delete next['GENERAL'];
-                          safeSetLocalStorage(
-                            `sistema-monitoreo:ficha-state:${visit.id}`,
-                            JSON.stringify({
-                              checkedAspects,
-                              selectedLevels,
-                              generalComments,
-                              sugerencias,
-                              compromisos,
-                              rubricComments,
-                              preguntaExtraAnswers,
-                              respuestasEjeItem,
-                              evidenciaUrls: next,
-                            })
-                          );
-                          return next;
-                        });
+                );
+              }
+              if (!isCompleted && !url && totalLoaded < 3) {
+                return (
+                  <label key={slot} className="inline-flex items-center justify-center gap-2 w-full max-w-[240px] h-[40px] rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-bold cursor-pointer hover:border-primary hover:text-primary hover:bg-primary/3 transition-all duration-150">
+                    <Upload className="h-4 w-4" />
+                    Subir evidencia {idx + 1}
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".jpg,.jpeg,.png"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const compressedBase64 = await compressImage(file);
+                          setEvidenciaUrls((prev) => {
+                            const next = { ...prev, [slot]: compressedBase64 };
+                            safeSetLocalStorage(
+                              `sistema-monitoreo:ficha-state:${visit.id}`,
+                              JSON.stringify({ checkedAspects, selectedLevels, generalComments, sugerencias, compromisos, rubricComments, preguntaExtraAnswers, respuestasEjeItem, evidenciaUrls: next })
+                            );
+                            return next;
+                          });
+                        } catch (err) {
+                          console.error('Error compressing image:', err);
+                          toast.error('Error al procesar la imagen.');
+                        }
                       }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ) : !isCompleted ? (
-              <label className="inline-flex items-center justify-center gap-2 w-full max-w-[240px] h-[40px] rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-bold cursor-pointer hover:border-primary hover:text-primary hover:bg-primary/3 transition-all duration-150">
-                <Upload className="h-4 w-4" />
-                Subir evidencia fotográfica
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".jpg,.jpeg,.png"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    try {
-                      const compressedBase64 = await compressImage(file);
-                      setEvidenciaUrls((prev) => {
-                        const next = { ...prev, GENERAL: compressedBase64 };
-                        safeSetLocalStorage(
-                          `sistema-monitoreo:ficha-state:${visit.id}`,
-                          JSON.stringify({
-                            checkedAspects,
-                            selectedLevels,
-                            generalComments,
-                            sugerencias,
-                            compromisos,
-                            rubricComments,
-                            preguntaExtraAnswers,
-                            respuestasEjeItem,
-                            evidenciaUrls: next,
-                          })
-                        );
-                        return next;
-                      });
-                    } catch (err) {
-                      console.error('Error compressing image:', err);
-                      toast.error('Error al procesar la imagen.');
-                    }
-                  }}
-                />
-              </label>
-            ) : (
+                    />
+                  </label>
+                );
+              }
+              return null;
+            })}
+            {isCompleted && Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length === 0 && (
               <span className="text-[11px] text-slate-300 italic block">— Sin evidencias cargadas</span>
             )}
           </div>

@@ -74,6 +74,10 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
       );
     } else if (user?.role === 'jefe_gestion') {
       result = plantillas;
+    } else if (user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller') {
+      result = result.filter(
+        (p) => p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion,
+      );
     } else {
       result = result.filter((p) => !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion');
     }
@@ -423,9 +427,22 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
           {filteredPlantillas.map((plantilla) => {
             const isDocente = plantilla.tipoMonitoreo === 'Monitoreo Docente';
             const isGeneral = !plantilla.creadoPorRole || plantilla.creadoPorRole === 'jefe_gestion';
-            const canManage = isDirector
-              ? plantilla.creadoPorRole === 'director_ie' && plantilla.ieId === user?.institucion
+
+            const isSchoolStaffUser =
+              user?.role === 'director_institucion' ||
+              user?.role === 'coordinador_pedagogico' ||
+              user?.role === 'jefe_taller';
+
+            const canManage = isSchoolStaffUser
+              ? (user?.role === 'director_institucion' && plantilla.creadoPorRole === 'director_ie' && plantilla.ieId === user?.institucion) ||
+                (plantilla.creadoPorId === user?.id && plantilla.ieId === user?.institucion)
               : isGeneral;
+
+            const canCloneDirector =
+              (user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller') &&
+              plantilla.creadoPorRole === 'director_ie' &&
+              plantilla.ieId === user?.institucion &&
+              plantilla.creadoPorId !== user?.id;
 
             return (
               <Card
@@ -526,49 +543,63 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
                       <span>Copiar para mi I.E.</span>
                     </button>
                   ) : (
-                    canManage && (
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => navigate(`/plantillas/${plantilla.id}/editar`)}
-                          className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-                          title="Modificar contenido"
-                        >
-                          <Edit className="h-3.5 w-3.5 text-primary" />
-                          <span>Modificar Plantilla</span>
-                        </button>
-                        
+                    <>
+                      {canManage && (
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => navigate(`/plantillas/${plantilla.id}/editar`)}
+                            className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title="Modificar contenido"
+                          >
+                            <Edit className="h-3.5 w-3.5 text-primary" />
+                            <span>Modificar Plantilla</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDuplicateClick(plantilla)}
+                            disabled={duplicar.isPending}
+                            className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                            title="Duplicar plantilla"
+                          >
+                            <Copy className="h-3.5 w-3.5 text-primary" />
+                            <span>Clonar Plantilla</span>
+                          </button>
+
+                          {plantilla.estado !== 'Historico' && (
+                            <button
+                              onClick={() => handleToggleEstadoClick(plantilla)}
+                              disabled={cambiarEstado.isPending}
+                              className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                              title="Cambiar Estado"
+                            >
+                              <AlertCircle className="h-3.5 w-3.5 text-primary" />
+                              <span>Cambiar Estado</span>
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => setDeleteTemplateId(plantilla.id)}
+                            className="w-full justify-center border border-rose-100 text-rose-600 hover:bg-rose-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title="Eliminar Plantilla"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Eliminar Plantilla</span>
+                          </button>
+                        </div>
+                      )}
+                      
+                      {!canManage && canCloneDirector && (
                         <button
                           onClick={() => handleDuplicateClick(plantilla)}
                           disabled={duplicar.isPending}
-                          className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-                          title="Duplicar plantilla"
+                          className="w-full justify-center border border-dashed border-primary text-primary hover:bg-primary-light text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                          title="Clonar plantilla del director"
                         >
-                          <Copy className="h-3.5 w-3.5 text-primary" />
-                          <span>Clonar Plantilla</span>
+                          <Copy className="h-3.5 w-3.5" />
+                          <span>Clonar Plantilla del Director</span>
                         </button>
-
-                        {plantilla.estado !== 'Historico' && (
-                          <button
-                            onClick={() => handleToggleEstadoClick(plantilla)}
-                            disabled={cambiarEstado.isPending}
-                            className="w-full justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
-                            title="Cambiar Estado"
-                          >
-                            <AlertCircle className="h-3.5 w-3.5 text-primary" />
-                            <span>Cambiar Estado</span>
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => setDeleteTemplateId(plantilla.id)}
-                          className="w-full justify-center border border-rose-100 text-rose-600 hover:bg-rose-50 text-[10px] font-extrabold uppercase py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-                          title="Eliminar Plantilla"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          <span>Eliminar Plantilla</span>
-                        </button>
-                      </div>
-                    )
+                      )}
+                    </>
                   )}
                 </div>
               </Card>

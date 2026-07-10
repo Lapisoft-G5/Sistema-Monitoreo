@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user';
 import { ROLE_PERMISSIONS, ROLE_LABELS } from '@shared/constants/roles';
 import type { MenuItem } from '@shared/constants/roles';
-import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight, Compass, BarChart3 } from 'lucide-react';
+import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
 
@@ -27,6 +27,10 @@ export const Sidebar = () => {
     setOpenMenus((p) => (p.includes(id) ? p.filter((m) => m !== id) : [...p, id]));
 
   const isJefeArea = user?.role === 'jefe_area';
+  const isSchoolStaffUser =
+    user?.role === 'director_institucion' ||
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
 
   return (
     <aside
@@ -65,38 +69,51 @@ export const Sidebar = () => {
 
       {/* ── Navegación Dinámica ── */}
       <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
-        {(user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller'
-          ? [
-              {
-                id: 'monitoreo',
-                label: 'Monitoreo',
-                icon: <Compass className="h-[18px] w-[18px]" />,
-                children: [
-                  { id: 'monitoreo_calendario', label: 'Calendario', path: '/monitoreo/calendario' },
-                  { id: 'monitoreo_reportes', label: 'Fichas Completadas', path: '/monitoreo/reportes' },
-                ],
-              },
-              {
-                id: 'reportes',
-                label: 'Mis Reportes',
-                icon: <BarChart3 className="h-[18px] w-[18px]" />,
-                path: '/reportes',
-                children: [],
-              },
-            ]
-          : SIDEBAR_CONFIG.filter((item) => {
-              const isDirector = user?.role === 'director_institucion';
-              const isSecundary = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
-              if (
-                (item.id === 'instituciones_coordinadores' || item.id === 'instituciones_jefes_taller') &&
-                isDirector &&
-                !isSecundary
-              ) {
-                return false;
+        {(() => {
+          const isEvaluatedRole =
+            user?.role === 'docente' ||
+            user?.role === 'director_institucion' ||
+            user?.role === 'coordinador_pedagogico' ||
+            user?.role === 'jefe_taller';
+
+          const baseItems = SIDEBAR_CONFIG.filter((item) => {
+            const isDirector = user?.role === 'director_institucion';
+            const isSecundary = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
+            if (
+              (item.id === 'instituciones_coordinadores' || item.id === 'instituciones_jefes_taller') &&
+              isDirector &&
+              !isSecundary
+            ) {
+              return false;
+            }
+            return has(item.id as string);
+          });
+
+          return baseItems.map((item) => {
+            if (item.id === 'monitoreo') {
+              const children = isEvaluatedRole
+                ? item.children
+                : item.children.filter((c) => c.id !== 'monitoreo_reportes');
+              return { ...item, children };
+            }
+            if (item.id === 'reportes') {
+              if (isEvaluatedRole) {
+                return {
+                  ...item,
+                  label: 'Mis Reportes',
+                  path: '/reportes',
+                };
+              } else {
+                return {
+                  ...item,
+                  label: 'Fichas Completadas',
+                  path: '/monitoreo/reportes',
+                };
               }
-              return has(item.id as string);
-            })
-        ).map((item) => {
+            }
+            return item;
+          });
+        })().map((item) => {
           const visibleChildren = item.children.filter((c) => has(c.id as string));
           const isOpen = openMenus.includes(item.id as string);
 
@@ -111,11 +128,9 @@ export const Sidebar = () => {
                 ? 'Directores'
                 : 'Docentes'
               : item.id === 'monitoreo' &&
-                (user?.role === 'jefe_gestion' || user?.role === 'director_institucion')
+                (user?.role === 'jefe_gestion' || isSchoolStaffUser)
                 ? 'Plan Monitoreo'
-                : item.id === 'reportes' && user?.role === 'docente'
-                  ? 'Mis Reportes'
-                  : item.label;
+                : item.label;
 
           const triggerClasses = `
             w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] border-none

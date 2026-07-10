@@ -65,6 +65,10 @@ export const CronogramaPage = () => {
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
 
+  const isCoordOrTaller =
+    user?.role === 'coordinador_pedagogico' ||
+    user?.role === 'jefe_taller';
+
   const {
     cronogramas,
     especialistas,
@@ -118,12 +122,33 @@ export const CronogramaPage = () => {
   const docentesDeLaInstitucion = useMemo(() => {
     if (isDirector) {
       if (!user || !user.institucion) return [];
-      return docentes.filter(
+      
+      const baseList = docentes.filter(
         (doc) => 
           doc.institucionId === user.institucion && 
           doc.activo === true && 
           doc.cargo !== 'Director'
       );
+
+      // Buscar el evaluador seleccionado
+      const matchedEvaluador = docentes.find(
+        (doc) =>
+          doc.institucionId === user.institucion &&
+          doc.activo === true &&
+          `${doc.nombres} ${doc.apellidos}`.trim().toLowerCase() === formEspecialista.trim().toLowerCase()
+      );
+
+      if (
+        matchedEvaluador &&
+        (matchedEvaluador.cargo === 'Coordinador Pedagógico' ||
+          matchedEvaluador.cargo === 'Jefe de Taller')
+      ) {
+        return baseList.filter(
+          (doc) => doc.evaluadorActual?.evaluadorId === matchedEvaluador.id
+        );
+      }
+
+      return baseList;
     }
 
     if (!formInstitucion) return [];
@@ -139,7 +164,22 @@ export const CronogramaPage = () => {
       const matchCargo = formTipo === 'DIRECTIVO' ? isDirectorCargo : !isDirectorCargo;
       return matchInstId && isActive && matchCargo;
     });
-  }, [isDirector, user, formInstitucion, formTipo, docentes, instituciones]);
+  }, [isDirector, user, formInstitucion, formTipo, formEspecialista, docentes, instituciones]);
+
+  // Limpia el docente seleccionado si deja de estar en la lista de opciones al cambiar de evaluador (solo en modo creación)
+  useEffect(() => {
+    if (editCronogramaId) return;
+    if (!formEspecialista || !formDocente) return;
+    const isValid = docentesDeLaInstitucion.some(
+      (doc) => `${doc.nombres} ${doc.apellidos}`.trim() === formDocente.trim()
+    );
+    if (!isValid) {
+      const t = setTimeout(() => {
+        setFormDocente('');
+      }, 0);
+      return () => clearTimeout(t);
+    }
+  }, [formEspecialista, docentesDeLaInstitucion, formDocente, editCronogramaId]);
 
   const docenteOptions = useMemo(() => {
     const list = docentesDeLaInstitucion.map((doc) => ({
@@ -937,6 +977,7 @@ export const CronogramaPage = () => {
                           onChange={setFormEspecialista}
                           placeholder="Seleccionar evaluador..."
                           options={evaluadorOptions}
+                          disabled={isCoordOrTaller}
                         />
                       ) : (
                         <div className="flex flex-col gap-1.5">

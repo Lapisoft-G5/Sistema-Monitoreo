@@ -48,4 +48,9 @@ export class PrismaInstitutionsRepository implements InstitutionsRepository {
   ): Promise<{ data: Institucion[]; total: number }> {
     return findAll(this.prisma, this.scopeFilter, query, user);
   }
+
+  async getDashboardStats(user?: JwtPayload) {
+    const { getDashboardStats } = await import('./institucion-read.helper.js');
+    return getDashboardStats(this.prisma, this.scopeFilter, user);
+  }
 }

@@ -120,4 +120,16 @@ export class InstitutionsController {
       message: 'Institución educativa reactivada correctamente',
     };
   }
+
+  /**
+   * GET /api/instituciones/dashboard-stats
+   * Obtiene los indicadores y KPIs de las instituciones para el dashboard.
+   */
+  @Get('dashboard/stats')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('instituciones:read')
+  @HttpCode(HttpStatus.OK)
+  async getDashboardStats(@Req() req: { user?: JwtPayload }) {
+    return this.institutionsService.getDashboardStats(req.user);
+  }
 }

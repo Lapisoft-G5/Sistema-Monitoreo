@@ -85,3 +85,43 @@ export async function findByCodigoModular(
   if (!record) return null;
   return mapInstitucion(record);
 }
+
+export async function getDashboardStats(
+  prisma: PrismaService,
+  scopeFilter: ScopeFilter,
+  user?: JwtPayload,
+) {
+  const currentYear = new Date().getFullYear();
+  const startOfYear = new Date(currentYear, 0, 1);
+  const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
+
+  const baseWhere: Prisma.InstitucionEducativaWhereInput = { estado: 'Activa' };
+  
+  if (user?.role === RoleCode.JEFE_AREA) {
+    baseWhere.AND = [scopeFilter.forInstitucion(toScopeContext(user))];
+  }
+
+  const total = await prisma.institucionEducativa.count({
+    where: baseWhere,
+  });
+
+  const monitoreadas = await prisma.institucionEducativa.count({
+    where: {
+      ...baseWhere,
+      cronogramas: {
+        some: {
+          estado: 'COMPLETADO',
+          fechaProgramada: {
+            gte: startOfYear,
+            lte: endOfYear,
+          },
+        },
+      },
+    },
+  });
+
+  const pendientes = total - monitoreadas;
+  const porcentaje = total > 0 ? Math.round((monitoreadas / total) * 100) : 0;
+
+  return { total, monitoreadas, pendientes, porcentaje };
+}

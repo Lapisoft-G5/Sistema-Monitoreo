@@ -104,4 +104,8 @@ export class InstitutionsService {
       offset,
     };
   }
+
+  async getDashboardStats(user?: JwtPayload) {
+    return this.institutionsRepository.getDashboardStats(user);
+  }
 }

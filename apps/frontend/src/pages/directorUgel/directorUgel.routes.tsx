@@ -8,6 +8,10 @@ const DashboardPage = lazy(() =>
   import('./DashboardPage').then((m) => ({ default: m.DashboardPage })),
 );
 
+const InstitucionesPadronPage = lazy(() =>
+  import('./InstitucionesPadronPage').then((m) => ({ default: m.InstitucionesPadronPage })),
+);
+
 export const directorUgelRoutes: RouteObject[] = [
   {
     element: <ProtectedRoute permission="dashboard" />,
@@ -17,6 +21,19 @@ export const directorUgelRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <DashboardPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute permission="instituciones_padron" />,
+    children: [
+      {
+        path: 'instituciones/padron',
+        element: (
+          <LazyLoader>
+            <InstitucionesPadronPage />
           </LazyLoader>
         ),
       },

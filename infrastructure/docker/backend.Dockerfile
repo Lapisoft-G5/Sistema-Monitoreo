@@ -13,7 +13,8 @@ RUN apk add --no-cache openssl
 COPY . .
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile --ignore-scripts
+ENV CI=true
+RUN pnpm install --frozen-lockfile
 
 # Generate prisma client inside the backend filter context
 RUN pnpm --filter backend exec prisma generate

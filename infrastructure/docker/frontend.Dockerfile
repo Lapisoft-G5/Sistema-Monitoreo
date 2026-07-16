@@ -15,7 +15,8 @@ COPY packages/ ./packages/
 # Install dependencies (frozen lockfile ensures reproducible builds)
 # Need to copy everything since the workspace relies on linking packages
 COPY . .
-RUN pnpm install --frozen-lockfile --ignore-scripts
+ENV CI=true
+RUN pnpm install --frozen-lockfile
 
 # Build the frontend application
 # Pass environment variables if needed by Vite

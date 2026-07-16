@@ -12,7 +12,8 @@ import { fetchDashboardStats, fetchInstituciones } from '@features/institutions/
 import type { Institucion } from '@entities/model-instituciones';
 import { Card } from '@shared/ui/card';
 
-export const InstitucionesPadronPage = () => {
+
+export const SemaforoInstitucionalPage = () => {
   const [stats, setStats] = useState({ total: 0, monitoreadas: 0, pendientes: 0, porcentaje: 0 });
   const [instituciones, setInstituciones] = useState<Institucion[]>([]);
   const [loading, setLoading] = useState(true);

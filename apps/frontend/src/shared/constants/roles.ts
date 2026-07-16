@@ -39,12 +39,14 @@ export type MenuItem =
   | 'plantillas_ies'
   | 'instituciones'
   | 'instituciones_padron'
+  | 'instituciones_semaforo'
+  | 'instituciones_padron_lista'
+  | 'instituciones_padron_personal'
   | 'instituciones_docentes'
   | 'instituciones_coordinadores'
   | 'instituciones_jefes_taller'
   | 'especialistas'
   | 'jefes_area'
-  | 'reportes'
   | 'reportes'
   | 'configuracion'
   | 'superadmin'
@@ -58,11 +60,20 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'dashboard', 'monitoreo', 'monitoreo_plan', 'monitoreo_gestion', 'monitoreo_reportes',
     'monitoreo_plan_anual', 'monitoreo_cronograma', 'monitoreo_calendario', 'plantillas',
     'plantillas_ugel', 'plantillas_ies',
-    'instituciones', 'instituciones_padron', 'instituciones_docentes', 'instituciones_coordinadores',
+    'instituciones', 'instituciones_padron', 'instituciones_semaforo', 'instituciones_padron_lista', 'instituciones_padron_personal', 'instituciones_docentes', 'instituciones_coordinadores',
     'instituciones_jefes_taller', 'especialistas', 'jefes_area', 'reportes', 'configuracion'
   ],
 
-  director_ugel: ['dashboard', 'reportes', 'monitoreo_reportes'],
+  director_ugel: [
+    'dashboard', 
+    'instituciones',
+    'instituciones_padron',
+    'instituciones_semaforo',
+    'instituciones_padron_lista',
+    'instituciones_padron_personal',
+    'reportes', 
+    'monitoreo_reportes'
+  ],
 
   jefe_gestion: [
     'monitoreo',

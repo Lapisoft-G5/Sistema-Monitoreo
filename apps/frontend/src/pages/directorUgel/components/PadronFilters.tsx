@@ -1,4 +1,3 @@
-import { Card } from '@shared/ui/card';
 import { FilterSelect } from '@shared/ui/Filter-Select';
 import { Button } from '@shared/ui/button';
 import { Filter, RotateCw } from 'lucide-react';

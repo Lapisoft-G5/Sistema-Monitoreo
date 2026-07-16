@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Card } from '@shared/ui/card';
-import { cn } from '@shared/lib/utils'; // Assuming this exists, but I will write it inline if not. Let's just use template literals for safety since I didn't check for cn.
+
 
 interface StatCardProps {
   title: string;

@@ -23,7 +23,8 @@ RUN pnpm install --frozen-lockfile
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
-RUN pnpm --filter frontend build
+# Build the frontend application and its dependencies
+RUN pnpm --filter ...frontend build
 
 # Stage 2: Serve the application with Nginx
 FROM nginx:alpine AS production

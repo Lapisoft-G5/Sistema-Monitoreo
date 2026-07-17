@@ -19,8 +19,8 @@ RUN pnpm install --frozen-lockfile
 # Generate prisma client inside the backend filter context
 RUN pnpm --filter backend exec prisma generate
 
-# Build the backend application
-RUN pnpm --filter backend build
+# Build the backend application and its dependencies
+RUN pnpm --filter ...backend build
 
 # Expose port
 EXPOSE 3000

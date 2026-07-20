@@ -65,10 +65,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   director_ugel: [
     'dashboard',
-    'instituciones',
-    'instituciones_padron',
-    'instituciones_padron_lista',
-    'instituciones_padron_personal',
     'reportes',
     'monitoreo_reportes'
   ],

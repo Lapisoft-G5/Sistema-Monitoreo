@@ -104,6 +104,38 @@ export class NotificationsService {
     return { resultados };
   }
 
+  /**
+   * Crea notificaciones in-app para varios usuarios (+ correo best-effort).
+   * Reutilizable por otros módulos (solicitudes de visita, cron de alertas).
+   */
+  async crearNotificaciones(
+    destinatarios: { usuarioId: string; correo?: string | null }[],
+    meta: {
+      tipo: string;
+      titulo: string;
+      mensaje: string;
+      institucionId?: string | null;
+      emisorId?: string | null;
+    },
+  ): Promise<void> {
+    const vistos = new Set<string>();
+    for (const d of destinatarios) {
+      if (vistos.has(d.usuarioId)) continue;
+      vistos.add(d.usuarioId);
+      await this.prisma.notificacion.create({
+        data: {
+          destinatarioId: d.usuarioId,
+          emisorId: meta.emisorId ?? null,
+          tipo: meta.tipo,
+          titulo: meta.titulo,
+          mensaje: meta.mensaje,
+          institucionId: meta.institucionId ?? null,
+        },
+      });
+      if (d.correo) await this.enviarCorreoBestEffort(d.correo, meta.titulo, meta.mensaje);
+    }
+  }
+
   async listar(usuarioId: string): Promise<INotificacionesResponse> {
     const [rows, noLeidas] = await Promise.all([
       this.prisma.notificacion.findMany({

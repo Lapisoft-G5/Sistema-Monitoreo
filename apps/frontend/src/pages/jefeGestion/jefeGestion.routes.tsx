@@ -31,6 +31,9 @@ const EspecialistaDetailPage = lazy(() =>
 const ReportesPage = lazy(() =>
   import('./ReportesPage').then((m) => ({ default: m.ReportesPage })),
 );
+const SolicitudesVisitaPage = lazy(() =>
+  import('./SolicitudesVisitaPage').then((m) => ({ default: m.SolicitudesVisitaPage })),
+);
 const GestionMonitoreoPage = lazy(() =>
   import('../director/GestionMonitoreoPage').then((m) => ({ default: m.GestionMonitoreoPage })),
 );
@@ -105,6 +108,19 @@ export const jefeGestionRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <GestionMonitoreoPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute permission="solicitudes_visita" />,
+    children: [
+      {
+        path: 'monitoreo/solicitudes-visita',
+        element: (
+          <LazyLoader>
+            <SolicitudesVisitaPage />
           </LazyLoader>
         ),
       },

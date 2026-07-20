@@ -47,7 +47,12 @@ export const BASE_CAPABILITIES: readonly string[] = ['reports:read', 'monitoreo:
 
 /** Permisos derivados del ROL (identidad de autenticación del Usuario). */
 export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
-  [RoleCode.DIRECTOR_UGEL]: ['dashboard:read', 'instituciones:read', 'notificaciones:send'],
+  [RoleCode.DIRECTOR_UGEL]: [
+    'dashboard:read',
+    'instituciones:read',
+    'notificaciones:send',
+    'visitas:solicitar',
+  ],
   [RoleCode.JEFE_GESTION]: [
     'especialistas:read',
     'especialistas:write',
@@ -57,6 +62,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
     'docentes:write',
     'monitoreo:execute',
     'dashboard:read',
+    'visitas:gestionar',
   ],
   [RoleCode.JEFE_AREA]: [
     'especialistas:read',
@@ -109,6 +115,7 @@ export const ESPECIALISTA_CARGO_CAPABILITIES: Record<EspecialistaCargoEnum, read
     'especialistas:write',
     'instituciones:write',
     'docentes:write',
+    'visitas:gestionar',
   ],
 };
 

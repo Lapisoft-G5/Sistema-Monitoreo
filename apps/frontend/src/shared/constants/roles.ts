@@ -46,6 +46,7 @@ export type MenuItem =
   | 'instituciones_jefes_taller'
   | 'especialistas'
   | 'jefes_area'
+  | 'solicitudes_visita'
   | 'reportes'
   | 'configuracion'
   | 'superadmin'
@@ -79,6 +80,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas_ies',
     'especialistas',
     'jefes_area',
+    'solicitudes_visita',
     'reportes',
     'monitoreo_reportes',
     'instituciones_padron',

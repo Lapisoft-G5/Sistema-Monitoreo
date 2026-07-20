@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Settings,
   Shield,
+  CalendarClock,
 } from 'lucide-react';
 import type { MenuItem } from '@shared/constants/roles';
 
@@ -100,6 +101,13 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
       { id: 'plantillas_ugel', label: 'UGEL', path: '/plantillas?filtro=ugel' },
       { id: 'plantillas_ies', label: 'Instituciones', path: '/plantillas?filtro=ie' },
     ],
+  },
+  {
+    id: 'solicitudes_visita',
+    label: 'Solicitudes de visita',
+    icon: <CalendarClock className="h-[18px] w-[18px]" />,
+    path: '/monitoreo/solicitudes-visita',
+    children: [],
   },
   {
     id: 'reportes',

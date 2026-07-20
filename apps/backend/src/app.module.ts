@@ -21,6 +21,7 @@ import { ReportsModule } from './modules/reports/reports.module.js';
 import { SuperuserModule } from './modules/superuser/superuser.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { VisitRequestsModule } from './modules/visit-requests/visit-requests.module.js';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     SuperuserModule,
     DashboardModule,
     NotificationsModule,
+    VisitRequestsModule,
   ],
   providers: [
     {

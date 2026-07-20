@@ -1,27 +1,11 @@
 import { Building2, FileCheck2, FileWarning, BarChart4 } from 'lucide-react';
-import type { NivelLogro } from '@sistema-monitoreo/shared-contracts';
 import { StatCard } from '@shared/ui/Stat-Card';
-import { useDirectorDashboard } from '@features/dashboard';
+import { useDirectorDashboard, nivelLogroUi, iniciales } from '@features/dashboard';
 import { EvaluationStateCard } from '../directorUgel/components/EvaluationStateCard';
 import {
   RecentMonitoringsTable,
   type MonitoringRow,
 } from '../directorUgel/components/RecentMonitoringsTable';
-
-const NIVEL_LOGRO_UI: Record<NivelLogro, { label: string; variant: string }> = {
-  INICIO: { label: 'Crítico', variant: 'destructive' },
-  EN_PROCESO: { label: 'En Proceso', variant: 'warning' },
-  LOGRO_ESPERADO: { label: 'Satisfactorio', variant: 'success' },
-  LOGRO_DESTACADO: { label: 'Destacado', variant: 'success' },
-};
-
-const iniciales = (nombre: string) =>
-  nombre
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? '')
-    .join('');
 
 export const DashboardDirectorPage = () => {
   const { data, isLoading, isError, error } = useDirectorDashboard();
@@ -46,7 +30,7 @@ export const DashboardDirectorPage = () => {
   const semaforo = data?.semaforo;
 
   const rows: MonitoringRow[] = (data?.monitoreosRecientes ?? []).map((m) => {
-    const ui = NIVEL_LOGRO_UI[m.nivelLogro] ?? { label: m.nivelLogro, variant: 'secondary' };
+    const ui = nivelLogroUi(m.nivelLogro);
     return {
       id: m.fichaId,
       school: m.docenteNombre,

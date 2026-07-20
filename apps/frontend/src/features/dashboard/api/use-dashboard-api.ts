@@ -8,3 +8,10 @@ export const useDirectorDashboard = () =>
     queryFn: () => dashboardApi.director(),
     staleTime: STALE_TIMES.DEFAULT,
   });
+
+export const useUgelDashboard = (anio?: number) =>
+  useQuery({
+    queryKey: ['dashboard', 'ugel', anio ?? 'actual'],
+    queryFn: () => dashboardApi.ugel(anio),
+    staleTime: STALE_TIMES.DEFAULT,
+  });

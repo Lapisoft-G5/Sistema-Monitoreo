@@ -1,81 +1,105 @@
-import { MapContainer, TileLayer, Popup, CircleMarker, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
+import type { Layer, PathOptions } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+/** Forma mínima de una feature del GeoJSON de distritos. */
+interface DistritoFeature {
+  properties?: { distrito?: string } | null;
+}
 import { Card } from '@shared/ui/card';
-import lampaGeoJSON from '@shared/assets/lampa.geojson.json';
+import lampaDistritos from '@shared/assets/lampa-distritos.geojson.json';
+import type { IUgelDashboardDistrito } from '@sistema-monitoreo/shared-contracts';
 
-export const LampaMap = () => {
-  // Mock data of schools in Lampa
-  const mockSchools = [
-    { id: 1, name: 'IE 70001 Huayta', lat: -15.3615, lng: -70.3662, status: 'success' },
-    { id: 2, name: 'IE 71011 Pucará', lat: -15.0500, lng: -70.3800, status: 'warning' },
-    { id: 3, name: 'IE Inicial 115', lat: -15.3800, lng: -70.3500, status: 'destructive' },
-    { id: 4, name: 'IE Ocuviri', lat: -15.1800, lng: -70.8500, status: 'warning' },
-    { id: 5, name: 'IE Paratía', lat: -15.4500, lng: -70.6000, status: 'success' },
-    { id: 6, name: 'IE Santa Lucía', lat: -15.7000, lng: -70.6000, status: 'warning' },
-    { id: 7, name: 'IE Cabanilla', lat: -15.6000, lng: -70.3500, status: 'success' },
-    { id: 8, name: 'IE Nicasio', lat: -15.2500, lng: -70.2500, status: 'success' },
-  ];
+/** Normaliza nombres de distrito (mayúsculas, sin tildes) para el match GeoJSON↔BD. */
+export const normDistrito = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toUpperCase()
+    .trim();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'success': return '#22c55e';
-      case 'warning': return '#f59e0b';
-      case 'destructive': return '#ef4444';
-      default: return '#94a3b8';
-    }
+const colorPorCobertura = (pct: number | null): string => {
+  if (pct === null) return '#cbd5e1'; // sin datos
+  if (pct < 40) return '#ef4444';
+  if (pct < 75) return '#f59e0b';
+  return '#22c55e';
+};
+
+interface LampaMapProps {
+  coberturaPorDistrito: IUgelDashboardDistrito[];
+  selected?: string | null;
+  onSelectDistrito?: (distrito: string | null) => void;
+}
+
+export const LampaMap = ({ coberturaPorDistrito, selected, onSelectDistrito }: LampaMapProps) => {
+  const porDistrito = new Map(
+    coberturaPorDistrito.map((d) => [normDistrito(d.distrito), d]),
+  );
+  const selNorm = selected ? normDistrito(selected) : null;
+
+  const styleFeature = (feature?: DistritoFeature): PathOptions => {
+    const nombre = normDistrito(String(feature?.properties?.distrito ?? ''));
+    const data = porDistrito.get(nombre);
+    const isSel = selNorm === nombre;
+    return {
+      fillColor: colorPorCobertura(data ? data.porcentajeCobertura : null),
+      fillOpacity: isSel ? 0.85 : 0.55,
+      color: isSel ? '#1e293b' : 'white',
+      weight: isSel ? 3 : 1,
+    };
+  };
+
+  const onEach = (feature: DistritoFeature, layer: Layer) => {
+    const nombreRaw = String(feature.properties?.distrito ?? '');
+    const nombre = normDistrito(nombreRaw);
+    const data = porDistrito.get(nombre);
+    const cob = data ? `${data.porcentajeCobertura}% (${data.monitoreadas}/${data.totalInstituciones})` : 'sin datos';
+    layer.bindTooltip(`<b>${nombreRaw}</b><br/>Cobertura: ${cob}`, { sticky: true });
+    layer.on('click', () => {
+      onSelectDistrito?.(selNorm === nombre ? null : nombreRaw);
+    });
   };
 
   return (
     <Card className="h-full flex flex-col relative overflow-hidden border-border shadow-xs">
       <div className="p-4 flex justify-between items-center border-b border-border bg-card z-10">
-        <h3 className="text-lg font-bold">Mapa Georeferencial - Lampa</h3>
-        <span className="text-xs font-bold text-primary cursor-pointer hover:underline flex items-center gap-1 uppercase tracking-wider">
-           Filtro Avanzado
-        </span>
+        <h3 className="text-lg font-bold">Mapa Georreferencial - Lampa</h3>
+        {selected ? (
+          <span
+            className="text-xs font-bold text-primary cursor-pointer hover:underline"
+            onClick={() => onSelectDistrito?.(null)}
+          >
+            {selected} ✕
+          </span>
+        ) : (
+          <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+            clic en un distrito para filtrar
+          </span>
+        )}
       </div>
-      
+
       <div className="flex-1 w-full bg-muted/20 relative z-0 h-[400px] md:h-auto">
-        <MapContainer 
-          center={[-15.3615, -70.3662]} 
-          zoom={9} 
-          style={{ height: '100%', width: '100%', zIndex: 0 }}
-        >
+        <MapContainer center={[-15.35, -70.5]} zoom={9} style={{ height: '100%', width: '100%', zIndex: 0 }}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
-          {/* Highlight Lampa boundary */}
-          <GeoJSON 
-            data={lampaGeoJSON as any} 
-            style={{ color: '#e11d48', weight: 2, fillOpacity: 0.05, dashArray: '5, 5' }} 
+          <GeoJSON
+            key={selNorm ?? 'none'}
+            data={lampaDistritos as never}
+            style={styleFeature as never}
+            onEachFeature={onEach}
           />
-          {mockSchools.map((school) => (
-            <CircleMarker
-              key={school.id}
-              center={[school.lat, school.lng]}
-              radius={7}
-              pathOptions={{
-                fillColor: getStatusColor(school.status),
-                fillOpacity: 1,
-                color: 'white',
-                weight: 2
-              }}
-            >
-              <Popup>
-                <div className="font-semibold text-sm">{school.name}</div>
-              </Popup>
-            </CircleMarker>
-          ))}
         </MapContainer>
 
-        {/* Legend Overlay */}
+        {/* Leyenda */}
         <Card className="absolute bottom-4 left-4 z-[400] p-3 shadow-md bg-card/95 backdrop-blur-sm border-border">
-          <h4 className="text-[10px] font-bold text-text-muted mb-2 uppercase tracking-wider">Estado de Monitoreo</h4>
+          <h4 className="text-[10px] font-bold text-text-muted mb-2 uppercase tracking-wider">Cobertura</h4>
           <div className="space-y-1.5 text-xs font-medium">
-            <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> SATISFACTORIO</div>
-            <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div> EN PROCESO</div>
-            <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-destructive"></div> CRÍTICO</div>
-            <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30"></div> SIN REGISTRO</div>
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Alta (≥75%)</div>
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Media (40–74%)</div>
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-destructive" /> Baja (&lt;40%)</div>
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-slate-300" /> Sin datos</div>
           </div>
         </Card>
       </div>

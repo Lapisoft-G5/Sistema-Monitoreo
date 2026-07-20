@@ -15,6 +15,7 @@ import type {
   INotificacionesResponse,
 } from '@sistema-monitoreo/shared-contracts';
 import { NotificationsService } from '../services/notifications.service.js';
+import { SinVisitaCronService } from '../services/sin-visita-cron.service.js';
 import { CrearAlertaInstitucionDto } from '../dto/crear-alerta.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
@@ -23,7 +24,10 @@ import { RequirePermissions } from '../../auth/decorators/permissions.decorator.
 @Controller('notificaciones')
 @UseGuards(AuthGuard)
 export class NotificationsController {
-  constructor(private readonly service: NotificationsService) {}
+  constructor(
+    private readonly service: NotificationsService,
+    private readonly sinVisita: SinVisitaCronService,
+  ) {}
 
   /** Notificaciones del usuario autenticado (para la campanita). */
   @Get()
@@ -57,6 +61,15 @@ export class NotificationsController {
     if (!req.user) throw new ForbiddenException('Sesión no encontrada.');
     const nombre = `${req.user.nombres ?? ''} ${req.user.apellidos ?? ''}`.trim() || 'Director UGEL';
     return this.service.crearAlertaInstitucion(dto, { id: req.user.sub, nombre });
+  }
+
+  /** Ejecuta manualmente el barrido de "IE sin visita" (además del cron diario). */
+  @Post('barrido-sin-visita')
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions('notificaciones:send')
+  async barridoSinVisita(): Promise<{ alertas: number }> {
+    const alertas = await this.sinVisita.ejecutarBarrido();
+    return { alertas };
   }
 
   private userId(req: { user?: any }): string {

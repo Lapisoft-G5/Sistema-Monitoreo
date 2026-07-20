@@ -1,4 +1,5 @@
-import { Bell, Check, CheckCheck } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, CheckCheck } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,12 @@ export const NotificationsBell = () => {
   const { data } = useNotificaciones();
   const marcarLeida = useMarcarLeida();
   const marcarTodas = useMarcarTodasLeidas();
+  const [expandida, setExpandida] = useState<string | null>(null);
+
+  const toggle = (id: string, leida: boolean) => {
+    setExpandida((prev) => (prev === id ? null : id));
+    if (!leida) marcarLeida.mutate(id);
+  };
 
   const items = data?.items ?? [];
   const noLeidas = data?.noLeidas ?? 0;
@@ -58,37 +65,47 @@ export const NotificationsBell = () => {
           {items.length === 0 ? (
             <p className="text-sm text-text-muted text-center py-8">Sin notificaciones.</p>
           ) : (
-            items.map((n) => (
-              <div
-                key={n.id}
-                className={`flex gap-3 px-4 py-3 border-b border-border/60 last:border-0 ${
-                  n.leida ? 'opacity-70' : 'bg-primary/5'
-                }`}
-              >
-                <span
-                  className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
-                    n.leida ? 'bg-transparent' : 'bg-primary'
+            items.map((n) => {
+              const abierta = expandida === n.id;
+              return (
+                <div
+                  key={n.id}
+                  onClick={() => toggle(n.id, n.leida)}
+                  className={`flex gap-3 px-4 py-3 border-b border-border/60 last:border-0 cursor-pointer hover:bg-muted/40 ${
+                    n.leida ? 'opacity-70' : 'bg-primary/5'
                   }`}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-semibold text-sm truncate">{n.titulo}</span>
-                    <span className="text-[10px] text-text-muted shrink-0 whitespace-nowrap">
-                      {tiempoRelativo(n.createdAt)}
+                >
+                  <span
+                    className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
+                      n.leida ? 'bg-transparent' : 'bg-primary'
+                    }`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`font-semibold text-sm ${abierta ? '' : 'line-clamp-2'}`}>
+                        {n.titulo}
+                      </span>
+                      <span className="text-[10px] text-text-muted shrink-0 whitespace-nowrap">
+                        {tiempoRelativo(n.createdAt)}
+                      </span>
+                    </div>
+                    <p
+                      className={`text-xs text-text-muted mt-0.5 whitespace-pre-line ${
+                        abierta ? '' : 'line-clamp-2'
+                      }`}
+                    >
+                      {n.mensaje}
+                    </p>
+                    {n.emisorNombre && abierta && (
+                      <p className="text-[11px] text-text-muted mt-1.5">— {n.emisorNombre}</p>
+                    )}
+                    <span className="mt-1 inline-block text-[11px] font-semibold text-primary">
+                      {abierta ? 'Ver menos' : 'Ver más'}
                     </span>
                   </div>
-                  <p className="text-xs text-text-muted mt-0.5 line-clamp-3">{n.mensaje}</p>
-                  {!n.leida && (
-                    <button
-                      onClick={() => marcarLeida.mutate(n.id)}
-                      className="mt-1 text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <Check className="w-3 h-3" /> Marcar leída
-                    </button>
-                  )}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </DropdownMenuContent>

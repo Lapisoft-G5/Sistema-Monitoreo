@@ -8,6 +8,8 @@ export type EstadoSolicitudVisita = 'PENDIENTE' | 'ATENDIDA' | 'RECHAZADA';
 
 export interface ICrearSolicitudVisitaRequest {
   institucionId: string;
+  /** Docente/directivo específico al que hay que visitar (opcional). */
+  docenteId?: string;
   motivo?: string;
   prioridad?: PrioridadVisita;
 }
@@ -22,6 +24,8 @@ export interface ISolicitudVisita {
   institucionId: string;
   institucionNombre: string;
   distrito: string;
+  docenteId: string | null;
+  docenteNombre: string | null;
   motivo: string | null;
   prioridad: PrioridadVisita | string;
   estado: EstadoSolicitudVisita | string;

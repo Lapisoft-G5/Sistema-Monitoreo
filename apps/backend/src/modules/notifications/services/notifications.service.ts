@@ -65,8 +65,16 @@ export class NotificationsService {
       }
 
       for (const d of destinatarios) {
-        const titulo = `Atención requerida: ${institucion.nombre}`;
-        const cuerpo = this.componerMensaje(institucion.nombre, contexto, dto.mensaje, emisor.nombre);
+        const titulo = dto.docenteNombre
+          ? `Atención requerida: ${dto.docenteNombre}`
+          : `Atención requerida: ${institucion.nombre}`;
+        const cuerpo = this.componerMensaje(
+          institucion.nombre,
+          dto.docenteNombre ?? null,
+          contexto,
+          dto.mensaje,
+          emisor.nombre,
+        );
 
         let inApp = false;
         if (d.usuarioId) {
@@ -236,13 +244,15 @@ export class NotificationsService {
 
   private componerMensaje(
     ieNombre: string,
+    docenteNombre: string | null,
     contexto: string | null,
     mensaje: string | undefined,
     emisorNombre: string,
   ): string {
-    const partes = [
-      `La UGEL (${emisorNombre}) solicita atención sobre la institución ${ieNombre}.`,
-    ];
+    const lead = docenteNombre
+      ? `La UGEL (${emisorNombre}) solicita atención sobre el docente ${docenteNombre} de la IE ${ieNombre}.`
+      : `La UGEL (${emisorNombre}) solicita atención sobre la institución ${ieNombre}.`;
+    const partes = [lead];
     if (contexto) partes.push(contexto);
     if (mensaje?.trim()) partes.push(`Mensaje: ${mensaje.trim()}`);
     return partes.join(' ');

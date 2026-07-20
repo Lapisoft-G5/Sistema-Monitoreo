@@ -29,6 +29,9 @@ export interface INotificacionesResponse {
 
 export interface ICrearAlertaInstitucionRequest {
   institucionId: string;
+  /** Docente/directivo específico sobre el que se alerta (opcional). */
+  docenteId?: string;
+  docenteNombre?: string;
   destinatarios: DestinatarioAlerta[];
   mensaje?: string;
 }

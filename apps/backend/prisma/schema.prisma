@@ -272,6 +272,7 @@ model Docente {
   evaluadoresAsignados  AsignacionEvaluador[] @relation("EvaluadoRel")
   docentesAevaluar      AsignacionEvaluador[] @relation("EvaluadorRel")
   cronogramas           Cronograma[]
+  solicitudesVisita     SolicitudVisita[]
 
   @@index([institucionId])
   @@map("docentes")
@@ -826,6 +827,7 @@ model Notificacion {
 model SolicitudVisita {
   id            String    @id @default(uuid()) @db.Uuid
   institucionId String    @map("institucion_id") @db.Uuid
+  docenteId     String?   @map("docente_id") @db.Uuid
   solicitanteId String    @map("solicitante_id") @db.Uuid
   motivo        String?   @db.Text
   prioridad     String    @default("ALTA") @db.VarChar(20) // ALTA | NORMAL
@@ -837,6 +839,7 @@ model SolicitudVisita {
   resueltaAt    DateTime? @map("resuelta_at")
 
   institucion InstitucionEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  docente     Docente?             @relation(fields: [docenteId], references: [id], onDelete: SetNull)
   solicitante Usuario              @relation("SolicitudVisitaSolicitante", fields: [solicitanteId], references: [id], onDelete: Restrict)
   atendidaPor Usuario?             @relation("SolicitudVisitaResolutor", fields: [atendidaPorId], references: [id], onDelete: SetNull)
 

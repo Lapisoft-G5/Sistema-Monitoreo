@@ -5,16 +5,24 @@ import { useSolicitarVisita } from '../api/use-visits-api';
 interface Props {
   institucionId: string;
   institucionNombre: string;
+  docenteId?: string;
+  docenteNombre?: string;
 }
 
-export const SolicitarVisitaButton = ({ institucionId, institucionNombre }: Props) => {
+export const SolicitarVisitaButton = ({
+  institucionId,
+  institucionNombre,
+  docenteId,
+  docenteNombre,
+}: Props) => {
   const solicitar = useSolicitarVisita();
 
   const handle = () =>
     solicitar.mutate(
-      { institucionId, prioridad: 'ALTA' },
+      { institucionId, docenteId, prioridad: 'ALTA' },
       {
-        onSuccess: () => toast.success(`Visita solicitada para ${institucionNombre}.`),
+        onSuccess: () =>
+          toast.success(`Visita solicitada para ${docenteNombre ?? institucionNombre}.`),
         onError: (e) => toast.error((e as Error)?.message ?? 'No se pudo solicitar la visita.'),
       },
     );

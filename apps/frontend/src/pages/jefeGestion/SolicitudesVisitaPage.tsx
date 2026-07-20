@@ -92,7 +92,10 @@ export const SolicitudesVisitaPage = () => {
                   )}
                 </div>
                 <div className="text-xs text-text-muted uppercase tracking-wide">{s.distrito}</div>
-                {s.motivo && <p className="text-sm mt-1">{s.motivo}</p>}
+                {s.docenteNombre && (
+                  <p className="text-sm mt-1 font-medium">Docente: {s.docenteNombre}</p>
+                )}
+                {s.motivo && <p className="text-sm mt-1 text-text-muted">{s.motivo}</p>}
                 <p className="text-xs text-text-muted mt-1">
                   Solicitado por {s.solicitanteNombre} ·{' '}
                   {new Date(s.createdAt).toLocaleDateString('es-PE')}

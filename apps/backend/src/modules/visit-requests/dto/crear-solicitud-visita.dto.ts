@@ -9,6 +9,10 @@ export class CrearSolicitudVisitaDto implements ICrearSolicitudVisitaRequest {
   institucionId!: string;
 
   @IsOptional()
+  @IsUUID()
+  docenteId?: string;
+
+  @IsOptional()
   @IsString()
   @MaxLength(1000)
   motivo?: string;

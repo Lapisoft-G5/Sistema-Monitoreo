@@ -10,12 +10,14 @@ import { CrearSolicitudVisitaDto, ResolverSolicitudVisitaDto } from '../dto/crea
 type SolicitudRow = {
   id: string;
   institucionId: string;
+  docenteId: string | null;
   motivo: string | null;
   prioridad: string;
   estado: string;
   createdAt: Date;
   resueltaAt: Date | null;
   institucion: { nombre: string; distrito: string };
+  docente: { persona: { nombres: string; apellidos: string } } | null;
   solicitante: { persona: { nombres: string; apellidos: string } };
 };
 
@@ -38,22 +40,38 @@ export class VisitRequestsService {
     });
     if (!institucion) throw new NotFoundException('Institución no encontrada.');
 
+    let docenteNombre: string | null = null;
+    if (dto.docenteId) {
+      const doc = await this.prisma.docente.findFirst({
+        where: { id: dto.docenteId, institucionId: dto.institucionId },
+        select: { persona: { select: { nombres: true, apellidos: true } } },
+      });
+      if (!doc) throw new NotFoundException('Docente no encontrado en la IE.');
+      docenteNombre = `${doc.persona.nombres} ${doc.persona.apellidos}`.trim();
+    }
+
     const pendiente = await this.prisma.solicitudVisita.findFirst({
-      where: { institucionId: dto.institucionId, estado: 'PENDIENTE' },
+      where: { estado: 'PENDIENTE', institucionId: dto.institucionId, docenteId: dto.docenteId ?? null },
     });
     if (pendiente) {
-      throw new ConflictException('Ya existe una solicitud de visita pendiente para esta IE.');
+      throw new ConflictException(
+        docenteNombre
+          ? `Ya existe una solicitud pendiente para ${docenteNombre}.`
+          : 'Ya existe una solicitud de visita pendiente para esta IE.',
+      );
     }
 
     const creada = await this.prisma.solicitudVisita.create({
       data: {
         institucionId: dto.institucionId,
+        docenteId: dto.docenteId ?? null,
         solicitanteId: solicitante.id,
         motivo: dto.motivo ?? null,
         prioridad: dto.prioridad ?? 'ALTA',
       },
       include: {
         institucion: { select: { nombre: true, distrito: true } },
+        docente: { select: { persona: { select: { nombres: true, apellidos: true } } } },
         solicitante: { select: { persona: { select: { nombres: true, apellidos: true } } } },
       },
     });
@@ -62,12 +80,17 @@ export class VisitRequestsService {
     const jefes = await this.usuariosDeRol('jefe_gestion');
     if (jefes.length > 0) {
       const prioridadTxt = creada.prioridad === 'ALTA' ? 'PRIORITARIA' : 'normal';
+      const objetivo = docenteNombre
+        ? `al docente ${docenteNombre} de ${institucion.nombre}`
+        : `a ${institucion.nombre}`;
       const mensaje =
-        `${solicitante.nombre} solicita una visita de monitoreo (${prioridadTxt}) a ${institucion.nombre} (${institucion.distrito}).` +
+        `${solicitante.nombre} solicita una visita de monitoreo (${prioridadTxt}) ${objetivo} (${institucion.distrito}).` +
         (dto.motivo ? ` Motivo: ${dto.motivo}` : '');
       await this.notifications.crearNotificaciones(jefes, {
         tipo: 'SOLICITUD_VISITA',
-        titulo: `Solicitud de visita: ${institucion.nombre}`,
+        titulo: docenteNombre
+          ? `Solicitud de visita: ${docenteNombre}`
+          : `Solicitud de visita: ${institucion.nombre}`,
         mensaje,
         institucionId: institucion.id,
         emisorId: solicitante.id,
@@ -85,6 +108,7 @@ export class VisitRequestsService {
         orderBy: [{ estado: 'asc' }, { createdAt: 'desc' }],
         include: {
           institucion: { select: { nombre: true, distrito: true } },
+          docente: { select: { persona: { select: { nombres: true, apellidos: true } } } },
           solicitante: { select: { persona: { select: { nombres: true, apellidos: true } } } },
         },
       }),
@@ -170,6 +194,10 @@ export class VisitRequestsService {
       institucionId: r.institucionId,
       institucionNombre: r.institucion.nombre,
       distrito: r.institucion.distrito,
+      docenteId: r.docenteId,
+      docenteNombre: r.docente
+        ? `${r.docente.persona.nombres} ${r.docente.persona.apellidos}`.trim()
+        : null,
       motivo: r.motivo,
       prioridad: r.prioridad,
       estado: r.estado,

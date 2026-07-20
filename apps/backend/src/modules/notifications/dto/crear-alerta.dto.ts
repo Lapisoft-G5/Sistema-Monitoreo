@@ -8,6 +8,15 @@ export class CrearAlertaInstitucionDto implements ICrearAlertaInstitucionRequest
   @IsUUID()
   institucionId!: string;
 
+  @IsOptional()
+  @IsUUID()
+  docenteId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  docenteNombre?: string;
+
   @IsArray()
   @ArrayNotEmpty({ message: 'Debe indicar al menos un destinatario' })
   @IsIn(['director_ie', 'jefe_gestion'], { each: true })

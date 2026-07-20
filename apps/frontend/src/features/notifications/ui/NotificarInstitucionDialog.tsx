@@ -24,9 +24,17 @@ const OPCIONES: { value: DestinatarioAlerta; label: string }[] = [
 interface Props {
   institucionId: string;
   institucionNombre: string;
+  docenteId?: string;
+  docenteNombre?: string;
 }
 
-export const NotificarInstitucionDialog = ({ institucionId, institucionNombre }: Props) => {
+export const NotificarInstitucionDialog = ({
+  institucionId,
+  institucionNombre,
+  docenteId,
+  docenteNombre,
+}: Props) => {
+  const objetivo = docenteNombre ?? institucionNombre;
   const [open, setOpen] = useState(false);
   const [destinatarios, setDestinatarios] = useState<DestinatarioAlerta[]>(['director_ie']);
   const [mensaje, setMensaje] = useState('');
@@ -43,7 +51,7 @@ export const NotificarInstitucionDialog = ({ institucionId, institucionNombre }:
       return;
     }
     enviar.mutate(
-      { institucionId, destinatarios, mensaje: mensaje.trim() || undefined },
+      { institucionId, docenteId, docenteNombre, destinatarios, mensaje: mensaje.trim() || undefined },
       {
         onSuccess: (res) => {
           const ok = res.resultados.filter((r) => r.inApp || r.email);
@@ -75,10 +83,10 @@ export const NotificarInstitucionDialog = ({ institucionId, institucionNombre }:
 
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Notificar sobre {institucionNombre}</AlertDialogTitle>
+          <AlertDialogTitle>Notificar sobre {objetivo}</AlertDialogTitle>
           <AlertDialogDescription>
             Se enviará una alerta in-app (y correo, si está disponible) a los destinatarios
-            seleccionados, con el estado actual de la institución.
+            seleccionados{docenteNombre ? `, sobre el docente ${docenteNombre}` : ''}.
           </AlertDialogDescription>
         </AlertDialogHeader>
 

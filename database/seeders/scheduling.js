@@ -58,6 +58,11 @@ export async function seedScheduling(ctx) {
   const monitorSecundaria = monitores[1];
 
   const primeraIe = await prisma.institucionEducativa.findFirst({
+    where: {
+      docentes: {
+        some: { docenteCargos: { some: { cargo: { nombre: 'Docente de Aula' }, fechaFin: null } } },
+      },
+    },
     orderBy: { createdAt: 'asc' },
   });
   if (!primeraIe) {
@@ -269,7 +274,7 @@ export async function seedScheduling(ctx) {
   // 5) DOCENTE EN_PROCESO pendiente del SEGUNDO monitor (Pedro Pablo) en
   //    otra institucion. Asi tenemos cronogramas de mas de un especialista.
   const segundaIe = await prisma.institucionEducativa.findFirst({
-    where: { id: { not: primeraIe.id } },
+    where: { id: { not: primeraIe.id }, docentes: { some: {} } },
     orderBy: { createdAt: 'asc' },
   });
   if (segundaIe) {

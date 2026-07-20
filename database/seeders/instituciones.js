@@ -1,250 +1,142 @@
+import { readFileSync } from 'node:fs';
 import { prisma } from './_lib/prisma.js';
-import { randomUUID } from 'node:crypto';
 
 /**
- * Instituciones educativas.
+ * Instituciones educativas — datos REALES de la UGEL Lampa.
  *
- * Datos de calidad: codigoModular unico de 7 digitos (rango UGEL 02-Lampa:
- * 0200001-0299999), codigoLocal de 6 digitos, direccion real de Lampa/Puno,
- * niveles validos (Inicial/Primaria/Secundaria).
+ * Fuente: ies_completas_db.json (198 II.EE. con latitud/longitud reales).
+ * Se normalizan modalidad (todo EBR) y nivel ("Inicial - Jardín" -> "Inicial"),
+ * se descartan coordenadas atípicas (fuera de Lampa/Puno) y se importan por
+ * upsert usando el codigoModular real.
+ *
+ * Como el seeder de personas engancha su staff demo a códigos ficticios
+ * (0200001–0200012), se crea un ALIAS: cada código demo apunta a una IE real,
+ * repartidas por distrito, para que el monitoreo demo caiga sobre IEs reales.
  */
 
-const INSTITUCIONES = [
-  {
-    codigoModular: '0200001',
-    codigoLocal: '020001',
-    nombre: 'I.E. N. 70001 Nuestra Señora de la Asunción',
-    nivelEducativo: 'Secundaria',
-    modalidad: 'EBR',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Jr. Lima 245, Plaza de Armas',
-    zona: 'Urbana',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200002',
-    codigoLocal: '020002',
-    nombre: 'I.E. N. 70002 San Martin de Porres',
-    nivelEducativo: 'Primaria',
-    modalidad: 'EBR',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Av. Sol 456',
-    zona: 'Urbana',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200003',
-    codigoLocal: '020003',
-    nombre: 'I.E. N. 70003 Cuna Jardin',
-    nivelEducativo: 'Inicial',
-    modalidad: 'EBR',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Jr. Ancash 123',
-    zona: 'Urbana',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200004',
-    codigoLocal: '020004',
-    nombre: 'I.E. N. 70004 Jose Carlos Mariategui',
-    nivelEducativo: 'Secundaria',
-    modalidad: 'EBR',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Cabanilla',
-    direccion: 'Plaza Principal s/n',
-    zona: 'Rural',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200005',
-    codigoLocal: '020005',
-    nombre: 'I.E. N. 70005 Tupac Amaru II',
-    nivelEducativo: 'Primaria',
-    modalidad: 'EBR',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Cabanilla',
-    direccion: 'Jr. Progreso 789',
-    zona: 'Rural',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200006',
-    codigoLocal: '020006',
-    nombre: 'I.E. N. 70006 Cesar Vallejo',
-    nivelEducativo: 'Secundaria',
-    modalidad: 'EBR',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Palca',
-    direccion: 'Av. Principal s/n',
-    zona: 'Rural',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200007',
-    codigoLocal: '020007',
-    nombre: 'I.E. N. 70007 Horacio',
-    nivelEducativo: 'Inicial',
-    modalidad: 'EBR',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Palca',
-    direccion: 'Jr. Union 321',
-    zona: 'Rural',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200008',
-    codigoLocal: '020008',
-    nombre: 'I.E. N. 70008 Tecnico Industrial',
-    nivelEducativo: 'Secundaria',
-    modalidad: 'EBR',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Av. Industrial Km 2',
-    zona: 'Urbana',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200009',
-    codigoLocal: '020009',
-    nombre: 'CEBA San Luis de Alba',
-    nivelEducativo: 'Avanzado',
-    modalidad: 'EBA',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Jr. Puno 101, Turno Noche',
-    zona: 'Urbana',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200099',
-    codigoLocal: '020099',
-    nombre: 'CEBA San Luis de Alba - Inicial',
-    nivelEducativo: 'Inicial-Intermedio',
-    modalidad: 'EBA',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Jr. Puno 101, Turno Noche',
-    zona: 'Urbana',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200010',
-    codigoLocal: '020010',
-    nombre: 'CEBE Lampa',
-    nivelEducativo: 'CEBE',
-    modalidad: 'EBE',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Av. Las Flores s/n',
-    zona: 'Urbana',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200011',
-    codigoLocal: '020011',
-    nombre: 'CETPRO Lampa Productiva',
-    nivelEducativo: 'Mecánica de Motos y Vehículos Afines',
-    modalidad: 'CEPTRO',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Av. Tecnologica 500',
-    zona: 'Urbana',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200015',
-    codigoLocal: '020015',
-    nombre: 'CETPRO Lampa - Textil',
-    nivelEducativo: 'Corte y Ensamblaje',
-    modalidad: 'CEPTRO',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Av. Tecnologica 500',
-    zona: 'Urbana',
-    estado: 'Activa',
-  },
-  {
-    codigoModular: '0200012',
-    codigoLocal: '020012',
-    nombre: 'PRITE Semillitas de Amor',
-    nivelEducativo: 'PRITE',
-    modalidad: 'EBE',
-    departamento: 'Puno',
-    provincia: 'Lampa',
-    distrito: 'Lampa',
-    direccion: 'Jr. Grau 205',
-    zona: 'Urbana',
-    estado: 'Activa',
-  }
+const RUTA_JSON = new URL('../../ies_completas_db.json', import.meta.url);
+
+// Códigos ficticios que personas.js referencia (cada uno recibe staff demo).
+const CODIGOS_DEMO = [
+  '0200001', '0200002', '0200003', '0200004', '0200005', '0200006',
+  '0200007', '0200008', '0200009', '0200010', '0200011', '0200012',
 ];
 
-const CODIGO_MODULAR_REGEX = /^\d{7}$/;
-const CODIGO_LOCAL_REGEX = /^\d{6}$/;
+const tituloCaso = (s) =>
+  String(s)
+    .toLowerCase()
+    .split(' ')
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ');
+
+const normalizarNivel = (nivel) => {
+  if (/inicial/i.test(nivel)) return 'Inicial';
+  if (/primaria/i.test(nivel)) return 'Primaria';
+  if (/secundaria/i.test(nivel)) return 'Secundaria';
+  return nivel;
+};
+
+// Bounding box amplio de la provincia de Lampa (Puno) para descartar outliers.
+const coordEnLampa = (lat, lng) =>
+  typeof lat === 'number' &&
+  typeof lng === 'number' &&
+  lat >= -16.2 &&
+  lat <= -14.8 &&
+  lng >= -71.6 &&
+  lng <= -69.9;
+
+function cargarInstituciones() {
+  const raw = JSON.parse(readFileSync(RUTA_JSON, 'utf-8'));
+  return raw.map((x) => {
+    const enLampa = coordEnLampa(x.latitud, x.longitud);
+    return {
+      codigoModular: String(x.codMod),
+      codigoLocal: String(x.codLocal),
+      nombre: String(x.nombreIE),
+      nivelEducativo: normalizarNivel(x.nivel),
+      modalidad: 'EBR',
+      departamento: 'Puno',
+      provincia: tituloCaso(x.provincia),
+      distrito: tituloCaso(x.distrito),
+      direccion: x.direccion || 'S/N',
+      zona:
+        String(x.cenPob).toUpperCase() === String(x.distrito).toUpperCase()
+          ? 'Urbana'
+          : 'Rural',
+      estado: 'Activa',
+      latitud: enLampa ? x.latitud : null,
+      longitud: enLampa ? x.longitud : null,
+    };
+  });
+}
 
 export async function seedInstituciones() {
-  console.log('[instituciones] Seeding instituciones educativas...');
+  console.log('[instituciones] Importando II.EE. reales de la UGEL Lampa...');
+  const instituciones = cargarInstituciones();
   const instMap = {};
+  let sinCoord = 0;
 
-  for (const inst of INSTITUCIONES) {
-    if (!CODIGO_MODULAR_REGEX.test(inst.codigoModular)) {
-      console.warn(`[calidad] codigoModular "${inst.codigoModular}" no tiene 7 digitos`);
-    }
-    if (!CODIGO_LOCAL_REGEX.test(inst.codigoLocal)) {
-      console.warn(`[calidad] codigoLocal "${inst.codigoLocal}" no tiene 6 digitos`);
-    }
-
+  for (const inst of instituciones) {
     const nivel = await prisma.nivelEducativo.findFirst({
       where: { codigo: inst.nivelEducativo, isActive: true },
     });
+    if (inst.latitud === null) sinCoord += 1;
+
+    const datos = {
+      nombre: inst.nombre,
+      codigoLocal: inst.codigoLocal,
+      nivelEducativo: inst.nivelEducativo,
+      nivelEducativoId: nivel?.id ?? null,
+      modalidad: inst.modalidad,
+      departamento: inst.departamento,
+      provincia: inst.provincia,
+      distrito: inst.distrito,
+      direccion: inst.direccion,
+      zona: inst.zona,
+      estado: inst.estado,
+      latitud: inst.latitud,
+      longitud: inst.longitud,
+    };
 
     const ie = await prisma.institucionEducativa.upsert({
       where: { codigoModular: inst.codigoModular },
-      update: {
-        nombre: inst.nombre,
-        nivelEducativo: inst.nivelEducativo,
-        nivelEducativoId: nivel?.id ?? null,
-        modalidad: inst.modalidad,
-        provincia: inst.provincia,
-        distrito: inst.distrito,
-        direccion: inst.direccion,
-        zona: inst.zona,
-        estado: inst.estado,
-        codigoLocal: inst.codigoLocal,
-      },
-      create: {
-        codigoModular: inst.codigoModular,
-        codigoLocal: inst.codigoLocal,
-        nombre: inst.nombre,
-        nivelEducativo: inst.nivelEducativo,
-        nivelEducativoId: nivel?.id ?? null,
-        modalidad: inst.modalidad,
-        departamento: inst.departamento,
-        provincia: inst.provincia,
-        distrito: inst.distrito,
-        direccion: inst.direccion,
-        zona: inst.zona,
-        estado: inst.estado,
-      },
+      update: datos,
+      create: { codigoModular: inst.codigoModular, ...datos },
     });
     instMap[inst.codigoModular] = ie.id;
   }
 
-  console.log(`[instituciones] ${INSTITUCIONES.length} instituciones listas.`);
+  // Alias: repartir los 12 códigos demo sobre IEs reales de distintos distritos,
+  // para que el staff/monitoreo demo caiga sobre instituciones reales.
+  const porDistrito = new Map();
+  for (const inst of instituciones) {
+    if (!porDistrito.has(inst.distrito)) porDistrito.set(inst.distrito, []);
+    porDistrito.get(inst.distrito).push(inst.codigoModular);
+  }
+  const distritos = [...porDistrito.keys()];
+  const objetivos = [];
+  let ronda = 0;
+  while (objetivos.length < CODIGOS_DEMO.length) {
+    let agregoAlguno = false;
+    for (const d of distritos) {
+      const lista = porDistrito.get(d);
+      if (ronda < lista.length) {
+        objetivos.push(lista[ronda]);
+        agregoAlguno = true;
+        if (objetivos.length >= CODIGOS_DEMO.length) break;
+      }
+    }
+    if (!agregoAlguno) break;
+    ronda += 1;
+  }
+  CODIGOS_DEMO.forEach((codigoDemo, i) => {
+    const real = objetivos[i];
+    if (real) instMap[codigoDemo] = instMap[real];
+  });
+
+  console.log(
+    `[instituciones] ${instituciones.length} II.EE. reales importadas ` +
+      `(${sinCoord} sin coordenada válida). ${CODIGOS_DEMO.length} alias demo → IEs reales.`,
+  );
   return { instMap };
 }

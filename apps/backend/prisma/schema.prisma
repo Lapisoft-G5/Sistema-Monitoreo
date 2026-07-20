@@ -230,6 +230,8 @@ model InstitucionEducativa {
   direccion        String   @db.VarChar(150)
   zona             String   @db.VarChar(20)
   estado           String   @default("Activa") @db.VarChar(20)
+  latitud          Decimal? @db.Decimal(9, 6)
+  longitud         Decimal? @db.Decimal(9, 6)
   alertaSinVisitaAt DateTime? @map("alerta_sin_visita_at")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")

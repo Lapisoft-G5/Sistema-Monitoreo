@@ -126,6 +126,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   especialista: ['monitoreo', 'monitoreo_calendario', 'reportes', 'monitoreo_reportes'],
 
   director_institucion: [
+    'dashboard',
     'monitoreo',
     'monitoreo_plan_anual',
     'monitoreo_cronograma',
@@ -184,7 +185,7 @@ export const getDefaultLandingPage = (role: UserRole): string => {
     case 'especialista':
       return '/monitoreo/calendario';
     case 'director_institucion':
-      return '/instituciones/docentes';
+      return '/dashboard';
     case 'coordinador_pedagogico':
     case 'jefe_taller':
       return '/monitoreo/calendario';

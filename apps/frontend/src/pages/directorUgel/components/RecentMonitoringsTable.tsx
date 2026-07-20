@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@shared/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { Badge } from '@shared/ui/badge';
@@ -67,21 +68,30 @@ interface RecentMonitoringsTableProps {
   /** Etiqueta de la primera columna (IE en UGEL, Docente en Director). */
   firstColumnLabel?: string;
   emptyLabel?: string;
+  /** Ruta a la que navega "Ver reporte detallado" (ej. Fichas Completadas). */
+  detailPath?: string;
 }
 
 export const RecentMonitoringsTable = ({
   rows,
   firstColumnLabel = 'Institución Educativa',
   emptyLabel = 'Sin monitoreos registrados.',
+  detailPath,
 }: RecentMonitoringsTableProps = {}) => {
   const data = rows ?? mockData;
+  const navigate = useNavigate();
   return (
     <Card className="shadow-xs border-border flex flex-col h-full overflow-hidden">
       <div className="p-5 flex justify-between items-center border-b border-border bg-card">
         <h3 className="text-lg font-bold">Monitoreos Recientes</h3>
-        <span className="text-sm font-semibold text-primary cursor-pointer hover:underline flex items-center gap-1">
-          Ver reporte detallado <ArrowRight className="w-4 h-4" />
-        </span>
+        {detailPath && (
+          <span
+            onClick={() => navigate(detailPath)}
+            className="text-sm font-semibold text-primary cursor-pointer hover:underline flex items-center gap-1"
+          >
+            Ver reporte detallado <ArrowRight className="w-4 h-4" />
+          </span>
+        )}
       </div>
 
       <div className="overflow-x-auto">

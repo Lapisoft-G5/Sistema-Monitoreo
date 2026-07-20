@@ -1,5 +1,8 @@
-import { Controller, ForbiddenException, Get, Req, UseGuards } from '@nestjs/common';
-import type { IDirectorDashboardResponse } from '@sistema-monitoreo/shared-contracts';
+import { Controller, ForbiddenException, Get, Query, Req, UseGuards } from '@nestjs/common';
+import type {
+  IDirectorDashboardResponse,
+  IUgelDashboardResponse,
+} from '@sistema-monitoreo/shared-contracts';
 import { DashboardService } from '../services/dashboard.service.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
@@ -19,6 +22,20 @@ export class DashboardController {
   @RequirePermissions('dashboard:read')
   async director(@Req() req: { user?: any }): Promise<IDirectorDashboardResponse> {
     return this.service.getDirectorDashboard(this.toSession(req));
+  }
+
+  /**
+   * GET /api/dashboard/ugel
+   * KPIs institucionales, semáforo y monitoreos recientes a nivel provincial.
+   */
+  @Get('ugel')
+  @RequirePermissions('dashboard:read')
+  async ugel(
+    @Req() req: { user?: any },
+    @Query('anio') anio?: string,
+  ): Promise<IUgelDashboardResponse> {
+    const anioNumber = anio ? parseInt(anio, 10) : undefined;
+    return this.service.getUgelDashboard(this.toSession(req), anioNumber);
   }
 
   private toSession(req: { user?: any }): SessionScope {

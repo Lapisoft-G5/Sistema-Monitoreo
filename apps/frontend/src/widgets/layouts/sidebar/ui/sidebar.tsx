@@ -118,9 +118,9 @@ export const Sidebar = () => {
           const isOpen = openMenus.includes(item.id as string);
 
           // Lógica de estado activo por ruta (URL)
-          const isActive = item.path
-            ? location.pathname.startsWith(item.path)
-            : visibleChildren.some((c) => location.pathname.startsWith(c.path));
+          const isActive =
+            (item.path && location.pathname.startsWith(item.path)) ||
+            visibleChildren.some((c) => location.pathname.startsWith(c.path));
 
           const displayLabel =
             item.id === 'instituciones_docentes'

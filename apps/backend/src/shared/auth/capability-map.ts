@@ -47,7 +47,7 @@ export const BASE_CAPABILITIES: readonly string[] = ['reports:read', 'monitoreo:
 
 /** Permisos derivados del ROL (identidad de autenticación del Usuario). */
 export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
-  [RoleCode.DIRECTOR_UGEL]: ['dashboard:read'],
+  [RoleCode.DIRECTOR_UGEL]: ['dashboard:read', 'instituciones:read'],
   [RoleCode.JEFE_GESTION]: [
     'especialistas:read',
     'especialistas:write',

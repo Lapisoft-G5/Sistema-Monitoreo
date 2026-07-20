@@ -15,4 +15,5 @@ export abstract class InstitutionsRepository {
     query: QueryInstitucionDto,
     user?: JwtPayload,
   ): Promise<{ data: Institucion[]; total: number }>;
+  abstract getDashboardStats(user?: JwtPayload): Promise<any>;
 }

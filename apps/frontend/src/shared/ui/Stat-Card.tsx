@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Card } from '@shared/ui/card';
 
+
 interface StatCardProps {
   title: string;
   icon: ReactNode;
@@ -8,6 +9,8 @@ interface StatCardProps {
   trendText?: string;
   trendType?: 'success' | 'warning' | 'danger' | 'neutral';
   progressValue?: number; // Para la barrita de progreso (0 a 100)
+  variant?: 'default' | 'solidDestructive' | 'solidPrimary';
+  bottomAccent?: 'primary' | 'success' | 'destructive';
 }
 
 export const StatCard = ({
@@ -17,6 +20,8 @@ export const StatCard = ({
   trendText,
   trendType = 'neutral',
   progressValue,
+  variant = 'default',
+  bottomAccent,
 }: StatCardProps) => {
   const trendColors = {
     success: 'text-green-600 bg-green-500/10',
@@ -25,35 +30,56 @@ export const StatCard = ({
     neutral: 'text-text-muted bg-muted',
   };
 
+  const isSolid = variant !== 'default';
+
+  const cardClasses = {
+    default: 'bg-card text-card-foreground border-border',
+    solidDestructive: 'bg-destructive text-destructive-foreground border-transparent',
+    solidPrimary: 'bg-primary text-primary-foreground border-transparent',
+  };
+
+  const titleClasses = isSolid ? 'text-current opacity-80' : 'text-text-muted';
+  const iconClasses = isSolid ? 'text-current opacity-80' : 'text-text-muted';
+  const valueClasses = isSolid ? 'text-current' : 'text-text';
+
+  const accentClasses = {
+    primary: 'border-b-[6px] border-b-primary',
+    success: 'border-b-[6px] border-b-green-500',
+    destructive: 'border-b-[6px] border-b-destructive',
+  };
+  const finalCardClass = `p-5 shadow-xs flex flex-col justify-between h-full border ${cardClasses[variant]} ${bottomAccent ? accentClasses[bottomAccent] : ''}`;
+
   return (
-    <Card className="p-5 border border-border shadow-xs flex flex-col justify-between h-full">
+    <Card className={finalCardClass}>
       <div>
         <div className="flex justify-between items-center mb-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+          <span className={`text-xs font-bold uppercase tracking-wider ${titleClasses}`}>
             {title}
           </span>
-          <div className="text-text-muted">{icon}</div>
+          <div className={iconClasses}>{icon}</div>
         </div>
-        <div className="text-3xl font-extrabold tracking-tight text-text">{value}</div>
+        <div className={`text-3xl font-extrabold tracking-tight ${valueClasses}`}>{value}</div>
       </div>
 
       <div className="mt-3">
         {progressValue !== undefined ? (
           <div>
-            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+            <div className={`h-2 w-full rounded-full overflow-hidden ${isSolid ? 'bg-black/20' : 'bg-muted'}`}>
               <div
-                className="h-full bg-green-500 rounded-full transition-all"
+                className={`h-full rounded-full transition-all ${isSolid ? 'bg-white' : 'bg-green-500'}`}
                 style={{ width: `${progressValue}%` }}
               />
             </div>
             {trendText && (
-              <span className="block mt-2 text-xs text-text-muted font-medium">{trendText}</span>
+              <span className={`block mt-2 text-xs font-medium ${isSolid ? 'text-current opacity-80' : 'text-text-muted'}`}>{trendText}</span>
             )}
           </div>
         ) : (
           trendText && (
             <span
-              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-block ${trendColors[trendType]}`}
+              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-block ${
+                isSolid ? 'bg-black/20 text-current' : trendColors[trendType]
+              }`}
             >
               {trendText}
             </span>

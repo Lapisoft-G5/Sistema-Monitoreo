@@ -99,4 +99,13 @@ export const institutionsApi = {
       return { ok: false, error: err };
     }
   },
+
+  getDashboardStats: async (): Promise<{ ok: boolean; data?: any; error?: unknown }> => {
+    try {
+      const data = await request<any>(`/api/instituciones/dashboard/stats`);
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
 };

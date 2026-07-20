@@ -8,6 +8,10 @@ const DashboardPage = lazy(() =>
   import('./DashboardPage').then((m) => ({ default: m.DashboardPage })),
 );
 
+const SemaforoInstitucionalPage = lazy(() =>
+  import('./SemaforoInstitucionalPage').then((m) => ({ default: m.SemaforoInstitucionalPage })),
+);
+
 export const directorUgelRoutes: RouteObject[] = [
   {
     element: <ProtectedRoute permission="dashboard" />,
@@ -17,6 +21,19 @@ export const directorUgelRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <DashboardPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute permission="instituciones_semaforo" />,
+    children: [
+      {
+        path: 'instituciones/semaforo',
+        element: (
+          <LazyLoader>
+            <SemaforoInstitucionalPage />
           </LazyLoader>
         ),
       },

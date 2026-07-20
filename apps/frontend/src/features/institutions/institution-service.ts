@@ -41,6 +41,14 @@ export const fetchInstitucionById = async (id: string): Promise<Institucion | nu
   return null;
 };
 
+export const fetchDashboardStats = async () => {
+  const res = await institutionsApi.getDashboardStats();
+  if (res.ok && res.data) {
+    return res.data;
+  }
+  return { total: 0, monitoreadas: 0, pendientes: 0, porcentaje: 0 };
+};
+
 export const useInstitutionService = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

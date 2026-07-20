@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, Polygon } from 'react-leaflet';
 import L, { type Layer, type PathOptions } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card } from '@shared/ui/card';
@@ -15,6 +15,33 @@ interface DistritoFeature {
 
 /** Límites geográficos de la provincia de Lampa (para encuadrar y acotar el mapa). */
 const LAMPA_BOUNDS = L.geoJSON(lampaDistritos as never).getBounds();
+
+// Máscara: rectángulo "mundo" con agujeros con la forma de cada distrito, para
+// pintar todo lo que está FUERA de Lampa y dejar visible solo la provincia.
+const MUNDO: [number, number][] = [
+  [-85, -180],
+  [-85, 180],
+  [85, 180],
+  [85, -180],
+];
+function anillosDeLampa(): [number, number][][] {
+  const col = lampaDistritos as unknown as {
+    features: { geometry: { type: string; coordinates: number[][][] | number[][][][] } }[];
+  };
+  const anillos: [number, number][][] = [];
+  for (const f of col.features) {
+    const g = f.geometry;
+    if (g.type === 'Polygon') {
+      anillos.push((g.coordinates as number[][][])[0].map(([lng, lat]) => [lat, lng]));
+    } else if (g.type === 'MultiPolygon') {
+      for (const poly of g.coordinates as number[][][][]) {
+        anillos.push(poly[0].map(([lng, lat]) => [lat, lng]));
+      }
+    }
+  }
+  return anillos;
+}
+const MASCARA: [number, number][][] = [MUNDO, ...anillosDeLampa()];
 
 /** Normaliza nombres de distrito (mayúsculas, sin tildes) para el match GeoJSON↔BD. */
 export const normDistrito = (s: string) =>
@@ -100,6 +127,11 @@ export const LampaMap = ({
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          />
+          {/* Máscara: oculta todo lo que está fuera de la provincia de Lampa. */}
+          <Polygon
+            positions={MASCARA}
+            pathOptions={{ fillColor: '#eef1f5', fillOpacity: 1, stroke: false, interactive: false }}
           />
           <GeoJSON
             key={selNorm ?? 'none'}

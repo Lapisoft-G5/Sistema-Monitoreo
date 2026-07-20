@@ -1,5 +1,5 @@
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from 'react-leaflet';
-import type { Layer, PathOptions } from 'leaflet';
+import L, { type Layer, type PathOptions } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card } from '@shared/ui/card';
 import lampaDistritos from '@shared/assets/lampa-distritos.geojson.json';
@@ -12,6 +12,9 @@ import type {
 interface DistritoFeature {
   properties?: { distrito?: string } | null;
 }
+
+/** Límites geográficos de la provincia de Lampa (para encuadrar y acotar el mapa). */
+const LAMPA_BOUNDS = L.geoJSON(lampaDistritos as never).getBounds();
 
 /** Normaliza nombres de distrito (mayúsculas, sin tildes) para el match GeoJSON↔BD. */
 export const normDistrito = (s: string) =>
@@ -87,7 +90,13 @@ export const LampaMap = ({
       </div>
 
       <div className="flex-1 w-full bg-muted/20 relative z-0 h-[400px] md:h-auto">
-        <MapContainer center={[-15.35, -70.5]} zoom={9} style={{ height: '100%', width: '100%', zIndex: 0 }}>
+        <MapContainer
+          bounds={LAMPA_BOUNDS}
+          maxBounds={LAMPA_BOUNDS.pad(0.15)}
+          maxBoundsViscosity={1}
+          minZoom={9}
+          style={{ height: '100%', width: '100%', zIndex: 0 }}
+        >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"

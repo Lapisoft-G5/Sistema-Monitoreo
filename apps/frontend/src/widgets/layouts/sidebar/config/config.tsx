@@ -54,7 +54,6 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     icon: <School className="h-[18px] w-[18px]" />,
     path: '/instituciones/padron',
     children: [
-      { id: 'instituciones_semaforo', label: 'Semáforo Institucional', path: '/instituciones/semaforo' },
       { id: 'instituciones_padron_lista', label: 'Padrón de II. EE.', path: '/instituciones/padron' },
     ],
   },

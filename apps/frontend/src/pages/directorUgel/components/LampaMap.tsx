@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, Polygon } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, Polygon, useMap } from 'react-leaflet';
 import L, { type Layer, type PathOptions } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card } from '@shared/ui/card';
@@ -50,6 +51,32 @@ export const normDistrito = (s: string) =>
     .replace(/\p{Diacritic}/gu, '')
     .toUpperCase()
     .trim();
+
+/** Bounds del polígono de un distrito (para centrar el mapa al filtrarlo). */
+function boundsDistrito(sel: string): L.LatLngBounds | null {
+  const col = lampaDistritos as unknown as { features: { properties?: { distrito?: string } }[] };
+  const feats = col.features.filter(
+    (f) => normDistrito(String(f.properties?.distrito ?? '')) === normDistrito(sel),
+  );
+  if (feats.length === 0) return null;
+  return L.geoJSON({ type: 'FeatureCollection', features: feats } as never).getBounds();
+}
+
+/** Recentra el mapa al distrito seleccionado (o a toda Lampa si no hay). */
+function VistaMapa({ selected }: { selected?: string | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (selected) {
+      const b = boundsDistrito(selected);
+      if (b) {
+        map.fitBounds(b.pad(0.15));
+        return;
+      }
+    }
+    map.fitBounds(LAMPA_BOUNDS);
+  }, [selected, map]);
+  return null;
+}
 
 const ESTADO_UI: Record<string, { color: string; label: string }> = {
   critico: { color: '#ef4444', label: 'Crítico' },
@@ -124,6 +151,7 @@ export const LampaMap = ({
           minZoom={9}
           style={{ height: '100%', width: '100%', zIndex: 0 }}
         >
+          <VistaMapa selected={selected} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"

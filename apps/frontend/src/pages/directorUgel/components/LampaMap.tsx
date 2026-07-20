@@ -1,14 +1,17 @@
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from 'react-leaflet';
 import type { Layer, PathOptions } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Card } from '@shared/ui/card';
+import lampaDistritos from '@shared/assets/lampa-distritos.geojson.json';
+import type {
+  IUgelDashboardDistrito,
+  IUgelDashboardIeMapa,
+} from '@sistema-monitoreo/shared-contracts';
 
 /** Forma mínima de una feature del GeoJSON de distritos. */
 interface DistritoFeature {
   properties?: { distrito?: string } | null;
 }
-import { Card } from '@shared/ui/card';
-import lampaDistritos from '@shared/assets/lampa-distritos.geojson.json';
-import type { IUgelDashboardDistrito } from '@sistema-monitoreo/shared-contracts';
 
 /** Normaliza nombres de distrito (mayúsculas, sin tildes) para el match GeoJSON↔BD. */
 export const normDistrito = (s: string) =>
@@ -18,34 +21,39 @@ export const normDistrito = (s: string) =>
     .toUpperCase()
     .trim();
 
-const colorPorCobertura = (pct: number | null): string => {
-  if (pct === null) return '#cbd5e1'; // sin datos
-  if (pct < 40) return '#ef4444';
-  if (pct < 75) return '#f59e0b';
-  return '#22c55e';
+const ESTADO_UI: Record<string, { color: string; label: string }> = {
+  critico: { color: '#ef4444', label: 'Crítico' },
+  enProceso: { color: '#f59e0b', label: 'En proceso' },
+  logroPrevisto: { color: '#22c55e', label: 'Logro previsto' },
+  sinRegistro: { color: '#94a3b8', label: 'Sin registro' },
 };
 
 interface LampaMapProps {
   coberturaPorDistrito: IUgelDashboardDistrito[];
+  instituciones: IUgelDashboardIeMapa[];
   selected?: string | null;
   onSelectDistrito?: (distrito: string | null) => void;
 }
 
-export const LampaMap = ({ coberturaPorDistrito, selected, onSelectDistrito }: LampaMapProps) => {
-  const porDistrito = new Map(
-    coberturaPorDistrito.map((d) => [normDistrito(d.distrito), d]),
-  );
+export const LampaMap = ({
+  coberturaPorDistrito,
+  instituciones,
+  selected,
+  onSelectDistrito,
+}: LampaMapProps) => {
+  const porDistrito = new Map(coberturaPorDistrito.map((d) => [normDistrito(d.distrito), d]));
   const selNorm = selected ? normDistrito(selected) : null;
+  const marcadores = selNorm
+    ? instituciones.filter((ie) => normDistrito(ie.distrito) === selNorm)
+    : instituciones;
 
   const styleFeature = (feature?: DistritoFeature): PathOptions => {
-    const nombre = normDistrito(String(feature?.properties?.distrito ?? ''));
-    const data = porDistrito.get(nombre);
-    const isSel = selNorm === nombre;
+    const isSel = selNorm === normDistrito(String(feature?.properties?.distrito ?? ''));
     return {
-      fillColor: colorPorCobertura(data ? data.porcentajeCobertura : null),
-      fillOpacity: isSel ? 0.85 : 0.55,
-      color: isSel ? '#1e293b' : 'white',
-      weight: isSel ? 3 : 1,
+      fillColor: isSel ? '#6366f1' : '#cbd5e1',
+      fillOpacity: isSel ? 0.25 : 0.15,
+      color: isSel ? '#4338ca' : '#94a3b8',
+      weight: isSel ? 2.5 : 1,
     };
   };
 
@@ -53,11 +61,11 @@ export const LampaMap = ({ coberturaPorDistrito, selected, onSelectDistrito }: L
     const nombreRaw = String(feature.properties?.distrito ?? '');
     const nombre = normDistrito(nombreRaw);
     const data = porDistrito.get(nombre);
-    const cob = data ? `${data.porcentajeCobertura}% (${data.monitoreadas}/${data.totalInstituciones})` : 'sin datos';
+    const cob = data
+      ? `${data.porcentajeCobertura}% (${data.monitoreadas}/${data.totalInstituciones})`
+      : 'sin datos';
     layer.bindTooltip(`<b>${nombreRaw}</b><br/>Cobertura: ${cob}`, { sticky: true });
-    layer.on('click', () => {
-      onSelectDistrito?.(selNorm === nombre ? null : nombreRaw);
-    });
+    layer.on('click', () => onSelectDistrito?.(selNorm === nombre ? null : nombreRaw));
   };
 
   return (
@@ -90,16 +98,41 @@ export const LampaMap = ({ coberturaPorDistrito, selected, onSelectDistrito }: L
             style={styleFeature as never}
             onEachFeature={onEach}
           />
+          {marcadores.map((ie) => {
+            const ui = ESTADO_UI[ie.estado] ?? ESTADO_UI.sinRegistro;
+            return (
+              <CircleMarker
+                key={ie.institucionId}
+                center={[ie.latitud, ie.longitud]}
+                radius={4}
+                pathOptions={{ fillColor: ui.color, fillOpacity: 0.95, color: 'white', weight: 1 }}
+              >
+                <Popup>
+                  <div className="text-xs">
+                    <div className="font-bold">{ie.nombre}</div>
+                    <div className="text-text-muted">{ie.distrito}</div>
+                    <div style={{ color: ui.color }} className="font-semibold">
+                      {ui.label}
+                    </div>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            );
+          })}
         </MapContainer>
 
-        {/* Leyenda */}
+        {/* Leyenda: estado de monitoreo por IE */}
         <Card className="absolute bottom-4 left-4 z-[400] p-3 shadow-md bg-card/95 backdrop-blur-sm border-border">
-          <h4 className="text-[10px] font-bold text-text-muted mb-2 uppercase tracking-wider">Cobertura</h4>
+          <h4 className="text-[10px] font-bold text-text-muted mb-2 uppercase tracking-wider">
+            Estado de monitoreo
+          </h4>
           <div className="space-y-1.5 text-xs font-medium">
-            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Alta (≥75%)</div>
-            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Media (40–74%)</div>
-            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-destructive" /> Baja (&lt;40%)</div>
-            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-slate-300" /> Sin datos</div>
+            {Object.values(ESTADO_UI).map((s) => (
+              <div key={s.label} className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                {s.label}
+              </div>
+            ))}
           </div>
         </Card>
       </div>

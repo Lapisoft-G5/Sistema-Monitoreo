@@ -76,6 +76,18 @@ export interface IUgelDashboardDistrito {
   porcentajeCobertura: number;
 }
 
+export type EstadoSemaforoIe = 'critico' | 'enProceso' | 'logroPrevisto' | 'sinRegistro';
+
+/** IE geolocalizada para el mapa (marcador por su estado de monitoreo). */
+export interface IUgelDashboardIeMapa {
+  institucionId: string;
+  nombre: string;
+  distrito: string;
+  latitud: number;
+  longitud: number;
+  estado: EstadoSemaforoIe;
+}
+
 export interface IUgelDashboardResponse {
   anio: number;
   kpis: IUgelDashboardKpis;
@@ -84,6 +96,8 @@ export interface IUgelDashboardResponse {
   requierenAtencion: IUgelDashboardCriticaIe[];
   /** Ranking de cobertura por distrito. */
   coberturaPorDistrito: IUgelDashboardDistrito[];
+  /** II.EE. geolocalizadas para el mapa (marcadores). */
+  institucionesMapa: IUgelDashboardIeMapa[];
   /** % de cobertura del año anterior (para la tendencia del héroe); 0 si no hay datos. */
   coberturaAnioPrevio: number;
   monitoreosRecientes: IUgelDashboardMonitoreoReciente[];

@@ -102,6 +102,7 @@ export const DashboardPage = () => {
         <div className="lg:col-span-2">
           <LampaMap
             coberturaPorDistrito={data?.coberturaPorDistrito ?? []}
+            instituciones={data?.institucionesMapa ?? []}
             selected={distrito}
             onSelectDistrito={setDistrito}
           />

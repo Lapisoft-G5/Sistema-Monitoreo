@@ -4,6 +4,7 @@ import type {
   IDirectorDashboardResponse,
   IUgelDashboardCriticaIe,
   IUgelDashboardDistrito,
+  IUgelDashboardIeMapa,
   IUgelDashboardMonitoreoReciente,
   IUgelDashboardResponse,
   NivelLogro,
@@ -296,6 +297,23 @@ export class PrismaDashboardRepository implements DashboardRepository {
     for (const ie of requierenAtencion) ie.docentes.sort((a, b) => a.promedio - b.promedio);
     requierenAtencion.sort((a, b) => b.docentes.length - a.docentes.length);
 
+    // 4a-bis. II.EE. geolocalizadas para el mapa, con su estado de semáforo.
+    const iesConCoord = await this.prisma.institucionEducativa.findMany({
+      where: { ...institucionWhere, latitud: { not: null }, longitud: { not: null } },
+      select: { id: true, nombre: true, distrito: true, latitud: true, longitud: true },
+    });
+    const institucionesMapa: IUgelDashboardIeMapa[] = iesConCoord.map((ie) => {
+      const acc = promediosPorIe.get(ie.id);
+      return {
+        institucionId: ie.id,
+        nombre: ie.nombre,
+        distrito: ie.distrito,
+        latitud: Number(ie.latitud),
+        longitud: Number(ie.longitud),
+        estado: acc ? clasificarSemaforo(acc.suma / acc.n) : 'sinRegistro',
+      };
+    });
+
     // 4b. Cobertura por distrito (todas las IEs activas, cuántas monitoreadas).
     const [iesActivas, iesMonitoreadas] = await Promise.all([
       this.prisma.institucionEducativa.findMany({
@@ -380,6 +398,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       semaforo: { critico, enProceso, logroPrevisto, sinRegistro },
       requierenAtencion,
       coberturaPorDistrito,
+      institucionesMapa,
       coberturaAnioPrevio,
       monitoreosRecientes,
     };

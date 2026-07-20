@@ -4,7 +4,23 @@ import { Badge } from '@shared/ui/badge';
 import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { ArrowRight } from 'lucide-react';
 
-const mockData = [
+export interface MonitoringRow {
+  id: string | number;
+  /** Título principal (IE en vista UGEL, docente en vista Director). */
+  school: string;
+  /** Subtítulo (código modular). Opcional. */
+  codModular?: string;
+  level: string;
+  district?: string;
+  specialist: string;
+  specialistInitials: string;
+  date: string;
+  status: string;
+  score: number;
+  statusVariant: string;
+}
+
+const mockData: MonitoringRow[] = [
   {
     id: 1,
     school: 'IE 70001 Huayta',
@@ -46,7 +62,19 @@ const mockData = [
   }
 ];
 
-export const RecentMonitoringsTable = () => {
+interface RecentMonitoringsTableProps {
+  rows?: MonitoringRow[];
+  /** Etiqueta de la primera columna (IE en UGEL, Docente en Director). */
+  firstColumnLabel?: string;
+  emptyLabel?: string;
+}
+
+export const RecentMonitoringsTable = ({
+  rows,
+  firstColumnLabel = 'Institución Educativa',
+  emptyLabel = 'Sin monitoreos registrados.',
+}: RecentMonitoringsTableProps = {}) => {
+  const data = rows ?? mockData;
   return (
     <Card className="shadow-xs border-border flex flex-col h-full overflow-hidden">
       <div className="p-5 flex justify-between items-center border-b border-border bg-card">
@@ -55,12 +83,12 @@ export const RecentMonitoringsTable = () => {
           Ver reporte detallado <ArrowRight className="w-4 h-4" />
         </span>
       </div>
-      
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="text-xs font-bold uppercase tracking-wider">Institución Educativa</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-wider">{firstColumnLabel}</TableHead>
               <TableHead className="text-xs font-bold uppercase tracking-wider">Nivel / Distrito</TableHead>
               <TableHead className="text-xs font-bold uppercase tracking-wider">Especialista Responsable</TableHead>
               <TableHead className="text-xs font-bold uppercase tracking-wider">Fecha Visita</TableHead>
@@ -68,15 +96,26 @@ export const RecentMonitoringsTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockData.map((row) => (
+            {data.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-text-muted py-8">
+                  {emptyLabel}
+                </TableCell>
+              </TableRow>
+            )}
+            {data.map((row) => (
               <TableRow key={row.id}>
                 <TableCell>
                   <div className="font-bold">{row.school}</div>
-                  <div className="text-xs text-text-muted">Cód. Modular: {row.codModular}</div>
+                  {row.codModular && (
+                    <div className="text-xs text-text-muted">Cód. Modular: {row.codModular}</div>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="font-medium text-text">{row.level}</div>
-                  <div className="text-xs text-text-muted uppercase">{row.district}</div>
+                  {row.district && (
+                    <div className="text-xs text-text-muted uppercase">{row.district}</div>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

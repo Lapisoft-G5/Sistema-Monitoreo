@@ -2,6 +2,7 @@ import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
 import type { IUgelDashboardCriticaIe } from '@sistema-monitoreo/shared-contracts';
+import { NotificarInstitucionDialog } from '@features/notifications';
 
 interface RequierenAtencionCardProps {
   items: IUgelDashboardCriticaIe[];
@@ -40,6 +41,12 @@ export const RequierenAtencionCard = ({ items, limite = 5 }: RequierenAtencionCa
                 <div className="font-semibold truncate">{ie.nombre}</div>
                 <div className="text-xs text-text-muted uppercase tracking-wide">
                   {ie.distrito} · {ie.nivelEducativo}
+                </div>
+                <div className="mt-1">
+                  <NotificarInstitucionDialog
+                    institucionId={ie.institucionId}
+                    institucionNombre={ie.nombre}
+                  />
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">

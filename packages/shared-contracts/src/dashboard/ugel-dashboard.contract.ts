@@ -49,14 +49,23 @@ export interface IUgelDashboardMonitoreoReciente {
   promedio: number;
 }
 
-/** IE que requiere atención (promedio institucional en banda crítica). */
+/** Docente/directivo con desempeño crítico (última ficha en INICIO). */
+export interface IDocenteCritico {
+  docenteId: string;
+  nombre: string;
+  /** 'Docente' | 'Directivo' (según el tipo de monitoreo). */
+  cargo: string;
+  promedio: number;
+  nivelLogro: NivelLogro;
+}
+
+/** IE con docentes que requieren atención, para "Requieren atención". */
 export interface IUgelDashboardCriticaIe {
   institucionId: string;
   nombre: string;
   distrito: string;
   nivelEducativo: string;
-  promedio: number;
-  nivelLogro: NivelLogro;
+  docentes: IDocenteCritico[];
 }
 
 /** Cobertura de monitoreo agregada por distrito. */

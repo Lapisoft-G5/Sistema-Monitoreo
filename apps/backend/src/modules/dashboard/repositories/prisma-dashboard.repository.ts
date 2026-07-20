@@ -197,6 +197,9 @@ export class PrismaDashboardRepository implements DashboardRepository {
           select: {
             institucionId: true,
             nivelEducativo: true,
+            tipoMonitoreo: true,
+            evaluadoId: true,
+            evaluado: { select: { persona: { select: { nombres: true, apellidos: true } } } },
             institucion: {
               select: {
                 nombre: true,
@@ -250,25 +253,48 @@ export class PrismaDashboardRepository implements DashboardRepository {
     let critico = 0;
     let enProceso = 0;
     let logroPrevisto = 0;
-    const requierenAtencion: IUgelDashboardCriticaIe[] = [];
-    for (const [ieId, acc] of promediosPorIe.entries()) {
-      const promedioIe = acc.suma / acc.n;
-      const categoria = clasificarSemaforo(promedioIe);
-      if (categoria === 'critico') {
-        critico += 1;
-        requierenAtencion.push({
-          institucionId: ieId,
-          nombre: acc.nombre,
-          distrito: acc.distrito,
-          nivelEducativo: acc.nivelEducativo,
-          promedio: Number(promedioIe.toFixed(2)),
-          nivelLogro: 'INICIO',
-        });
-      } else if (categoria === 'enProceso') enProceso += 1;
+    for (const acc of promediosPorIe.values()) {
+      const categoria = clasificarSemaforo(acc.suma / acc.n);
+      if (categoria === 'critico') critico += 1;
+      else if (categoria === 'enProceso') enProceso += 1;
       else logroPrevisto += 1;
     }
-    requierenAtencion.sort((a, b) => a.promedio - b.promedio);
     const sinRegistro = Math.max(totalInstituciones - promediosPorIe.size, 0);
+
+    // "Requieren atención" a nivel docente: docentes/directivos cuya ÚLTIMA ficha
+    // está en INICIO, agrupados por su IE.
+    const ultimaPorDocente = new Map<string, (typeof fichas)[number]>();
+    for (const ficha of fichas) {
+      const docId = ficha.cronograma.evaluadoId;
+      if (!ultimaPorDocente.has(docId)) ultimaPorDocente.set(docId, ficha); // ya vienen desc
+    }
+    const iesAtencion = new Map<string, IUgelDashboardCriticaIe>();
+    for (const ficha of ultimaPorDocente.values()) {
+      if (ficha.nivelLogro !== 'INICIO') continue;
+      const c = ficha.cronograma;
+      let ie = iesAtencion.get(c.institucionId);
+      if (!ie) {
+        ie = {
+          institucionId: c.institucionId,
+          nombre: c.institucion.nombre,
+          distrito: c.institucion.distrito,
+          nivelEducativo: c.institucion.nivelEducativo,
+          docentes: [],
+        };
+        iesAtencion.set(c.institucionId, ie);
+      }
+      const p = c.evaluado.persona;
+      ie.docentes.push({
+        docenteId: c.evaluadoId,
+        nombre: `${p.nombres} ${p.apellidos}`.trim(),
+        cargo: c.tipoMonitoreo === 'DIRECTIVO' ? 'Directivo' : 'Docente',
+        promedio: Number(ficha.promedio),
+        nivelLogro: 'INICIO',
+      });
+    }
+    const requierenAtencion: IUgelDashboardCriticaIe[] = [...iesAtencion.values()];
+    for (const ie of requierenAtencion) ie.docentes.sort((a, b) => a.promedio - b.promedio);
+    requierenAtencion.sort((a, b) => b.docentes.length - a.docentes.length);
 
     // 4b. Cobertura por distrito (todas las IEs activas, cuántas monitoreadas).
     const [iesActivas, iesMonitoreadas] = await Promise.all([

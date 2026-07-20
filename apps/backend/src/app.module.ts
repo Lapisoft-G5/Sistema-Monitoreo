@@ -20,6 +20,7 @@ import { EvaluationsModule } from './modules/evaluations/evaluations.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { SuperuserModule } from './modules/superuser/superuser.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module.js';
     ReportsModule,
     SuperuserModule,
     DashboardModule,
+    NotificationsModule,
   ],
   providers: [
     {

@@ -97,6 +97,8 @@ model Usuario {
   solicitudesResueltas SolicitudReprogramacion[] @relation("SolicitudResolutor")
   fichasCreadas        FichaMonitoreo[]          @relation("FichaCreador")
   fichasFinalizadas    FichaMonitoreo[]          @relation("FichaFinalizador")
+  notificacionesRecibidas Notificacion[]         @relation("NotificacionDestinatario")
+  notificacionesEnviadas  Notificacion[]         @relation("NotificacionEmisor")
 
   @@index([personaId])
   @@index([rolId])
@@ -235,6 +237,7 @@ model InstitucionEducativa {
   planes            PlanMonitoreo[]      @relation("PlanInstitucion")
   plantillas        PlantillaMonitoreo[]
   cronogramas       Cronograma[]
+  notificaciones    Notificacion[]
 
   @@map("instituciones_educativas")
 }
@@ -785,5 +788,30 @@ model FichaRespuestaAspecto {
   @@unique([fichaId, aspectoId])
   @@index([aspectoId])
   @@map("ficha_respuestas_aspecto")
+}
+
+// ==========================================
+// 10. NOTIFICACIONES (in-app; correo best-effort)
+// ==========================================
+
+model Notificacion {
+  id             String    @id @default(uuid()) @db.Uuid
+  destinatarioId String    @map("destinatario_id") @db.Uuid
+  emisorId       String?   @map("emisor_id") @db.Uuid
+  tipo           String    @db.VarChar(40) // ALERTA_INSTITUCION | ...
+  titulo         String    @db.VarChar(150)
+  mensaje        String    @db.Text
+  institucionId  String?   @map("institucion_id") @db.Uuid
+  leida          Boolean   @default(false)
+  leidaAt        DateTime? @map("leida_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  destinatario Usuario               @relation("NotificacionDestinatario", fields: [destinatarioId], references: [id], onDelete: Cascade)
+  emisor       Usuario?              @relation("NotificacionEmisor", fields: [emisorId], references: [id], onDelete: SetNull)
+  institucion  InstitucionEducativa? @relation(fields: [institucionId], references: [id], onDelete: SetNull)
+
+  @@index([destinatarioId, leida])
+  @@index([createdAt])
+  @@map("notificaciones")
 }
 

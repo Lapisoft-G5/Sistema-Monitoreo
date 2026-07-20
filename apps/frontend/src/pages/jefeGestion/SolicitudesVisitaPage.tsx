@@ -1,14 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CalendarClock, Check, X } from 'lucide-react';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
-import {
-  useSolicitudesVisita,
-  useAtenderSolicitud,
-  useRechazarSolicitud,
-} from '@features/visit-requests';
+import { useSolicitudesVisita, useRechazarSolicitud } from '@features/visit-requests';
 
 const ESTADOS = [
   { value: 'PENDIENTE', label: 'Pendientes' },
@@ -18,19 +15,23 @@ const ESTADOS = [
 export const SolicitudesVisitaPage = () => {
   const [estado, setEstado] = useState<string>('PENDIENTE');
   const { data, isLoading } = useSolicitudesVisita(estado);
-  const atender = useAtenderSolicitud();
   const rechazar = useRechazarSolicitud();
+  const navigate = useNavigate();
 
   const items = data?.items ?? [];
 
-  const handleAtender = (id: string) =>
-    atender.mutate(
-      { id },
-      {
-        onSuccess: () => toast.success('Solicitud atendida. Recuerda agendar el cronograma.'),
-        onError: (e) => toast.error((e as Error)?.message ?? 'No se pudo atender.'),
+  // "Atender" abre el registro de cronograma precargado; la solicitud se marca
+  // ATENDIDA automáticamente al guardar ese cronograma.
+  const handleAtender = (s: (typeof items)[number]) =>
+    navigate('/monitoreo/cronograma', {
+      state: {
+        prefillSolicitud: {
+          solicitudId: s.id,
+          institucionId: s.institucionId,
+          docenteId: s.docenteId,
+        },
       },
-    );
+    });
 
   const handleRechazar = (id: string) => {
     const comentario = window.prompt('Motivo del rechazo (opcional):') ?? undefined;
@@ -104,7 +105,7 @@ export const SolicitudesVisitaPage = () => {
 
               {s.estado === 'PENDIENTE' && (
                 <div className="flex gap-2 shrink-0">
-                  <Button size="sm" onClick={() => handleAtender(s.id)} disabled={atender.isPending}>
+                  <Button size="sm" onClick={() => handleAtender(s)}>
                     <Check className="w-4 h-4 mr-1" /> Atender
                   </Button>
                   <Button

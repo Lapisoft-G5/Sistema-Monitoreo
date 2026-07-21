@@ -319,6 +319,9 @@ const {
       if (!ficha) {
         ficha = await fichasApi.create({
           cronogramaId: visitId,
+          // Vincular la ficha a la plantilla que realmente se está usando (la del
+          // actor), para que sus respuestas coincidan al renderizar/reportar.
+          plantillaId: activeTemplate?.id,
           areaCurricular: data.contexto?.areaCurricular,
           grado: data.contexto?.grado,
           seccion: data.contexto?.seccion,
@@ -394,6 +397,9 @@ const {
       if (!ficha) {
         ficha = await fichasApi.create({
           cronogramaId: visitId,
+          // Vincular la ficha a la plantilla que realmente se está usando (la del
+          // actor), para que sus respuestas coincidan al renderizar/reportar.
+          plantillaId: activeTemplate?.id,
           areaCurricular: data.contexto?.areaCurricular,
           grado: data.contexto?.grado,
           seccion: data.contexto?.seccion,

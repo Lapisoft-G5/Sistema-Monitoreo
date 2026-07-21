@@ -10,7 +10,7 @@ export class PdfGeneratorService {
 
   // Helper custom de Handlebars
   constructor() {
-    handlebars.registerHelper('increment', (value) => parseInt(value) + 1);
+    handlebars.registerHelper('increment', (value) => parseInt(String(value), 10) + 1);
   }
 
   async generatePdfFromTemplate(templateName: string, data: any): Promise<Buffer> {

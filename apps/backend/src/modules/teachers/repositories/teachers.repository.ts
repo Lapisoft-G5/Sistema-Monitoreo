@@ -1,5 +1,14 @@
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
+import type { Prisma } from '../../../generated/prisma/client.js';
+
+/** Asignación evaluador↔evaluado con las personas de ambos, para reportar conflictos. */
+export type AsignacionConflicto = Prisma.AsignacionEvaluadorGetPayload<{
+  include: {
+    evaluador: { include: { persona: true } };
+    evaluado: { include: { persona: true } };
+  };
+}>;
 
 export interface DocenteEntity {
   id: string;
@@ -72,5 +81,8 @@ export abstract class TeachersRepository {
   ): Promise<DocenteEntity>;
   abstract getAsignacionesActivas(evaluadorId: string): Promise<any[]>;
   abstract syncAsignaciones(evaluadorId: string, evaluadoIds: string[]): Promise<void>;
-  abstract checkAsignacionesConflict(evaluadorId: string, evaluadoIds: string[]): Promise<any[]>;
+  abstract checkAsignacionesConflict(
+    evaluadorId: string,
+    evaluadoIds: string[],
+  ): Promise<AsignacionConflicto[]>;
 }

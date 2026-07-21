@@ -7,13 +7,13 @@ import type {
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreatePlanData, MonitoringPlanRepository } from './monitoring-plan.repository.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
-import { fromPrismaPlan } from './monitoring-plan.mapper.js';
+import { fromPrismaPlan, type PlanMonitoreoPayload } from './monitoring-plan.mapper.js';
 
 @Injectable()
 export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async buildResponse(plan: any): Promise<IMonitoringPlanResponse> {
+  private async buildResponse(plan: PlanMonitoreoPayload): Promise<IMonitoringPlanResponse> {
     return fromPrismaPlan(this.prisma, plan);
   }
 

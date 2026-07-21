@@ -23,6 +23,11 @@ import {
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
+import type { JwtPayload } from '../../auth/services/auth-token.service.js';
+
+interface AuthenticatedRequest {
+  user?: JwtPayload;
+}
 
 @Controller('solicitudes-visita')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -34,7 +39,7 @@ export class VisitRequestsController {
   @RequirePermissions('visitas:solicitar')
   async crear(
     @Body() dto: CrearSolicitudVisitaDto,
-    @Req() req: { user?: any },
+    @Req() req: AuthenticatedRequest,
   ): Promise<ISolicitudVisita> {
     if (!req.user) throw new ForbiddenException('Sesión no encontrada.');
     const nombre =
@@ -54,7 +59,7 @@ export class VisitRequestsController {
   async atender(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: ResolverSolicitudVisitaDto,
-    @Req() req: { user?: any },
+    @Req() req: AuthenticatedRequest,
   ): Promise<{ success: true }> {
     if (!req.user) throw new ForbiddenException('Sesión no encontrada.');
     await this.service.atender(id, req.user.sub, dto);
@@ -66,7 +71,7 @@ export class VisitRequestsController {
   async rechazar(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: ResolverSolicitudVisitaDto,
-    @Req() req: { user?: any },
+    @Req() req: AuthenticatedRequest,
   ): Promise<{ success: true }> {
     if (!req.user) throw new ForbiddenException('Sesión no encontrada.');
     await this.service.rechazar(id, req.user.sub, dto);

@@ -8,6 +8,11 @@ import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import type { SessionScope } from '../repositories/dashboard.repository.js';
+import type { JwtPayload } from '../../auth/services/auth-token.service.js';
+
+interface AuthenticatedRequest {
+  user?: JwtPayload;
+}
 
 @Controller('dashboard')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -20,7 +25,7 @@ export class DashboardController {
    */
   @Get('director')
   @RequirePermissions('dashboard:read')
-  async director(@Req() req: { user?: any }): Promise<IDirectorDashboardResponse> {
+  async director(@Req() req: AuthenticatedRequest): Promise<IDirectorDashboardResponse> {
     return this.service.getDirectorDashboard(this.toSession(req));
   }
 
@@ -31,14 +36,14 @@ export class DashboardController {
   @Get('ugel')
   @RequirePermissions('dashboard:read')
   async ugel(
-    @Req() req: { user?: any },
+    @Req() req: AuthenticatedRequest,
     @Query('anio') anio?: string,
   ): Promise<IUgelDashboardResponse> {
     const anioNumber = anio ? parseInt(anio, 10) : undefined;
     return this.service.getUgelDashboard(this.toSession(req), anioNumber);
   }
 
-  private toSession(req: { user?: any }): SessionScope {
+  private toSession(req: AuthenticatedRequest): SessionScope {
     if (!req.user) {
       throw new ForbiddenException('Sesión no encontrada.');
     }

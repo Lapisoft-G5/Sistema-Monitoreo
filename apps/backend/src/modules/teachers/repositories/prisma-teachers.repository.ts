@@ -4,7 +4,12 @@ import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { DocenteCargo } from '../../../generated/prisma/client.js';
-import { DocenteEntity, DocenteFilter, TeachersRepository } from './teachers.repository.js';
+import {
+  AsignacionConflicto,
+  DocenteEntity,
+  DocenteFilter,
+  TeachersRepository,
+} from './teachers.repository.js';
 import { findDocenteById, findDocentes, findPersonaByDni } from './docente-read.helper.js';
 import { updateDocenteEstado, bajaDirector } from './docente-update-estado.helper.js';
 import { createDocenteWithTransaction } from './docente-create.helper.js';
@@ -116,7 +121,10 @@ export class PrismaTeachersRepository implements TeachersRepository {
     });
   }
 
-  async checkAsignacionesConflict(evaluadorId: string, evaluadoIds: string[]): Promise<any[]> {
+  async checkAsignacionesConflict(
+    evaluadorId: string,
+    evaluadoIds: string[],
+  ): Promise<AsignacionConflicto[]> {
     return this.prisma.asignacionEvaluador.findMany({
       where: {
         evaluadoId: { in: evaluadoIds },

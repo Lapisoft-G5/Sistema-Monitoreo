@@ -142,9 +142,9 @@ describe('NotificationsBell', () => {
       await abrirPanel(user);
       await user.click(screen.getByText('Reprogramación solicitada'));
 
-      const accion = await screen.findByRole('button', { name: /Ver Cronograma/ });
+      const accion = await screen.findByRole('button', { name: /Ver Reprogramaciones/ });
       await user.click(accion);
-      expect(h.navigate).toHaveBeenCalledWith('/jefe-gestion/cronograma');
+      expect(h.navigate).toHaveBeenCalledWith('/monitoreo/calendario?tab=solicitudes');
     });
   });
 });

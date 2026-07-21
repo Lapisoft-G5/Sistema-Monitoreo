@@ -27,6 +27,8 @@ import {
   rechazarSolicitud,
 } from './scheduling-solicitud.helper.js';
 
+import { NotificationsService } from '../../notifications/services/notifications.service.js';
+
 @Injectable()
 export class SchedulingService {
   constructor(
@@ -34,6 +36,7 @@ export class SchedulingService {
     private readonly solicitudRepo: SolicitudReprogramacionRepository,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly scopeFilter: ScopeFilter,
+    private readonly notificationsService?: NotificationsService,
   ) {}
 
   async findAllVisitas(
@@ -52,7 +55,17 @@ export class SchedulingService {
   }
 
   async actualizarVisita(id: string, dto: UpdateVisitaDto, session: SessionUser): Promise<IVisita> {
-    return actualizarVisita(this.cronogramaRepo, this.scopeFilter, id, dto, session);
+    const actualizada = await actualizarVisita(
+      this.cronogramaRepo,
+      this.scopeFilter,
+      id,
+      dto,
+      session,
+    );
+    if (dto.estado === 'REPROGRAMADO' || dto.fechaProgramada || dto.horaInicio) {
+      await this.notificationsService?.notificarCronogramaReprogramado(id, session.id);
+    }
+    return actualizada;
   }
 
   async eliminarVisita(id: string, session: SessionUser): Promise<void> {
@@ -71,7 +84,15 @@ export class SchedulingService {
     dto: CreateSolicitudReprogramacionDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return crearSolicitud(this.cronogramaRepo, this.solicitudRepo, this.storage, dto, session);
+    const res = await crearSolicitud(
+      this.cronogramaRepo,
+      this.solicitudRepo,
+      this.storage,
+      dto,
+      session,
+    );
+    await this.notificationsService?.notificarSolicitudReprogramacionCreada(res.id);
+    return res;
   }
 
   async aprobarSolicitud(
@@ -79,7 +100,7 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return aprobarSolicitud(
+    const resuelta = await aprobarSolicitud(
       this.cronogramaRepo,
       this.solicitudRepo,
       this.scopeFilter,
@@ -87,6 +108,13 @@ export class SchedulingService {
       dto,
       session,
     );
+    await this.notificationsService?.notificarSolicitudReprogramacionResuelta(
+      id,
+      session.id,
+      'APROBADO',
+      dto.comentario,
+    );
+    return resuelta;
   }
 
   async rechazarSolicitud(
@@ -94,7 +122,7 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return rechazarSolicitud(
+    const resuelta = await rechazarSolicitud(
       this.cronogramaRepo,
       this.solicitudRepo,
       this.scopeFilter,
@@ -102,5 +130,12 @@ export class SchedulingService {
       dto,
       session,
     );
+    await this.notificationsService?.notificarSolicitudReprogramacionResuelta(
+      id,
+      session.id,
+      'RECHAZADO',
+      dto.comentario,
+    );
+    return resuelta;
   }
 }

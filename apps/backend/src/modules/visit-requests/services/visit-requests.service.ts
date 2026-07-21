@@ -5,7 +5,10 @@ import type {
 } from '@sistema-monitoreo/shared-contracts';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { NotificationsService } from '../../notifications/services/notifications.service.js';
-import { CrearSolicitudVisitaDto, ResolverSolicitudVisitaDto } from '../dto/crear-solicitud-visita.dto.js';
+import {
+  CrearSolicitudVisitaDto,
+  ResolverSolicitudVisitaDto,
+} from '../dto/crear-solicitud-visita.dto.js';
 
 type SolicitudRow = {
   id: string;
@@ -51,7 +54,11 @@ export class VisitRequestsService {
     }
 
     const pendiente = await this.prisma.solicitudVisita.findFirst({
-      where: { estado: 'PENDIENTE', institucionId: dto.institucionId, docenteId: dto.docenteId ?? null },
+      where: {
+        estado: 'PENDIENTE',
+        institucionId: dto.institucionId,
+        docenteId: dto.docenteId ?? null,
+      },
     });
     if (pendiente) {
       throw new ConflictException(
@@ -201,7 +208,8 @@ export class VisitRequestsService {
       motivo: r.motivo,
       prioridad: r.prioridad,
       estado: r.estado,
-      solicitanteNombre: `${r.solicitante.persona.nombres} ${r.solicitante.persona.apellidos}`.trim(),
+      solicitanteNombre:
+        `${r.solicitante.persona.nombres} ${r.solicitante.persona.apellidos}`.trim(),
       createdAt: r.createdAt.toISOString(),
       resueltaAt: r.resueltaAt ? r.resueltaAt.toISOString() : null,
     };

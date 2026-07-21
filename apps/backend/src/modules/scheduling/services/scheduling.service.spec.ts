@@ -10,6 +10,7 @@ import {
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { STORAGE_SERVICE } from '../../../shared/storage/storage.constants.js';
 import { ScopeFilter } from '../../../shared/auth/scope-filter.js';
+import { NotificationsService } from '../../notifications/services/notifications.service.js';
 
 describe('SchedulingService - Reprogramaciones', () => {
   let service: SchedulingService;
@@ -79,6 +80,15 @@ describe('SchedulingService - Reprogramaciones', () => {
         { provide: SolicitudReprogramacionRepository, useValue: mockSol },
         { provide: STORAGE_SERVICE, useValue: mockStorage },
         { provide: ScopeFilter, useClass: ScopeFilter },
+        {
+          provide: NotificationsService,
+          useValue: {
+            crearNotificaciones: jest.fn<any>(),
+            notificarSolicitudReprogramacionCreada: jest.fn<any>(),
+            notificarSolicitudReprogramacionResuelta: jest.fn<any>(),
+            notificarCronogramaReprogramado: jest.fn<any>(),
+          },
+        },
         {
           provide: PrismaService,
           useValue: {

@@ -15,8 +15,10 @@ import { MailerModule } from '../../shared/mailer/mailer.module.js';
 import { AlertCronService } from './services/alert-cron.service.js';
 import { ScopeFilter } from '../../shared/auth/scope-filter.js';
 
+import { NotificationsModule } from '../notifications/notifications.module.js';
+
 @Module({
-  imports: [PrismaModule, AuthModule, MailerModule],
+  imports: [PrismaModule, AuthModule, MailerModule, NotificationsModule],
   controllers: [SchedulingController],
   providers: [
     SchedulingService,

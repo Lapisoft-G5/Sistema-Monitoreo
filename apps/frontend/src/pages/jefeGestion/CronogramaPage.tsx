@@ -502,20 +502,24 @@ export const CronogramaPage = () => {
     const ie = instituciones.find((i) => i.id === prefill.institucionId);
     const doc = prefill.docenteId ? docentes.find((d) => d.id === prefill.docenteId) : null;
 
-    resetForm();
-    setFormFechaHora(getDefaultDateTime());
-    if (ie) {
-      setFormModalidad(ie.modalidad);
-      setFormNivel(ie.nivelEducativo);
-      setFormInstitucion(ie.nombre);
-    }
-    setFormTipo('DOCENTE');
-    if (doc) setFormDocente(`${doc.nombres} ${doc.apellidos}`.trim());
-    setPendingSolicitudId(prefill.solicitudId);
-    setShowFormModal(true);
+    const timer = setTimeout(() => {
+      resetForm();
+      setFormFechaHora(getDefaultDateTime());
+      if (ie) {
+        setFormModalidad(ie.modalidad);
+        setFormNivel(ie.nivelEducativo);
+        setFormInstitucion(ie.nombre);
+      }
+      setFormTipo('DOCENTE');
+      if (doc) setFormDocente(`${doc.nombres} ${doc.apellidos}`.trim());
+      setPendingSolicitudId(prefill.solicitudId);
+      setShowFormModal(true);
 
-    // Limpiar el state para no reabrir el modal en cada render.
-    navigate(location.pathname, { replace: true });
+      // Limpiar el state para no reabrir el modal en cada render.
+      navigate(location.pathname, { replace: true });
+    }, 0);
+
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, instituciones, docentes]);
 

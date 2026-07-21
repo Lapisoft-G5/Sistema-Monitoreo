@@ -8,7 +8,7 @@ export const useNotificaciones = () =>
   useQuery({
     queryKey: KEY,
     queryFn: () => notificationsApi.list(),
-    refetchInterval: 60_000,
+    refetchInterval: 15_000,
   });
 
 export const useMarcarLeida = () => {

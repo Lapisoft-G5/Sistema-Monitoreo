@@ -20,6 +20,11 @@ import { CrearAlertaInstitucionDto } from '../dto/crear-alerta.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
+import { JwtPayload } from '../../auth/services/auth-token.service.js';
+
+interface AuthenticatedRequest {
+  user?: JwtPayload;
+}
 
 @Controller('notificaciones')
 @UseGuards(AuthGuard)
@@ -31,21 +36,21 @@ export class NotificationsController {
 
   /** Notificaciones del usuario autenticado (para la campanita). */
   @Get()
-  async listar(@Req() req: { user?: any }): Promise<INotificacionesResponse> {
+  async listar(@Req() req: AuthenticatedRequest): Promise<INotificacionesResponse> {
     return this.service.listar(this.userId(req));
   }
 
   @Patch(':id/leer')
   async marcarLeida(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: { user?: any },
+    @Req() req: AuthenticatedRequest,
   ): Promise<{ success: true }> {
     await this.service.marcarLeida(this.userId(req), id);
     return { success: true };
   }
 
   @Patch('leer-todas')
-  async marcarTodasLeidas(@Req() req: { user?: any }): Promise<{ success: true }> {
+  async marcarTodasLeidas(@Req() req: AuthenticatedRequest): Promise<{ success: true }> {
     await this.service.marcarTodasLeidas(this.userId(req));
     return { success: true };
   }
@@ -56,10 +61,11 @@ export class NotificationsController {
   @RequirePermissions('notificaciones:send')
   async alertaInstitucion(
     @Body() dto: CrearAlertaInstitucionDto,
-    @Req() req: { user?: any },
+    @Req() req: AuthenticatedRequest,
   ): Promise<ICrearAlertaInstitucionResponse> {
     if (!req.user) throw new ForbiddenException('Sesión no encontrada.');
-    const nombre = `${req.user.nombres ?? ''} ${req.user.apellidos ?? ''}`.trim() || 'Director UGEL';
+    const nombre =
+      `${req.user.nombres ?? ''} ${req.user.apellidos ?? ''}`.trim() || 'Director UGEL';
     return this.service.crearAlertaInstitucion(dto, { id: req.user.sub, nombre });
   }
 
@@ -72,7 +78,7 @@ export class NotificationsController {
     return { alertas };
   }
 
-  private userId(req: { user?: any }): string {
+  private userId(req: AuthenticatedRequest): string {
     if (!req.user) throw new ForbiddenException('Sesión no encontrada.');
     return req.user.sub;
   }

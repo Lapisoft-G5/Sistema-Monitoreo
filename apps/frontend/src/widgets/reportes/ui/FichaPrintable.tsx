@@ -692,20 +692,33 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           );
         })()}
 
-        {/* EVIDENCIA GENERAL */}
-        {fichaState.evidenciaUrls?.['GENERAL'] && (
-          <div className="mt-8 break-inside-avoid">
-            <div className="pdf-section-title">EVIDENCIAS DEL MONITOREO:</div>
-            <div className="mt-2 text-center">
-              <img 
-                src={fichaState.evidenciaUrls['GENERAL']} 
-                alt="Evidencia del Monitoreo" 
-                className="max-w-full mx-auto"
-                style={{ maxHeight: '300px', border: '1px solid #ccc', padding: '4px' }} 
-              />
+        {/* EVIDENCIAS DEL MONITOREO (slots GENERAL_1..3, más 'GENERAL' legado) */}
+        {(() => {
+          const evidencias = Object.entries(fichaState.evidenciaUrls ?? {})
+            .filter(([k, url]) => k.startsWith('GENERAL') && !!url)
+            .sort(([a], [b]) => a.localeCompare(b));
+          if (evidencias.length === 0) return null;
+          return (
+            <div className="mt-8">
+              <div className="pdf-section-title">EVIDENCIAS DEL MONITOREO:</div>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                {evidencias.map(([key, url], idx) => (
+                  <figure key={key} className="break-inside-avoid border border-[#334155] p-1.5 text-center">
+                    <img
+                      src={url}
+                      alt={`Evidencia ${idx + 1}`}
+                      className="w-full object-contain mx-auto"
+                      style={{ maxHeight: '230px' }}
+                    />
+                    <figcaption className="text-[9px] font-semibold text-slate-600 mt-1">
+                      Evidencia {idx + 1}
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Firmas y Validación Institucional */}
         <div className="mt-14 pt-6 break-inside-avoid">

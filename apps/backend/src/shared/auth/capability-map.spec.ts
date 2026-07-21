@@ -24,9 +24,17 @@ describe('capability-map', () => {
   });
 
   describe('computeEffectivePermissions', () => {
-    it('un director_ugel solo tiene dashboard:read + reports:read', () => {
+    it('un director_ugel tiene dashboard/instituciones:read, notificaciones:send y visitas:solicitar (+ base)', () => {
       const perms = computeEffectivePermissions(RoleCode.DIRECTOR_UGEL, null, []);
-      expect(new Set(perms)).toEqual(new Set([...BASE_CAPABILITIES, 'dashboard:read']));
+      expect(new Set(perms)).toEqual(
+        new Set([
+          ...BASE_CAPABILITIES,
+          'dashboard:read',
+          'instituciones:read',
+          'notificaciones:send',
+          'visitas:solicitar',
+        ]),
+      );
     });
 
     it('un docente sin cargos activos ve reports:read y monitoreo:read', () => {

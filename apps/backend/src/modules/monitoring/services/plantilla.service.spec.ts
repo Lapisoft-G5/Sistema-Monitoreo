@@ -242,13 +242,14 @@ describe('PlantillaService - ILA-0046', () => {
       repo.clone.mockResolvedValue(clon);
       const r = await service.duplicar('plantilla-v1', sesionDirector);
       expect(r.id).toBe('clon-1');
+      // Sin anioAcademico explicito, duplicar() usa el año académico actual.
       expect(repo.clone).toHaveBeenCalledWith(
         'plantilla-v1',
         'user-dir',
         'director_ie',
         'ie-1',
         undefined,
-        undefined,
+        new Date().getFullYear(),
       );
     });
   });

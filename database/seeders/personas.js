@@ -15,10 +15,10 @@ import { prisma } from './_lib/prisma.js';
  *   - NEXUS_SISTEMA_MONITOREO-secundaria.json
  */
 
-const RUTA_INICIAL = new URL('../../NEXUS_SISTEMA_MONITOREO-inicial.json', import.meta.url);
-const RUTA_PRIMARIA = new URL('../../NEXUS_SISTEMA_MONITOREO-primaria.json', import.meta.url);
-const RUTA_SECUNDARIA = new URL('../../NEXUS_SISTEMA_MONITOREO-secundaria.json', import.meta.url);
-const RUTA_IES = new URL('../../ies_completas_db.json', import.meta.url);
+const RUTA_INICIAL = new URL('./data/NEXUS_SISTEMA_MONITOREO-inicial.json', import.meta.url);
+const RUTA_PRIMARIA = new URL('./data/NEXUS_SISTEMA_MONITOREO-primaria.json', import.meta.url);
+const RUTA_SECUNDARIA = new URL('./data/NEXUS_SISTEMA_MONITOREO-secundaria.json', import.meta.url);
+const RUTA_IES = new URL('./data/ies_completas_db.json', import.meta.url);
 
 const UGEL_ADMIN_USERS = [
   {

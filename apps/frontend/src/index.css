@@ -152,7 +152,9 @@ body {
   --secondary: oklch(0.971 0.012 358.8);
   --secondary-foreground: oklch(0.437 0.172 12.4);
   --muted: oklch(0.971 0.012 358.8);
-  --muted-foreground: oklch(0.437 0.172 12.4 / 70%);
+  /* Gris cálido de bajo croma: conserva un dejo del tinte de marca pero con
+     contraste AA sobre fondo claro (antes era --primary al 70%, ilegible). */
+  --muted-foreground: oklch(0.45 0.03 12.4);
   --accent: oklch(0.971 0.012 358.8);
   --accent-foreground: oklch(0.437 0.172 12.4);
   --destructive: oklch(0.577 0.245 27.325);

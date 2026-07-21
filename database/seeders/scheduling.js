@@ -249,6 +249,8 @@ export async function seedScheduling(ctx) {
           estado: 'FINALIZADO',
           creadoPorId: usuarioId,
           finalizadaPorId: usuarioId,
+          // Hora final realista: ~2h después del inicio (08:00) de la visita.
+          finalizadaAt: new Date('2026-02-05T10:00:00'),
           observaciones: 'Ficha seed completada.',
         },
       });
@@ -406,7 +408,8 @@ export async function seedScheduling(ctx) {
               creadoPorId: usuarioId,
               finalizadaPorId: usuarioId,
               observaciones: BULK_MARKER,
-              finalizadaAt: fecha,
+              // Hora final realista: ~2h después del inicio (08:00), no medianoche.
+              finalizadaAt: new Date(2026, 0, 1 + idx, 10, 0, 0),
             },
           });
           for (const d of desempenos) {

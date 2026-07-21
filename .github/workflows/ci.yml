@@ -53,11 +53,8 @@ jobs:
       - name: Test (frontend)
         run: pnpm --filter frontend test
 
-      # ── Gates informativos (backend aún inestable: no bloquean) ────────────
-      - name: Lint (backend) — no bloqueante
-        continue-on-error: true
+      - name: Lint (backend)
         run: pnpm --filter backend exec eslint "{src,test}/**/*.ts"
 
-      - name: Test (backend) — no bloqueante
-        continue-on-error: true
+      - name: Test (backend)
         run: pnpm --filter backend test

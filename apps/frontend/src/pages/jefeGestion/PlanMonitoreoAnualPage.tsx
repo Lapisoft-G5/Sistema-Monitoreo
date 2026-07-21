@@ -9,7 +9,13 @@ import { Card, CardContent } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { useUser } from '@entities/model-user';
 
-
+// Años académicos generados dinámicamente desde el año actual en adelante,
+// para no depender de una lista fija que quede desactualizada cada año nuevo.
+const ANIO_ACTUAL = new Date().getFullYear();
+const OPCIONES_ANIO = Array.from({ length: 5 }, (_, i) => ANIO_ACTUAL + i).map((a) => ({
+  value: String(a),
+  label: String(a),
+}));
 
 export const PlanMonitoreoAnualPage = () => {
   const { user } = useUser();
@@ -226,13 +232,7 @@ export const PlanMonitoreoAnualPage = () => {
             value={anioAcademico}
             onChange={setAnioAcademico}
             placeholder="Seleccionar año..."
-            options={[
-              { value: 'Todos', label: 'Todos' },
-              { value: '2023', label: '2023' },
-              { value: '2024', label: '2024' },
-              { value: '2025', label: '2025' },
-              { value: '2026', label: '2026' },
-            ]}
+            options={[{ value: 'Todos', label: 'Todos' }, ...OPCIONES_ANIO]}
           />
           <SelectField
             label="Estado"
@@ -587,12 +587,7 @@ export const PlanMonitoreoAnualPage = () => {
                   value={uploadYear}
                   onChange={setUploadYear}
                   placeholder="Seleccionar año..."
-                  options={[
-                    { value: '2023', label: '2023' },
-                    { value: '2024', label: '2024' },
-                    { value: '2025', label: '2025' },
-                    { value: '2026', label: '2026' },
-                  ]}
+                  options={OPCIONES_ANIO}
                 />
                 <SelectField
                   label="Tipo de Entidad *"

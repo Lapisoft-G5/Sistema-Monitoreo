@@ -11,7 +11,8 @@ import {
 } from '@shared/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Button } from '@shared/ui/button';
-import { Bell, HelpCircle, LogOut, ChevronDown, Menu, ChevronRight } from 'lucide-react';
+import { HelpCircle, LogOut, ChevronDown, Menu, ChevronRight } from 'lucide-react';
+import { NotificationsBell } from '@features/notifications';
 import { getPageTitle } from '../config/breadcrumbs'; // Importamos la lógica
 
 interface TopbarProps {
@@ -52,14 +53,7 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
       {/* ── Derecha: acciones + usuario ── */}
       <div className="flex items-center gap-1 sm:gap-2">
         {/* Notificaciones */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-9 w-9 text-text-muted hover:text-text hover:bg-muted cursor-pointer rounded-lg"
-        >
-          <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary border-2 border-surface" />
-        </Button>
+        <NotificationsBell />
 
         {/* Ayuda — oculto en móvil */}
         <Button

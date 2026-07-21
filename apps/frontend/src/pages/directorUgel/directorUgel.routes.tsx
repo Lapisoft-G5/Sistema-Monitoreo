@@ -4,12 +4,8 @@ import type { RouteObject } from 'react-router-dom';
 import { LazyLoader } from '@shared/ui/LazyLoader';
 import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 
-const DashboardPage = lazy(() =>
-  import('./DashboardPage').then((m) => ({ default: m.DashboardPage })),
-);
-
-const SemaforoInstitucionalPage = lazy(() =>
-  import('./SemaforoInstitucionalPage').then((m) => ({ default: m.SemaforoInstitucionalPage })),
+const DashboardEntry = lazy(() =>
+  import('../DashboardEntry').then((m) => ({ default: m.DashboardEntry })),
 );
 
 export const directorUgelRoutes: RouteObject[] = [
@@ -20,20 +16,7 @@ export const directorUgelRoutes: RouteObject[] = [
         path: 'dashboard',
         element: (
           <LazyLoader>
-            <DashboardPage />
-          </LazyLoader>
-        ),
-      },
-    ],
-  },
-  {
-    element: <ProtectedRoute permission="instituciones_semaforo" />,
-    children: [
-      {
-        path: 'instituciones/semaforo',
-        element: (
-          <LazyLoader>
-            <SemaforoInstitucionalPage />
+            <DashboardEntry />
           </LazyLoader>
         ),
       },

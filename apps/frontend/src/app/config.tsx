@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
 import { UserProvider } from '@entities/model-user';
 import { setupFetchInterceptor } from '@shared/api/fetchInterceptor';
 import { STALE_TIMES } from '@shared/config/constants';
@@ -28,6 +29,7 @@ export const AppConfig = ({ children }: AppConfigProps) => {
     <QueryClientProvider client={queryClient}>
       <UserProvider>
         {children}
+        <Toaster position="top-right" richColors />
       </UserProvider>
     </QueryClientProvider>
   );

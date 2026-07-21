@@ -44,10 +44,10 @@ async function main() {
 
   await seedPersonas({ roleMap, cargoMap, instMap, nivelMap, cursoMap });
 
-  // const { planUgelId } = await seedMonitoring({ instMap });
-  // await seedScheduling({ planUgelId });
+  const { planUgelId } = await seedMonitoring({ instMap });
+  await seedScheduling({ planUgelId });
 
-  console.log('\n=== Seeding completado sin Planes ni Plantillas mockeadas ===');
+  console.log('\n=== Seeding completado (incluye Planes, Plantillas y Fichas) ===');
   console.log('Credenciales: el DNI es la contrasena inicial (usuarios en isFirstLogin=true).');
   console.log('Usuarios creados:');
   console.log('  director_ugel        → DNI: 40000001');

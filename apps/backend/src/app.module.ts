@@ -19,6 +19,9 @@ import { SchedulingModule } from './modules/scheduling/scheduling.module.js';
 import { EvaluationsModule } from './modules/evaluations/evaluations.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { SuperuserModule } from './modules/superuser/superuser.module.js';
+import { DashboardModule } from './modules/dashboard/dashboard.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { VisitRequestsModule } from './modules/visit-requests/visit-requests.module.js';
 
 @Module({
   imports: [
@@ -57,6 +60,9 @@ import { SuperuserModule } from './modules/superuser/superuser.module.js';
     EvaluationsModule,
     ReportsModule,
     SuperuserModule,
+    DashboardModule,
+    NotificationsModule,
+    VisitRequestsModule,
   ],
   providers: [
     {

@@ -1,6 +1,10 @@
 import type { Prisma } from '../../../generated/prisma/client.js';
 import type { DocenteEntity } from './teachers.repository.js';
 
+type AsignacionConEvaluador = Prisma.AsignacionEvaluadorGetPayload<{
+  include: { evaluador: { include: { persona: true } } };
+}>;
+
 type DocenteWithRelations = Prisma.DocenteGetPayload<{
   include: {
     persona: true;
@@ -10,7 +14,8 @@ type DocenteWithRelations = Prisma.DocenteGetPayload<{
     docenteEspecialidades: { include: { especialidad: true } };
   };
 }> & {
-  evaluadoresAsignados?: any[];
+  // Solo lo incluyen algunos lectores (findDocenteById/findDocentes); opcional.
+  evaluadoresAsignados?: AsignacionConEvaluador[];
 };
 
 export function mapDocente(docente: DocenteWithRelations): DocenteEntity {

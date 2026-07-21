@@ -38,7 +38,7 @@ export async function update(
 
     if (
       targetCargo === (CargoNombre.JEFE_AREA as string) &&
-      targetEstado === EstadoRegistro.ACTIVO
+      targetEstado === (EstadoRegistro.ACTIVO as string)
     ) {
       const existingJefe = await tx.especialista.findFirst({
         where: {

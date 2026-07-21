@@ -5,13 +5,15 @@ import type {
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { Prisma } from '../../../generated/prisma/client.js';
 
-type PlanMonitoreoPayload = Prisma.PlanMonitoreoGetPayload<{
-  include: { institucion: { select: { nombre: true; codigoModular: true } } };
-}>;
+// La relación `institucion` solo se incluye en algunas consultas; por eso es
+// opcional. El mapper ya contempla su ausencia en tiempo de ejecución.
+export type PlanMonitoreoPayload = Prisma.PlanMonitoreoGetPayload<object> & {
+  institucion?: { nombre: string; codigoModular: string } | null;
+};
 
 export async function fromPrismaPlan(
   prisma: PrismaService,
-  plan: PlanMonitoreoPayload | any,
+  plan: PlanMonitoreoPayload,
 ): Promise<IMonitoringPlanResponse> {
   const cobertura = await prisma.planCoberturaIe.findMany({
     where: { planId: plan.id },

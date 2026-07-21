@@ -43,7 +43,8 @@ export class SuperuserService {
   }
 
   async asignarRol(usuarioId: string, roleCode: string) {
-    if (roleCode !== RoleCode.DIRECTOR_UGEL && roleCode !== RoleCode.JEFE_GESTION) {
+    const rolSolicitado = roleCode as RoleCode;
+    if (rolSolicitado !== RoleCode.DIRECTOR_UGEL && rolSolicitado !== RoleCode.JEFE_GESTION) {
       throw new BadRequestException(
         'El superusuario solo puede asignar roles de Director UGEL o Jefe de Gestión.',
       );
@@ -58,13 +59,15 @@ export class SuperuserService {
       throw new NotFoundException('Usuario no encontrado.');
     }
 
-    if (usuario.rol.codigo === RoleCode.SUPERUSUARIO) {
+    const rolActual = usuario.rol.codigo as RoleCode;
+
+    if (rolActual === RoleCode.SUPERUSUARIO) {
       throw new BadRequestException('No se puede modificar el rol de un superusuario.');
     }
 
     if (
-      (usuario.rol.codigo === RoleCode.DIRECTOR_UGEL && roleCode === RoleCode.JEFE_GESTION) ||
-      (usuario.rol.codigo === RoleCode.JEFE_GESTION && roleCode === RoleCode.DIRECTOR_UGEL)
+      (rolActual === RoleCode.DIRECTOR_UGEL && rolSolicitado === RoleCode.JEFE_GESTION) ||
+      (rolActual === RoleCode.JEFE_GESTION && rolSolicitado === RoleCode.DIRECTOR_UGEL)
     ) {
       throw new BadRequestException(
         'El usuario actual ostenta un alto cargo directivo. Debe ser relevado de su cargo actual antes de asumir otro.',

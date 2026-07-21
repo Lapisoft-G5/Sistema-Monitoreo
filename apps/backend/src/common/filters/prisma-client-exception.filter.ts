@@ -34,7 +34,7 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
           const match =
             exception.message.match(/Unique constraint failed on the fields:\s*\(([^)]+)\)/i) ||
             exception.message.match(
-              /Unique constraint failed on the (?:fields|constraint):\s*["'`]?([^"'`\(\)\n]+)["'`]?/i,
+              /Unique constraint failed on the (?:fields|constraint):\s*["'`]?([^"'`()\n]+)["'`]?/i,
             );
           if (match && match[1]) {
             targetStr = match[1].trim();

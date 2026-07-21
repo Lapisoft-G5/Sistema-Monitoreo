@@ -47,7 +47,12 @@ export const BASE_CAPABILITIES: readonly string[] = ['reports:read', 'monitoreo:
 
 /** Permisos derivados del ROL (identidad de autenticación del Usuario). */
 export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
-  [RoleCode.DIRECTOR_UGEL]: ['dashboard:read', 'instituciones:read'],
+  [RoleCode.DIRECTOR_UGEL]: [
+    'dashboard:read',
+    'instituciones:read',
+    'notificaciones:send',
+    'visitas:solicitar',
+  ],
   [RoleCode.JEFE_GESTION]: [
     'especialistas:read',
     'especialistas:write',
@@ -57,6 +62,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
     'docentes:write',
     'monitoreo:execute',
     'dashboard:read',
+    'visitas:gestionar',
   ],
   [RoleCode.JEFE_AREA]: [
     'especialistas:read',
@@ -72,6 +78,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
     'docentes:read',
   ],
   [RoleCode.DIRECTOR_INSTITUCION]: [
+    'dashboard:read',
     'docentes:read',
     'docentes:write',
     'monitoreo:execute',
@@ -108,12 +115,18 @@ export const ESPECIALISTA_CARGO_CAPABILITIES: Record<EspecialistaCargoEnum, read
     'especialistas:write',
     'instituciones:write',
     'docentes:write',
+    'visitas:gestionar',
   ],
 };
 
 /** Permisos derivados de los cargos ACTIVOS del docente (tabla docente_cargos). */
 export const DOCENTE_CARGO_CAPABILITIES: Record<CargoNombre, readonly string[]> = {
-  [CargoNombre.DIRECTOR]: ['instituciones:write', 'docentes:write', 'monitoreo:execute'],
+  [CargoNombre.DIRECTOR]: [
+    'dashboard:read',
+    'instituciones:write',
+    'docentes:write',
+    'monitoreo:execute',
+  ],
   [CargoNombre.SUBDIRECTOR]: ['docentes:write', 'monitoreo:execute'],
   [CargoNombre.COORDINADOR_PEDAGOGICO]: ['monitoreo:execute'],
   [CargoNombre.JEFE_DE_TALLER]: ['monitoreo:execute'],

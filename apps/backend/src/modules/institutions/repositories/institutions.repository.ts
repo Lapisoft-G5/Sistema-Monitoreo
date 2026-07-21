@@ -4,6 +4,14 @@ import { QueryInstitucionDto } from '../dto/query-institucion.dto.js';
 import { Institucion } from '../entities/institucion.entity.js';
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
 
+/** KPIs de cobertura institucional para el panel. */
+export interface IDashboardStats {
+  total: number;
+  monitoreadas: number;
+  pendientes: number;
+  porcentaje: number;
+}
+
 export abstract class InstitutionsRepository {
   abstract create(data: CreateInstitucionDto): Promise<Institucion>;
   abstract findById(id: string): Promise<Institucion | null>;
@@ -15,5 +23,5 @@ export abstract class InstitutionsRepository {
     query: QueryInstitucionDto,
     user?: JwtPayload,
   ): Promise<{ data: Institucion[]; total: number }>;
-  abstract getDashboardStats(user?: JwtPayload): Promise<any>;
+  abstract getDashboardStats(user?: JwtPayload): Promise<IDashboardStats>;
 }

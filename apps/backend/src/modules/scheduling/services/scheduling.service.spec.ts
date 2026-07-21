@@ -10,7 +10,7 @@ import {
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { STORAGE_SERVICE } from '../../../shared/storage/storage.constants.js';
 import { ScopeFilter } from '../../../shared/auth/scope-filter.js';
-import { NotificationsService } from '../../notifications/services/notifications.service.js';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('SchedulingService - Reprogramaciones', () => {
   let service: SchedulingService;
@@ -81,13 +81,8 @@ describe('SchedulingService - Reprogramaciones', () => {
         { provide: STORAGE_SERVICE, useValue: mockStorage },
         { provide: ScopeFilter, useClass: ScopeFilter },
         {
-          provide: NotificationsService,
-          useValue: {
-            crearNotificaciones: jest.fn<any>(),
-            notificarSolicitudReprogramacionCreada: jest.fn<any>(),
-            notificarSolicitudReprogramacionResuelta: jest.fn<any>(),
-            notificarCronogramaReprogramado: jest.fn<any>(),
-          },
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn<any>() },
         },
         {
           provide: PrismaService,

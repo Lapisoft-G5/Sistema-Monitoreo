@@ -27,7 +27,7 @@ import {
   rechazarSolicitud,
 } from './scheduling-solicitud.helper.js';
 
-import { NotificationsService } from '../../notifications/services/notifications.service.js';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class SchedulingService {
@@ -36,7 +36,7 @@ export class SchedulingService {
     private readonly solicitudRepo: SolicitudReprogramacionRepository,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly scopeFilter: ScopeFilter,
-    private readonly notificationsService?: NotificationsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async findAllVisitas(
@@ -63,7 +63,7 @@ export class SchedulingService {
       session,
     );
     if (dto.estado === 'REPROGRAMADO' || dto.fechaProgramada || dto.horaInicio) {
-      await this.notificationsService?.notificarCronogramaReprogramado(id, session.id);
+      this.eventEmitter.emit('cronograma.reprogramado', { cronogramaId: id, emisorId: session.id });
     }
     return actualizada;
   }
@@ -91,7 +91,7 @@ export class SchedulingService {
       dto,
       session,
     );
-    await this.notificationsService?.notificarSolicitudReprogramacionCreada(res.id);
+    this.eventEmitter.emit('reprogramacion.solicitada', { solicitudId: res.id });
     return res;
   }
 
@@ -108,12 +108,12 @@ export class SchedulingService {
       dto,
       session,
     );
-    await this.notificationsService?.notificarSolicitudReprogramacionResuelta(
-      id,
-      session.id,
-      'APROBADO',
-      dto.comentario,
-    );
+    this.eventEmitter.emit('reprogramacion.resuelta', {
+      solicitudId: id,
+      resolutorId: session.id,
+      estado: 'APROBADO',
+      comentario: dto.comentario,
+    });
     return resuelta;
   }
 
@@ -130,12 +130,12 @@ export class SchedulingService {
       dto,
       session,
     );
-    await this.notificationsService?.notificarSolicitudReprogramacionResuelta(
-      id,
-      session.id,
-      'RECHAZADO',
-      dto.comentario,
-    );
+    this.eventEmitter.emit('reprogramacion.resuelta', {
+      solicitudId: id,
+      resolutorId: session.id,
+      estado: 'RECHAZADO',
+      comentario: dto.comentario,
+    });
     return resuelta;
   }
 }

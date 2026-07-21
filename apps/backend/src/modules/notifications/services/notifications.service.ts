@@ -113,6 +113,10 @@ export class NotificationsService {
   /**
    * Crea notificaciones in-app para varios usuarios (+ correo best-effort).
    * Reutilizable por otros módulos (solicitudes de visita, cron de alertas).
+   *
+   * El in-app es el canal confiable: se persiste en un único INSERT (`createMany`)
+   * y se espera. El correo es best-effort: se dispara en paralelo y en segundo
+   * plano, de modo que su latencia o fallo no bloquee al llamador.
    */
   async crearNotificaciones(
     destinatarios: { usuarioId: string; correo?: string | null }[],
@@ -124,21 +128,28 @@ export class NotificationsService {
       emisorId?: string | null;
     },
   ): Promise<void> {
-    const vistos = new Set<string>();
-    for (const d of destinatarios) {
-      if (vistos.has(d.usuarioId)) continue;
-      vistos.add(d.usuarioId);
-      await this.prisma.notificacion.create({
-        data: {
-          destinatarioId: d.usuarioId,
-          emisorId: meta.emisorId ?? null,
-          tipo: meta.tipo,
-          titulo: meta.titulo,
-          mensaje: meta.mensaje,
-          institucionId: meta.institucionId ?? null,
-        },
-      });
-      if (d.correo) await this.enviarCorreoBestEffort(d.correo, meta.titulo, meta.mensaje);
+    // Deduplica por usuario conservando el primer correo asociado.
+    const unicos = [...new Map(destinatarios.map((d) => [d.usuarioId, d])).values()];
+    if (unicos.length === 0) return;
+
+    // 1. Canal confiable (in-app): un solo INSERT para todos los destinatarios.
+    await this.prisma.notificacion.createMany({
+      data: unicos.map((d) => ({
+        destinatarioId: d.usuarioId,
+        emisorId: meta.emisorId ?? null,
+        tipo: meta.tipo,
+        titulo: meta.titulo,
+        mensaje: meta.mensaje,
+        institucionId: meta.institucionId ?? null,
+      })),
+    });
+
+    // 2. Correo best-effort: en paralelo y sin bloquear la respuesta.
+    const conCorreo = unicos.filter((d) => d.correo);
+    if (conCorreo.length > 0) {
+      void Promise.allSettled(
+        conCorreo.map((d) => this.enviarCorreoBestEffort(d.correo!, meta.titulo, meta.mensaje)),
+      );
     }
   }
 

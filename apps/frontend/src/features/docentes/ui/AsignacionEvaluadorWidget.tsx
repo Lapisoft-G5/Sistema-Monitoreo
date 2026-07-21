@@ -50,7 +50,16 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
       try {
         const allDocentes = await fetchDocentes();
         // Filtramos para obtener solo Docentes de Aula
-        const deAula = allDocentes.filter((d) => d.cargo === 'Docente de Aula' && d.id !== evaluadorId);
+        let deAula = allDocentes.filter((d) => d.cargo === 'Docente de Aula' && d.id !== evaluadorId);
+        // El Jefe de Taller solo evalúa docentes de EPT (Educación para el Trabajo).
+        if (evaluadorCargo === 'Jefe de Taller') {
+          deAula = deAula.filter((d) =>
+            (d.especialidad ?? '')
+              .split(',')
+              .map((e) => e.trim().toLowerCase())
+              .includes('ept'),
+          );
+        }
         setDocentes(deAula);
         
         // Cargar asignados reales
@@ -68,7 +77,7 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
       }
     };
     loadDocentes();
-  }, [evaluadorId]);
+  }, [evaluadorId, evaluadorCargo]);
 
   const toggleAsignacion = (docenteId: string) => {
     setAsignados((prev) =>

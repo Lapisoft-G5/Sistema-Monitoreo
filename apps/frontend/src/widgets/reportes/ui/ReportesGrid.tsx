@@ -196,9 +196,19 @@ export const ReportesGrid = ({
         }
       });
 
-      // Map general evidence from backend field to the GENERAL key
+      // Evidencia general: puede venir como JSON con los slots GENERAL_1/2/3
+      // (formato nuevo) o como una sola cadena (formato legado -> clave GENERAL).
       if (backendFicha.evidenciaGeneral) {
-        evidenciaUrls['GENERAL'] = backendFicha.evidenciaGeneral;
+        const raw = backendFicha.evidenciaGeneral;
+        if (raw.trim().startsWith('{')) {
+          try {
+            Object.assign(evidenciaUrls, JSON.parse(raw) as Record<string, string>);
+          } catch {
+            evidenciaUrls['GENERAL'] = raw;
+          }
+        } else {
+          evidenciaUrls['GENERAL'] = raw;
+        }
       }
 
       return {

@@ -17,6 +17,15 @@ const OPCIONES_ANIO = Array.from({ length: 5 }, (_, i) => ANIO_ACTUAL + i).map((
   label: String(a),
 }));
 
+// Cargo del autor que subió el plan (a partir de rolAutorAlCrear).
+const CARGO_AUTOR: Record<string, string> = {
+  director_ie: 'Director de IE',
+  coordinador_pedagogico: 'Coordinador Pedagógico',
+  jefe_taller: 'Jefe de Taller',
+  jefe_gestion: 'Jefe de Gestión',
+};
+const labelCargoAutor = (rol?: string): string | null => (rol ? (CARGO_AUTOR[rol] ?? rol) : null);
+
 export const PlanMonitoreoAnualPage = () => {
   const { user } = useUser();
   const isSchoolStaffUser =
@@ -349,9 +358,17 @@ export const PlanMonitoreoAnualPage = () => {
                         {plan.titulo}
                       </h4>
 
-                      <span className="text-[11px] text-text-muted mb-2.5 shrink-0">
+                      <span className="text-[11px] text-text-muted shrink-0">
                         Registrado: {formatDate(plan.createdAt)}
                       </span>
+                      {labelCargoAutor(plan.rolAutorAlCrear) && (
+                        <span className="text-[11px] text-text-muted mb-2.5 shrink-0">
+                          Subido por:{' '}
+                          <span className="font-semibold text-text">
+                            {labelCargoAutor(plan.rolAutorAlCrear)}
+                          </span>
+                        </span>
+                      )}
 
                       {/* Acciones */}
                       <div className="flex items-center gap-2 mt-auto shrink-0">
@@ -453,6 +470,17 @@ export const PlanMonitoreoAnualPage = () => {
                           </Badge>
                           <span className="w-1 h-1 rounded-full bg-border" />
                           <span>Registrado: {formatDate(plan.createdAt)}</span>
+                          {labelCargoAutor(plan.rolAutorAlCrear) && (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-border" />
+                              <span>
+                                Subido por:{' '}
+                                <span className="font-semibold text-text">
+                                  {labelCargoAutor(plan.rolAutorAlCrear)}
+                                </span>
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -158,6 +158,7 @@ export const DirectorFormBase = ({
         dniBloqueadoPorRol={dniBloqueadoPorRol}
         dniMessage={dniMessage}
         roleCheck={roleCheck}
+        celularRef={celularRef}
       />
 
       {/* Detalles Laborales */}

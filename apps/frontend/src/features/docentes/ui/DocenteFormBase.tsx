@@ -255,6 +255,7 @@ export const DocenteFormBase = ({
         dniBloqueadoPorRol={dniBloqueadoPorRol}
         dniMessage={dniMessage}
         roleCheck={roleCheck}
+        celularRef={celularRef}
       />
 
       {/* Sección 2: Datos Laborales */}

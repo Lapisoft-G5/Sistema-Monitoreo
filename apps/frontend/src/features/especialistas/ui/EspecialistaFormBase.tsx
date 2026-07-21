@@ -198,6 +198,7 @@ export const EspecialistaFormBase = ({
         dniBloqueadoPorRol={dniBloqueadoPorRol}
         dniMessage={dniMessage}
         roleCheck={roleCheck}
+        celularRef={celularRef}
       />
 
       {/*/ Sección 2: Perfil y Niveles */}

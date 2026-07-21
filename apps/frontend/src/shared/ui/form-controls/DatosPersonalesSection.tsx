@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { User, Check } from 'lucide-react';
 import { TextField, SectionCard } from '../form-controls';
 import { Spinner } from '../Spinner';
@@ -28,6 +28,8 @@ export interface DatosPersonalesSectionProps<T extends PersonaFormData> {
     bloquea?: boolean;
     detalle?: string | null;
   } | null;
+  /** Ref al contenedor del campo Celular, para hacer scroll/focus al error. */
+  celularRef?: Ref<HTMLDivElement>;
   extraContent?: ReactNode;
 }
 
@@ -42,6 +44,7 @@ export function DatosPersonalesSection<T extends PersonaFormData>({
   dniBloqueadoPorRol = false,
   dniMessage,
   roleCheck,
+  celularRef,
   extraContent,
 }: DatosPersonalesSectionProps<T>) {
   const isFieldsDisabled = isDniLocked || dniBloqueadoPorRol;
@@ -134,24 +137,26 @@ export function DatosPersonalesSection<T extends PersonaFormData>({
           error={showError('correo')}
           disabled={isFieldsDisabled}
         />
-        <TextField
-          label="Número de Celular"
-          value={form.celular || ''}
-          onChange={(v) =>
-            onChange(
-              'celular' as keyof T,
-              v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH) as T[keyof T],
-            )
-          }
-          placeholder="Ej. 987654321"
-          error={showError('celular')}
-          disabled={isFieldsDisabled}
-          adornment={
-            celularOk ? (
-              <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-            ) : undefined
-          }
-        />
+        <div ref={celularRef}>
+          <TextField
+            label="Número de Celular"
+            value={form.celular || ''}
+            onChange={(v) =>
+              onChange(
+                'celular' as keyof T,
+                v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH) as T[keyof T],
+              )
+            }
+            placeholder="Ej. 987654321"
+            error={showError('celular')}
+            disabled={isFieldsDisabled}
+            adornment={
+              celularOk ? (
+                <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
+              ) : undefined
+            }
+          />
+        </div>
       </div>
 
       {extraContent}

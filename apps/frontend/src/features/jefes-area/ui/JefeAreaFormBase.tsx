@@ -190,6 +190,7 @@ export const JefeAreaFormBase = ({
           showError={showError}
           isDniLocked
           celularOk={celularOk}
+          celularRef={celularRef}
         />
 
         <SectionCard icon={<Briefcase className="w-5 h-5" />} title="Detalles del Puesto">

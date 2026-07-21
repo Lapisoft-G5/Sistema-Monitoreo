@@ -8,6 +8,7 @@ export interface StatsCardDef {
   trendText?: string;
   trendType?: 'success' | 'warning' | 'danger' | 'neutral';
   progressValue?: number;
+  valueClassName?: string;
 }
 
 interface EntityStatsProps {

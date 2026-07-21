@@ -34,35 +34,35 @@ const getNotificationBadge = (tipo: string) => {
       return {
         icon: Calendar,
         bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-        actionUrl: '/jefe-gestion/cronograma',
-        actionLabel: 'Ver Cronograma',
+        actionUrl: '/monitoreo/calendario?tab=solicitudes',
+        actionLabel: 'Ver Reprogramaciones',
       };
     case 'REPROGRAMACION_APROBADA':
       return {
         icon: CheckCircle2,
         bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-        actionUrl: '/jefe-gestion/cronograma',
-        actionLabel: 'Ver Cronograma',
+        actionUrl: '/monitoreo/calendario',
+        actionLabel: 'Ver Calendario',
       };
     case 'REPROGRAMACION_RECHAZADA':
       return {
         icon: XCircle,
         bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
-        actionUrl: '/jefe-gestion/cronograma',
-        actionLabel: 'Ver Cronograma',
+        actionUrl: '/monitoreo/calendario',
+        actionLabel: 'Ver Calendario',
       };
     case 'CRONOGRAMA_REPROGRAMADO':
       return {
         icon: Calendar,
         bg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
-        actionUrl: '/jefe-gestion/cronograma',
-        actionLabel: 'Ver Cronograma',
+        actionUrl: '/monitoreo/calendario',
+        actionLabel: 'Ver Calendario',
       };
     case 'ALERTA_INSTITUCION':
       return {
         icon: AlertTriangle,
         bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-        actionUrl: '/solicitudes-visita',
+        actionUrl: '/monitoreo/solicitudes-visita',
         actionLabel: 'Ver Solicitudes',
       };
     default:

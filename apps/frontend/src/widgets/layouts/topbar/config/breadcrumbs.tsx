@@ -14,7 +14,14 @@ export const BREADCRUMBS_MAP: Record<string, string> = {
   '/plantillas/nuevo': 'Registrar Plantilla',
   '/reportes': 'Reportes',
   '/configuracion': 'Configuración',
+  '/superadmin/director/nuevo': 'Registrar Director UGEL', // Más específico primero
+  '/superadmin/director': 'Director UGEL',
+  '/superadmin/jefe/nuevo': 'Registrar Jefe de Gestión',
+  '/superadmin/jefe': 'Jefe de Gestión',
 };
+
+/** Prefijo raíz del breadcrumb; también es el título de respaldo cuando no hay coincidencia. */
+export const ROOT_CRUMB = 'UGEL Lampa';
 
 export const getPageTitle = (pathname: string, role?: UserRole): string => {
   // El padrón de /instituciones/docentes cambia de etiqueta según el rol:
@@ -34,5 +41,5 @@ export const getPageTitle = (pathname: string, role?: UserRole): string => {
     .sort((a, b) => b.length - a.length)
     .find((key) => pathname.startsWith(key));
 
-  return matchedKey ? BREADCRUMBS_MAP[matchedKey] : 'UGEL Lampa';
+  return matchedKey ? BREADCRUMBS_MAP[matchedKey] : ROOT_CRUMB;
 };

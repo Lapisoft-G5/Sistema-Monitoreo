@@ -3,6 +3,7 @@ import { request, requestBlob } from '@shared/config/api';
 
 export interface CreateFichaInput {
   cronogramaId: string;
+  plantillaId?: string;
   areaCurricular?: string;
   grado?: string;
   seccion?: string;

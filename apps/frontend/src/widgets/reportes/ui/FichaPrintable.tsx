@@ -140,16 +140,21 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           </div>
         </div>
 
-        <h2 className="text-center text-xs font-black uppercase mb-4 tracking-wide text-slate-900 bg-slate-100 py-1.5 border border-slate-300 rounded">
+        <div className="pdf-doc-title">
           {visit.tipo === 'DIRECTIVO'
             ? `FICHA DE MONITOREO Y ACOMPAÑAMIENTO AL DIRECTOR(A) DE I.E. - ${template.anioAcademico}`
             : `FICHA DE MONITOREO Y ACOMPAÑAMIENTO AL DESEMPEÑO DOCENTE - ${template.anioAcademico}`}
-        </h2>
+        </div>
 
         <style>{`
           @page {
             size: A4 portrait;
-            margin: 12mm 15mm;
+            margin: 14mm 15mm 16mm;
+            @bottom-center {
+              content: "Página " counter(page) " de " counter(pages);
+              font-size: 8px;
+              color: #475569;
+            }
           }
           @media print {
             body {
@@ -161,34 +166,77 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
               break-inside: avoid !important;
             }
           }
+          /* ── Paleta única de bordes/grises (aspecto formal, oficial) ── */
           .pdf-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-size: 9.5px;
             table-layout: fixed;
           }
           .pdf-table td {
-            border: 1px solid #94a3b8;
+            border: 1px solid #334155;
             padding: 3.5px 5px;
             word-break: break-word;
             vertical-align: middle;
           }
           .pdf-table .bg-gray {
-            background-color: #f1f5f9;
+            background-color: #e2e8f0;
             font-weight: bold;
-            color: #1e293b;
+            color: #0f172a;
+          }
+          /* ── Jerarquía tipográfica en 3 niveles, mismo lenguaje visual ── */
+          .pdf-doc-title {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #0f172a;
+            background-color: #e2e8f0;
+            border: 1.5px solid #334155;
+            padding: 5px 8px;
+            margin-bottom: 12px;
+          }
+          .pdf-major-title {
+            font-size: 11.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #ffffff;
+            background-color: #334155;
+            padding: 3px 8px;
+            margin-top: 16px;
+            margin-bottom: 8px;
           }
           .pdf-section-title {
             font-weight: 800;
             text-transform: uppercase;
-            margin-bottom: 4px;
             font-size: 10px;
             color: #0f172a;
-            border-bottom: 1.5px solid #475569;
-            padding-bottom: 2px;
-            margin-top: 14px;
-            letter-spacing: 0.025em;
+            background-color: #e2e8f0;
+            border: 1px solid #334155;
+            padding: 2.5px 6px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            letter-spacing: 0.03em;
+          }
+          /* Bloque formal (reemplaza las tarjetas redondeadas) */
+          .pdf-block {
+            border: 1px solid #334155;
+            padding: 8px 10px;
+          }
+          /* Viñeta circular: hueca por defecto, rellena si el aspecto se cumplió */
+          .pdf-bullet {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border: 1.2px solid #334155;
+            border-radius: 50%;
+            flex-shrink: 0;
+          }
+          .pdf-bullet.checked {
+            background-color: #334155;
           }
         `}</style>
 
@@ -463,21 +511,21 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
         </table>
 
         {/* Desempeños */}
-        <div className="space-y-6">
-          <h2 className="text-lg font-bold border-b border-slate-300 pb-1">I. DESEMPEÑOS EVALUADOS</h2>
-          
+        <div className="space-y-3">
+          <div className="pdf-major-title">I. DESEMPEÑOS EVALUADOS</div>
+
           {template.desempenos.map((des, idx) => {
             const selectedLevelVal = fichaState.selectedLevels[des.id];
             const levelStyle = selectedLevelVal ? getLevelStyle(selectedLevelVal) : null;
             
             return (
-              <div key={des.id} className="border border-slate-200 rounded p-4 break-inside-avoid">
+              <div key={des.id} className="pdf-block break-inside-avoid">
                 <div className="flex justify-between items-start gap-4 mb-2">
-                  <h3 className="font-bold text-[13px]">
+                  <h3 className="font-bold text-[12px]">
                     {idx + 1}. {des.nombre}
                   </h3>
                   {selectedLevelVal && levelStyle && (
-                    <div className="shrink-0 px-3 py-0.5 rounded font-bold text-xs" style={{ backgroundColor: levelStyle.backgroundColor, color: levelStyle.color, border: levelStyle.border }}>
+                    <div className="shrink-0 px-2 py-0.5 font-bold text-[10px] border" style={{ backgroundColor: levelStyle.backgroundColor, color: levelStyle.color, borderColor: levelStyle.color }}>
                       Nivel {selectedLevelVal}
                     </div>
                   )}
@@ -494,9 +542,7 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
                         const isChecked = !!fichaState.checkedAspects[asp.id];
                         return (
                           <div key={asp.id} className="flex items-start gap-2 text-slate-800">
-                            <span className="text-[13px] leading-none select-none font-mono text-slate-500">
-                              {isChecked ? '☑' : '☐'}
-                            </span>
+                            <span className={`pdf-bullet mt-[3px] ${isChecked ? 'checked' : ''}`} />
                             <span>{asp.descripcion}</span>
                           </div>
                         );
@@ -507,7 +553,7 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
 
                 {/* Respuesta a Pregunta Extra */}
                 {des.preguntaExtra && (
-                  <div className="bg-slate-50 border border-slate-200 p-2 mb-3 rounded text-xs">
+                  <div className="bg-slate-50 border border-slate-400 p-2 mb-3 text-xs">
                     <span className="font-bold">Pregunta:</span> {des.preguntaExtra} <br />
                     <span className="font-bold mt-1 inline-block">Respuesta:</span>{' '}
                     {fichaState.preguntaExtraAnswers?.[des.id] === true ? 'SÍ' : fichaState.preguntaExtraAnswers?.[des.id] === false ? 'NO' : 'Sin responder'}
@@ -528,8 +574,8 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
 
         {/* Ejes e Items */}
         {template.ejesItems && template.ejesItems.length > 0 && (
-          <div className="space-y-4 mt-8 break-before-auto">
-            <h2 className="text-lg font-bold border-b border-slate-300 pb-1">II. EJES E ITEMS</h2>
+          <div className="space-y-3 mt-6 break-before-auto">
+            <div className="pdf-major-title">II. EJES E ITEMS</div>
             <table className="pdf-table" style={{ marginBottom: '20px' }}>
               <thead>
                 <tr>
@@ -558,17 +604,17 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
         )}
 
         {/* Sugerencias y Compromisos */}
-        <div className="space-y-4 mt-8 break-inside-avoid">
-          <h2 className="text-lg font-bold border-b border-slate-300 pb-1">III. SUGERENCIAS Y COMPROMISOS</h2>
-          
+        <div className="space-y-3 mt-6 break-inside-avoid">
+          <div className="pdf-major-title">III. SUGERENCIAS Y COMPROMISOS</div>
+
           <div className="grid grid-cols-2 gap-4">
-            <div className="border border-slate-300 rounded p-4">
+            <div className="pdf-block">
               <h3 className="font-bold text-sm mb-2 text-slate-800">Sugerencias del Especialista</h3>
               <p className="text-xs text-slate-700 whitespace-pre-wrap">
                 {fichaState.sugerencias || 'No se registraron sugerencias.'}
               </p>
             </div>
-            <div className="border border-slate-300 rounded p-4">
+            <div className="pdf-block">
               <h3 className="font-bold text-sm mb-2 text-slate-800">Compromisos del Evaluado</h3>
               <p className="text-xs text-slate-700 whitespace-pre-wrap">
                 {fichaState.compromisos || 'No se registraron compromisos.'}
@@ -646,20 +692,33 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           );
         })()}
 
-        {/* EVIDENCIA GENERAL */}
-        {fichaState.evidenciaUrls?.['GENERAL'] && (
-          <div className="mt-8 break-inside-avoid">
-            <div className="pdf-section-title">EVIDENCIAS DEL MONITOREO:</div>
-            <div className="mt-2 text-center">
-              <img 
-                src={fichaState.evidenciaUrls['GENERAL']} 
-                alt="Evidencia del Monitoreo" 
-                className="max-w-full mx-auto"
-                style={{ maxHeight: '300px', border: '1px solid #ccc', padding: '4px' }} 
-              />
+        {/* EVIDENCIAS DEL MONITOREO (slots GENERAL_1..3, más 'GENERAL' legado) */}
+        {(() => {
+          const evidencias = Object.entries(fichaState.evidenciaUrls ?? {})
+            .filter(([k, url]) => k.startsWith('GENERAL') && !!url)
+            .sort(([a], [b]) => a.localeCompare(b));
+          if (evidencias.length === 0) return null;
+          return (
+            <div className="mt-8">
+              <div className="pdf-section-title">EVIDENCIAS DEL MONITOREO:</div>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                {evidencias.map(([key, url], idx) => (
+                  <figure key={key} className="break-inside-avoid border border-[#334155] p-1.5 text-center">
+                    <img
+                      src={url}
+                      alt={`Evidencia ${idx + 1}`}
+                      className="w-full object-contain mx-auto"
+                      style={{ maxHeight: '230px' }}
+                    />
+                    <figcaption className="text-[9px] font-semibold text-slate-600 mt-1">
+                      Evidencia {idx + 1}
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Firmas y Validación Institucional */}
         <div className="mt-14 pt-6 break-inside-avoid">

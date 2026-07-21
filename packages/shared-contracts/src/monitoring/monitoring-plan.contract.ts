@@ -8,6 +8,7 @@ export interface IMonitoringPlanResponse {
   createdAt: string;
   updatedAt: string;
   autorId?: string;
+  autorNombre?: string;
   rolAutorAlCrear?: string;
   institucionId?: string | null;
   deleted?: boolean;

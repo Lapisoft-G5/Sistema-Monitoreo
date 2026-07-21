@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Button } from '@shared/ui/button';
 import { HelpCircle, LogOut, ChevronDown, Menu, ChevronRight } from 'lucide-react';
 import { NotificationsBell } from '@features/notifications';
-import { getPageTitle } from '../config/breadcrumbs'; // Importamos la lógica
+import { getPageTitle, ROOT_CRUMB } from '../config/breadcrumbs'; // Importamos la lógica
 
 interface TopbarProps {
   onOpenMobileSidebar?: () => void;
@@ -26,6 +26,8 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
 
   // 2. Cálculo automático del título basado en la URL
   const title = getPageTitle(location.pathname, user?.role);
+  // Evitamos "UGEL Lampa › UGEL Lampa" cuando el título cae al prefijo raíz.
+  const showRootCrumb = title !== ROOT_CRUMB;
 
   return (
     <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-surface/95 border-b border-border backdrop-blur-xl sticky top-0 z-20">
@@ -44,8 +46,12 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
 
         {/* Breadcrumb Automático */}
         <div className="flex items-center gap-2 text-[0.83rem]">
-          <span className="text-text-muted hidden sm:inline">UGEL Lampa</span>
-          <ChevronRight className="h-3.5 w-3.5 text-text-dim hidden sm:block" />
+          {showRootCrumb && (
+            <>
+              <span className="text-text-muted hidden sm:inline">{ROOT_CRUMB}</span>
+              <ChevronRight className="h-3.5 w-3.5 text-text-dim hidden sm:block" />
+            </>
+          )}
           <span className="text-text font-semibold">{title}</span>
         </div>
       </div>

@@ -17,13 +17,28 @@ export async function crear(
     throw new ConflictException(`Ya existe una ficha para esta visita (id=${existente.id}).`);
   }
 
-  const plantilla = await repository.findPlantillaVigente(
-    cronograma.tipoMonitoreo,
-    cronograma.fechaProgramada.getFullYear(),
-  );
+  const anio = cronograma.fechaProgramada.getFullYear();
+
+  // Si el frontend indica la plantilla que el actor está usando (su propia
+  // plantilla), se honra tras validarla (Vigente y del mismo tipo/año) para que
+  // las respuestas coincidan con la plantilla al renderizar/reportar. Si no se
+  // indica o no es válida, se cae al comportamiento anterior (plantilla vigente).
+  let plantilla = await (async () => {
+    if (!dto.plantillaId) return null;
+    const elegida = await repository.findPlantillaBasicById(dto.plantillaId);
+    return elegida &&
+      elegida.estado === 'Vigente' &&
+      elegida.tipoMonitoreo === cronograma.tipoMonitoreo &&
+      elegida.anioAcademico === anio
+      ? elegida
+      : null;
+  })();
+  if (!plantilla) {
+    plantilla = await repository.findPlantillaVigente(cronograma.tipoMonitoreo, anio);
+  }
   if (!plantilla) {
     throw new BadRequestException(
-      `No existe plantilla Vigente para (${cronograma.tipoMonitoreo}, ${cronograma.fechaProgramada.getFullYear()}).`,
+      `No existe plantilla Vigente para (${cronograma.tipoMonitoreo}, ${anio}).`,
     );
   }
 

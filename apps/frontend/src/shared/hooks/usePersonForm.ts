@@ -77,7 +77,9 @@ export function usePersonForm({
       }, 0);
       return () => clearTimeout(t);
     }
-    const shouldClear = !searchingDni && dni.length === VALIDATION.DNI_LENGTH && !persona && hadPersonaRef.current;
+    // Limpiar los campos autocompletados en cuanto la persona deja de existir:
+    // tanto si el DNI completo no coincide como si se borran dígitos (< 8).
+    const shouldClear = !searchingDni && !persona && hadPersonaRef.current;
     if (shouldClear) {
       hadPersonaRef.current = false;
       const t = setTimeout(() => {

@@ -26,6 +26,7 @@ export const router = createBrowserRouter([
       {
         path: 'superadmin',
         children: [
+          { index: true, element: <Navigate to="/superadmin/director" replace /> },
           { path: 'director', element: <SuperadminPanel targetRole="director_ugel" /> },
           { path: 'director/nuevo', element: <SuperadminCreatePage targetRole="director_ugel" /> },
           { path: 'jefe', element: <SuperadminPanel targetRole="jefe_gestion" /> },

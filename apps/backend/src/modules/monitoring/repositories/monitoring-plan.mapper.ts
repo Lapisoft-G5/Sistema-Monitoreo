@@ -9,6 +9,7 @@ import type { Prisma } from '../../../generated/prisma/client.js';
 // opcional. El mapper ya contempla su ausencia en tiempo de ejecución.
 export type PlanMonitoreoPayload = Prisma.PlanMonitoreoGetPayload<object> & {
   institucion?: { nombre: string; codigoModular: string } | null;
+  autor?: { persona?: { nombres: string; apellidos: string } | null } | null;
 };
 
 export async function fromPrismaPlan(
@@ -37,6 +38,9 @@ export async function fromPrismaPlan(
     archivoUrl: plan.archivoUrl,
     estado: plan.estado,
     autorId: plan.autorId ?? undefined,
+    autorNombre: plan.autor?.persona
+      ? `${plan.autor.persona.nombres} ${plan.autor.persona.apellidos}`.trim()
+      : undefined,
     rolAutorAlCrear: plan.rolAutorAlCrear ?? undefined,
     institucionId: plan.institucionId ?? undefined,
     deleted: plan.deleted,

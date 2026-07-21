@@ -51,11 +51,14 @@ export class MonitoringPlanService {
 
   async create(dto: CreatePlanDto, session: SessionUser): Promise<IMonitoringPlanResponse> {
     const { tipoEntidad, institucionId } = this.resolvePlanScope(session, dto);
+    const rolAutor = this.toRolAutor(session.role);
 
     const estado = dto.estado || 'Activo';
 
     if (estado === 'Activo') {
-      // Validar si ya existe un plan activo para este año y entidad
+      // Unicidad: UGEL -> 1 plan activo por año (global). IE -> 1 plan activo por
+      // año POR AUTOR: cada persona (Director, cada Coordinador, cada Jefe de
+      // Taller) tiene el suyo; varios coordinadores de una misma IE conviven.
       const existing = await this.repository.findAll({
         anioAcademico: dto.anioAcademico,
         tipoEntidad,
@@ -64,16 +67,16 @@ export class MonitoringPlanService {
 
       const isDuplicate = existing.some((plan) => {
         if (tipoEntidad === 'IE') {
-          return plan.institucionId === institucionId;
+          return plan.institucionId === institucionId && plan.autorId === session.id;
         }
         return true; // Para UGEL es global por año
       });
 
       if (isDuplicate) {
         throw new ConflictException(
-          `Solo se puede subir 1 plan de monitoreo activo por año para ${
-            tipoEntidad === 'UGEL' ? 'la UGEL' : 'esta Institución Educativa'
-          }. Si desea subirlo como Inactivo, cambie el estado en el formulario.`,
+          tipoEntidad === 'UGEL'
+            ? 'Solo se puede subir 1 plan de monitoreo activo por año para la UGEL. Si desea subirlo como Inactivo, cambie el estado en el formulario.'
+            : 'Ya tienes un plan de monitoreo activo para esta Institución Educativa este año. Desactiva el anterior o súbelo como Inactivo.',
         );
       }
     }
@@ -85,7 +88,7 @@ export class MonitoringPlanService {
       tipoEntidad,
       estado,
       autorId: session.id,
-      rolAutorAlCrear: this.toRolAutor(session.role),
+      rolAutorAlCrear: rolAutor,
       institucionId,
     });
   }
@@ -111,13 +114,14 @@ export class MonitoringPlanService {
       });
       const isDuplicate = existingActivos.some((p) => {
         if (existing.tipoEntidad === 'IE') {
-          return p.institucionId === existing.institucionId; // Same IE
+          // Mismo autor dentro de la misma IE.
+          return p.institucionId === existing.institucionId && p.autorId === existing.autorId;
         }
         return true;
       });
       if (isDuplicate) {
         throw new ConflictException(
-          `Ya existe un plan de monitoreo activo para el año ${existing.anioAcademico}. Desactívelo primero antes de reactivar este.`,
+          `Ya existe un plan de monitoreo activo tuyo para el año ${existing.anioAcademico}. Desactívalo primero antes de reactivar este.`,
         );
       }
     }
@@ -198,20 +202,38 @@ export class MonitoringPlanService {
     return session.role === RoleCode.DIRECTOR_INSTITUCION;
   }
 
-  private toRolAutor(role: RoleCode): 'jefe_gestion' | 'director_ie' {
-    if (this.isDirector({ id: '', role })) return 'director_ie';
-    return 'jefe_gestion';
+  /** Personal de IE: Director, Coordinador Pedagógico y Jefe de Taller. */
+  private isSchoolStaff(session: SessionUser): boolean {
+    return (
+      session.role === RoleCode.DIRECTOR_INSTITUCION ||
+      session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
+      session.role === RoleCode.JEFE_TALLER
+    );
+  }
+
+  /** Ámbito del plan según el rol del autor (sello histórico + unicidad por IE). */
+  private toRolAutor(role: RoleCode): string {
+    switch (role) {
+      case RoleCode.DIRECTOR_INSTITUCION:
+        return 'director_ie';
+      case RoleCode.COORDINADOR_PEDAGOGICO:
+        return 'coordinador_pedagogico';
+      case RoleCode.JEFE_TALLER:
+        return 'jefe_taller';
+      default:
+        return 'jefe_gestion';
+    }
   }
 
   private resolvePlanScope(
     session: SessionUser,
     dto: CreatePlanDto,
   ): { tipoEntidad: string; institucionId: string | null } {
-    if (this.isDirector(session)) {
+    if (this.isSchoolStaff(session)) {
       const institucionId = session.institucionId ?? dto.institucionId ?? null;
       if (!institucionId) {
         throw new ForbiddenException(
-          'El director IE debe tener institucionId en sesion o body para crear un plan.',
+          'El personal de IE debe tener institucionId en sesion o body para crear un plan.',
         );
       }
       return { tipoEntidad: 'IE', institucionId };

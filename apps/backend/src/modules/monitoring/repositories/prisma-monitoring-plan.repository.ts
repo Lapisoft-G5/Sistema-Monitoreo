@@ -43,6 +43,9 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
         institucion: {
           select: { nombre: true, codigoModular: true },
         },
+        autor: {
+          select: { persona: { select: { nombres: true, apellidos: true } } },
+        },
       },
       orderBy: [{ anioAcademico: 'desc' }, { createdAt: 'desc' }],
     });
@@ -55,6 +58,9 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
       include: {
         institucion: {
           select: { nombre: true, codigoModular: true },
+        },
+        autor: {
+          select: { persona: { select: { nombres: true, apellidos: true } } },
         },
       },
     });

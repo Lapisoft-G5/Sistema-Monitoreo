@@ -327,8 +327,8 @@ export const PlanMonitoreoAnualPage = () => {
                     </div>
 
                     {/* Metadata y Título */}
-                    <div className="flex-1 flex flex-col min-w-0 h-[115px]">
-                      <div className="flex items-center gap-2 mb-1.5 shrink-0">
+                    <div className="flex-1 flex flex-col min-w-0 min-h-[115px] gap-0.5">
+                      <div className="flex items-center gap-2 mb-1 shrink-0">
                         <span className="text-xs font-bold text-text-muted">{plan.anioAcademico}</span>
                         <Badge
                           variant={plan.tipoEntidad === 'UGEL' ? 'default' : 'secondary'}
@@ -352,7 +352,7 @@ export const PlanMonitoreoAnualPage = () => {
                       </div>
 
                       <h4
-                        className="text-sm font-bold text-text mb-1 leading-snug line-clamp-2 flex-1"
+                        className="text-sm font-bold text-text leading-snug line-clamp-2"
                         title={plan.titulo}
                       >
                         {plan.titulo}
@@ -362,16 +362,17 @@ export const PlanMonitoreoAnualPage = () => {
                         Registrado: {formatDate(plan.createdAt)}
                       </span>
                       {labelCargoAutor(plan.rolAutorAlCrear) && (
-                        <span className="text-[11px] text-text-muted mb-2.5 shrink-0">
+                        <span className="text-[11px] text-text-muted shrink-0">
                           Subido por:{' '}
                           <span className="font-semibold text-text">
                             {labelCargoAutor(plan.rolAutorAlCrear)}
+                            {plan.autorNombre ? ` — ${plan.autorNombre}` : ''}
                           </span>
                         </span>
                       )}
 
                       {/* Acciones */}
-                      <div className="flex items-center gap-2 mt-auto shrink-0">
+                      <div className="flex items-center gap-2 mt-2.5 shrink-0">
                         <Button
                           variant="ghost"
                           onClick={() => viewPlanPdf(plan.id)}
@@ -477,6 +478,7 @@ export const PlanMonitoreoAnualPage = () => {
                                 Subido por:{' '}
                                 <span className="font-semibold text-text">
                                   {labelCargoAutor(plan.rolAutorAlCrear)}
+                                  {plan.autorNombre ? ` — ${plan.autorNombre}` : ''}
                                 </span>
                               </span>
                             </>

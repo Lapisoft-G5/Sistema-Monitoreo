@@ -117,49 +117,78 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
       : '';
 
     return (
-      <div ref={ref} className="p-8 bg-white text-black font-sans text-[12px] leading-snug w-full">
-        {/* Encabezado */}
-        <div className="text-center italic text-[10px] mb-2">
-          Año de la recuperación y consolidación de la economía peruana
+      <div ref={ref} className="p-8 bg-white text-black font-sans text-[11px] leading-snug w-full">
+        {/* Encabezado Institucional Oficial */}
+        <div className="border-b-2 border-slate-900 pb-3 mb-4">
+          <div className="flex items-center justify-between text-center mb-2">
+            <div className="text-left font-bold text-[9px] uppercase leading-tight text-slate-700">
+              <p>Ministerio de Educación</p>
+              <p>Dirección Regional de Educación Puno</p>
+              <p className="text-primary font-black">UGEL Lampa</p>
+            </div>
+            <div className="text-center font-bold text-[10px] uppercase leading-tight text-slate-800">
+              <p className="font-extrabold text-xs">UNIDAD DE GESTIÓN EDUCATIVA LOCAL LAMPA</p>
+              <p className="text-[9px] text-slate-600 font-medium">ÁREA DE GESTIÓN PEDAGÓGICA</p>
+            </div>
+            <div className="text-right text-[9px] text-slate-500 italic">
+              <p>Sistema de Monitoreo</p>
+              <p>UGEL Lampa - Puno</p>
+            </div>
+          </div>
+          <div className="text-center italic text-[9px] text-slate-600 pt-1 border-t border-slate-200">
+            "Año de la recuperación y consolidación de la economía peruana"
+          </div>
         </div>
-        <h2 className="text-center text-sm font-bold uppercase mb-4">
-          {visit.tipo === 'DIRECTIVO' 
-            ? `FICHA DE MONITOREO AL DIRECTOR - ${template.anioAcademico}` 
-            : `FICHA DE MONITOREO DOCENTE - ${template.anioAcademico}`}
+
+        <h2 className="text-center text-xs font-black uppercase mb-4 tracking-wide text-slate-900 bg-slate-100 py-1.5 border border-slate-300 rounded">
+          {visit.tipo === 'DIRECTIVO'
+            ? `FICHA DE MONITOREO Y ACOMPAÑAMIENTO AL DIRECTOR(A) DE I.E. - ${template.anioAcademico}`
+            : `FICHA DE MONITOREO Y ACOMPAÑAMIENTO AL DESEMPEÑO DOCENTE - ${template.anioAcademico}`}
         </h2>
 
         <style>{`
           @page {
-            size: portrait;
-            margin: 15mm;
+            size: A4 portrait;
+            margin: 12mm 15mm;
+          }
+          @media print {
+            body {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .break-inside-avoid {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
           }
           .pdf-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
-            font-size: 10px;
+            margin-bottom: 10px;
+            font-size: 9.5px;
             table-layout: fixed;
           }
           .pdf-table td {
-            border: 1px solid #cbd5e1;
-            padding: 4px 6px;
+            border: 1px solid #94a3b8;
+            padding: 3.5px 5px;
             word-break: break-word;
             vertical-align: middle;
           }
           .pdf-table .bg-gray {
             background-color: #f1f5f9;
             font-weight: bold;
-            color: #334155;
+            color: #1e293b;
           }
           .pdf-section-title {
-            font-weight: bold;
+            font-weight: 800;
             text-transform: uppercase;
             margin-bottom: 4px;
-            font-size: 10.5px;
-            color: #1e293b;
-            border-bottom: 1px solid #e2e8f0;
+            font-size: 10px;
+            color: #0f172a;
+            border-bottom: 1.5px solid #475569;
             padding-bottom: 2px;
-            margin-top: 16px;
+            margin-top: 14px;
+            letter-spacing: 0.025em;
           }
         `}</style>
 
@@ -632,25 +661,36 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           </div>
         )}
 
-        {/* Firmas */}
-        <div className="mt-16 pt-8 break-inside-avoid">
-          <div className="flex justify-around items-end">
-            <div className="text-center w-48">
-              <div className="border-b border-slate-400 mb-2"></div>
-              <p className="font-bold text-xs">Firma del Especialista</p>
-              <p className="text-[10px] text-slate-500">{visit.especialista}</p>
+        {/* Firmas y Validación Institucional */}
+        <div className="mt-14 pt-6 break-inside-avoid">
+          <div className="flex justify-between items-end gap-4 px-4">
+            <div className="text-center flex-1">
+              <div className="border-b border-slate-600 mb-2 w-3/4 mx-auto"></div>
+              <p className="font-extrabold text-[11px] text-slate-800">Firma del Especialista Monitor</p>
+              <p className="text-[9.5px] text-slate-600 font-medium">{visit.especialista}</p>
+              <p className="text-[8.5px] text-slate-400">AGP - UGEL Lampa</p>
             </div>
-            <div className="text-center w-48">
-              <div className="border-b border-slate-400 mb-2"></div>
-              <p className="font-bold text-xs">Firma del Evaluado</p>
-              <p className="text-[10px] text-slate-500">{visit.docenteDirectivo}</p>
+            <div className="text-center flex-1">
+              <div className="border-b border-slate-600 mb-2 w-3/4 mx-auto"></div>
+              <p className="font-extrabold text-[11px] text-slate-800">Firma del Evaluado(a)</p>
+              <p className="text-[9.5px] text-slate-600 font-medium">{visit.docenteDirectivo}</p>
+              <p className="text-[8.5px] text-slate-400">Docente / Directivo</p>
             </div>
+            {visit.tipo === 'DOCENTE' && (
+              <div className="text-center flex-1">
+                <div className="border-b border-slate-600 mb-2 w-3/4 mx-auto"></div>
+                <p className="font-extrabold text-[11px] text-slate-800">Firma del Director(a) IE</p>
+                <p className="text-[9.5px] text-slate-600 font-medium">{directorNombre || 'Director Institución'}</p>
+                <p className="text-[8.5px] text-slate-400">Sello / V°B° Institucional</p>
+              </div>
+            )}
           </div>
         </div>
-        
-        {/* Footer info */}
-        <div className="mt-12 text-center text-[9px] text-slate-400 border-t border-slate-200 pt-2">
-          Generado automáticamente por el Sistema de Monitoreo - UGEL LAMPA
+
+        {/* Pie de Página Oficial con Registro */}
+        <div className="mt-10 pt-3 text-center text-[8.5px] text-slate-500 border-t border-slate-300 flex justify-between items-center px-2">
+          <span>Documento Oficial Generado por el Sistema de Monitoreo Pedagógico - UGEL LAMPA</span>
+          <span className="font-mono text-[8px] text-slate-400">REG: {visit.id.slice(0, 8).toUpperCase()} | {new Date().toLocaleDateString('es-PE')}</span>
         </div>
       </div>
     );

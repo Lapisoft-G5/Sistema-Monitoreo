@@ -213,3 +213,5 @@ export const FormButton = ({
     {children}
   </Button>
 );
+
+export * from './form-controls/DatosPersonalesSection';

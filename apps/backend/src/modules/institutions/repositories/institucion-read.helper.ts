@@ -96,7 +96,7 @@ export async function getDashboardStats(
   const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
 
   const baseWhere: Prisma.InstitucionEducativaWhereInput = { estado: 'Activa' };
-  
+
   if (user?.role === RoleCode.JEFE_AREA) {
     baseWhere.AND = [scopeFilter.forInstitucion(toScopeContext(user))];
   }

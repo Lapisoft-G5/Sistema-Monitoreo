@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { User } from './model';
 import { authApi } from '@/shared/api/auth.api';
 import { UserContext } from './user-context';
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
@@ -27,6 +29,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const handleInvalidation = () => {
+      queryClient.clear();
       setUser(null);
       // Redirigir al login. Usamos window.location en lugar de useNavigate porque
       // este provider se renderiza fuera del Router context.
@@ -36,7 +39,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     };
     window.addEventListener('auth-invalidation', handleInvalidation);
     return () => window.removeEventListener('auth-invalidation', handleInvalidation);
-  }, []);
+  }, [queryClient]);
 
   const logout = useCallback(() => {
     // Llamamos a la API para invalidar sesión en BD sin esperar resultado para no bloquear UI
@@ -45,8 +48,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('accessToken'); // Limpieza por si quedó de la versión anterior
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('ugel_penalty_expiry');
+    // Limpiar la caché de react-query para no mostrar datos del usuario anterior
+    // al iniciar sesión con otra cuenta (las queryKeys no incluyen el usuario).
+    queryClient.clear();
     setUser(null);
-  }, []);
+  }, [queryClient]);
 
   const changePassword = useCallback(async (newPassword: string) => {
     // La sesión actual se maneja vía cookies HttpOnly en el backend.
@@ -59,8 +65,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       );
     }
 
+    queryClient.clear();
     setUser(null);
-  }, []);
+  }, [queryClient]);
 
   return (
     <UserContext.Provider

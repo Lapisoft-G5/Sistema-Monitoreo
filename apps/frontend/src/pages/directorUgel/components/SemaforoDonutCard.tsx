@@ -13,13 +13,16 @@ export const SemaforoDonutCard = ({ semaforo }: { semaforo: IUgelDashboardSemafo
     semaforo.critico + semaforo.enProceso + semaforo.logroPrevisto + semaforo.sinRegistro;
   const denom = total || 1;
 
-  let acumulado = 0;
-  const stops = SEGMENTOS.map((s) => {
-    const inicio = (acumulado / denom) * 100;
-    acumulado += semaforo[s.key];
-    const fin = (acumulado / denom) * 100;
-    return `${s.color} ${inicio}% ${fin}%`;
-  }).join(', ');
+  const { stops } = SEGMENTOS.reduce<{ acc: number; stops: string[] }>(
+    ({ acc, stops }, s) => {
+      const inicio = (acc / denom) * 100;
+      const nextAcc = acc + semaforo[s.key];
+      const fin = (nextAcc / denom) * 100;
+      return { acc: nextAcc, stops: [...stops, `${s.color} ${inicio}% ${fin}%`] };
+    },
+    { acc: 0, stops: [] },
+  );
+  const stopsStr = stops.join(', ');
 
   return (
     <Card className="p-5 border-border shadow-xs h-full">
@@ -27,7 +30,7 @@ export const SemaforoDonutCard = ({ semaforo }: { semaforo: IUgelDashboardSemafo
       <div className="flex items-center gap-6">
         <div
           className="relative w-32 h-32 rounded-full shrink-0"
-          style={{ background: `conic-gradient(${stops})` }}
+          style={{ background: `conic-gradient(${stopsStr})` }}
         >
           <div className="absolute inset-[18%] rounded-full bg-card flex flex-col items-center justify-center">
             <span className="text-2xl font-extrabold leading-none">{total}</span>

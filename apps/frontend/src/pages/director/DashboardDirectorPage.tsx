@@ -40,7 +40,7 @@ export const DashboardDirectorPage = () => {
       date: new Date(m.fecha).toLocaleDateString('es-PE'),
       status: ui.label,
       score: Number(m.promedio.toFixed(1)),
-      statusVariant: ui.variant,
+      statusVariant: ui.variant as MonitoringRow['statusVariant'],
     };
   });
 

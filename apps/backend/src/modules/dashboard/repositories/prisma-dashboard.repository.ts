@@ -151,10 +151,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
     };
   }
 
-  async getUgelDashboard(
-    session: SessionScope,
-    anio: number,
-  ): Promise<IUgelDashboardResponse> {
+  async getUgelDashboard(session: SessionScope, anio: number): Promise<IUgelDashboardResponse> {
     const ctx = this.toScopeContext(session);
     // Límites de año en UTC: `fecha_programada` es @db.Date (medianoche UTC),
     // usar medianoche local desplazaría fechas de 1-ene / 31-dic al año vecino.
@@ -300,7 +297,14 @@ export class PrismaDashboardRepository implements DashboardRepository {
     // 4a-bis. II.EE. geolocalizadas para el mapa, con su estado de semáforo.
     const iesConCoord = await this.prisma.institucionEducativa.findMany({
       where: { ...institucionWhere, latitud: { not: null }, longitud: { not: null } },
-      select: { id: true, nombre: true, distrito: true, latitud: true, longitud: true },
+      select: {
+        id: true,
+        nombre: true,
+        distrito: true,
+        nivelEducativo: true,
+        latitud: true,
+        longitud: true,
+      },
     });
     const institucionesMapa: IUgelDashboardIeMapa[] = iesConCoord.map((ie) => {
       const acc = promediosPorIe.get(ie.id);
@@ -308,6 +312,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
         institucionId: ie.id,
         nombre: ie.nombre,
         distrito: ie.distrito,
+        nivelEducativo: ie.nivelEducativo,
         latitud: Number(ie.latitud),
         longitud: Number(ie.longitud),
         estado: acc ? clasificarSemaforo(acc.suma / acc.n) : 'sinRegistro',
@@ -363,9 +368,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       },
     });
     const coberturaAnioPrevio =
-      totalInstituciones > 0
-        ? Math.round((monitoreadasAnioPrevio / totalInstituciones) * 100)
-        : 0;
+      totalInstituciones > 0 ? Math.round((monitoreadasAnioPrevio / totalInstituciones) * 100) : 0;
 
     // 5. Monitoreos recientes (top N por fecha de finalización).
     const monitoreosRecientes: IUgelDashboardMonitoreoReciente[] = fichas

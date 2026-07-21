@@ -18,7 +18,7 @@ export interface MonitoringRow {
   date: string;
   status: string;
   score: number;
-  statusVariant: string;
+  statusVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'success' | 'warning';
 }
 
 const mockData: MonitoringRow[] = [
@@ -139,7 +139,7 @@ export const RecentMonitoringsTable = ({
                   {row.date}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Badge variant={row.statusVariant as any} className="uppercase font-bold tracking-wider text-[10px] px-2 py-1">
+                  <Badge variant={row.statusVariant ?? 'default'} className="uppercase font-bold tracking-wider text-[10px] px-2 py-1">
                     {row.score} - {row.status}
                   </Badge>
                 </TableCell>

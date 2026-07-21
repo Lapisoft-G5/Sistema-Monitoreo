@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Target, BarChart4, AlertCircle, Building2 } from 'lucide-react';
 import { useUgelDashboard, nivelLogroUi, iniciales } from '@features/dashboard';
 import { KpiStat } from './components/KpiStat';
-import { LampaMap, normDistrito } from './components/LampaMap';
+import { LampaMap } from './components/LampaMap';
+import { normDistrito } from './utils/norm-distrito';
 import { RequierenAtencionCard } from './components/RequierenAtencionCard';
 import { CoberturaDistritoCard } from './components/CoberturaDistritoCard';
 import { SemaforoDonutCard } from './components/SemaforoDonutCard';
@@ -59,7 +60,7 @@ export const DashboardPage = () => {
       date: new Date(m.fecha).toLocaleDateString('es-PE'),
       status: ui.label,
       score: Number(m.promedio.toFixed(1)),
-      statusVariant: ui.variant,
+      statusVariant: ui.variant as MonitoringRow['statusVariant'],
     };
   });
 

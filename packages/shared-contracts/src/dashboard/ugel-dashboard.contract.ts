@@ -83,6 +83,7 @@ export interface IUgelDashboardIeMapa {
   institucionId: string;
   nombre: string;
   distrito: string;
+  nivelEducativo: string;
   latitud: number;
   longitud: number;
   estado: EstadoSemaforoIe;

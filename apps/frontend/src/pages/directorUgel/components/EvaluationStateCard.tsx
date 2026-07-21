@@ -22,7 +22,7 @@ const StateItem = ({ icon, count, label, badgeLabel, badgeVariant = 'default', i
         <div className="text-sm text-text-muted">{label}</div>
       </div>
     </div>
-    <Badge variant={badgeVariant as any} className="uppercase font-bold tracking-wider text-[10px]">
+    <Badge variant={badgeVariant} className="uppercase font-bold tracking-wider text-[10px]">
       {badgeLabel}
     </Badge>
   </Card>

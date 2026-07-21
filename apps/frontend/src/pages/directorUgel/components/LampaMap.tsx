@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, Polygon, useMap } from 'react-leaflet';
 import L, { type Layer, type PathOptions } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,6 +8,7 @@ import type {
   IUgelDashboardDistrito,
   IUgelDashboardIeMapa,
 } from '@sistema-monitoreo/shared-contracts';
+import { normDistrito } from '../utils/norm-distrito';
 
 /** Forma mínima de una feature del GeoJSON de distritos. */
 interface DistritoFeature {
@@ -44,14 +45,6 @@ function anillosDeLampa(): [number, number][][] {
 }
 const MASCARA: [number, number][][] = [MUNDO, ...anillosDeLampa()];
 
-/** Normaliza nombres de distrito (mayúsculas, sin tildes) para el match GeoJSON↔BD. */
-export const normDistrito = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toUpperCase()
-    .trim();
-
 /** Bounds del polígono de un distrito (para centrar el mapa al filtrarlo). */
 function boundsDistrito(sel: string): L.LatLngBounds | null {
   const col = lampaDistritos as unknown as { features: { properties?: { distrito?: string } }[] };
@@ -78,12 +71,14 @@ function VistaMapa({ selected }: { selected?: string | null }) {
   return null;
 }
 
-const ESTADO_UI: Record<string, { color: string; label: string }> = {
-  critico: { color: '#ef4444', label: 'Crítico' },
-  enProceso: { color: '#f59e0b', label: 'En proceso' },
-  logroPrevisto: { color: '#22c55e', label: 'Logro previsto' },
-  sinRegistro: { color: '#94a3b8', label: 'Sin registro' },
+const ESTADO_UI: Record<string, { key: string; color: string; label: string }> = {
+  critico: { key: 'critico', color: '#ef4444', label: 'Crítico' },
+  enProceso: { key: 'enProceso', color: '#f59e0b', label: 'En proceso' },
+  logroPrevisto: { key: 'logroPrevisto', color: '#22c55e', label: 'Logro previsto' },
+  sinRegistro: { key: 'sinRegistro', color: '#94a3b8', label: 'Sin registro' },
 };
+
+const NIVELES_EDUCATIVOS = ['Todos', 'Inicial', 'Primaria', 'Secundaria'];
 
 interface LampaMapProps {
   coberturaPorDistrito: IUgelDashboardDistrito[];
@@ -98,11 +93,18 @@ export const LampaMap = ({
   selected,
   onSelectDistrito,
 }: LampaMapProps) => {
+  const [nivelFilter, setNivelFilter] = useState<string>('Todos');
+  const [estadoFilter, setEstadoFilter] = useState<string>('todos');
+
   const porDistrito = new Map(coberturaPorDistrito.map((d) => [normDistrito(d.distrito), d]));
   const selNorm = selected ? normDistrito(selected) : null;
-  const marcadores = selNorm
-    ? instituciones.filter((ie) => normDistrito(ie.distrito) === selNorm)
-    : instituciones;
+
+  const marcadores = instituciones.filter((ie) => {
+    if (selNorm && normDistrito(ie.distrito) !== selNorm) return false;
+    if (nivelFilter !== 'Todos' && ie.nivelEducativo !== nivelFilter) return false;
+    if (estadoFilter !== 'todos' && ie.estado !== estadoFilter) return false;
+    return true;
+  });
 
   const styleFeature = (feature?: DistritoFeature): PathOptions => {
     const isSel = selNorm === normDistrito(String(feature?.properties?.distrito ?? ''));
@@ -127,23 +129,44 @@ export const LampaMap = ({
 
   return (
     <Card className="h-full flex flex-col relative overflow-hidden border-border shadow-xs">
-      <div className="p-4 flex justify-between items-center border-b border-border bg-card z-10">
-        <h3 className="text-lg font-bold">Mapa Georreferencial - Lampa</h3>
-        {selected ? (
-          <span
-            className="text-xs font-bold text-primary cursor-pointer hover:underline"
+      {/* Header con título y barra de filtros avanzables */}
+      <div className="p-4 flex flex-wrap gap-3 justify-between items-center border-b border-border bg-card z-10">
+        <div>
+          <h3 className="text-lg font-bold">Mapa Georreferencial - Lampa</h3>
+          <p className="text-xs text-text-muted">
+            Mostrando {marcadores.length} de {instituciones.length} II.EE.
+            {selected && ` · Distrito: ${selected}`}
+          </p>
+        </div>
+
+        {/* Filtros rápidos: Nivel Educativo */}
+        <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
+          {NIVELES_EDUCATIVOS.map((n) => (
+            <button
+              key={n}
+              onClick={() => setNivelFilter(n)}
+              className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
+                nivelFilter === n
+                  ? 'bg-background text-foreground shadow-xs'
+                  : 'text-text-muted hover:text-foreground'
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+
+        {selected && (
+          <button
+            className="text-xs font-bold text-primary hover:underline cursor-pointer"
             onClick={() => onSelectDistrito?.(null)}
           >
-            {selected} ✕
-          </span>
-        ) : (
-          <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
-            clic en un distrito para filtrar
-          </span>
+            Limpiar distrito ✕
+          </button>
         )}
       </div>
 
-      <div className="flex-1 w-full bg-muted/20 relative z-0 h-[400px] md:h-auto">
+      <div className="flex-1 w-full bg-muted/20 relative z-0 h-[420px] md:h-auto">
         <MapContainer
           bounds={LAMPA_BOUNDS}
           maxBounds={LAMPA_BOUNDS.pad(0.15)}
@@ -173,14 +196,18 @@ export const LampaMap = ({
               <CircleMarker
                 key={ie.institucionId}
                 center={[ie.latitud, ie.longitud]}
-                radius={4}
-                pathOptions={{ fillColor: ui.color, fillOpacity: 0.95, color: 'white', weight: 1 }}
+                radius={5}
+                pathOptions={{ fillColor: ui.color, fillOpacity: 0.95, color: 'white', weight: 1.5 }}
               >
                 <Popup>
-                  <div className="text-xs">
-                    <div className="font-bold">{ie.nombre}</div>
-                    <div className="text-text-muted">{ie.distrito}</div>
-                    <div style={{ color: ui.color }} className="font-semibold">
+                  <div className="text-xs space-y-1">
+                    <div className="font-bold text-foreground">{ie.nombre}</div>
+                    <div className="flex items-center gap-2 text-text-muted">
+                      <span>{ie.distrito}</span>
+                      <span>·</span>
+                      <span className="font-medium text-foreground">{ie.nivelEducativo}</span>
+                    </div>
+                    <div style={{ color: ui.color }} className="font-semibold pt-1">
                       {ui.label}
                     </div>
                   </div>
@@ -190,18 +217,37 @@ export const LampaMap = ({
           })}
         </MapContainer>
 
-        {/* Leyenda: estado de monitoreo por IE */}
+        {/* Leyenda interactiva por estado de monitoreo */}
         <Card className="absolute bottom-4 left-4 z-[400] p-3 shadow-md bg-card/95 backdrop-blur-sm border-border">
-          <h4 className="text-[10px] font-bold text-text-muted mb-2 uppercase tracking-wider">
-            Estado de monitoreo
-          </h4>
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+              Filtrar por Estado
+            </h4>
+            {estadoFilter !== 'todos' && (
+              <button
+                onClick={() => setEstadoFilter('todos')}
+                className="text-[10px] text-primary hover:underline font-bold"
+              >
+                Ver todos
+              </button>
+            )}
+          </div>
           <div className="space-y-1.5 text-xs font-medium">
-            {Object.values(ESTADO_UI).map((s) => (
-              <div key={s.label} className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                {s.label}
-              </div>
-            ))}
+            {Object.values(ESTADO_UI).map((s) => {
+              const active = estadoFilter === s.key;
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => setEstadoFilter(active ? 'todos' : s.key)}
+                  className={`flex items-center gap-2 w-full text-left px-1.5 py-0.5 rounded-md transition-colors ${
+                    active ? 'bg-muted font-bold text-foreground' : 'hover:bg-muted/50 text-text-muted'
+                  }`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                  {s.label}
+                </button>
+              );
+            })}
           </div>
         </Card>
       </div>

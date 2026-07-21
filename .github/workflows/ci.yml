@@ -43,6 +43,12 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter backend exec prisma generate
 
+      # Los tests de backend arrancan módulos NestJS reales (AuthModule exige
+      # JWT_SECRET vía ConfigModule). El .env está gitignored, así que se genera
+      # desde .env.example (valores de ejemplo, suficientes para tests).
+      - name: Prepare backend env
+        run: cp apps/backend/.env.example apps/backend/.env
+
       # ── Gates bloqueantes ──────────────────────────────────────────────────
       - name: Typecheck (frontend + backend)
         run: pnpm typecheck

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Cancela ejecuciones previas del mismo ref si llega un push nuevo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # prisma generate no se conecta a la BD, pero requiere la variable definida.
+  DATABASE_URL: postgresql://user:pass@localhost:5432/db
+
+jobs:
+  verify:
+    name: Typecheck · Lint · Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Preparación: artefactos que un checkout limpio no incluye ──────────
+      - name: Build shared-contracts
+        run: pnpm --filter @sistema-monitoreo/shared-contracts build
+
+      - name: Generate Prisma client
+        run: pnpm --filter backend exec prisma generate
+
+      # ── Gates bloqueantes ──────────────────────────────────────────────────
+      - name: Typecheck (frontend + backend)
+        run: pnpm typecheck
+
+      - name: Lint (frontend)
+        run: pnpm --filter frontend lint
+
+      - name: Test (frontend)
+        run: pnpm --filter frontend test
+
+      # ── Gates informativos (backend aún inestable: no bloquean) ────────────
+      - name: Lint (backend) — no bloqueante
+        continue-on-error: true
+        run: pnpm --filter backend exec eslint "{src,test}/**/*.ts"
+
+      - name: Test (backend) — no bloqueante
+        continue-on-error: true
+        run: pnpm --filter backend test

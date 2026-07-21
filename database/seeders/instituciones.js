@@ -4,26 +4,24 @@ import { prisma } from './_lib/prisma.js';
 /**
  * Instituciones educativas — datos REALES de la UGEL Lampa.
  *
- * Fuente: ies_completas_db.json (198 II.EE. con latitud/longitud reales).
- * Se normalizan modalidad (todo EBR) y nivel ("Inicial - Jardín" -> "Inicial"),
- * se descartan coordenadas atípicas (fuera de Lampa/Puno) y se importan por
- * upsert usando el codigoModular real.
- *
- * Como el seeder de personas engancha su staff demo a códigos ficticios
- * (0200001–0200012), se crea un ALIAS: cada código demo apunta a una IE real,
- * repartidas por distrito, para que el monitoreo demo caiga sobre IEs reales.
+ * Fuente:
+ * 1. ies_completas_db.json (198 II.EE. con latitud/longitud reales).
+ * 2. NEXUS_SISTEMA_MONITOREO-inicial.json, primaria.json, secundaria.json
+ *    (II.EE. adicionales como PRONOEI o sedes de coordinación).
  */
 
-const RUTA_JSON = new URL('../../ies_completas_db.json', import.meta.url);
+const RUTA_IES = new URL('../../ies_completas_db.json', import.meta.url);
+const RUTA_INICIAL = new URL('../../NEXUS_SISTEMA_MONITOREO-inicial.json', import.meta.url);
+const RUTA_PRIMARIA = new URL('../../NEXUS_SISTEMA_MONITOREO-primaria.json', import.meta.url);
+const RUTA_SECUNDARIA = new URL('../../NEXUS_SISTEMA_MONITOREO-secundaria.json', import.meta.url);
 
-// Códigos ficticios que personas.js referencia (cada uno recibe staff demo).
 const CODIGOS_DEMO = [
   '0200001', '0200002', '0200003', '0200004', '0200005', '0200006',
   '0200007', '0200008', '0200009', '0200010', '0200011', '0200012',
 ];
 
 const tituloCaso = (s) =>
-  String(s)
+  String(s || '')
     .toLowerCase()
     .split(' ')
     .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
@@ -33,7 +31,21 @@ const normalizarNivel = (nivel) => {
   if (/inicial/i.test(nivel)) return 'Inicial';
   if (/primaria/i.test(nivel)) return 'Primaria';
   if (/secundaria/i.test(nivel)) return 'Secundaria';
-  return nivel;
+  return nivel || 'Inicial';
+};
+
+const norm = (str) =>
+  String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const extractNumber = (str) => {
+  const match = String(str || '').match(/\b\d+\b/);
+  return match ? match[0] : null;
 };
 
 // Bounding box amplio de la provincia de Lampa (Puno) para descartar outliers.
@@ -45,14 +57,14 @@ const coordEnLampa = (lat, lng) =>
   lng >= -71.6 &&
   lng <= -69.9;
 
-function cargarInstituciones() {
-  const raw = JSON.parse(readFileSync(RUTA_JSON, 'utf-8'));
-  return raw.map((x) => {
+function cargarTodasInstituciones() {
+  const rawIes = JSON.parse(readFileSync(RUTA_IES, 'utf-8'));
+  const listaBase = rawIes.map((x) => {
     const enLampa = coordEnLampa(x.latitud, x.longitud);
     return {
       codigoModular: String(x.codMod),
       codigoLocal: String(x.codLocal),
-      nombre: String(x.nombreIE),
+      nombre: String(x.nombreIE).trim(),
       nivelEducativo: normalizarNivel(x.nivel),
       modalidad: 'EBR',
       departamento: 'Puno',
@@ -66,13 +78,85 @@ function cargarInstituciones() {
       estado: 'Activa',
       latitud: enLampa ? x.latitud : null,
       longitud: enLampa ? x.longitud : null,
+      isSynthetic: false,
     };
   });
+
+  const ieListMapped = listaBase.map((ie) => ({
+    ...ie,
+    normNombre: norm(ie.nombre),
+    normDistrito: norm(ie.distrito),
+    num: extractNumber(ie.nombre),
+  }));
+
+  const nexusFiles = [RUTA_INICIAL, RUTA_PRIMARIA, RUTA_SECUNDARIA];
+  const sinteticasMap = new Map();
+  let nextCodMod = 9900001;
+
+  nexusFiles.forEach((fileUrl) => {
+    const data = JSON.parse(readFileSync(fileUrl, 'utf-8'));
+    data.forEach((r) => {
+      const rawName = String(r['NOMBRE DE LA INSTITUCION EDUCATIVA'] || '');
+      const rawDist = String(r['DISTRITO'] || '');
+      const rawNivel = String(r['NIVEL EDUCATIVO'] || '');
+
+      const normName = norm(rawName);
+      const normDist = norm(rawDist);
+      const num = extractNumber(rawName);
+      const levelNorm = normalizarNivel(rawNivel);
+
+      // Intento de match con IEs base
+      let found = ieListMapped.find((ie) => ie.normDistrito === normDist && ie.normNombre === normName);
+
+      if (!found && num) {
+        found = ieListMapped.find((ie) => ie.normDistrito === normDist && ie.nivelEducativo === levelNorm && ie.num === num);
+      }
+      if (!found && num) {
+        const candidates = ieListMapped.filter((ie) => ie.nivelEducativo === levelNorm && ie.num === num);
+        if (candidates.length === 1) found = candidates[0];
+      }
+      if (!found) {
+        found = ieListMapped.find(
+          (ie) =>
+            ie.normDistrito === normDist &&
+            ie.nivelEducativo === levelNorm &&
+            (ie.normNombre.includes(normName) || normName.includes(ie.normNombre)),
+        );
+      }
+      if (!found) {
+        found = ieListMapped.find((ie) => ie.nivelEducativo === levelNorm && ie.normNombre === normName);
+      }
+
+      if (!found) {
+        const key = `${normDist}|${normName}|${levelNorm}`;
+        if (!sinteticasMap.has(key)) {
+          sinteticasMap.set(key, {
+            codigoModular: String(nextCodMod++),
+            codigoLocal: String(Math.floor(100000 + Math.random() * 900000)),
+            nombre: rawName.trim().toUpperCase(),
+            nivelEducativo: levelNorm,
+            modalidad: 'EBR',
+            departamento: 'Puno',
+            provincia: 'Lampa',
+            distrito: tituloCaso(rawDist),
+            direccion: 'S/N',
+            zona: 'Rural',
+            estado: 'Activa',
+            latitud: null,
+            longitud: null,
+            isSynthetic: true,
+          });
+        }
+      }
+    });
+  });
+
+  return [...listaBase, ...Array.from(sinteticasMap.values())];
 }
 
 export async function seedInstituciones() {
-  console.log('[instituciones] Importando II.EE. reales de la UGEL Lampa...');
-  const instituciones = cargarInstituciones();
+  console.log('[instituciones] Importando II.EE. reales de la UGEL Lampa (incluyendo datos NEXUS)...');
+  const instituciones = cargarTodasInstituciones();
   const instMap = {};
   let sinCoord = 0;
 
@@ -106,8 +190,7 @@ export async function seedInstituciones() {
     instMap[inst.codigoModular] = ie.id;
   }
 
-  // Alias: repartir los 12 códigos demo sobre IEs reales de distintos distritos,
-  // para que el staff/monitoreo demo caiga sobre instituciones reales.
+  // Alias demo para asegurar compatibilidad
   const porDistrito = new Map();
   for (const inst of instituciones) {
     if (!porDistrito.has(inst.distrito)) porDistrito.set(inst.distrito, []);
@@ -135,7 +218,7 @@ export async function seedInstituciones() {
   });
 
   console.log(
-    `[instituciones] ${instituciones.length} II.EE. reales importadas ` +
+    `[instituciones] ${instituciones.length} II.EE. importadas ` +
       `(${sinCoord} sin coordenada válida). ${CODIGOS_DEMO.length} alias demo → IEs reales.`,
   );
   return { instMap };

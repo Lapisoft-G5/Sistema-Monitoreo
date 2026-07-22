@@ -28,13 +28,23 @@ const nivelLabel = (nivel: string) => nivel.charAt(0) + nivel.slice(1).toLowerCa
 const directorFilter = (dir: Docente, params: URLSearchParams) => {
   const hasCargo = dir.cargosList?.some((c) => c.nombre === 'Director') ?? (dir.cargo === 'Director');
   if (!hasCargo) return false;
+
   const searchQuery = params.get('search') || '';
   const matchSearch =
     !searchQuery ||
     dir.nombres.toLowerCase().includes(searchQuery.toLowerCase()) ||
     dir.apellidos.toLowerCase().includes(searchQuery.toLowerCase()) ||
     dir.dni.includes(searchQuery);
-  return matchSearch;
+
+  const condicion = params.get('condicion') || '';
+  const matchCondicion =
+    !condicion || (dir.condicion ?? '').toLowerCase() === condicion.toLowerCase();
+
+  const nivel = params.get('nivelEducativo') || '';
+  const matchNivel =
+    !nivel || (dir.nivelEducativo ?? '').toLowerCase() === nivel.toLowerCase();
+
+  return matchSearch && matchCondicion && matchNivel;
 };
 
 interface DirectoresTableWidgetProps {

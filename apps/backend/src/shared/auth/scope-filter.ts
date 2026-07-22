@@ -37,7 +37,7 @@ export interface ScopeContext {
  *  - OWN      : docente. Ve solo lo propio.
  *
  * Si el `institucionId` es null pero el rol lo necesita para filtrar,
- * el filtro retorna `{ id: '__none__' }` (un sentinel que no matchea
+ * el filtro retorna `{ id: { in: [] } }` (un sentinel que no matchea
  * ninguna fila) para que la query devuelva vacio. Esto evita leaks
  * por falta de datos de scope.
  */
@@ -87,7 +87,7 @@ export class ScopeFilter {
   forCronograma(ctx: ScopeContext): Prisma.CronogramaWhereInput {
     if (this.isAllScope(ctx.role)) return {};
     if (this.isInstitucionScope(ctx.role)) {
-      return ctx.institucionId ? { institucionId: ctx.institucionId } : { id: '__none__' };
+      return ctx.institucionId ? { institucionId: ctx.institucionId } : { id: { in: [] } };
     }
     if (this.isMonitorScope(ctx.role)) {
       return { monitorId: ctx.userId };
@@ -107,7 +107,7 @@ export class ScopeFilter {
       };
     }
     // invitado, etc.
-    return { id: '__none__' };
+    return { id: { in: [] } };
   }
 
   /**
@@ -120,7 +120,7 @@ export class ScopeFilter {
     if (this.isInstitucionScope(ctx.role)) {
       return ctx.institucionId
         ? { cronograma: { institucionId: ctx.institucionId } }
-        : { id: '__none__' };
+        : { id: { in: [] } };
     }
     if (this.isMonitorScope(ctx.role)) {
       return { creadoPorId: ctx.userId };
@@ -145,60 +145,86 @@ export class ScopeFilter {
         },
       };
     }
-    return { id: '__none__' };
+    return { id: { in: [] } };
+  }
+
+  /**
+   * Where de Institucion acotado a un nivel educativo, con las reglas de
+   * modalidad del dominio (PROJECT_DOCUMENTATION §5.3):
+   *  - Inicial: EBR Inicial o EBE (Especial)
+   *  - Primaria: EBR Primaria
+   *  - Secundaria: EBR Secundaria, EBA o CEPTRO
+   * Sin nivel (o nivel desconocido) devuelve el sentinela vacio.
+   */
+  private nivelInstitucionWhere(nivel?: string | null): Prisma.InstitucionEducativaWhereInput {
+    if (!nivel) return { id: { in: [] } };
+    if (nivel === 'Inicial') {
+      return {
+        OR: [
+          { modalidad: 'EBE' },
+          { modalidad: 'EBR', nivelEducativo: { equals: 'Inicial', mode: 'insensitive' } },
+        ],
+      };
+    }
+    if (nivel === 'Primaria') {
+      return { modalidad: 'EBR', nivelEducativo: { equals: 'Primaria', mode: 'insensitive' } };
+    }
+    if (nivel === 'Secundaria') {
+      return {
+        OR: [
+          { modalidad: 'EBR', nivelEducativo: { equals: 'Secundaria', mode: 'insensitive' } },
+          { modalidad: 'EBA' },
+          { modalidad: 'CEPTRO' },
+        ],
+      };
+    }
+    return { id: { in: [] } };
   }
 
   /**
    * Filtro para Institucion.
    *  - ALL: empty
-   *  - JEFE_AREA: nivelEducativo == ctx.especialistaNivel Y modalidad
-   *              permitida (reglas del dominio: Inicial->EBR+EBE,
-   *              Primaria->EBR, Secundaria->EBR+EBA+CEPTRO)
+   *  - JEFE_AREA: acotado al nivel educativo del jefe (ver nivelInstitucionWhere).
+   *              Supervisa el nivel completo, sin acotar por especialidad.
    *  - INSTITUCION: institucionId == ctx.institucionId
-   *  - MONITOR: institucionId in (IEs donde es monitor) — para Fase 3 lo dejamos vacio
+   *  - MONITOR (especialista): acotado a las IEs de SU nivel educativo y —si el
+   *              especialista tiene especialidad(es)— además a las IEs que tengan
+   *              al menos un docente ACTIVO con alguna de esas especialidades. Así
+   *              un especialista de Primaria–Educación Física solo ve IEs de
+   *              Primaria con docentes de Educación Física; uno sin especialidad
+   *              ve todo su nivel.
    *  - OWN: institucionId == ctx.institucionId
    *  - DOCENTE: institucionId == ctx.institucionId
    */
   forInstitucion(ctx: ScopeContext): Prisma.InstitucionEducativaWhereInput {
     if (this.isAllScope(ctx.role)) return {};
     if (this.isJefeAreaScope(ctx.role)) {
-      const nivel = ctx.especialistaNivel;
-      if (!nivel) return { id: '__none__' };
-      // Reglas del dominio (PROJECT_DOCUMENTATION §5.3):
-      //  - Inicial: EBR Inicial o EBE (Especial)
-      //  - Primaria: EBR Primaria
-      //  - Secundaria: EBR Secundaria, EBA o CEPTRO
-      if (nivel === 'Inicial') {
-        return {
-          OR: [
-            { modalidad: 'EBE' },
-            { modalidad: 'EBR', nivelEducativo: { equals: 'Inicial', mode: 'insensitive' } },
-          ],
-        };
-      }
-      if (nivel === 'Primaria') {
-        return { modalidad: 'EBR', nivelEducativo: { equals: 'Primaria', mode: 'insensitive' } };
-      }
-      if (nivel === 'Secundaria') {
-        return {
-          OR: [
-            { modalidad: 'EBR', nivelEducativo: { equals: 'Secundaria', mode: 'insensitive' } },
-            { modalidad: 'EBA' },
-            { modalidad: 'CEPTRO' },
-          ],
-        };
-      }
-      return { id: '__none__' };
-    }
-    if (this.isInstitucionScope(ctx.role) || this.isOwnScope(ctx.role)) {
-      return ctx.institucionId ? { id: ctx.institucionId } : { id: '__none__' };
+      return this.nivelInstitucionWhere(ctx.especialistaNivel);
     }
     if (this.isMonitorScope(ctx.role)) {
-      // Especialista: ve las IEs donde esta asignado como monitor.
-      // Por ahora dejamos vacio (no es requerido para Fase 3).
-      return {};
+      const porNivel = this.nivelInstitucionWhere(ctx.especialistaNivel);
+      const especialidades = ctx.especialistaEspecialidades;
+      if (!especialidades || especialidades.length === 0) return porNivel;
+      return {
+        AND: [
+          porNivel,
+          {
+            docentes: {
+              some: {
+                estado: 'Activo',
+                docenteEspecialidades: {
+                  some: { especialidad: { nombre: { in: especialidades } } },
+                },
+              },
+            },
+          },
+        ],
+      };
     }
-    return { id: '__none__' };
+    if (this.isInstitucionScope(ctx.role) || this.isOwnScope(ctx.role)) {
+      return ctx.institucionId ? { id: ctx.institucionId } : { id: { in: [] } };
+    }
+    return { id: { in: [] } };
   }
 
   /**
@@ -209,12 +235,12 @@ export class ScopeFilter {
   forDocente(ctx: ScopeContext): Prisma.DocenteWhereInput {
     if (this.isAllScope(ctx.role)) return {};
     if (this.isInstitucionScope(ctx.role) || this.isOwnScope(ctx.role)) {
-      return ctx.institucionId ? { institucionId: ctx.institucionId } : { id: '__none__' };
+      return ctx.institucionId ? { institucionId: ctx.institucionId } : { id: { in: [] } };
     }
     if (this.isJefeAreaScope(ctx.role)) {
       return { institucion: this.forInstitucion(ctx) };
     }
-    return { id: '__none__' };
+    return { id: { in: [] } };
   }
 
   /**

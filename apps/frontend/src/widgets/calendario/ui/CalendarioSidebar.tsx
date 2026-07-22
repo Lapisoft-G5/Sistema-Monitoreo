@@ -755,19 +755,6 @@ const {
                               evidenciaUrls['GENERAL'] = raw;
                             }
                           }
-                          // Evidencia general: JSON con slots GENERAL_1/2/3, o cadena legada.
-                          if (ficha.evidenciaGeneral) {
-                            const raw = ficha.evidenciaGeneral;
-                            if (raw.trim().startsWith('{')) {
-                              try {
-                                Object.assign(evidenciaUrls, JSON.parse(raw) as Record<string, string>);
-                              } catch {
-                                evidenciaUrls['GENERAL'] = raw;
-                              }
-                            } else {
-                              evidenciaUrls['GENERAL'] = raw;
-                            }
-                          }
                           const mappedData = {
                             checkedAspects,
                             selectedLevels,

@@ -46,7 +46,7 @@ export const DashboardPage = () => {
   const enDistrito = <T extends { distrito: string }>(arr: T[]) =>
     sel ? arr.filter((x) => normDistrito(x.distrito) === sel) : arr;
 
-  const atencion = enDistrito(data?.requierenAtencion ?? []);
+  const atencion = enDistrito(data?.distritosCriticos ?? []);
   const recientes: MonitoringRow[] = enDistrito(data?.monitoreosRecientes ?? []).map((m) => {
     const ui = nivelLogroUi(m.nivelLogro);
     return {

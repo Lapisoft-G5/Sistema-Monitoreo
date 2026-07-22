@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, Polygon, useMap } from 'react-leaflet';
+import {
+  MapContainer,
+  TileLayer,
+  GeoJSON,
+  CircleMarker,
+  Popup,
+  Polygon,
+  Pane,
+  useMap,
+} from 'react-leaflet';
 import L, { type Layer, type PathOptions } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card } from '@shared/ui/card';
@@ -85,6 +94,10 @@ interface LampaMapProps {
   instituciones: IUgelDashboardIeMapa[];
   selected?: string | null;
   onSelectDistrito?: (distrito: string | null) => void;
+  /** Si se provee, al hacer clic en un punto se selecciona la IE (en vez de mostrar el popup). */
+  onSelectInstitucion?: (institucionId: string) => void;
+  /** IE seleccionada actualmente (para resaltar su marcador). */
+  selectedInstitucionId?: string | null;
 }
 
 export const LampaMap = ({
@@ -92,12 +105,19 @@ export const LampaMap = ({
   instituciones,
   selected,
   onSelectDistrito,
+  onSelectInstitucion,
+  selectedInstitucionId,
 }: LampaMapProps) => {
   const [nivelFilter, setNivelFilter] = useState<string>('Todos');
   const [estadoFilter, setEstadoFilter] = useState<string>('todos');
 
   const porDistrito = new Map(coberturaPorDistrito.map((d) => [normDistrito(d.distrito), d]));
   const selNorm = selected ? normDistrito(selected) : null;
+
+  // El filtro por nivel solo aporta si la data abarca más de un nivel (p. ej.
+  // Jefe de Gestión). El especialista recibe solo IEs de su nivel → se oculta
+  // para no ofrecer botones que dejarían el mapa vacío.
+  const mostrarFiltroNivel = new Set(instituciones.map((ie) => ie.nivelEducativo)).size > 1;
 
   const marcadores = instituciones.filter((ie) => {
     if (selNorm && normDistrito(ie.distrito) !== selNorm) return false;
@@ -139,22 +159,24 @@ export const LampaMap = ({
           </p>
         </div>
 
-        {/* Filtros rápidos: Nivel Educativo */}
-        <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
-          {NIVELES_EDUCATIVOS.map((n) => (
-            <button
-              key={n}
-              onClick={() => setNivelFilter(n)}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-                nivelFilter === n
-                  ? 'bg-background text-foreground shadow-xs'
-                  : 'text-text-muted hover:text-foreground'
-              }`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
+        {/* Filtros rápidos: Nivel Educativo (solo si la data tiene varios niveles) */}
+        {mostrarFiltroNivel && (
+          <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
+            {NIVELES_EDUCATIVOS.map((n) => (
+              <button
+                key={n}
+                onClick={() => setNivelFilter(n)}
+                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  nivelFilter === n
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-text-muted hover:text-foreground'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
 
         {selected && (
           <button
@@ -190,31 +212,49 @@ export const LampaMap = ({
             style={styleFeature as never}
             onEachFeature={onEach}
           />
-          {marcadores.map((ie) => {
-            const ui = ESTADO_UI[ie.estado] ?? ESTADO_UI.sinRegistro;
-            return (
-              <CircleMarker
-                key={ie.institucionId}
-                center={[ie.latitud, ie.longitud]}
-                radius={5}
-                pathOptions={{ fillColor: ui.color, fillOpacity: 0.95, color: 'white', weight: 1.5 }}
-              >
-                <Popup>
-                  <div className="text-xs space-y-1">
-                    <div className="font-bold text-foreground">{ie.nombre}</div>
-                    <div className="flex items-center gap-2 text-text-muted">
-                      <span>{ie.distrito}</span>
-                      <span>·</span>
-                      <span className="font-medium text-foreground">{ie.nivelEducativo}</span>
-                    </div>
-                    <div style={{ color: ui.color }} className="font-semibold pt-1">
-                      {ui.label}
-                    </div>
-                  </div>
-                </Popup>
-              </CircleMarker>
-            );
-          })}
+          {/* Los marcadores viven en un pane con z-index alto para que sigan siendo
+              clicables por encima del polígono del distrito (que se re-agrega al
+              seleccionarlo y, si no, taparía los círculos). */}
+          <Pane name="focos-markers" style={{ zIndex: 450 }}>
+            {marcadores.map((ie) => {
+              const ui = ESTADO_UI[ie.estado] ?? ESTADO_UI.sinRegistro;
+              const isSelectedIe = selectedInstitucionId === ie.institucionId;
+              return (
+                <CircleMarker
+                  key={ie.institucionId}
+                  center={[ie.latitud, ie.longitud]}
+                  radius={isSelectedIe ? 8 : 5}
+                  pathOptions={{
+                    fillColor: ui.color,
+                    fillOpacity: 0.95,
+                    color: isSelectedIe ? '#4338ca' : 'white',
+                    weight: isSelectedIe ? 3 : 1.5,
+                  }}
+                  eventHandlers={
+                    onSelectInstitucion
+                      ? { click: () => onSelectInstitucion(ie.institucionId) }
+                      : undefined
+                  }
+                >
+                  {!onSelectInstitucion && (
+                    <Popup>
+                      <div className="text-xs space-y-1">
+                        <div className="font-bold text-foreground">{ie.nombre}</div>
+                        <div className="flex items-center gap-2 text-text-muted">
+                          <span>{ie.distrito}</span>
+                          <span>·</span>
+                          <span className="font-medium text-foreground">{ie.nivelEducativo}</span>
+                        </div>
+                        <div style={{ color: ui.color }} className="font-semibold pt-1">
+                          {ui.label}
+                        </div>
+                      </div>
+                    </Popup>
+                  )}
+                </CircleMarker>
+              );
+            })}
+          </Pane>
         </MapContainer>
 
         {/* Leyenda interactiva por estado de monitoreo */}

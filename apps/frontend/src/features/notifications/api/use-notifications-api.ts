@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ICrearAlertaInstitucionRequest } from '@sistema-monitoreo/shared-contracts';
+import type {
+  ICrearAlertaDistritoRequest,
+  ICrearAlertaInstitucionRequest,
+} from '@sistema-monitoreo/shared-contracts';
 import { notificationsApi } from '@shared/api/notifications.api';
 
 const KEY = ['notificaciones'];
@@ -30,4 +33,9 @@ export const useMarcarTodasLeidas = () => {
 export const useEnviarAlerta = () =>
   useMutation({
     mutationFn: (body: ICrearAlertaInstitucionRequest) => notificationsApi.alertaInstitucion(body),
+  });
+
+export const useEnviarAlertaDistrito = () =>
+  useMutation({
+    mutationFn: (body: ICrearAlertaDistritoRequest) => notificationsApi.alertaDistrito(body),
   });

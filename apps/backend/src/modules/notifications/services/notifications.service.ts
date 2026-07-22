@@ -1,13 +1,14 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type {
   DestinatarioAlerta,
+  ICrearAlertaDistritoResponse,
   ICrearAlertaInstitucionResponse,
   INotificacionesResponse,
   IResultadoNotificacion,
 } from '@sistema-monitoreo/shared-contracts';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
-import { CrearAlertaInstitucionDto } from '../dto/crear-alerta.dto.js';
+import { CrearAlertaDistritoDto, CrearAlertaInstitucionDto } from '../dto/crear-alerta.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 
 /** Destinatario de notificación resuelto (usuario + su correo para el canal best-effort). */
@@ -112,6 +113,32 @@ export class NotificationsService {
     }
 
     return { resultados };
+  }
+
+  /**
+   * Alerta a nivel distrito dirigida al Jefe de Gestión: se emite cuando un distrito
+   * tiene promedio institucional crítico. Notifica a todos los Jefes de Gestión activos.
+   */
+  async crearAlertaDistrito(
+    dto: CrearAlertaDistritoDto,
+    emisor: Emisor,
+  ): Promise<ICrearAlertaDistritoResponse> {
+    const jefes = await this.getJefesGestion();
+    if (jefes.length === 0) return { notificados: 0 };
+
+    const promedioStr = dto.promedio !== undefined ? ` (promedio ${dto.promedio.toFixed(1)})` : '';
+    const titulo = `Distrito en nivel crítico: ${dto.distrito}`;
+    const base = `El distrito ${dto.distrito}${promedioStr} presenta un desempeño crítico y requiere intervención.`;
+    const mensaje = dto.mensaje?.trim() ? `${base} ${dto.mensaje.trim()}` : base;
+
+    await this.crearNotificaciones(jefes, {
+      tipo: 'ALERTA_DISTRITO',
+      titulo,
+      mensaje,
+      emisorId: emisor.id,
+    });
+
+    return { notificados: jefes.length };
   }
 
   /**

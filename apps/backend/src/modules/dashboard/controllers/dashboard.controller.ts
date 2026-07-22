@@ -1,6 +1,16 @@
-import { Controller, ForbiddenException, Get, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import type {
   IDirectorDashboardResponse,
+  IUgelDashboardInstitucionDetalle,
   IUgelDashboardResponse,
 } from '@sistema-monitoreo/shared-contracts';
 import { DashboardService } from '../services/dashboard.service.js';
@@ -43,6 +53,21 @@ export class DashboardController {
     return this.service.getUgelDashboard(this.toSession(req), anioNumber);
   }
 
+  /**
+   * GET /api/dashboard/institucion/:id
+   * Detalle de una IE (director, docentes, monitoreos y cobertura) para el mapa.
+   */
+  @Get('institucion/:id')
+  @RequirePermissions('dashboard:read')
+  async institucion(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: AuthenticatedRequest,
+    @Query('anio') anio?: string,
+  ): Promise<IUgelDashboardInstitucionDetalle> {
+    const anioNumber = anio ? parseInt(anio, 10) : undefined;
+    return this.service.getInstitucionDetalle(this.toSession(req), id, anioNumber);
+  }
+
   private toSession(req: AuthenticatedRequest): SessionScope {
     if (!req.user) {
       throw new ForbiddenException('Sesión no encontrada.');
@@ -52,6 +77,7 @@ export class DashboardController {
       role: req.user.role,
       institucionId: req.user.institucion_id ?? null,
       especialistaNivel: req.user.especialista_nivel ?? null,
+      especialistaEspecialidades: req.user.especialista_especialidades ?? null,
     };
   }
 }

@@ -15,3 +15,11 @@ export const useUgelDashboard = (anio?: number) =>
     queryFn: () => dashboardApi.ugel(anio),
     staleTime: STALE_TIMES.DEFAULT,
   });
+
+export const useInstitucionDetalle = (institucionId: string | null) =>
+  useQuery({
+    queryKey: ['dashboard', 'institucion', institucionId],
+    queryFn: () => dashboardApi.institucionDetalle(institucionId as string),
+    enabled: !!institucionId,
+    staleTime: STALE_TIMES.DEFAULT,
+  });

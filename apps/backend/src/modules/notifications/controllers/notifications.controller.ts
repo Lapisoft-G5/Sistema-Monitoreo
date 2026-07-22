@@ -11,12 +11,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type {
+  ICrearAlertaDistritoResponse,
   ICrearAlertaInstitucionResponse,
   INotificacionesResponse,
 } from '@sistema-monitoreo/shared-contracts';
 import { NotificationsService } from '../services/notifications.service.js';
 import { SinVisitaCronService } from '../services/sin-visita-cron.service.js';
-import { CrearAlertaInstitucionDto } from '../dto/crear-alerta.dto.js';
+import { CrearAlertaDistritoDto, CrearAlertaInstitucionDto } from '../dto/crear-alerta.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
@@ -67,6 +68,20 @@ export class NotificationsController {
     const nombre =
       `${req.user.nombres ?? ''} ${req.user.apellidos ?? ''}`.trim() || 'Director UGEL';
     return this.service.crearAlertaInstitucion(dto, { id: req.user.sub, nombre });
+  }
+
+  /** Enviar una alerta a los Jefes de Gestión sobre un distrito con promedio crítico. */
+  @Post('alerta-distrito')
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions('notificaciones:send')
+  async alertaDistrito(
+    @Body() dto: CrearAlertaDistritoDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ICrearAlertaDistritoResponse> {
+    if (!req.user) throw new ForbiddenException('Sesión no encontrada.');
+    const nombre =
+      `${req.user.nombres ?? ''} ${req.user.apellidos ?? ''}`.trim() || 'Director UGEL';
+    return this.service.crearAlertaDistrito(dto, { id: req.user.sub, nombre });
   }
 
   /** Ejecuta manualmente el barrido de "IE sin visita" (además del cron diario). */

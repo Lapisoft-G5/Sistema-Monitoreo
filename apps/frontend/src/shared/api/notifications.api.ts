@@ -1,4 +1,6 @@
 import type {
+  ICrearAlertaDistritoRequest,
+  ICrearAlertaDistritoResponse,
   ICrearAlertaInstitucionRequest,
   ICrearAlertaInstitucionResponse,
   INotificacionesResponse,
@@ -13,6 +15,11 @@ export const notificationsApi = {
     request<{ success: true }>('/api/notificaciones/leer-todas', { method: 'PATCH' }),
   alertaInstitucion: (body: ICrearAlertaInstitucionRequest) =>
     request<ICrearAlertaInstitucionResponse>('/api/notificaciones/alerta-institucion', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  alertaDistrito: (body: ICrearAlertaDistritoRequest) =>
+    request<ICrearAlertaDistritoResponse>('/api/notificaciones/alerta-distrito', {
       method: 'POST',
       body: JSON.stringify(body),
     }),

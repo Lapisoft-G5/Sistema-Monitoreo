@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import type {
   IDirectorDashboardMonitoreoReciente,
   IDirectorDashboardResponse,
   IUgelDashboardCriticaIe,
+  IUgelDashboardDistritoCritico,
+  IUgelDashboardIeCriticaDistrito,
   IUgelDashboardDistrito,
   IUgelDashboardIeMapa,
+  IUgelDashboardInstitucionDetalle,
   IUgelDashboardMonitoreoReciente,
   IUgelDashboardResponse,
   NivelLogro,
@@ -259,12 +262,15 @@ export class PrismaDashboardRepository implements DashboardRepository {
     }
     const sinRegistro = Math.max(totalInstituciones - promediosPorIe.size, 0);
 
-    // "Requieren atención" a nivel docente: docentes/directivos cuya ÚLTIMA ficha
-    // está en INICIO, agrupados por su IE.
+    // "Requieren atención" a nivel docente (versión detallada por institución, para
+    // el módulo Focos de Atención): docentes/directivos cuya ÚLTIMA ficha está en
+    // INICIO, agrupados por su IE.
     const ultimaPorDocente = new Map<string, (typeof fichas)[number]>();
+    const completadosPorDocente = new Map<string, number>();
     for (const ficha of fichas) {
       const docId = ficha.cronograma.evaluadoId;
       if (!ultimaPorDocente.has(docId)) ultimaPorDocente.set(docId, ficha); // ya vienen desc
+      completadosPorDocente.set(docId, (completadosPorDocente.get(docId) ?? 0) + 1);
     }
     const iesAtencion = new Map<string, IUgelDashboardCriticaIe>();
     for (const ficha of ultimaPorDocente.values()) {
@@ -288,11 +294,46 @@ export class PrismaDashboardRepository implements DashboardRepository {
         cargo: c.tipoMonitoreo === 'DIRECTIVO' ? 'Directivo' : 'Docente',
         promedio: Number(ficha.promedio),
         nivelLogro: 'INICIO',
+        monitoreosCompletados: completadosPorDocente.get(c.evaluadoId) ?? 0,
       });
     }
     const requierenAtencion: IUgelDashboardCriticaIe[] = [...iesAtencion.values()];
     for (const ie of requierenAtencion) ie.docentes.sort((a, b) => a.promedio - b.promedio);
     requierenAtencion.sort((a, b) => b.docentes.length - a.docentes.length);
+
+    // "Requieren atención" a nivel DISTRITO (Director UGEL): distritos cuyo promedio
+    // institucional (media de los promedios de sus II.EE. monitoreadas) cae en INICIO
+    // (crítico), con el desglose de las II.EE. críticas que lo componen.
+    type DistritoAcc = {
+      sumaProm: number;
+      nIe: number;
+      criticas: IUgelDashboardIeCriticaDistrito[];
+    };
+    const distritoAcc = new Map<string, DistritoAcc>();
+    for (const [ieId, acc] of promediosPorIe.entries()) {
+      const promedioIe = acc.suma / acc.n;
+      const d = distritoAcc.get(acc.distrito) ?? { sumaProm: 0, nIe: 0, criticas: [] };
+      d.sumaProm += promedioIe;
+      d.nIe += 1;
+      if (clasificarSemaforo(promedioIe) === 'critico') {
+        d.criticas.push({
+          institucionId: ieId,
+          nombre: acc.nombre,
+          nivelEducativo: acc.nivelEducativo,
+          promedio: Number(promedioIe.toFixed(2)),
+        });
+      }
+      distritoAcc.set(acc.distrito, d);
+    }
+    const distritosCriticos: IUgelDashboardDistritoCritico[] = [...distritoAcc.entries()]
+      .map(([distrito, d]) => ({
+        distrito,
+        promedio: Number((d.sumaProm / d.nIe).toFixed(2)),
+        totalInstituciones: d.nIe,
+        institucionesCriticas: d.criticas.sort((a, b) => a.promedio - b.promedio),
+      }))
+      .filter((d) => clasificarSemaforo(d.promedio) === 'critico')
+      .sort((a, b) => a.promedio - b.promedio);
 
     // 4a-bis. II.EE. geolocalizadas para el mapa, con su estado de semáforo.
     const iesConCoord = await this.prisma.institucionEducativa.findMany({
@@ -399,11 +440,70 @@ export class PrismaDashboardRepository implements DashboardRepository {
         porcentajeCobertura,
       },
       semaforo: { critico, enProceso, logroPrevisto, sinRegistro },
+      distritosCriticos,
       requierenAtencion,
       coberturaPorDistrito,
       institucionesMapa,
       coberturaAnioPrevio,
       monitoreosRecientes,
+    };
+  }
+
+  async getInstitucionDetalle(
+    _session: SessionScope,
+    institucionId: string,
+    anio: number,
+  ): Promise<IUgelDashboardInstitucionDetalle> {
+    const inicioAnio = new Date(Date.UTC(anio, 0, 1));
+    const finAnio = new Date(Date.UTC(anio, 11, 31, 23, 59, 59));
+
+    const ie = await this.prisma.institucionEducativa.findUnique({
+      where: { id: institucionId },
+      select: {
+        id: true,
+        nombre: true,
+        codigoModular: true,
+        distrito: true,
+        nivelEducativo: true,
+      },
+    });
+    if (!ie) throw new NotFoundException('Institución no encontrada.');
+
+    const anioRango = { fechaProgramada: { gte: inicioAnio, lte: finAnio } };
+    const [director, totalDocentes, monitoreosProgramados, monitoreosRealizados] =
+      await Promise.all([
+        this.prisma.docente.findFirst({
+          where: {
+            institucionId,
+            docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+          },
+          select: { persona: { select: { nombres: true, apellidos: true } } },
+        }),
+        this.prisma.docente.count({ where: { institucionId, estado: 'Activo' } }),
+        this.prisma.cronograma.count({ where: { institucionId, ...anioRango } }),
+        this.prisma.cronograma.count({
+          where: { institucionId, estado: 'COMPLETADO', ...anioRango },
+        }),
+      ]);
+
+    const porcentajeCobertura =
+      monitoreosProgramados > 0
+        ? Math.round((monitoreosRealizados / monitoreosProgramados) * 100)
+        : 0;
+
+    return {
+      institucionId: ie.id,
+      nombre: ie.nombre,
+      codigoModular: ie.codigoModular,
+      distrito: ie.distrito,
+      nivelEducativo: ie.nivelEducativo,
+      director: director?.persona
+        ? `${director.persona.nombres} ${director.persona.apellidos}`.trim()
+        : null,
+      totalDocentes,
+      monitoreosRealizados,
+      monitoreosProgramados,
+      porcentajeCobertura,
     };
   }
 }

@@ -62,7 +62,9 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
     'docentes:write',
     'monitoreo:execute',
     'dashboard:read',
+    'notificaciones:send',
     'visitas:gestionar',
+    'visitas:solicitar',
   ],
   [RoleCode.JEFE_AREA]: [
     'especialistas:read',
@@ -70,12 +72,18 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
     'instituciones:write',
     'docentes:read',
     'docentes:write',
+    'dashboard:read',
+    'notificaciones:send',
+    'visitas:solicitar',
   ],
   [RoleCode.ESPECIALISTA]: [
     'monitoreo:execute',
     'especialistas:read',
     'instituciones:read',
     'docentes:read',
+    'dashboard:read',
+    'notificaciones:send',
+    'visitas:solicitar',
   ],
   [RoleCode.DIRECTOR_INSTITUCION]: [
     'dashboard:read',

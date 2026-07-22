@@ -57,9 +57,15 @@ export interface IDocenteCritico {
   cargo: string;
   promedio: number;
   nivelLogro: NivelLogro;
+  /** Cantidad de monitoreos finalizados que recibió el docente en el año. */
+  monitoreosCompletados: number;
 }
 
-/** IE con docentes que requieren atención, para "Requieren atención". */
+/**
+ * IE con docentes/directivos que requieren atención (versión detallada por
+ * institución), usada por el módulo "Focos de Atención" (Jefe de Gestión, Jefe
+ * de Área y Especialistas).
+ */
 export interface IUgelDashboardCriticaIe {
   institucionId: string;
   nombre: string;
@@ -68,11 +74,53 @@ export interface IUgelDashboardCriticaIe {
   docentes: IDocenteCritico[];
 }
 
+/** IE crítica (promedio institucional en INICIO) dentro de un distrito. */
+export interface IUgelDashboardIeCriticaDistrito {
+  institucionId: string;
+  nombre: string;
+  nivelEducativo: string;
+  promedio: number;
+}
+
+/**
+ * Distrito con promedio institucional crítico (INICIO), para "Requieren atención".
+ * El foco pasa de la IE individual al distrito: se notifica al Jefe de Gestión
+ * sobre los distritos con menor desempeño, con el desglose de sus II.EE. críticas.
+ */
+export interface IUgelDashboardDistritoCritico {
+  distrito: string;
+  /** Promedio del distrito (media de los promedios institucionales monitoreados). */
+  promedio: number;
+  /** II.EE. del distrito con monitoreo (para el denominador del promedio). */
+  totalInstituciones: number;
+  /** II.EE. del distrito en nivel crítico, para el desglose expandible. */
+  institucionesCriticas: IUgelDashboardIeCriticaDistrito[];
+}
+
 /** Cobertura de monitoreo agregada por distrito. */
 export interface IUgelDashboardDistrito {
   distrito: string;
   totalInstituciones: number;
   monitoreadas: number;
+  porcentajeCobertura: number;
+}
+
+/** Detalle de una IE, mostrado al hacer clic en su punto del mapa. */
+export interface IUgelDashboardInstitucionDetalle {
+  institucionId: string;
+  nombre: string;
+  codigoModular: string;
+  distrito: string;
+  nivelEducativo: string;
+  /** Nombre del director de la IE, o null si no tiene director registrado. */
+  director: string | null;
+  /** Total de docentes activos de la IE. */
+  totalDocentes: number;
+  /** Monitoreos completados en el año. */
+  monitoreosRealizados: number;
+  /** Monitoreos programados en el año (total del cronograma). */
+  monitoreosProgramados: number;
+  /** Cobertura = realizados / programados * 100. */
   porcentajeCobertura: number;
 }
 
@@ -93,7 +141,9 @@ export interface IUgelDashboardResponse {
   anio: number;
   kpis: IUgelDashboardKpis;
   semaforo: IUgelDashboardSemaforo;
-  /** II.EE. críticas ordenadas por menor promedio (para "Requieren atención"). */
+  /** Distritos con promedio crítico, ordenados por menor promedio (Director UGEL). */
+  distritosCriticos: IUgelDashboardDistritoCritico[];
+  /** II.EE. críticas con sus docentes/directivos en INICIO (módulo Focos de Atención). */
   requierenAtencion: IUgelDashboardCriticaIe[];
   /** Ranking de cobertura por distrito. */
   coberturaPorDistrito: IUgelDashboardDistrito[];

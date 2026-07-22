@@ -51,3 +51,19 @@ export interface IResultadoNotificacion {
 export interface ICrearAlertaInstitucionResponse {
   resultados: IResultadoNotificacion[];
 }
+
+/**
+ * Alerta a nivel DISTRITO dirigida al Jefe de Gestión: se usa cuando un distrito
+ * presenta un promedio institucional crítico y requiere intervención general.
+ */
+export interface ICrearAlertaDistritoRequest {
+  distrito: string;
+  /** Promedio del distrito (para componer el mensaje); opcional. */
+  promedio?: number;
+  mensaje?: string;
+}
+
+export interface ICrearAlertaDistritoResponse {
+  /** Cantidad de Jefes de Gestión notificados (in-app). */
+  notificados: number;
+}

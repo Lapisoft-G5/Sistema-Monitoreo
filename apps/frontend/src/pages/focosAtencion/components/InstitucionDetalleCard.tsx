@@ -1,12 +1,21 @@
 import { ArrowLeft, UserCog, Users, ClipboardCheck, CalendarClock, Target } from 'lucide-react';
 import { Card } from '@shared/ui/card';
+import { Badge } from '@shared/ui/badge';
 import { Spinner } from '@shared/ui/Spinner';
 import { useInstitucionDetalle } from '@features/dashboard';
+import type { NivelLogro } from '@sistema-monitoreo/shared-contracts';
 
 interface Props {
   institucionId: string;
   onBack: () => void;
 }
+
+/** Color del promedio según la banda del nivel de logro. */
+const colorNivelLogro = (nivel: NivelLogro): string => {
+  if (nivel === 'INICIO') return 'text-destructive';
+  if (nivel === 'EN_PROCESO') return 'text-amber-500';
+  return 'text-green-600';
+};
 
 /** Detalle de una IE al hacer clic en su punto del mapa: director, docentes,
  *  monitoreos realizados/programados y cobertura. Se muestra en el panel derecho. */
@@ -85,6 +94,48 @@ export const InstitucionDetalleCard = ({ institucionId, onBack }: Props) => {
               value={data.monitoreosProgramados}
             />
           </div>
+
+          {/* Docentes monitoreados en esta IE (escopado por rol; el especialista
+              ve solo los que él monitoreó), con su especialidad. */}
+          {data.docentesMonitoreados.length > 0 && (
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">
+                Docentes monitoreados ({data.docentesMonitoreados.length})
+              </div>
+              <ul className="flex flex-col gap-2">
+                {data.docentesMonitoreados.map((d) => (
+                  <li
+                    key={d.docenteId}
+                    className="rounded-lg border border-border px-3 py-2 flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-sm truncate">{d.nombre}</span>
+                        <Badge variant="outline" className="text-[9px] uppercase shrink-0">
+                          {d.cargo}
+                        </Badge>
+                        {d.especialidad && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] uppercase shrink-0 font-semibold"
+                          >
+                            {d.especialidad}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <span
+                      className={`text-lg font-extrabold tabular-nums leading-none shrink-0 ${colorNivelLogro(
+                        d.nivelLogro,
+                      )}`}
+                    >
+                      {d.promedio.toFixed(1)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </Card>

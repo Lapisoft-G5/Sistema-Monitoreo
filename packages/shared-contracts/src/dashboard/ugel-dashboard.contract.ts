@@ -110,6 +110,18 @@ export interface IUgelDashboardDistrito {
   porcentajeCobertura: number;
 }
 
+/** Docente/directivo monitoreado en una IE (su última ficha finalizada del año). */
+export interface IInstitucionDetalleDocente {
+  docenteId: string;
+  nombre: string;
+  /** 'Docente' | 'Directivo' (según el tipo de monitoreo). */
+  cargo: string;
+  /** Especialidad(es) del docente, separadas por coma. Null si no tiene. */
+  especialidad: string | null;
+  nivelLogro: NivelLogro;
+  promedio: number;
+}
+
 /** Detalle de una IE, mostrado al hacer clic en su punto del mapa. */
 export interface IUgelDashboardInstitucionDetalle {
   institucionId: string;
@@ -127,6 +139,12 @@ export interface IUgelDashboardInstitucionDetalle {
   monitoreosProgramados: number;
   /** Cobertura = realizados / programados * 100. */
   porcentajeCobertura: number;
+  /**
+   * Docentes/directivos monitoreados en esta IE (última ficha finalizada del
+   * año), escopados por el rol de quien consulta: el especialista ve solo los
+   * que él monitoreó. Incluye la especialidad para validar el foco por área.
+   */
+  docentesMonitoreados: IInstitucionDetalleDocente[];
 }
 
 export type EstadoSemaforoIe = 'critico' | 'enProceso' | 'logroPrevisto' | 'sinRegistro';

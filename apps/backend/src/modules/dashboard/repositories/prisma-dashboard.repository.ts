@@ -462,10 +462,11 @@ export class PrismaDashboardRepository implements DashboardRepository {
   }
 
   async getInstitucionDetalle(
-    _session: SessionScope,
+    session: SessionScope,
     institucionId: string,
     anio: number,
   ): Promise<IUgelDashboardInstitucionDetalle> {
+    const ctx = this.toScopeContext(session);
     const inicioAnio = new Date(Date.UTC(anio, 0, 1));
     const finAnio = new Date(Date.UTC(anio, 11, 31, 23, 59, 59));
 
@@ -482,7 +483,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
     if (!ie) throw new NotFoundException('Institución no encontrada.');
 
     const anioRango = { fechaProgramada: { gte: inicioAnio, lte: finAnio } };
-    const [director, totalDocentes, monitoreosProgramados, monitoreosRealizados] =
+    const [director, totalDocentes, monitoreosProgramados, monitoreosRealizados, fichasIe] =
       await Promise.all([
         this.prisma.docente.findFirst({
           where: {
@@ -496,7 +497,62 @@ export class PrismaDashboardRepository implements DashboardRepository {
         this.prisma.cronograma.count({
           where: { institucionId, estado: 'COMPLETADO', ...anioRango },
         }),
+        // Fichas finalizadas de esta IE, escopadas por el rol de quien consulta
+        // (el especialista solo ve las que él monitoreó). Se combina el scope con
+        // la IE vía AND para no pisar la clave `cronograma` de algunos scopes.
+        this.prisma.fichaMonitoreo.findMany({
+          where: {
+            estado: 'FINALIZADO',
+            anioAcademico: anio,
+            AND: [this.scopeFilter.forFicha(ctx), { cronograma: { institucionId } }],
+          },
+          select: {
+            promedio: true,
+            nivelLogro: true,
+            finalizadaAt: true,
+            createdAt: true,
+            cronograma: {
+              select: {
+                tipoMonitoreo: true,
+                evaluadoId: true,
+                evaluado: {
+                  select: {
+                    persona: { select: { nombres: true, apellidos: true } },
+                    docenteEspecialidades: {
+                      select: { especialidad: { select: { nombre: true } } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: [{ finalizadaAt: 'desc' }, { createdAt: 'desc' }],
+        }),
       ]);
+
+    // Última ficha por docente (las fichas ya vienen desc): la primera que
+    // veamos por docente es la más reciente.
+    const ultimaPorDocente = new Map<string, (typeof fichasIe)[number]>();
+    for (const ficha of fichasIe) {
+      const docId = ficha.cronograma.evaluadoId;
+      if (!ultimaPorDocente.has(docId)) ultimaPorDocente.set(docId, ficha);
+    }
+    const docentesMonitoreados = [...ultimaPorDocente.values()].map((ficha) => {
+      const c = ficha.cronograma;
+      const p = c.evaluado.persona;
+      const especialidades = c.evaluado.docenteEspecialidades
+        .map((de) => de.especialidad.nombre)
+        .filter(Boolean);
+      return {
+        docenteId: c.evaluadoId,
+        nombre: `${p.nombres} ${p.apellidos}`.trim(),
+        cargo: c.tipoMonitoreo === 'DIRECTIVO' ? 'Directivo' : 'Docente',
+        especialidad: especialidades.length > 0 ? especialidades.join(', ') : null,
+        nivelLogro: ficha.nivelLogro as NivelLogro,
+        promedio: Number(ficha.promedio),
+      };
+    });
+    docentesMonitoreados.sort((a, b) => a.promedio - b.promedio);
 
     const porcentajeCobertura =
       monitoreosProgramados > 0
@@ -516,6 +572,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       monitoreosRealizados,
       monitoreosProgramados,
       porcentajeCobertura,
+      docentesMonitoreados,
     };
   }
 }

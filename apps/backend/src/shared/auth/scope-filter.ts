@@ -37,7 +37,7 @@ export interface ScopeContext {
  *  - OWN      : docente. Ve solo lo propio.
  *
  * Si el `institucionId` es null pero el rol lo necesita para filtrar,
- * el filtro retorna `{ id: '__none__' }` (un sentinel que no matchea
+ * el filtro retorna `{ id: { in: [] } }` (un sentinel que no matchea
  * ninguna fila) para que la query devuelva vacio. Esto evita leaks
  * por falta de datos de scope.
  */
@@ -87,7 +87,7 @@ export class ScopeFilter {
   forCronograma(ctx: ScopeContext): Prisma.CronogramaWhereInput {
     if (this.isAllScope(ctx.role)) return {};
     if (this.isInstitucionScope(ctx.role)) {
-      return ctx.institucionId ? { institucionId: ctx.institucionId } : { id: '__none__' };
+      return ctx.institucionId ? { institucionId: ctx.institucionId } : { id: { in: [] } };
     }
     if (this.isMonitorScope(ctx.role)) {
       return { monitorId: ctx.userId };
@@ -107,7 +107,7 @@ export class ScopeFilter {
       };
     }
     // invitado, etc.
-    return { id: '__none__' };
+    return { id: { in: [] } };
   }
 
   /**
@@ -120,7 +120,7 @@ export class ScopeFilter {
     if (this.isInstitucionScope(ctx.role)) {
       return ctx.institucionId
         ? { cronograma: { institucionId: ctx.institucionId } }
-        : { id: '__none__' };
+        : { id: { in: [] } };
     }
     if (this.isMonitorScope(ctx.role)) {
       return { creadoPorId: ctx.userId };
@@ -145,7 +145,7 @@ export class ScopeFilter {
         },
       };
     }
-    return { id: '__none__' };
+    return { id: { in: [] } };
   }
 
   /**
@@ -157,7 +157,7 @@ export class ScopeFilter {
    * Sin nivel (o nivel desconocido) devuelve el sentinela vacio.
    */
   private nivelInstitucionWhere(nivel?: string | null): Prisma.InstitucionEducativaWhereInput {
-    if (!nivel) return { id: '__none__' };
+    if (!nivel) return { id: { in: [] } };
     if (nivel === 'Inicial') {
       return {
         OR: [
@@ -178,7 +178,7 @@ export class ScopeFilter {
         ],
       };
     }
-    return { id: '__none__' };
+    return { id: { in: [] } };
   }
 
   /**
@@ -222,9 +222,9 @@ export class ScopeFilter {
       };
     }
     if (this.isInstitucionScope(ctx.role) || this.isOwnScope(ctx.role)) {
-      return ctx.institucionId ? { id: ctx.institucionId } : { id: '__none__' };
+      return ctx.institucionId ? { id: ctx.institucionId } : { id: { in: [] } };
     }
-    return { id: '__none__' };
+    return { id: { in: [] } };
   }
 
   /**
@@ -235,12 +235,12 @@ export class ScopeFilter {
   forDocente(ctx: ScopeContext): Prisma.DocenteWhereInput {
     if (this.isAllScope(ctx.role)) return {};
     if (this.isInstitucionScope(ctx.role) || this.isOwnScope(ctx.role)) {
-      return ctx.institucionId ? { institucionId: ctx.institucionId } : { id: '__none__' };
+      return ctx.institucionId ? { institucionId: ctx.institucionId } : { id: { in: [] } };
     }
     if (this.isJefeAreaScope(ctx.role)) {
       return { institucion: this.forInstitucion(ctx) };
     }
-    return { id: '__none__' };
+    return { id: { in: [] } };
   }
 
   /**

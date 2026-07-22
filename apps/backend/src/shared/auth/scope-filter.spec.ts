@@ -67,7 +67,7 @@ describe('ScopeFilter', () => {
     it('INSTITUCION sin institucionId: filtro sentinela (no matchea nada)', () => {
       expect(
         filter.forCronograma(ctx({ role: RoleCode.DIRECTOR_INSTITUCION, institucionId: null })),
-      ).toEqual({ id: '__none__' });
+      ).toEqual({ id: { in: [] } });
     });
 
     it('MONITOR: filter por monitorId == userId', () => {
@@ -175,7 +175,7 @@ describe('ScopeFilter', () => {
     it('JEFE_AREA sin nivel: sentinela', () => {
       expect(
         filter.forInstitucion(ctx({ role: RoleCode.JEFE_AREA, especialistaNivel: null })),
-      ).toEqual({ id: '__none__' });
+      ).toEqual({ id: { in: [] } });
     });
 
     it('ESPECIALISTA Primaria sin especialidad: solo por nivel (como Jefe de Área)', () => {
@@ -221,7 +221,7 @@ describe('ScopeFilter', () => {
     it('ESPECIALISTA sin nivel: sentinela', () => {
       expect(
         filter.forInstitucion(ctx({ role: RoleCode.ESPECIALISTA, especialistaNivel: null })),
-      ).toEqual({ id: '__none__' });
+      ).toEqual({ id: { in: [] } });
     });
 
     it('DIRECTOR_INSTITUCION: filter por id de su institucion', () => {
@@ -233,7 +233,7 @@ describe('ScopeFilter', () => {
     it('DIRECTOR_INSTITUCION sin institucionId: sentinela', () => {
       expect(
         filter.forInstitucion(ctx({ role: RoleCode.DIRECTOR_INSTITUCION, institucionId: null })),
-      ).toEqual({ id: '__none__' });
+      ).toEqual({ id: { in: [] } });
     });
   });
 

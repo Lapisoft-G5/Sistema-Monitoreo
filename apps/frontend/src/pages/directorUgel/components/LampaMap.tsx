@@ -114,6 +114,11 @@ export const LampaMap = ({
   const porDistrito = new Map(coberturaPorDistrito.map((d) => [normDistrito(d.distrito), d]));
   const selNorm = selected ? normDistrito(selected) : null;
 
+  // El filtro por nivel solo aporta si la data abarca más de un nivel (p. ej.
+  // Jefe de Gestión). El especialista recibe solo IEs de su nivel → se oculta
+  // para no ofrecer botones que dejarían el mapa vacío.
+  const mostrarFiltroNivel = new Set(instituciones.map((ie) => ie.nivelEducativo)).size > 1;
+
   const marcadores = instituciones.filter((ie) => {
     if (selNorm && normDistrito(ie.distrito) !== selNorm) return false;
     if (nivelFilter !== 'Todos' && ie.nivelEducativo !== nivelFilter) return false;
@@ -154,22 +159,24 @@ export const LampaMap = ({
           </p>
         </div>
 
-        {/* Filtros rápidos: Nivel Educativo */}
-        <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
-          {NIVELES_EDUCATIVOS.map((n) => (
-            <button
-              key={n}
-              onClick={() => setNivelFilter(n)}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-                nivelFilter === n
-                  ? 'bg-background text-foreground shadow-xs'
-                  : 'text-text-muted hover:text-foreground'
-              }`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
+        {/* Filtros rápidos: Nivel Educativo (solo si la data tiene varios niveles) */}
+        {mostrarFiltroNivel && (
+          <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
+            {NIVELES_EDUCATIVOS.map((n) => (
+              <button
+                key={n}
+                onClick={() => setNivelFilter(n)}
+                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  nivelFilter === n
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-text-muted hover:text-foreground'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
 
         {selected && (
           <button

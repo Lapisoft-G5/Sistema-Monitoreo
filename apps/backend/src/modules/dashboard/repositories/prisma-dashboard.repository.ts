@@ -493,9 +493,19 @@ export class PrismaDashboardRepository implements DashboardRepository {
           select: { persona: { select: { nombres: true, apellidos: true } } },
         }),
         this.prisma.docente.count({ where: { institucionId, estado: 'Activo' } }),
-        this.prisma.cronograma.count({ where: { institucionId, ...anioRango } }),
+        // Monitoreos escopados por rol (forCronograma): el especialista ve su
+        // propia cobertura de esta IE, coherente con docentesMonitoreados. El
+        // Jefe de Gestión (scope vacío) los ve todos. AND evita pisar `institucionId`.
         this.prisma.cronograma.count({
-          where: { institucionId, estado: 'COMPLETADO', ...anioRango },
+          where: { AND: [this.scopeFilter.forCronograma(ctx), { institucionId, ...anioRango }] },
+        }),
+        this.prisma.cronograma.count({
+          where: {
+            AND: [
+              this.scopeFilter.forCronograma(ctx),
+              { institucionId, estado: 'COMPLETADO', ...anioRango },
+            ],
+          },
         }),
         // Fichas finalizadas de esta IE, escopadas por el rol de quien consulta
         // (el especialista solo ve las que él monitoreó). Se combina el scope con

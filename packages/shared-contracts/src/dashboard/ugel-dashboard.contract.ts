@@ -131,13 +131,13 @@ export interface IUgelDashboardInstitucionDetalle {
   nivelEducativo: string;
   /** Nombre del director de la IE, o null si no tiene director registrado. */
   director: string | null;
-  /** Total de docentes activos de la IE. */
+  /** Total de docentes activos de la IE (dato institucional, sin escopar). */
   totalDocentes: number;
-  /** Monitoreos completados en el año. */
+  /** Monitoreos completados en el año, escopados por el rol de quien consulta. */
   monitoreosRealizados: number;
-  /** Monitoreos programados en el año (total del cronograma). */
+  /** Monitoreos programados en el año, escopados por el rol de quien consulta. */
   monitoreosProgramados: number;
-  /** Cobertura = realizados / programados * 100. */
+  /** Cobertura = realizados / programados * 100 (sobre el scope del consultante). */
   porcentajeCobertura: number;
   /**
    * Docentes/directivos monitoreados en esta IE (última ficha finalizada del

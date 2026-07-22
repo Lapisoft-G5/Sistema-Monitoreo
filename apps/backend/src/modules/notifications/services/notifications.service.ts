@@ -8,6 +8,10 @@ import type {
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
 import { CrearAlertaInstitucionDto } from '../dto/crear-alerta.dto.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
+
+/** Destinatario de notificación resuelto (usuario + su correo para el canal best-effort). */
+type NotifRecipient = { usuarioId: string; correo?: string | null };
 
 const TIPO_ALERTA = 'ALERTA_INSTITUCION';
 
@@ -210,7 +214,6 @@ export class NotificationsService {
           cronograma: {
             include: {
               institucion: true,
-              monitor: { include: { persona: { include: { usuario: true } } } },
               evaluado: { include: { persona: { include: { usuario: true } } } },
             },
           },
@@ -234,53 +237,28 @@ export class NotificationsService {
       const titulo = `Solicitud de Reprogramación - ${ieNombre}`;
       const mensaje = `${solicitanteNombre} ha solicitado reprogramar la visita a la IE ${ieNombre} (${fechaOrigStr}). Nueva fecha propuesta: ${fechaPropStr} a las ${s.horaPropuesta}. Justificación: ${s.justificacion}`;
 
-      const destinatarios: { usuarioId: string; correo?: string | null }[] = [];
+      const destinatarios: NotifRecipient[] = [];
 
-      if (c.monitor?.persona?.usuario?.id) {
-        destinatarios.push({
-          usuarioId: c.monitor.persona.usuario.id,
-          correo: c.monitor.persona.correo,
-        });
+      // Enrutamiento dedicado según quién solicita (rol al momento de crear la solicitud).
+      if (this.esSolicitanteDeIE(s.solicitanteRolAlCrear)) {
+        // Nivel IE (Secundaria): resuelve el Director de la propia IE.
+        const dir = await this.getDirectorIE(c.institucionId);
+        if (dir) destinatarios.push(dir);
+      } else {
+        // Nivel UGEL (especialista): resuelven el Jefe de Gestión y el Jefe de Área del nivel;
+        // además se avisa al Director de la IE del docente/directivo monitoreado.
+        destinatarios.push(...(await this.getJefesGestion()));
+        destinatarios.push(...(await this.getJefesArea(c.nivelEducativo)));
+        const dir = await this.getDirectorIE(c.institucionId);
+        if (dir) destinatarios.push(dir);
       }
+
+      // Parte monitoreada: el docente/directivo evaluado (en ambos niveles).
       if (c.evaluado?.persona?.usuario?.id) {
         destinatarios.push({
           usuarioId: c.evaluado.persona.usuario.id,
           correo: c.evaluado.persona.correo,
         });
-      }
-
-      // Jefes de Gestión
-      const jefes = await this.prisma.usuario.findMany({
-        where: { rol: { codigo: 'jefe_gestion' }, isActive: true },
-        select: { id: true, persona: { select: { correo: true } } },
-      });
-      for (const j of jefes) {
-        destinatarios.push({ usuarioId: j.id, correo: j.persona?.correo });
-      }
-
-      // Jefe de Área del nivel correspondiente
-      const jefesArea = await this.prisma.especialista.findMany({
-        where: { cargo: 'Jefe de Área', nivelEducativo: c.nivelEducativo, estado: 'Activo' },
-        select: { persona: { select: { correo: true, usuario: { select: { id: true } } } } },
-      });
-      for (const ja of jefesArea) {
-        if (ja.persona?.usuario?.id) {
-          destinatarios.push({ usuarioId: ja.persona.usuario.id, correo: ja.persona.correo });
-        }
-      }
-
-      // Director IE si la institución tiene director
-      if (c.institucionId) {
-        const dir = await this.prisma.docente.findFirst({
-          where: {
-            institucionId: c.institucionId,
-            docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
-          },
-          select: { persona: { select: { correo: true, usuario: { select: { id: true } } } } },
-        });
-        if (dir?.persona?.usuario?.id) {
-          destinatarios.push({ usuarioId: dir.persona.usuario.id, correo: dir.persona.correo });
-        }
       }
 
       await this.crearNotificaciones(destinatarios, {
@@ -314,7 +292,6 @@ export class NotificationsService {
           cronograma: {
             include: {
               institucion: true,
-              monitor: { include: { persona: { include: { usuario: true } } } },
               evaluado: { include: { persona: { include: { usuario: true } } } },
             },
           },
@@ -340,33 +317,26 @@ export class NotificationsService {
         ? `La solicitud de reprogramación para la visita a la IE ${ieNombre} (${fechaOrigStr}) ha sido APROBADA. La nueva fecha programada es el ${fechaPropStr} a las ${s.horaPropuesta}.`
         : `La solicitud de reprogramación para la visita a la IE ${ieNombre} (${fechaOrigStr}) ha sido RECHAZADA.${comentario ? ' Motivo: ' + comentario : ''}`;
 
-      const destinatarios: { usuarioId: string; correo?: string | null }[] = [];
+      const destinatarios: NotifRecipient[] = [];
 
-      // Solicitante
+      // Siempre se informa a quien solicitó la reprogramación.
       if (s.solicitanteId) {
-        const solUsuario = await this.prisma.usuario.findUnique({
-          where: { id: s.solicitanteId },
-          select: { id: true, persona: { select: { correo: true } } },
-        });
-        if (solUsuario) {
-          destinatarios.push({ usuarioId: solUsuario.id, correo: solUsuario.persona?.correo });
+        const solicitante = await this.getUsuario(s.solicitanteId);
+        if (solicitante) destinatarios.push(solicitante);
+      }
+
+      if (this.esSolicitanteDeIE(s.solicitanteRolAlCrear)) {
+        // Nivel IE: además, el docente evaluado cuyo monitoreo fue reprogramado.
+        if (c.evaluado?.persona?.usuario?.id) {
+          destinatarios.push({
+            usuarioId: c.evaluado.persona.usuario.id,
+            correo: c.evaluado.persona.correo,
+          });
         }
-      }
-
-      // Monitor
-      if (c.monitor?.persona?.usuario?.id) {
-        destinatarios.push({
-          usuarioId: c.monitor.persona.usuario.id,
-          correo: c.monitor.persona.correo,
-        });
-      }
-
-      // Evaluado
-      if (c.evaluado?.persona?.usuario?.id) {
-        destinatarios.push({
-          usuarioId: c.evaluado.persona.usuario.id,
-          correo: c.evaluado.persona.correo,
-        });
+      } else {
+        // Nivel UGEL: además, el Director de la IE del docente/directivo monitoreado.
+        const dir = await this.getDirectorIE(c.institucionId);
+        if (dir) destinatarios.push(dir);
       }
 
       await this.crearNotificaciones(destinatarios, {
@@ -432,6 +402,55 @@ export class NotificationsService {
     } catch (err) {
       this.logger.error(`Error al notificar cronograma reprogramado (${cronogramaId}):`, err);
     }
+  }
+
+  // ── Helpers de enrutamiento de reprogramación ────────────────────────
+
+  /** True cuando la solicitud proviene del nivel IE (Secundaria): coordinador o jefe de taller. */
+  private esSolicitanteDeIE(rol?: string | null): boolean {
+    return rol === RoleCode.COORDINADOR_PEDAGOGICO || rol === RoleCode.JEFE_TALLER;
+  }
+
+  private async getJefesGestion(): Promise<NotifRecipient[]> {
+    const jefes = await this.prisma.usuario.findMany({
+      where: { rol: { codigo: 'jefe_gestion' }, isActive: true },
+      select: { id: true, persona: { select: { correo: true } } },
+    });
+    return jefes.map((j) => ({ usuarioId: j.id, correo: j.persona?.correo }));
+  }
+
+  private async getJefesArea(nivelEducativo: string | null): Promise<NotifRecipient[]> {
+    if (!nivelEducativo) return [];
+    const jefesArea = await this.prisma.especialista.findMany({
+      where: { cargo: 'Jefe de Área', nivelEducativo, estado: 'Activo' },
+      select: { persona: { select: { correo: true, usuario: { select: { id: true } } } } },
+    });
+    return jefesArea.flatMap((ja) => {
+      const usuarioId = ja.persona.usuario?.id;
+      return usuarioId ? [{ usuarioId, correo: ja.persona.correo }] : [];
+    });
+  }
+
+  private async getDirectorIE(institucionId: string | null): Promise<NotifRecipient | null> {
+    if (!institucionId) return null;
+    const dir = await this.prisma.docente.findFirst({
+      where: {
+        institucionId,
+        docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+      },
+      select: { persona: { select: { correo: true, usuario: { select: { id: true } } } } },
+    });
+    if (!dir?.persona?.usuario?.id) return null;
+    return { usuarioId: dir.persona.usuario.id, correo: dir.persona.correo };
+  }
+
+  private async getUsuario(usuarioId: string): Promise<NotifRecipient | null> {
+    const u = await this.prisma.usuario.findUnique({
+      where: { id: usuarioId },
+      select: { id: true, persona: { select: { correo: true } } },
+    });
+    if (!u) return null;
+    return { usuarioId: u.id, correo: u.persona?.correo };
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────

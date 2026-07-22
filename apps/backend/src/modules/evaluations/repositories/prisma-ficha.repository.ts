@@ -170,6 +170,7 @@ export class PrismaFichaRepository implements FichaRepository {
         data: {
           nivel: data.nivel,
           evidenciaUrl: data.evidenciaUrl !== undefined ? data.evidenciaUrl : undefined,
+          observacion: data.observacion !== undefined ? data.observacion : undefined,
         },
       });
       return {
@@ -178,6 +179,7 @@ export class PrismaFichaRepository implements FichaRepository {
         ejeItemId: updated.ejeItemId,
         nivel: updated.nivel,
         evidenciaUrl: updated.evidenciaUrl,
+        observacion: updated.observacion,
       };
     }
     const created = await this.prisma.fichaRespuestaEjeItem.create({
@@ -187,6 +189,7 @@ export class PrismaFichaRepository implements FichaRepository {
         ejeItemId: data.ejeItemId,
         nivel: data.nivel,
         evidenciaUrl: data.evidenciaUrl ?? null,
+        observacion: data.observacion ?? null,
       },
     });
     return {
@@ -195,6 +198,7 @@ export class PrismaFichaRepository implements FichaRepository {
       ejeItemId: created.ejeItemId,
       nivel: created.nivel,
       evidenciaUrl: created.evidenciaUrl,
+      observacion: created.observacion,
     };
   }
 

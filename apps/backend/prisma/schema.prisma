@@ -641,6 +641,7 @@ model FichaRespuestaEjeItem {
   ejeItemId    String  @map("eje_item_id") @db.Uuid
   nivel        Int     @db.SmallInt
   evidenciaUrl String? @map("evidencia_url") @db.Text
+  observacion  String? @db.Text
 
   ficha   FichaMonitoreo   @relation(fields: [fichaId], references: [id], onDelete: Cascade)
   ejeItem EjeItemPlantilla @relation(fields: [ejeItemId], references: [id], onDelete: Cascade)

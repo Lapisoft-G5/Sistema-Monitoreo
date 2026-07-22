@@ -189,10 +189,14 @@ export const ReportesGrid = ({
 
       const respuestasEjeItem: Record<string, number> = {};
       const evidenciaUrls: Record<string, string> = {};
+      const observacionesEjeItem: Record<string, string> = {};
       (backendFicha.respuestasEjeItem || []).forEach((re) => {
         respuestasEjeItem[re.ejeItemId] = re.nivel;
         if (re.evidenciaUrl) {
           evidenciaUrls[re.ejeItemId] = re.evidenciaUrl;
+        }
+        if (re.observacion) {
+          observacionesEjeItem[re.ejeItemId] = re.observacion;
         }
       });
 
@@ -221,6 +225,7 @@ export const ReportesGrid = ({
         preguntaExtraAnswers,
         respuestasEjeItem,
         evidenciaUrls,
+        observacionesEjeItem,
         contexto: backendFicha.contexto,
       };
     }

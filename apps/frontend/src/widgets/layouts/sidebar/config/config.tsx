@@ -10,6 +10,7 @@ import {
   Settings,
   Shield,
   CalendarClock,
+  AlertTriangle,
 } from 'lucide-react';
 import type { MenuItem } from '@shared/constants/roles';
 
@@ -101,6 +102,13 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
       { id: 'plantillas_ugel', label: 'UGEL', path: '/plantillas?filtro=ugel' },
       { id: 'plantillas_ies', label: 'Instituciones', path: '/plantillas?filtro=ie' },
     ],
+  },
+  {
+    id: 'focos_atencion',
+    label: 'Focos de Atención',
+    icon: <AlertTriangle className="h-[18px] w-[18px]" />,
+    path: '/focos-atencion',
+    children: [],
   },
   {
     id: 'solicitudes_visita',

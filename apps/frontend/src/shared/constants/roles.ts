@@ -46,6 +46,7 @@ export type MenuItem =
   | 'instituciones_jefes_taller'
   | 'especialistas'
   | 'jefes_area'
+  | 'focos_atencion'
   | 'solicitudes_visita'
   | 'reportes'
   | 'configuracion'
@@ -80,6 +81,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas_ies',
     'especialistas',
     'jefes_area',
+    'focos_atencion',
     'solicitudes_visita',
     'reportes',
     'monitoreo_reportes',
@@ -93,6 +95,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo',
     'monitoreo_cronograma',
     'monitoreo_calendario',
+    'focos_atencion',
     'reportes',
     'monitoreo_reportes',
   ],
@@ -119,7 +122,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes',
   ],
 
-  especialista: ['monitoreo', 'monitoreo_calendario', 'reportes', 'monitoreo_reportes'],
+  especialista: [
+    'monitoreo',
+    'monitoreo_calendario',
+    'focos_atencion',
+    'reportes',
+    'monitoreo_reportes',
+  ],
 
   director_institucion: [
     'dashboard',

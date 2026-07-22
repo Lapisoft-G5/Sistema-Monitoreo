@@ -9,12 +9,10 @@ import {
   Trophy,
   Upload,
   Eye,
-  Trash2,
   Download,
   Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { API_BASE_URL } from '@shared/config/api';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { HistorialChart } from './HistorialChart';
@@ -44,6 +42,7 @@ interface LlenarFichaFormProps {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      observacionesEjeItem?: Record<string, string>;
       contexto?: {
         areaCurricular: string;
         grado: string;
@@ -65,6 +64,7 @@ interface LlenarFichaFormProps {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      observacionesEjeItem?: Record<string, string>;
       contexto?: {
         areaCurricular: string;
         grado: string;
@@ -84,6 +84,7 @@ interface LlenarFichaFormProps {
     preguntaExtraAnswers?: Record<string, boolean>;
     respuestasEjeItem?: Record<string, number>;
     evidenciaUrls?: Record<string, string>;
+    observacionesEjeItem?: Record<string, string>;
     contexto?: {
       areaCurricular: string;
       grado: string;
@@ -201,6 +202,7 @@ export const LlenarFichaForm = ({
   const [fichaSelectedDesempenoId, setFichaSelectedDesempenoId] = useState<string>('');
   const [respuestasEjeItem, setRespuestasEjeItem] = useState<Record<string, number>>({});
   const [evidenciaUrls, setEvidenciaUrls] = useState<Record<string, string>>({});
+  const [observacionesEjeItem, setObservacionesEjeItem] = useState<Record<string, string>>({});
 
   const [contextoArea, setContextoArea] = useState<string>('');
   const [contextoGrado, setContextoGrado] = useState<string>('');
@@ -228,6 +230,7 @@ export const LlenarFichaForm = ({
           setPreguntaExtraAnswers(initialState.preguntaExtraAnswers || {});
           setRespuestasEjeItem(initialState.respuestasEjeItem || {});
           setEvidenciaUrls(initialState.evidenciaUrls || {});
+          setObservacionesEjeItem(initialState.observacionesEjeItem || {});
           if (initialState.contexto) {
             setContextoArea(initialState.contexto.areaCurricular);
             setContextoGrado(initialState.contexto.grado);
@@ -251,6 +254,7 @@ export const LlenarFichaForm = ({
               setPreguntaExtraAnswers(parsed.preguntaExtraAnswers || {});
               setRespuestasEjeItem(parsed.respuestasEjeItem || {});
               setEvidenciaUrls(parsed.evidenciaUrls || {});
+              setObservacionesEjeItem(parsed.observacionesEjeItem || {});
               if (parsed.contexto) {
                 setContextoArea(parsed.contexto.areaCurricular);
                 setContextoGrado(parsed.contexto.grado);
@@ -373,6 +377,7 @@ export const LlenarFichaForm = ({
       preguntaExtraAnswers,
       respuestasEjeItem,
       evidenciaUrls,
+      observacionesEjeItem,
       contexto: visit.tipo === 'DOCENTE' ? {
         areaCurricular: contextoArea,
         grado: contextoGrado,
@@ -405,6 +410,20 @@ export const LlenarFichaForm = ({
       return;
     }
 
+    if (template.ejesItems && template.ejesItems.length > 0) {
+      const missingObs = template.ejesItems.filter(
+        (it) => !observacionesEjeItem[it.id] || observacionesEjeItem[it.id].trim() === ''
+      );
+      if (missingObs.length > 0) {
+        alert(
+          `Faltan observaciones. Por favor ingrese la observación para los ejes/ítems: \n${missingObs
+            .map((m) => `• ${m.numero}. ${m.descripcion.substring(0, 45)}...`)
+            .join('\n')}`
+        );
+        return;
+      }
+    }
+
     if (!sugerencias || sugerencias.trim() === '') {
       alert('Las sugerencias son obligatorias para finalizar la ficha.');
       return;
@@ -425,6 +444,7 @@ export const LlenarFichaForm = ({
       preguntaExtraAnswers,
       respuestasEjeItem,
       evidenciaUrls,
+      observacionesEjeItem,
       contexto: visit.tipo === 'DOCENTE' ? {
         areaCurricular: contextoArea,
         grado: contextoGrado,
@@ -512,6 +532,7 @@ export const LlenarFichaForm = ({
     preguntaExtraAnswers,
     respuestasEjeItem,
     evidenciaUrls,
+    observacionesEjeItem,
     contexto: visit.tipo === 'DOCENTE' ? {
       areaCurricular: contextoArea,
       grado: contextoGrado,
@@ -965,119 +986,17 @@ export const LlenarFichaForm = ({
                   
                   <div className="space-y-1.5">
                     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                      Evidencias
+                      Observaciones
                     </span>
-                    {evidenciaUrls[item.id] ? (
-                      <div className="flex items-center gap-3 p-2 bg-white border border-slate-200 rounded-xl shadow-xs">
-                        <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10 text-primary">
-                          <FileText className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-black text-slate-700 truncate">
-                            Evidencia Cargada
-                          </p>
-                          <p className="text-[9px] text-slate-400 font-bold truncate">
-                            {evidenciaUrls[item.id].split('/').pop() || 'evidencia.bin'}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <a
-                            href={
-                              evidenciaUrls[item.id]?.startsWith('http')
-                                ? evidenciaUrls[item.id]
-                                : `${API_BASE_URL}${evidenciaUrls[item.id]}`
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[10px] font-extrabold text-slate-600 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all shadow-sm cursor-pointer"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            Ver
-                          </a>
-                          {!isCompleted && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEvidenciaUrls((prev) => {
-                                  const next = { ...prev };
-                                  delete next[item.id];
-                                  safeSetLocalStorage(
-                                    `sistema-monitoreo:ficha-state:${visit.id}`,
-                                    JSON.stringify({
-                                      checkedAspects,
-                                      selectedLevels,
-                                      generalComments,
-                                      sugerencias,
-                                      compromisos,
-                                      rubricComments,
-                                      preguntaExtraAnswers,
-                                      respuestasEjeItem,
-                                      evidenciaUrls: next,
-                                    })
-                                  );
-                                  return next;
-                                });
-                              }}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-red-100 text-[10px] font-extrabold text-red-600 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm cursor-pointer"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Eliminar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ) : !isCompleted ? (
-                      <label className="inline-flex items-center justify-center gap-2 w-full max-w-[240px] h-[36px] rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-bold cursor-pointer hover:border-primary hover:text-primary hover:bg-primary/3 transition-all duration-150">
-                        <Upload className="h-4 w-4" />
-                        Subir archivo de sustento
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            try {
-                              const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
-                              let ficha = await fichasApi.findByVisita(visit.id);
-                              if (!ficha) {
-                                ficha = await fichasApi.create({
-                                  cronogramaId: visit.id,
-                                  areaCurricular: contextoArea,
-                                  grado: contextoGrado,
-                                  seccion: contextoSeccion,
-                                  cantidadEstudiantes: Number(contextoAlumnos) || 0,
-                                  cantidadEstudiantesNee: Number(contextoAlumnosNee) || 0,
-                                });
-                              }
-                              const result = await fichasApi.subirEvidenciaEjeItem(ficha.id, item.id, file);
-                              setEvidenciaUrls((prev) => {
-                                const next = { ...prev, [item.id]: result.evidenciaUrl };
-                                safeSetLocalStorage(
-                                  `sistema-monitoreo:ficha-state:${visit.id}`,
-                                  JSON.stringify({
-                                    checkedAspects,
-                                    selectedLevels,
-                                    generalComments,
-                                    sugerencias,
-                                    compromisos,
-                                    rubricComments,
-                                    preguntaExtraAnswers,
-                                    respuestasEjeItem,
-                                    evidenciaUrls: next,
-                                  })
-                                );
-                                return next;
-                              });
-                            } catch (err) {
-                              console.error('Error uploading evidence:', err);
-                            }
-                          }}
-                        />
-                      </label>
-                    ) : (
-                      <span className="text-[11px] text-slate-300 italic block pt-1">— Sin evidencias cargadas</span>
-                    )}
+                    <textarea
+                      value={observacionesEjeItem[item.id] || ''}
+                      onChange={(e) =>
+                        setObservacionesEjeItem((prev) => ({ ...prev, [item.id]: e.target.value }))
+                      }
+                      disabled={isCompleted}
+                      placeholder="Escriba las observaciones para este eje/ítem..."
+                      className="w-full bg-surface border border-slate-200 rounded-xl p-3 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-[72px] resize-none leading-relaxed disabled:opacity-70"
+                    />
                   </div>
                 </div>
               </div>

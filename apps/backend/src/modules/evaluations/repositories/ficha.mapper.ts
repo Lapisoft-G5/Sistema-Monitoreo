@@ -94,5 +94,6 @@ function fromPrismaRespuestaEjeItem(r: RespuestaEjeItemPayload): IFichaRespuesta
     ejeItemId: r.ejeItemId,
     nivel: r.nivel,
     evidenciaUrl: r.evidenciaUrl,
+    observacion: r.observacion,
   };
 }

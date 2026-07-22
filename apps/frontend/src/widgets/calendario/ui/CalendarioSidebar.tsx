@@ -295,6 +295,7 @@ const {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      observacionesEjeItem?: Record<string, string>;
       contexto?: {
         areaCurricular: string;
         grado: string;
@@ -343,7 +344,8 @@ const {
       if (data.respuestasEjeItem) {
         for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
           const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
-          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
+          const observacion = data.observacionesEjeItem?.[ejeItemId];
+          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl, observacion);
         }
       }
       setShowFichaModal(false);
@@ -377,6 +379,7 @@ const {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      observacionesEjeItem?: Record<string, string>;
       contexto?: {
         areaCurricular: string;
         grado: string;
@@ -418,7 +421,8 @@ const {
       if (data.respuestasEjeItem) {
         for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
           const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
-          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
+          const observacion = data.observacionesEjeItem?.[ejeItemId];
+          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl, observacion);
         }
       }
       // Evidencias generales (slots GENERAL_1/2/3) se persisten como JSON en
@@ -732,9 +736,11 @@ const {
                           }
                           const respuestasEjeItem: Record<string, number> = {};
                           const evidenciaUrls: Record<string, string> = {};
+                          const observacionesEjeItem: Record<string, string> = {};
                           for (const r of ficha.respuestasEjeItem || []) {
                             respuestasEjeItem[r.ejeItemId] = r.nivel;
                             if (r.evidenciaUrl) evidenciaUrls[r.ejeItemId] = r.evidenciaUrl;
+                            if (r.observacion) observacionesEjeItem[r.ejeItemId] = r.observacion;
                           }
                           // Evidencia general: JSON con slots GENERAL_1/2/3, o cadena legada.
                           if (ficha.evidenciaGeneral) {
@@ -758,6 +764,7 @@ const {
                             rubricComments,
                             respuestasEjeItem,
                             evidenciaUrls,
+                            observacionesEjeItem,
                             contexto: ficha.contexto,
                           };
                           safeSetLocalStorage(`sistema-monitoreo:ficha-state:${selectedVisit.id}`, JSON.stringify(mappedData));

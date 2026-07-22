@@ -18,6 +18,7 @@ interface FichaPrintableProps {
     preguntaExtraAnswers?: Record<string, boolean>;
     respuestasEjeItem?: Record<string, number>;
     evidenciaUrls?: Record<string, string>;
+    observacionesEjeItem?: Record<string, string>;
     contexto?: {
       areaCurricular: string;
       grado: string;
@@ -581,7 +582,8 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
                 <tr>
                   <td className="bg-gray text-center" style={{ width: '5%' }}>N°</td>
                   <td className="bg-gray">Descripción</td>
-                  <td className="bg-gray text-center" style={{ width: '15%' }}>Nivel</td>
+                  <td className="bg-gray text-center" style={{ width: '12%' }}>Nivel</td>
+                  <td className="bg-gray" style={{ width: '30%' }}>Observaciones</td>
                 </tr>
               </thead>
               <tbody>
@@ -594,6 +596,9 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
                       <td>{item.descripcion}</td>
                       <td className="text-center font-bold">
                         {levelRom ? `Nivel ${levelRom}` : '-'}
+                      </td>
+                      <td className="whitespace-pre-wrap">
+                        {fichaState.observacionesEjeItem?.[item.id] || '-'}
                       </td>
                     </tr>
                   );

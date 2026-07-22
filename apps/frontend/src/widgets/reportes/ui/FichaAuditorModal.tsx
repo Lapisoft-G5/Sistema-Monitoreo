@@ -27,6 +27,7 @@ interface FichaAuditorModalProps {
     preguntaExtraAnswers?: Record<string, boolean>;
     respuestasEjeItem?: Record<string, number>;
     evidenciaUrls?: Record<string, string>;
+    observacionesEjeItem?: Record<string, string>;
   };
   downloadingId: string | null;
   onDownloadPDF: (visit: Cronograma, e: React.MouseEvent) => void;
@@ -299,17 +300,13 @@ export const FichaAuditorModal = ({
                         })() : (
                           <span className="text-xs font-bold text-slate-400">—</span>
                         )}
-                        {fichaState.evidenciaUrls?.[item.id] && (
-                          <a
-                            href={fichaState.evidenciaUrls[item.id]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] text-primary underline flex items-center gap-1"
-                          >
-                            <Download className="h-3 w-3" /> Ver evidencia
-                          </a>
-                        )}
                       </div>
+                      {fichaState.observacionesEjeItem?.[item.id] && (
+                        <p className="text-[11px] text-slate-600 leading-relaxed pl-7 whitespace-pre-wrap">
+                          <span className="text-[9px] font-extrabold text-slate-400 uppercase block">Observaciones:</span>
+                          {fichaState.observacionesEjeItem[item.id]}
+                        </p>
+                      )}
                     </div>
                   );
                 })}

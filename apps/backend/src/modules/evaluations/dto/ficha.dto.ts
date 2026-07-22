@@ -73,6 +73,10 @@ export class SaveRespuestaEjeItemDto {
   @IsOptional()
   @IsString()
   evidenciaUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  observacion?: string;
 }
 
 export class SaveRespuestasAspectoBatchDto {

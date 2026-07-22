@@ -55,6 +55,11 @@ export interface IDocenteCritico {
   nombre: string;
   /** 'Docente' | 'Directivo' (según el tipo de monitoreo). */
   cargo: string;
+  /**
+   * Especialidad(es) del docente (ej. "CTA", "Matematica"), separadas por coma.
+   * Null si el docente no tiene especialidad registrada (ej. muchos directivos).
+   */
+  especialidad: string | null;
   promedio: number;
   nivelLogro: NivelLogro;
   /** Cantidad de monitoreos finalizados que recibió el docente en el año. */

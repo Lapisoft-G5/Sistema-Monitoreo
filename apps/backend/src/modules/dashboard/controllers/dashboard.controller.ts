@@ -77,6 +77,7 @@ export class DashboardController {
       role: req.user.role,
       institucionId: req.user.institucion_id ?? null,
       especialistaNivel: req.user.especialista_nivel ?? null,
+      especialistaEspecialidades: req.user.especialista_especialidades ?? null,
     };
   }
 }

@@ -149,54 +149,80 @@ export class ScopeFilter {
   }
 
   /**
+   * Where de Institucion acotado a un nivel educativo, con las reglas de
+   * modalidad del dominio (PROJECT_DOCUMENTATION §5.3):
+   *  - Inicial: EBR Inicial o EBE (Especial)
+   *  - Primaria: EBR Primaria
+   *  - Secundaria: EBR Secundaria, EBA o CEPTRO
+   * Sin nivel (o nivel desconocido) devuelve el sentinela vacio.
+   */
+  private nivelInstitucionWhere(nivel?: string | null): Prisma.InstitucionEducativaWhereInput {
+    if (!nivel) return { id: '__none__' };
+    if (nivel === 'Inicial') {
+      return {
+        OR: [
+          { modalidad: 'EBE' },
+          { modalidad: 'EBR', nivelEducativo: { equals: 'Inicial', mode: 'insensitive' } },
+        ],
+      };
+    }
+    if (nivel === 'Primaria') {
+      return { modalidad: 'EBR', nivelEducativo: { equals: 'Primaria', mode: 'insensitive' } };
+    }
+    if (nivel === 'Secundaria') {
+      return {
+        OR: [
+          { modalidad: 'EBR', nivelEducativo: { equals: 'Secundaria', mode: 'insensitive' } },
+          { modalidad: 'EBA' },
+          { modalidad: 'CEPTRO' },
+        ],
+      };
+    }
+    return { id: '__none__' };
+  }
+
+  /**
    * Filtro para Institucion.
    *  - ALL: empty
-   *  - JEFE_AREA: nivelEducativo == ctx.especialistaNivel Y modalidad
-   *              permitida (reglas del dominio: Inicial->EBR+EBE,
-   *              Primaria->EBR, Secundaria->EBR+EBA+CEPTRO)
+   *  - JEFE_AREA: acotado al nivel educativo del jefe (ver nivelInstitucionWhere).
+   *              Supervisa el nivel completo, sin acotar por especialidad.
    *  - INSTITUCION: institucionId == ctx.institucionId
-   *  - MONITOR: institucionId in (IEs donde es monitor) — para Fase 3 lo dejamos vacio
+   *  - MONITOR (especialista): acotado a las IEs de SU nivel educativo y —si el
+   *              especialista tiene especialidad(es)— además a las IEs que tengan
+   *              al menos un docente ACTIVO con alguna de esas especialidades. Así
+   *              un especialista de Primaria–Educación Física solo ve IEs de
+   *              Primaria con docentes de Educación Física; uno sin especialidad
+   *              ve todo su nivel.
    *  - OWN: institucionId == ctx.institucionId
    *  - DOCENTE: institucionId == ctx.institucionId
    */
   forInstitucion(ctx: ScopeContext): Prisma.InstitucionEducativaWhereInput {
     if (this.isAllScope(ctx.role)) return {};
     if (this.isJefeAreaScope(ctx.role)) {
-      const nivel = ctx.especialistaNivel;
-      if (!nivel) return { id: '__none__' };
-      // Reglas del dominio (PROJECT_DOCUMENTATION §5.3):
-      //  - Inicial: EBR Inicial o EBE (Especial)
-      //  - Primaria: EBR Primaria
-      //  - Secundaria: EBR Secundaria, EBA o CEPTRO
-      if (nivel === 'Inicial') {
-        return {
-          OR: [
-            { modalidad: 'EBE' },
-            { modalidad: 'EBR', nivelEducativo: { equals: 'Inicial', mode: 'insensitive' } },
-          ],
-        };
-      }
-      if (nivel === 'Primaria') {
-        return { modalidad: 'EBR', nivelEducativo: { equals: 'Primaria', mode: 'insensitive' } };
-      }
-      if (nivel === 'Secundaria') {
-        return {
-          OR: [
-            { modalidad: 'EBR', nivelEducativo: { equals: 'Secundaria', mode: 'insensitive' } },
-            { modalidad: 'EBA' },
-            { modalidad: 'CEPTRO' },
-          ],
-        };
-      }
-      return { id: '__none__' };
+      return this.nivelInstitucionWhere(ctx.especialistaNivel);
+    }
+    if (this.isMonitorScope(ctx.role)) {
+      const porNivel = this.nivelInstitucionWhere(ctx.especialistaNivel);
+      const especialidades = ctx.especialistaEspecialidades;
+      if (!especialidades || especialidades.length === 0) return porNivel;
+      return {
+        AND: [
+          porNivel,
+          {
+            docentes: {
+              some: {
+                estado: 'Activo',
+                docenteEspecialidades: {
+                  some: { especialidad: { nombre: { in: especialidades } } },
+                },
+              },
+            },
+          },
+        ],
+      };
     }
     if (this.isInstitucionScope(ctx.role) || this.isOwnScope(ctx.role)) {
       return ctx.institucionId ? { id: ctx.institucionId } : { id: '__none__' };
-    }
-    if (this.isMonitorScope(ctx.role)) {
-      // Especialista: ve las IEs donde esta asignado como monitor.
-      // Por ahora dejamos vacio (no es requerido para Fase 3).
-      return {};
     }
     return { id: '__none__' };
   }

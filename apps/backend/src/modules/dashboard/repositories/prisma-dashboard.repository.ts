@@ -43,6 +43,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       role: session.role,
       institucionId: session.institucionId,
       especialistaNivel: session.especialistaNivel,
+      especialistaEspecialidades: session.especialistaEspecialidades,
     };
   }
 
@@ -200,7 +201,14 @@ export class PrismaDashboardRepository implements DashboardRepository {
             nivelEducativo: true,
             tipoMonitoreo: true,
             evaluadoId: true,
-            evaluado: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+            evaluado: {
+              select: {
+                persona: { select: { nombres: true, apellidos: true } },
+                docenteEspecialidades: {
+                  select: { especialidad: { select: { nombre: true } } },
+                },
+              },
+            },
             institucion: {
               select: {
                 nombre: true,
@@ -288,10 +296,14 @@ export class PrismaDashboardRepository implements DashboardRepository {
         iesAtencion.set(c.institucionId, ie);
       }
       const p = c.evaluado.persona;
+      const especialidades = c.evaluado.docenteEspecialidades
+        .map((de) => de.especialidad.nombre)
+        .filter(Boolean);
       ie.docentes.push({
         docenteId: c.evaluadoId,
         nombre: `${p.nombres} ${p.apellidos}`.trim(),
         cargo: c.tipoMonitoreo === 'DIRECTIVO' ? 'Directivo' : 'Docente',
+        especialidad: especialidades.length > 0 ? especialidades.join(', ') : null,
         promedio: Number(ficha.promedio),
         nivelLogro: 'INICIO',
         monitoreosCompletados: completadosPorDocente.get(c.evaluadoId) ?? 0,

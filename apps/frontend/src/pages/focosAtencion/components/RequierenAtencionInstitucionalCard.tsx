@@ -59,11 +59,19 @@ export const RequierenAtencionInstitucionalCard = ({ items }: Props) => {
                     className="rounded-lg bg-destructive/5 px-3 py-2 flex items-start justify-between gap-3"
                   >
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-sm truncate">{d.nombre}</span>
                         <Badge variant="outline" className="text-[9px] uppercase shrink-0">
                           {d.cargo}
                         </Badge>
+                        {d.especialidad && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] uppercase shrink-0 font-semibold"
+                          >
+                            {d.especialidad}
+                          </Badge>
+                        )}
                       </div>
                       <div className="mt-1 flex items-center gap-3">
                         <NotificarInstitucionDialog

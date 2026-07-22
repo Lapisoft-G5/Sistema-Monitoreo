@@ -178,6 +178,52 @@ describe('ScopeFilter', () => {
       ).toEqual({ id: '__none__' });
     });
 
+    it('ESPECIALISTA Primaria sin especialidad: solo por nivel (como Jefe de Área)', () => {
+      expect(
+        filter.forInstitucion(
+          ctx({
+            role: RoleCode.ESPECIALISTA,
+            especialistaNivel: 'Primaria',
+            especialistaEspecialidades: null,
+          }),
+        ),
+      ).toEqual({
+        modalidad: 'EBR',
+        nivelEducativo: { equals: 'Primaria', mode: 'insensitive' },
+      });
+    });
+
+    it('ESPECIALISTA Primaria con especialidad: nivel AND docente de esa especialidad', () => {
+      const f = filter.forInstitucion(
+        ctx({
+          role: RoleCode.ESPECIALISTA,
+          especialistaNivel: 'Primaria',
+          especialistaEspecialidades: ['Educación Física', 'PIP'],
+        }),
+      );
+      expect(f).toEqual({
+        AND: [
+          { modalidad: 'EBR', nivelEducativo: { equals: 'Primaria', mode: 'insensitive' } },
+          {
+            docentes: {
+              some: {
+                estado: 'Activo',
+                docenteEspecialidades: {
+                  some: { especialidad: { nombre: { in: ['Educación Física', 'PIP'] } } },
+                },
+              },
+            },
+          },
+        ],
+      });
+    });
+
+    it('ESPECIALISTA sin nivel: sentinela', () => {
+      expect(
+        filter.forInstitucion(ctx({ role: RoleCode.ESPECIALISTA, especialistaNivel: null })),
+      ).toEqual({ id: '__none__' });
+    });
+
     it('DIRECTOR_INSTITUCION: filter por id de su institucion', () => {
       expect(
         filter.forInstitucion(ctx({ role: RoleCode.DIRECTOR_INSTITUCION, institucionId: 'ie-1' })),

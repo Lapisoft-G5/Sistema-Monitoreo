@@ -76,7 +76,7 @@ const UGEL_ADMIN_USERS = [
     email: 'ana.ticona@ugel.gob.pe',
     role: 'especialista',
     nivelEducativo: 'Primaria',
-    especialidades: ['PIP', 'Educacion Fisica'],
+    especialidades: ['Educacion Fisica'],
   },
   {
     dni: '40000007',
@@ -85,7 +85,7 @@ const UGEL_ADMIN_USERS = [
     email: 'pedro.mamani@ugel.gob.pe',
     role: 'especialista',
     nivelEducativo: 'Secundaria',
-    especialidades: ['CTA', 'Ciencias Sociales', 'EPT'],
+    especialidades: ['CTA'],
   },
   {
     dni: '40000008',

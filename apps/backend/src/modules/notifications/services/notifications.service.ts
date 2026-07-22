@@ -425,9 +425,10 @@ export class NotificationsService {
       where: { cargo: 'Jefe de Área', nivelEducativo, estado: 'Activo' },
       select: { persona: { select: { correo: true, usuario: { select: { id: true } } } } },
     });
-    return jefesArea
-      .filter((ja) => ja.persona?.usuario?.id)
-      .map((ja) => ({ usuarioId: ja.persona!.usuario!.id, correo: ja.persona!.correo }));
+    return jefesArea.flatMap((ja) => {
+      const usuarioId = ja.persona.usuario?.id;
+      return usuarioId ? [{ usuarioId, correo: ja.persona.correo }] : [];
+    });
   }
 
   private async getDirectorIE(institucionId: string | null): Promise<NotifRecipient | null> {

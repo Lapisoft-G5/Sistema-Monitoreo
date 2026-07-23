@@ -22,38 +22,65 @@ const StateItem = ({ icon, count, label, badgeLabel, badgeVariant = 'default', i
         <div className="text-sm text-text-muted">{label}</div>
       </div>
     </div>
-    <Badge variant={badgeVariant as any} className="uppercase font-bold tracking-wider text-[10px]">
+    <Badge variant={badgeVariant} className="uppercase font-bold tracking-wider text-[10px]">
       {badgeLabel}
     </Badge>
   </Card>
 );
 
-export const EvaluationStateCard = () => {
+export interface EvaluationStateData {
+  /** Docentes/IEs en situación crítica (nivel INICIO). */
+  critico: number;
+  /** En seguimiento (nivel EN_PROCESO). */
+  enProceso: number;
+  /** Logro previsto (LOGRO_ESPERADO + LOGRO_DESTACADO). */
+  logroPrevisto: number;
+  /** Cobertura actual de monitoreo, en porcentaje (0 a 100). */
+  coberturaActual?: number;
+  /** Meta de cobertura, en porcentaje (por defecto 100). */
+  meta?: number;
+}
+
+// Valores por defecto (dashboard UGEL, aún sin datos reales conectados).
+const DEFAULT_DATA: EvaluationStateData = {
+  critico: 15,
+  enProceso: 45,
+  logroPrevisto: 60,
+  coberturaActual: 23.8,
+  meta: 100,
+};
+
+const pct = (part: number, total: number) => (total > 0 ? (part / total) * 100 : 0);
+
+export const EvaluationStateCard = ({ data }: { data?: EvaluationStateData }) => {
+  const { critico, enProceso, logroPrevisto, coberturaActual, meta } = data ?? DEFAULT_DATA;
+  const total = critico + enProceso + logroPrevisto;
+
   return (
     <div className="flex flex-col h-full bg-transparent">
       <h3 className="text-lg font-bold mb-4">Estado de Evaluación</h3>
-      
-      <StateItem 
+
+      <StateItem
         icon={<AlertCircle className="w-5 h-5" />}
-        count={15}
+        count={critico}
         label="Situación Crítica"
         badgeLabel="Rojo"
         badgeVariant="destructive"
         iconColorClass="text-destructive bg-destructive/10"
       />
-      
-      <StateItem 
+
+      <StateItem
         icon={<AlertTriangle className="w-5 h-5" />}
-        count={45}
+        count={enProceso}
         label="En seguimiento"
         badgeLabel="Naranja"
         badgeVariant="warning"
         iconColorClass="text-amber-500 bg-amber-500/10"
       />
-      
-      <StateItem 
+
+      <StateItem
         icon={<CheckCircle2 className="w-5 h-5" />}
-        count={60}
+        count={logroPrevisto}
         label="Logro Previsto"
         badgeLabel="Verde"
         badgeVariant="success"
@@ -65,13 +92,13 @@ export const EvaluationStateCard = () => {
           <span className="text-xs font-semibold text-text-muted">Resumen de Cobertura</span>
         </div>
         <div className="h-2 w-full bg-muted rounded-full overflow-hidden flex">
-          <div className="h-full bg-green-500" style={{ width: '60%' }} />
-          <div className="h-full bg-amber-500" style={{ width: '25%' }} />
-          <div className="h-full bg-destructive" style={{ width: '15%' }} />
+          <div className="h-full bg-green-500" style={{ width: `${pct(logroPrevisto, total)}%` }} />
+          <div className="h-full bg-amber-500" style={{ width: `${pct(enProceso, total)}%` }} />
+          <div className="h-full bg-destructive" style={{ width: `${pct(critico, total)}%` }} />
         </div>
         <div className="flex justify-between items-center mt-2 text-[10px] text-text-muted font-semibold">
-          <span>META 2024: 100%</span>
-          <span>ACTUAL: 23.8%</span>
+          <span>META: {meta ?? 100}%</span>
+          <span>ACTUAL: {(coberturaActual ?? 0).toFixed(1)}%</span>
         </div>
       </Card>
     </div>

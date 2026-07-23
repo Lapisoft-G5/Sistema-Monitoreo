@@ -33,7 +33,11 @@ export async function findAll(
     andConditions.push({ estado: { equals: estado } });
   }
 
-  if (user?.role === RoleCode.JEFE_AREA) {
+  // Jefe de Área y Especialista ven solo las IE de su nivel. El ScopeContext aquí
+  // no incluye especialidades a propósito: el LISTADO se acota por NIVEL (consulta
+  // general), sin el filtro por especialidad que sí aplica el mapa de Focos de
+  // Atención, para no ocultar IEs que el especialista necesita consultar.
+  if (user?.role === RoleCode.JEFE_AREA || user?.role === RoleCode.ESPECIALISTA) {
     andConditions.push(scopeFilter.forInstitucion(toScopeContext(user)));
   }
 
@@ -96,8 +100,9 @@ export async function getDashboardStats(
   const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
 
   const baseWhere: Prisma.InstitucionEducativaWhereInput = { estado: 'Activa' };
-  
-  if (user?.role === RoleCode.JEFE_AREA) {
+
+  // Mismo criterio que findAll: Jefe de Área y Especialista acotados por nivel.
+  if (user?.role === RoleCode.JEFE_AREA || user?.role === RoleCode.ESPECIALISTA) {
     baseWhere.AND = [scopeFilter.forInstitucion(toScopeContext(user))];
   }
 

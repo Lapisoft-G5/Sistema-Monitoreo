@@ -2,7 +2,12 @@ import { RoleCode } from '../../../common/enums/role.enum.js';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { MonitoringPlanService } from './monitoring-plan.service.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import { MonitoringPlanRepository } from '../repositories/monitoring-plan.repository.js';
@@ -33,6 +38,21 @@ describe('MonitoringPlanService', () => {
   const sesionDirector: SessionUser = {
     id: 'user-2',
     role: RoleCode.DIRECTOR_INSTITUCION,
+    institucionId: 'ie-1',
+  };
+  const sesionCoordinador: SessionUser = {
+    id: 'user-3',
+    role: RoleCode.COORDINADOR_PEDAGOGICO,
+    institucionId: 'ie-1',
+  };
+  const sesionJefeTaller: SessionUser = {
+    id: 'user-4',
+    role: RoleCode.JEFE_TALLER,
+    institucionId: 'ie-1',
+  };
+  const sesionCoordinador2: SessionUser = {
+    id: 'user-5',
+    role: RoleCode.COORDINADOR_PEDAGOGICO,
     institucionId: 'ie-1',
   };
 
@@ -102,6 +122,47 @@ describe('MonitoringPlanService', () => {
       await expect(
         service.create(dto, { id: 'user-2', role: RoleCode.DIRECTOR_INSTITUCION }),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('Coordinador Pedagógico crea plan IE con ámbito coordinador_pedagogico', async () => {
+      const dto = { titulo: 'Plan', anioAcademico: 2026, archivoUrl: '/x.pdf' } as any;
+      repo.create.mockResolvedValue({ ...planBase, tipoEntidad: 'IE' });
+      await service.create(dto, sesionCoordinador);
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tipoEntidad: 'IE',
+          institucionId: 'ie-1',
+          rolAutorAlCrear: 'coordinador_pedagogico',
+        }),
+      );
+    });
+
+    it('Jefe de Taller crea plan IE con ámbito jefe_taller', async () => {
+      const dto = { titulo: 'Plan', anioAcademico: 2026, archivoUrl: '/x.pdf' } as any;
+      repo.create.mockResolvedValue({ ...planBase, tipoEntidad: 'IE' });
+      await service.create(dto, sesionJefeTaller);
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ tipoEntidad: 'IE', rolAutorAlCrear: 'jefe_taller' }),
+      );
+    });
+
+    it('rechaza 2° plan activo del MISMO autor en la misma IE', async () => {
+      const dto = { titulo: 'Plan', anioAcademico: 2026, archivoUrl: '/x.pdf' } as any;
+      repo.findAll.mockResolvedValue([
+        { ...planBase, tipoEntidad: 'IE', institucionId: 'ie-1', autorId: 'user-3' },
+      ]);
+      await expect(service.create(dto, sesionCoordinador)).rejects.toThrow(ConflictException);
+    });
+
+    it('permite planes de coordinadores DISTINTOS en la misma IE', async () => {
+      const dto = { titulo: 'Plan', anioAcademico: 2026, archivoUrl: '/x.pdf' } as any;
+      // Ya existe el plan del coordinador user-3; el coordinador user-5 sube el suyo.
+      repo.findAll.mockResolvedValue([
+        { ...planBase, tipoEntidad: 'IE', institucionId: 'ie-1', autorId: 'user-3' },
+      ]);
+      repo.create.mockResolvedValue({ ...planBase, tipoEntidad: 'IE' });
+      await service.create(dto, sesionCoordinador2);
+      expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ autorId: 'user-5' }));
     });
   });
 

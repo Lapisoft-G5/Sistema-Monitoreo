@@ -12,6 +12,7 @@ import { CatalogsRepository } from '../../catalogs/repositories/catalogs.reposit
 import { JwtPayload } from '../../auth/services/auth-token.service.js';
 import {
   requirePermission,
+  requireAnyPermission,
   getDirectorInstitucionId,
   validateInstitucionOwnership,
   validateCargoExists,
@@ -78,7 +79,9 @@ export class TeachersService {
   }
 
   async findPersonaByDni(dni: string, currentUser: CurrentUser): Promise<any> {
-    requirePermission(currentUser, 'docentes:read');
+    // Búsqueda transversal: la usan los gestores de docentes/directores y también
+    // el superadmin (que solo tiene permisos de especialistas) al registrar cargos.
+    requireAnyPermission(currentUser, ['docentes:read', 'especialistas:read']);
     return this.teachersRepository.findPersonaByDni(dni);
   }
 

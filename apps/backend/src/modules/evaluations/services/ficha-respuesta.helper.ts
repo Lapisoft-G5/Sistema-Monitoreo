@@ -86,6 +86,7 @@ export async function guardarRespuestaEjeItem(
     ejeItemId: dto.ejeItemId,
     nivel: dto.nivel,
     evidenciaUrl: dto.evidenciaUrl ?? null,
+    observacion: dto.observacion ?? null,
   });
   return repository.findById(fichaId) as Promise<IFichaMonitoreo>;
 }

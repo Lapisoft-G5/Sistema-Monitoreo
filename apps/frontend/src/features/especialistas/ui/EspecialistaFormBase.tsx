@@ -1,10 +1,9 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { User, Briefcase, Check, Plus, X } from 'lucide-react';
-import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
+import { Briefcase, Plus, X } from 'lucide-react';
+import { CARGA_HORARIA } from '@shared/config/constants';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistaSchema } from '@entities/model-especialistas/validator';
-import { FormButton, SectionCard, SelectField, TextField } from '@shared/ui/form-controls';
-import { Spinner } from '@shared/ui/Spinner';
+import { FormButton, SectionCard, SelectField, TextField, DatosPersonalesSection } from '@shared/ui/form-controls';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
@@ -187,101 +186,20 @@ export const EspecialistaFormBase = ({
 
   return (
     <div className="bg-bg p-0 flex flex-col gap-5 text-text animate-in fade-in-0 duration-300">
-      {/* Sección 1: Datos Personales */}
-      <SectionCard icon={<User className="w-5 h-5" />} title="Información Personal">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-[18px]">
-          <div className="md:col-span-1">
-            <TextField
-              label="DNI (8 dígitos)"
-              required
-              value={form.dni}
-              onChange={(v) => set('dni', v.replace(/\D/g, '').slice(0, VALIDATION.DNI_LENGTH))}
-              placeholder="Ej. 74859612"
-              error={showError('dni')}
-              adornment={
-                searchingDni ? (
-                  <Spinner size="sm" />
-                ) : dniOk ? (
-                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-                ) : undefined
-              }
-            />
-          </div>
-          <div className="md:col-span-2">
-            <TextField
-              label="Nombres"
-              required
-              value={form.nombres}
-              onChange={(v) => set('nombres', v)}
-              placeholder="Ej. Juan Carlos"
-              error={showError('nombres')}
-              disabled={isDniLocked || dniBloqueadoPorRol}
-            />
-          </div>
-          <div className="md:col-span-2">
-            <TextField
-              label="Apellidos"
-              required
-              value={form.apellidos}
-              onChange={(v) => set('apellidos', v)}
-              placeholder="Ej. Pérez López"
-              error={showError('apellidos')}
-              disabled={isDniLocked || dniBloqueadoPorRol}
-            />
-          </div>
-        </div>
-
-        {dniMessage && !searchingDni && (
-          <div className="mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-2">
-            <Check className="h-4 w-4" strokeWidth={2.5} />
-            {dniMessage}
-          </div>
-        )}
-
-        {persona && roleCheck.mensaje && (
-          <div
-            className={`mt-4 text-xs font-semibold px-3 py-2.5 rounded-lg border ${
-              roleCheck.bloquea
-                ? 'bg-rose-50 text-rose-700 border-rose-300'
-                : 'bg-amber-50 text-amber-800 border-amber-300'
-            }`}
-          >
-            <span className="font-extrabold uppercase tracking-wide text-[0.72rem]">
-              {roleCheck.bloquea ? 'Bloqueado' : 'Advertencia'}:
-            </span>{' '}
-            {roleCheck.mensaje}
-            {roleCheck.detalle && (
-              <span className="block mt-1 font-normal text-[0.72rem]">{roleCheck.detalle}</span>
-            )}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
-          <TextField
-            label="Correo Electrónico"
-            value={form.correo || ''}
-            onChange={(v) => set('correo', v)}
-            placeholder="Ej. jperez@ugel-lampa.gob.pe"
-            error={showError('correo')}
-            disabled={isDniLocked || dniBloqueadoPorRol}
-          />
-          <div ref={celularRef}>
-            <TextField
-              label="Número de Celular"
-              value={form.celular || ''}
-              onChange={(v) => set('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
-              placeholder="Ej. 987654321"
-              error={showError('celular')}
-              disabled={isDniLocked || dniBloqueadoPorRol}
-              adornment={
-                celularOk ? (
-                  <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-                ) : undefined
-              }
-            />
-          </div>
-        </div>
-      </SectionCard>
+      {/* Sección 1: Datos Personales Unificados */}
+      <DatosPersonalesSection
+        form={form}
+        onChange={set}
+        showError={showError}
+        searchingDni={searchingDni}
+        dniOk={dniOk}
+        celularOk={celularOk}
+        isDniLocked={isDniLocked}
+        dniBloqueadoPorRol={dniBloqueadoPorRol}
+        dniMessage={dniMessage}
+        roleCheck={roleCheck}
+        celularRef={celularRef}
+      />
 
       {/*/ Sección 2: Perfil y Niveles */}
       <SectionCard

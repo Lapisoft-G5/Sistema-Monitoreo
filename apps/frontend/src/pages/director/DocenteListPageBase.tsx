@@ -21,6 +21,8 @@ interface DocenteListPageBaseProps {
   itemName: string;
   loadingLabel: string;
   filterCargoOut?: string;
+  /** Si se indica, solo muestra docentes cuya especialidad incluya este valor (ej. 'EPT'). */
+  filterEspecialidad?: string;
 }
 
 export const DocenteListPageBase = ({
@@ -32,6 +34,7 @@ export const DocenteListPageBase = ({
   itemName,
   loadingLabel,
   filterCargoOut,
+  filterEspecialidad,
 }: DocenteListPageBaseProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,6 +52,17 @@ export const DocenteListPageBase = ({
         if (isDirectorIe) {
           docentesMapped = docentesMapped.filter((d) => d.cargo !== filterCargoOut);
         }
+      }
+      if (filterEspecialidad) {
+        // El Jefe de Taller es solo para docentes de EPT (Educación para el Trabajo).
+        // La especialidad puede venir como lista separada por comas.
+        const objetivo = filterEspecialidad.toLowerCase();
+        docentesMapped = docentesMapped.filter((d) =>
+          (d.especialidad ?? '')
+            .split(',')
+            .map((e) => e.trim().toLowerCase())
+            .includes(objetivo),
+        );
       }
       setDocentes(docentesMapped);
 

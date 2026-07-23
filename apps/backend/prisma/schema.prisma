@@ -97,6 +97,10 @@ model Usuario {
   solicitudesResueltas SolicitudReprogramacion[] @relation("SolicitudResolutor")
   fichasCreadas        FichaMonitoreo[]          @relation("FichaCreador")
   fichasFinalizadas    FichaMonitoreo[]          @relation("FichaFinalizador")
+  notificacionesRecibidas Notificacion[]         @relation("NotificacionDestinatario")
+  notificacionesEnviadas  Notificacion[]         @relation("NotificacionEmisor")
+  solicitudesVisita       SolicitudVisita[]      @relation("SolicitudVisitaSolicitante")
+  solicitudesVisitaResueltas SolicitudVisita[]   @relation("SolicitudVisitaResolutor")
 
   @@index([personaId])
   @@index([rolId])
@@ -226,6 +230,9 @@ model InstitucionEducativa {
   direccion        String   @db.VarChar(150)
   zona             String   @db.VarChar(20)
   estado           String   @default("Activa") @db.VarChar(20)
+  latitud          Decimal? @db.Decimal(9, 6)
+  longitud         Decimal? @db.Decimal(9, 6)
+  alertaSinVisitaAt DateTime? @map("alerta_sin_visita_at")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -235,6 +242,8 @@ model InstitucionEducativa {
   planes            PlanMonitoreo[]      @relation("PlanInstitucion")
   plantillas        PlantillaMonitoreo[]
   cronogramas       Cronograma[]
+  notificaciones    Notificacion[]
+  solicitudesVisita SolicitudVisita[]
 
   @@map("instituciones_educativas")
 }
@@ -265,6 +274,7 @@ model Docente {
   evaluadoresAsignados  AsignacionEvaluador[] @relation("EvaluadoRel")
   docentesAevaluar      AsignacionEvaluador[] @relation("EvaluadorRel")
   cronogramas           Cronograma[]
+  solicitudesVisita     SolicitudVisita[]
 
   @@index([institucionId])
   @@map("docentes")
@@ -631,6 +641,7 @@ model FichaRespuestaEjeItem {
   ejeItemId    String  @map("eje_item_id") @db.Uuid
   nivel        Int     @db.SmallInt
   evidenciaUrl String? @map("evidencia_url") @db.Text
+  observacion  String? @db.Text
 
   ficha   FichaMonitoreo   @relation(fields: [fichaId], references: [id], onDelete: Cascade)
   ejeItem EjeItemPlantilla @relation(fields: [ejeItemId], references: [id], onDelete: Cascade)
@@ -785,5 +796,58 @@ model FichaRespuestaAspecto {
   @@unique([fichaId, aspectoId])
   @@index([aspectoId])
   @@map("ficha_respuestas_aspecto")
+}
+
+// ==========================================
+// 10. NOTIFICACIONES (in-app; correo best-effort)
+// ==========================================
+
+model Notificacion {
+  id             String    @id @default(uuid()) @db.Uuid
+  destinatarioId String    @map("destinatario_id") @db.Uuid
+  emisorId       String?   @map("emisor_id") @db.Uuid
+  tipo           String    @db.VarChar(40) // ALERTA_INSTITUCION | ...
+  titulo         String    @db.VarChar(150)
+  mensaje        String    @db.Text
+  institucionId  String?   @map("institucion_id") @db.Uuid
+  leida          Boolean   @default(false)
+  leidaAt        DateTime? @map("leida_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  destinatario Usuario               @relation("NotificacionDestinatario", fields: [destinatarioId], references: [id], onDelete: Cascade)
+  emisor       Usuario?              @relation("NotificacionEmisor", fields: [emisorId], references: [id], onDelete: SetNull)
+  institucion  InstitucionEducativa? @relation(fields: [institucionId], references: [id], onDelete: SetNull)
+
+  @@index([destinatarioId, leida])
+  @@index([createdAt])
+  @@map("notificaciones")
+}
+
+// ==========================================
+// 11. SOLICITUDES DE VISITA (Director UGEL → Jefe de Gestión)
+// ==========================================
+
+model SolicitudVisita {
+  id            String    @id @default(uuid()) @db.Uuid
+  institucionId String    @map("institucion_id") @db.Uuid
+  docenteId     String?   @map("docente_id") @db.Uuid
+  solicitanteId String    @map("solicitante_id") @db.Uuid
+  motivo        String?   @db.Text
+  prioridad     String    @default("ALTA") @db.VarChar(20) // ALTA | NORMAL
+  estado        String    @default("PENDIENTE") @db.VarChar(20) // PENDIENTE | ATENDIDA | RECHAZADA
+  atendidaPorId String?   @map("atendida_por_id") @db.Uuid
+  cronogramaId  String?   @map("cronograma_id") @db.Uuid
+  comentario    String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  resueltaAt    DateTime? @map("resuelta_at")
+
+  institucion InstitucionEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  docente     Docente?             @relation(fields: [docenteId], references: [id], onDelete: SetNull)
+  solicitante Usuario              @relation("SolicitudVisitaSolicitante", fields: [solicitanteId], references: [id], onDelete: Restrict)
+  atendidaPor Usuario?             @relation("SolicitudVisitaResolutor", fields: [atendidaPorId], references: [id], onDelete: SetNull)
+
+  @@index([estado])
+  @@index([institucionId])
+  @@map("solicitudes_visita")
 }
 

@@ -11,6 +11,8 @@ import { directorUgelRoutes } from '@/pages/directorUgel/directorUgel.routes';
 import { RootRedirect } from './RootRedirect';
 import { SuperadminPanel } from '@/pages/superadmin/SuperadminPanel';
 import { SuperadminCreatePage } from '@/pages/superadmin/SuperadminCreatePage';
+import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
+import { FocosAtencionPage } from '@/pages/focosAtencion/FocosAtencionPage';
 
 export const router = createBrowserRouter([
   {
@@ -24,8 +26,13 @@ export const router = createBrowserRouter([
       ...jefeGestionRoutes,
       ...especialistaRoutes,
       {
+        element: <ProtectedRoute permission="focos_atencion" />,
+        children: [{ path: 'focos-atencion', element: <FocosAtencionPage /> }],
+      },
+      {
         path: 'superadmin',
         children: [
+          { index: true, element: <Navigate to="/superadmin/director" replace /> },
           { path: 'director', element: <SuperadminPanel targetRole="director_ugel" /> },
           { path: 'director/nuevo', element: <SuperadminCreatePage targetRole="director_ugel" /> },
           { path: 'jefe', element: <SuperadminPanel targetRole="jefe_gestion" /> },

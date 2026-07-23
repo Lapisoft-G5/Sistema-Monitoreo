@@ -9,7 +9,22 @@ import { Card, CardContent } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { useUser } from '@entities/model-user';
 
+// Años académicos generados dinámicamente desde el año actual en adelante,
+// para no depender de una lista fija que quede desactualizada cada año nuevo.
+const ANIO_ACTUAL = new Date().getFullYear();
+const OPCIONES_ANIO = Array.from({ length: 5 }, (_, i) => ANIO_ACTUAL + i).map((a) => ({
+  value: String(a),
+  label: String(a),
+}));
 
+// Cargo del autor que subió el plan (a partir de rolAutorAlCrear).
+const CARGO_AUTOR: Record<string, string> = {
+  director_ie: 'Director de IE',
+  coordinador_pedagogico: 'Coordinador Pedagógico',
+  jefe_taller: 'Jefe de Taller',
+  jefe_gestion: 'Jefe de Gestión',
+};
+const labelCargoAutor = (rol?: string): string | null => (rol ? (CARGO_AUTOR[rol] ?? rol) : null);
 
 export const PlanMonitoreoAnualPage = () => {
   const { user } = useUser();
@@ -226,13 +241,7 @@ export const PlanMonitoreoAnualPage = () => {
             value={anioAcademico}
             onChange={setAnioAcademico}
             placeholder="Seleccionar año..."
-            options={[
-              { value: 'Todos', label: 'Todos' },
-              { value: '2023', label: '2023' },
-              { value: '2024', label: '2024' },
-              { value: '2025', label: '2025' },
-              { value: '2026', label: '2026' },
-            ]}
+            options={[{ value: 'Todos', label: 'Todos' }, ...OPCIONES_ANIO]}
           />
           <SelectField
             label="Estado"
@@ -318,8 +327,8 @@ export const PlanMonitoreoAnualPage = () => {
                     </div>
 
                     {/* Metadata y Título */}
-                    <div className="flex-1 flex flex-col min-w-0 h-[115px]">
-                      <div className="flex items-center gap-2 mb-1.5 shrink-0">
+                    <div className="flex-1 flex flex-col min-w-0 min-h-[115px] gap-0.5">
+                      <div className="flex items-center gap-2 mb-1 shrink-0">
                         <span className="text-xs font-bold text-text-muted">{plan.anioAcademico}</span>
                         <Badge
                           variant={plan.tipoEntidad === 'UGEL' ? 'default' : 'secondary'}
@@ -343,18 +352,27 @@ export const PlanMonitoreoAnualPage = () => {
                       </div>
 
                       <h4
-                        className="text-sm font-bold text-text mb-1 leading-snug line-clamp-2 flex-1"
+                        className="text-sm font-bold text-text leading-snug line-clamp-2"
                         title={plan.titulo}
                       >
                         {plan.titulo}
                       </h4>
 
-                      <span className="text-[11px] text-text-muted mb-2.5 shrink-0">
+                      <span className="text-[11px] text-text-muted shrink-0">
                         Registrado: {formatDate(plan.createdAt)}
                       </span>
+                      {labelCargoAutor(plan.rolAutorAlCrear) && (
+                        <span className="text-[11px] text-text-muted shrink-0">
+                          Subido por:{' '}
+                          <span className="font-semibold text-text">
+                            {labelCargoAutor(plan.rolAutorAlCrear)}
+                            {plan.autorNombre ? ` — ${plan.autorNombre}` : ''}
+                          </span>
+                        </span>
+                      )}
 
                       {/* Acciones */}
-                      <div className="flex items-center gap-2 mt-auto shrink-0">
+                      <div className="flex items-center gap-2 mt-2.5 shrink-0">
                         <Button
                           variant="ghost"
                           onClick={() => viewPlanPdf(plan.id)}
@@ -453,6 +471,18 @@ export const PlanMonitoreoAnualPage = () => {
                           </Badge>
                           <span className="w-1 h-1 rounded-full bg-border" />
                           <span>Registrado: {formatDate(plan.createdAt)}</span>
+                          {labelCargoAutor(plan.rolAutorAlCrear) && (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-border" />
+                              <span>
+                                Subido por:{' '}
+                                <span className="font-semibold text-text">
+                                  {labelCargoAutor(plan.rolAutorAlCrear)}
+                                  {plan.autorNombre ? ` — ${plan.autorNombre}` : ''}
+                                </span>
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -587,12 +617,7 @@ export const PlanMonitoreoAnualPage = () => {
                   value={uploadYear}
                   onChange={setUploadYear}
                   placeholder="Seleccionar año..."
-                  options={[
-                    { value: '2023', label: '2023' },
-                    { value: '2024', label: '2024' },
-                    { value: '2025', label: '2025' },
-                    { value: '2026', label: '2026' },
-                  ]}
+                  options={OPCIONES_ANIO}
                 />
                 <SelectField
                   label="Tipo de Entidad *"

@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { User, Briefcase, Check, Search, AlertCircle, Shield, Info } from 'lucide-react';
+import { Briefcase, Search, AlertCircle, Shield, Info } from 'lucide-react';
 import { especialistasApi } from '@shared/api/especialistas.api';
 import type {
   JefeAreaCreateFormData,
   JefeAreaEditFormData,
 } from '@entities/model-jefes-area/validator';
 import { jefeAreaCreateSchema, jefeAreaEditSchema } from '@entities/model-jefes-area/validator';
-import { CARGA_HORARIA, VALIDATION } from '@shared/config/constants';
-import { FormButton, SectionCard, SelectField, TextField } from '@shared/ui/form-controls';
+import { CARGA_HORARIA } from '@shared/config/constants';
+import { FormButton, SectionCard, SelectField, TextField, DatosPersonalesSection } from '@shared/ui/form-controls';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 
 interface Props {
@@ -184,64 +184,14 @@ export const JefeAreaFormBase = ({
 
     return (
       <div className="bg-bg p-0 flex flex-col gap-6 text-text animate-in fade-in-0 duration-300">
-        <SectionCard icon={<User className="w-5 h-5" />} title="Información Personal">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-[18px]">
-            <div className="md:col-span-1">
-              <TextField
-                label="DNI"
-                required
-                disabled
-                value={editForm.dni}
-                onChange={() => {}}
-                placeholder="DNI"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <TextField
-                label="Nombres"
-                required
-                value={editForm.nombres}
-                onChange={(v) => setEdit('nombres', v)}
-                placeholder="Nombres"
-                error={showError('nombres')}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <TextField
-                label="Apellidos"
-                required
-                value={editForm.apellidos}
-                onChange={(v) => setEdit('apellidos', v)}
-                placeholder="Apellidos"
-                error={showError('apellidos')}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px] mt-[18px]">
-            <TextField
-              label="Correo Electrónico"
-              value={editForm.correo || ''}
-              onChange={(v) => setEdit('correo', v)}
-              placeholder="Correo"
-              error={showError('correo')}
-            />
-            <div ref={celularRef}>
-              <TextField
-                label="Número de Celular"
-                value={editForm.celular || ''}
-                onChange={(v) => setEdit('celular', v.replace(/\D/g, '').slice(0, VALIDATION.PHONE_LENGTH))}
-                placeholder="Celular"
-                error={showError('celular')}
-                adornment={
-                  celularOk ? (
-                    <Check className="w-[18px] h-[18px] text-green-500" strokeWidth={2.5} />
-                  ) : undefined
-                }
-              />
-            </div>
-          </div>
-        </SectionCard>
+        <DatosPersonalesSection
+          form={editForm}
+          onChange={setEdit}
+          showError={showError}
+          isDniLocked
+          celularOk={celularOk}
+          celularRef={celularRef}
+        />
 
         <SectionCard icon={<Briefcase className="w-5 h-5" />} title="Detalles del Puesto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px]">

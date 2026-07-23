@@ -3,6 +3,7 @@ import { request, requestBlob } from '@shared/config/api';
 
 export interface CreateFichaInput {
   cronogramaId: string;
+  plantillaId?: string;
   areaCurricular?: string;
   grado?: string;
   seccion?: string;
@@ -40,10 +41,16 @@ export const fichasApi = {
       body: JSON.stringify({ marcado }),
     }),
 
-  saveRespuestaEjeItem: (fichaId: string, ejeItemId: string, nivel: number, evidenciaUrl?: string) =>
+  saveRespuestaEjeItem: (
+    fichaId: string,
+    ejeItemId: string,
+    nivel: number,
+    evidenciaUrl?: string,
+    observacion?: string,
+  ) =>
     request<IFichaMonitoreo>(`/api/fichas/${fichaId}/respuestas-eje-item`, {
       method: 'PATCH',
-      body: JSON.stringify({ ejeItemId, nivel, evidenciaUrl }),
+      body: JSON.stringify({ ejeItemId, nivel, evidenciaUrl, observacion }),
     }),
 
   subirEvidenciaEjeItem: (fichaId: string, ejeItemId: string, file: File) => {

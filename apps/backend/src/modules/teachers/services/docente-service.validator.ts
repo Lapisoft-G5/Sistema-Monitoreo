@@ -16,6 +16,16 @@ export function requirePermission(currentUser: CurrentUser, permission: string):
   }
 }
 
+// Para acciones transversales accesibles desde varios roles con permisos distintos
+// (p. ej. la búsqueda de persona por DNI, usada tanto por gestores de docentes como
+// por el superadmin al registrar especialistas). Basta con tener uno de los permisos.
+export function requireAnyPermission(currentUser: CurrentUser, permissions: string[]): void {
+  const tieneAlguno = permissions.some((p) => currentUser.permissions?.includes(p));
+  if (!tieneAlguno) {
+    throw new ForbiddenException('No tiene permisos para realizar esta acción.');
+  }
+}
+
 export function getDirectorInstitucionId(currentUser: CurrentUser): string {
   const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
   if (!userInstitucionId) {

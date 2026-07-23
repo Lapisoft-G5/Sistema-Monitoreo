@@ -19,3 +19,6 @@ export * from './scheduling/index.js';
 export * from './plantillas/index.js';
 export * from './evaluations/index.js';
 export * from './reports/index.js';
+export * from './dashboard/index.js';
+export * from './notifications/index.js';
+export * from './visits/index.js';

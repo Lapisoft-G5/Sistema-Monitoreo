@@ -31,6 +31,7 @@ export interface SaveRespuestaEjeItemData {
   ejeItemId: string;
   nivel: number;
   evidenciaUrl?: string | null;
+  observacion?: string | null;
 }
 
 export interface SaveRespuestaAspectoData {

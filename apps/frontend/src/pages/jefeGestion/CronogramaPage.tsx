@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useAtenderSolicitud } from '@features/visit-requests';
 import { Compass, PlusCircle, Search, Trash2, Eye, Pencil, X, AlertCircle, Calendar, User, BookOpen, Layers, FileText } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -60,6 +62,9 @@ const formatTableDateTime = (isoString: string) => {
 export const CronogramaPage = () => {
   const { user } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
+  const atenderSolicitud = useAtenderSolicitud();
+  const [pendingSolicitudId, setPendingSolicitudId] = useState<string | null>(null);
   const isDirector =
     user?.role === 'director_institucion' ||
     user?.role === 'coordinador_pedagogico' ||
@@ -487,6 +492,37 @@ export const CronogramaPage = () => {
     setShowFormModal(true);
   };
 
+  // --- Precarga desde una Solicitud de Visita ("Atender" del Jefe de Gestión) ---
+  useEffect(() => {
+    const prefill = (location.state as { prefillSolicitud?: { solicitudId: string; institucionId: string; docenteId?: string | null } } | null)
+      ?.prefillSolicitud;
+    if (!prefill) return;
+    if (instituciones.length === 0 || docentes.length === 0) return; // esperar datos
+
+    const ie = instituciones.find((i) => i.id === prefill.institucionId);
+    const doc = prefill.docenteId ? docentes.find((d) => d.id === prefill.docenteId) : null;
+
+    const timer = setTimeout(() => {
+      resetForm();
+      setFormFechaHora(getDefaultDateTime());
+      if (ie) {
+        setFormModalidad(ie.modalidad);
+        setFormNivel(ie.nivelEducativo);
+        setFormInstitucion(ie.nombre);
+      }
+      setFormTipo('DOCENTE');
+      if (doc) setFormDocente(`${doc.nombres} ${doc.apellidos}`.trim());
+      setPendingSolicitudId(prefill.solicitudId);
+      setShowFormModal(true);
+
+      // Limpiar el state para no reabrir el modal en cada render.
+      navigate(location.pathname, { replace: true });
+    }, 0);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, instituciones, docentes]);
+
   // --- Guardar Formulario ---
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -548,7 +584,7 @@ export const CronogramaPage = () => {
       } else {
         const [datePart, timePart] = formFechaHora.split('T');
         const horaInicio = timePart.length === 5 ? `${timePart}:00` : timePart;
-        await createCronograma({
+        const creada = await createCronograma({
           monitorId: matchedEsp.id,
           institucionId: matchedInst.id,
           evaluadoId: matchedDoc.id,
@@ -561,6 +597,21 @@ export const CronogramaPage = () => {
           detalles: formObservaciones.trim() || undefined
         });
         setShowFormModal(false);
+
+        // Si venía de "Atender" una solicitud, enlazarla y marcarla ATENDIDA.
+        if (pendingSolicitudId) {
+          try {
+            await atenderSolicitud.mutateAsync({
+              id: pendingSolicitudId,
+              body: { cronogramaId: creada?.id },
+            });
+            toast.success('Solicitud de visita atendida con este cronograma.');
+          } catch {
+            toast.warning('Cronograma creado, pero no se pudo marcar la solicitud.');
+          }
+          setPendingSolicitudId(null);
+        }
+
         // Auto-navegar al calendario en la fecha del cronograma recién creado
         navigate('/monitoreo/calendario', {
           state: { newDate: datePart },

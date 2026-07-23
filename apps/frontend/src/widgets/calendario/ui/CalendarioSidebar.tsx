@@ -295,6 +295,7 @@ const {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      observacionesEjeItem?: Record<string, string>;
       contexto?: {
         areaCurricular: string;
         grado: string;
@@ -319,6 +320,9 @@ const {
       if (!ficha) {
         ficha = await fichasApi.create({
           cronogramaId: visitId,
+          // Vincular la ficha a la plantilla que realmente se está usando (la del
+          // actor), para que sus respuestas coincidan al renderizar/reportar.
+          plantillaId: activeTemplate?.id,
           areaCurricular: data.contexto?.areaCurricular,
           grado: data.contexto?.grado,
           seccion: data.contexto?.seccion,
@@ -340,7 +344,8 @@ const {
       if (data.respuestasEjeItem) {
         for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
           const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
-          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
+          const observacion = data.observacionesEjeItem?.[ejeItemId];
+          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl, observacion);
         }
       }
       setShowFichaModal(false);
@@ -374,6 +379,7 @@ const {
       preguntaExtraAnswers?: Record<string, boolean>;
       respuestasEjeItem?: Record<string, number>;
       evidenciaUrls?: Record<string, string>;
+      observacionesEjeItem?: Record<string, string>;
       contexto?: {
         areaCurricular: string;
         grado: string;
@@ -394,6 +400,9 @@ const {
       if (!ficha) {
         ficha = await fichasApi.create({
           cronogramaId: visitId,
+          // Vincular la ficha a la plantilla que realmente se está usando (la del
+          // actor), para que sus respuestas coincidan al renderizar/reportar.
+          plantillaId: activeTemplate?.id,
           areaCurricular: data.contexto?.areaCurricular,
           grado: data.contexto?.grado,
           seccion: data.contexto?.seccion,
@@ -412,10 +421,24 @@ const {
       if (data.respuestasEjeItem) {
         for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
           const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
-          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl);
+          const observacion = data.observacionesEjeItem?.[ejeItemId];
+          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl, observacion);
         }
       }
-      await fichasApi.finalizar(ficha.id, data.generalComments, data.sugerencias, data.compromisos, data.evidenciaUrls?.['GENERAL']);
+      // Evidencias generales (slots GENERAL_1/2/3) se persisten como JSON en
+      // evidenciaGeneral; si solo hay la clave legada 'GENERAL', se envía tal cual.
+      const generalEvidencias = Object.fromEntries(
+        Object.entries(data.evidenciaUrls ?? {}).filter(([k]) => k.startsWith('GENERAL')),
+      );
+      const evidenciaGeneralPayload =
+        Object.keys(generalEvidencias).length > 0 ? JSON.stringify(generalEvidencias) : undefined;
+      await fichasApi.finalizar(
+        ficha.id,
+        data.generalComments,
+        data.sugerencias,
+        data.compromisos,
+        evidenciaGeneralPayload,
+      );
       setShowFichaModal(false);
     } catch (err: unknown) {
       const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string; message?: string } }; message?: string };
@@ -713,9 +736,24 @@ const {
                           }
                           const respuestasEjeItem: Record<string, number> = {};
                           const evidenciaUrls: Record<string, string> = {};
+                          const observacionesEjeItem: Record<string, string> = {};
                           for (const r of ficha.respuestasEjeItem || []) {
                             respuestasEjeItem[r.ejeItemId] = r.nivel;
                             if (r.evidenciaUrl) evidenciaUrls[r.ejeItemId] = r.evidenciaUrl;
+                            if (r.observacion) observacionesEjeItem[r.ejeItemId] = r.observacion;
+                          }
+                          // Evidencia general: JSON con slots GENERAL_1/2/3, o cadena legada.
+                          if (ficha.evidenciaGeneral) {
+                            const raw = ficha.evidenciaGeneral;
+                            if (raw.trim().startsWith('{')) {
+                              try {
+                                Object.assign(evidenciaUrls, JSON.parse(raw) as Record<string, string>);
+                              } catch {
+                                evidenciaUrls['GENERAL'] = raw;
+                              }
+                            } else {
+                              evidenciaUrls['GENERAL'] = raw;
+                            }
                           }
                           const mappedData = {
                             checkedAspects,
@@ -726,6 +764,7 @@ const {
                             rubricComments,
                             respuestasEjeItem,
                             evidenciaUrls,
+                            observacionesEjeItem,
                             contexto: ficha.contexto,
                           };
                           safeSetLocalStorage(`sistema-monitoreo:ficha-state:${selectedVisit.id}`, JSON.stringify(mappedData));

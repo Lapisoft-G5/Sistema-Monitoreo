@@ -22,6 +22,27 @@ import { randomUUID } from 'node:crypto';
 
 const PENDIENTE_ESTADOS = ['PROGRAMADO', 'EN_PROCESO', 'REPROGRAMADO'];
 
+/** Marcador para identificar (y hacer idempotente) el lote masivo de fichas. */
+const BULK_MARKER = 'bulk-seed-ficha';
+/** Cantidad objetivo de fichas finalizadas del lote masivo. */
+const BULK_TARGET = 40;
+
+/** Marcador del lote de fichas de Secundaria por especialista. */
+const SEC_ESP_MARKER = 'seed-sec-especialista';
+/** Fichas objetivo por cada especialista de Secundaria. */
+const SEC_ESP_POR_ESPECIALISTA = 8;
+
+/**
+ * Deriva el nivel de logro a partir de un promedio (1.0–4.0) usando las bandas
+ * del baremo (EDU-0009), con límites inclusivos para no caer en los gaps.
+ */
+function nivelDesdePromedio(p) {
+  if (p <= 1.5) return 'INICIO';
+  if (p <= 2.5) return 'EN_PROCESO';
+  if (p <= 3.5) return 'LOGRO_ESPERADO';
+  return 'LOGRO_DESTACADO';
+}
+
 export async function seedScheduling(ctx) {
   console.log('[scheduling] Seeding cronogramas de ejemplo...');
   if (!ctx.planUgelId) {
@@ -42,6 +63,11 @@ export async function seedScheduling(ctx) {
   const monitorSecundaria = monitores[1];
 
   const primeraIe = await prisma.institucionEducativa.findFirst({
+    where: {
+      docentes: {
+        some: { docenteCargos: { some: { cargo: { nombre: 'Docente de Aula' }, fechaFin: null } } },
+      },
+    },
     orderBy: { createdAt: 'asc' },
   });
   if (!primeraIe) {
@@ -228,6 +254,8 @@ export async function seedScheduling(ctx) {
           estado: 'FINALIZADO',
           creadoPorId: usuarioId,
           finalizadaPorId: usuarioId,
+          // Hora final realista: ~2h después del inicio (08:00) de la visita.
+          finalizadaAt: new Date('2026-02-05T10:00:00'),
           observaciones: 'Ficha seed completada.',
         },
       });
@@ -253,7 +281,7 @@ export async function seedScheduling(ctx) {
   // 5) DOCENTE EN_PROCESO pendiente del SEGUNDO monitor (Pedro Pablo) en
   //    otra institucion. Asi tenemos cronogramas de mas de un especialista.
   const segundaIe = await prisma.institucionEducativa.findFirst({
-    where: { id: { not: primeraIe.id } },
+    where: { id: { not: primeraIe.id }, docentes: { some: {} } },
     orderBy: { createdAt: 'asc' },
   });
   if (segundaIe) {
@@ -309,6 +337,110 @@ export async function seedScheduling(ctx) {
     }
   }
 
+  // 6) LOTE MASIVO: ~40 fichas FINALIZADAS repartidas en varias IEs y bandas,
+  //    para que el dashboard del Director UGEL muestre data representativa
+  //    (KPIs, semáforo con las 3 categorías y tabla de recientes).
+  if (plantillaDocente) {
+    const yaBulk = await prisma.fichaMonitoreo.count({ where: { observaciones: BULK_MARKER } });
+    if (yaBulk >= BULK_TARGET) {
+      console.log(`  - lote masivo ya existe (${yaBulk} fichas), saltando.`);
+    } else {
+      const desempenos = await prisma.desempenoPlantilla.findMany({
+        where: { plantillaId: plantillaDocente.id },
+        orderBy: { orden: 'asc' },
+      });
+      // Promedio base por IE (ciclando por bandas): así cada IE cae de forma
+      // limpia en una categoría del semáforo y el conjunto cubre las 3.
+      const basesPorIe = [1.2, 3.8, 2.1, 3.2, 1.4, 2.9, 4.0, 1.3, 2.4, 3.4, 2.0, 3.7, 1.5, 3.0];
+      const ies = await prisma.institucionEducativa.findMany({ orderBy: { codigoModular: 'asc' } });
+
+      let creadas = 0;
+      let idx = 0;
+      for (let i = 0; i < ies.length && creadas < BULK_TARGET; i++) {
+        const ie = ies[i];
+        const base = basesPorIe[i % basesPorIe.length];
+        const docentesIe = await prisma.docente.findMany({
+          where: { institucionId: ie.id },
+          take: 3,
+        });
+        for (const doc of docentesIe) {
+          if (creadas >= BULK_TARGET) break;
+          const promedio = base;
+          const nivelLogro = nivelDesdePromedio(promedio);
+          const nivelResp = Math.max(1, Math.min(4, Math.round(promedio)));
+          const monitor = monitores[idx % monitores.length];
+          const usuarioId = monitor.persona?.usuario?.id ?? null;
+          const fecha = new Date(2026, 0, 1 + idx);
+
+          const contexto = await prisma.fichaContexto.create({
+            data: {
+              id: randomUUID(),
+              areaCurricular: 'Matematica',
+              grado: '3.',
+              seccion: 'A',
+              cantidadEstudiantes: 25,
+              cantidadEstudiantesNee: 0,
+            },
+          });
+          const crono = await prisma.cronograma.create({
+            data: {
+              id: randomUUID(),
+              monitorId: monitor.id,
+              institucionId: ie.id,
+              evaluadoId: doc.id,
+              planId: ctx.planUgelId,
+              tipoMonitoreo: 'DOCENTE',
+              numeroVisita: 1,
+              fechaProgramada: fecha,
+              horaInicio: '08:00:00',
+              detalles: BULK_MARKER,
+              estado: 'COMPLETADO',
+              modalidad: ie.modalidad ?? 'EBR',
+              nivelEducativo: ie.nivelEducativo ?? 'Primaria',
+            },
+          });
+          const ficha = await prisma.fichaMonitoreo.create({
+            data: {
+              id: randomUUID(),
+              cronogramaId: crono.id,
+              plantillaId: plantillaDocente.id,
+              fichaContextoId: contexto.id,
+              anioAcademico: 2026,
+              puntajeTotal: nivelResp * Math.max(desempenos.length, 1),
+              promedio: promedio.toFixed(2),
+              nivelLogro,
+              estado: 'FINALIZADO',
+              creadoPorId: usuarioId,
+              finalizadaPorId: usuarioId,
+              observaciones: BULK_MARKER,
+              // Hora final realista: ~2h después del inicio (08:00), no medianoche.
+              finalizadaAt: new Date(2026, 0, 1 + idx, 10, 0, 0),
+            },
+          });
+          for (const d of desempenos) {
+            await prisma.fichaRespuestaDesempeno.create({
+              data: { id: randomUUID(), fichaId: ficha.id, desempenoId: d.id, nivel: nivelResp },
+            });
+          }
+          creadas += 1;
+          idx += 1;
+        }
+      }
+      console.log(`  + lote masivo: ${creadas} fichas FINALIZADAS creadas en varias IEs y bandas.`);
+    }
+  }
+
+  // 7) FICHAS POR ESPECIALISTA (Primaria y Secundaria): fichas FINALIZADAS
+  //    atribuidas a los especialistas de área (monitor + creadoPor), sobre
+  //    docentes de SU especialidad, en IEs de su nivel con coordenadas. Sirve
+  //    para comprobar el mapa de "Focos de Atención" escopado por nivel +
+  //    especialidad: cada especialista ve sus IEs monitoreadas coloreadas y,
+  //    con las fichas en INICIO, la lista de "Requieren atención" se llena.
+  if (plantillaDocente) {
+    await seedFichasEspecialistas({ planUgelId: ctx.planUgelId, plantillaDocente, nivel: 'Secundaria' });
+    await seedFichasEspecialistas({ planUgelId: ctx.planUgelId, plantillaDocente, nivel: 'Primaria' });
+  }
+
   // Resumen
   const total = await prisma.cronograma.count();
   const porEstado = await prisma.cronograma.groupBy({
@@ -319,4 +451,155 @@ export async function seedScheduling(ctx) {
   for (const e of porEstado) {
     console.log(`  ${e.estado}: ${e._count._all}`);
   }
+}
+
+/**
+ * Crea fichas FINALIZADAS de un nivel (Primaria o Secundaria) atribuidas a cada
+ * especialista de ese nivel (monitor + creadoPor), sobre docentes de SU
+ * especialidad y en IEs del nivel con coordenadas. Idempotente por especialista
+ * vía SEC_ESP_MARKER.
+ */
+export async function seedFichasEspecialistas({ planUgelId, plantillaDocente, nivel }) {
+  // Especialistas del nivel (rol especialista) con al menos una especialidad
+  // y con usuario asociado (para poder atribuir creadoPor/finalizadaPor).
+  const especialistas = await prisma.especialista.findMany({
+    where: {
+      nivelEducativo: { equals: nivel, mode: 'insensitive' },
+      especialidades: { some: {} },
+      persona: { usuario: { rol: { codigo: 'especialista' } } },
+    },
+    include: {
+      persona: { include: { usuario: { select: { id: true } } } },
+      especialidades: { select: { especialidadId: true } },
+    },
+  });
+  if (especialistas.length === 0) {
+    console.log(`  - sin especialistas de ${nivel} con especialidad, saltando.`);
+    return;
+  }
+
+  const desempenos = await prisma.desempenoPlantilla.findMany({
+    where: { plantillaId: plantillaDocente.id },
+    orderBy: { orden: 'asc' },
+  });
+
+  // Bandas de promedio: fuerza una mezcla de las 4 categorías, con varias en
+  // INICIO para poblar "Requieren atención" (Focos de Atención).
+  const PROMEDIOS = [1.2, 1.4, 2.1, 3.6, 1.5, 2.8, 3.2, 2.4];
+
+  let totalCreadas = 0;
+  for (const esp of especialistas) {
+    const usuarioId = esp.persona?.usuario?.id ?? null;
+    if (!usuarioId) continue;
+
+    // Idempotencia por especialista: si ya tiene fichas del lote, no duplicar.
+    const yaTiene = await prisma.fichaMonitoreo.count({
+      where: { observaciones: SEC_ESP_MARKER, creadoPorId: usuarioId },
+    });
+    if (yaTiene > 0) {
+      console.log(`  - ${esp.persona.nombres} ya tiene ${yaTiene} fichas del lote, saltando.`);
+      continue;
+    }
+
+    const espIds = esp.especialidades.map((e) => e.especialidadId);
+
+    // Docentes activos de la especialidad del especialista, en IEs del nivel
+    // con coordenadas. Se reparten en IEs distintas para que el mapa muestre
+    // varios focos y no todos en una sola institución.
+    const docentes = await prisma.docente.findMany({
+      where: {
+        estado: 'Activo',
+        docenteEspecialidades: { some: { especialidadId: { in: espIds } } },
+        institucion: {
+          estado: 'Activa',
+          modalidad: 'EBR',
+          nivelEducativo: { equals: nivel, mode: 'insensitive' },
+          latitud: { not: null },
+        },
+      },
+      include: { institucion: { select: { id: true, nombre: true } } },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    });
+
+    // Una IE por docente para diversificar; si faltan, se permite repetir IE.
+    const porIe = [];
+    const iesVistas = new Set();
+    for (const d of docentes) {
+      if (iesVistas.has(d.institucionId)) continue;
+      iesVistas.add(d.institucionId);
+      porIe.push(d);
+      if (porIe.length >= SEC_ESP_POR_ESPECIALISTA) break;
+    }
+    const objetivo = porIe.length > 0 ? porIe : docentes.slice(0, SEC_ESP_POR_ESPECIALISTA);
+    if (objetivo.length === 0) {
+      console.log(`  - ${esp.persona.nombres}: sin docentes de su especialidad, saltando.`);
+      continue;
+    }
+
+    let creadasEsp = 0;
+    for (let i = 0; i < objetivo.length; i++) {
+      const doc = objetivo[i];
+      const promedio = PROMEDIOS[i % PROMEDIOS.length];
+      const nivelLogro = nivelDesdePromedio(promedio);
+      const nivelResp = Math.max(1, Math.min(4, Math.round(promedio)));
+      const fecha = new Date(2026, 1, 1 + i); // Febrero 2026
+
+      const contexto = await prisma.fichaContexto.create({
+        data: {
+          id: randomUUID(),
+          areaCurricular: 'Comunicacion',
+          grado: '2.',
+          seccion: 'A',
+          cantidadEstudiantes: 28,
+          cantidadEstudiantesNee: 1,
+        },
+      });
+      const crono = await prisma.cronograma.create({
+        data: {
+          id: randomUUID(),
+          monitorId: esp.id,
+          institucionId: doc.institucionId,
+          evaluadoId: doc.id,
+          planId: planUgelId,
+          tipoMonitoreo: 'DOCENTE',
+          numeroVisita: 1,
+          fechaProgramada: fecha,
+          horaInicio: '08:00:00',
+          detalles: SEC_ESP_MARKER,
+          estado: 'COMPLETADO',
+          modalidad: 'EBR',
+          nivelEducativo: nivel,
+        },
+      });
+      const ficha = await prisma.fichaMonitoreo.create({
+        data: {
+          id: randomUUID(),
+          cronogramaId: crono.id,
+          plantillaId: plantillaDocente.id,
+          fichaContextoId: contexto.id,
+          anioAcademico: 2026,
+          puntajeTotal: nivelResp * Math.max(desempenos.length, 1),
+          promedio: promedio.toFixed(2),
+          nivelLogro,
+          estado: 'FINALIZADO',
+          creadoPorId: usuarioId,
+          finalizadaPorId: usuarioId,
+          finalizadaAt: new Date(2026, 1, 1 + i, 10, 0, 0),
+          observaciones: SEC_ESP_MARKER,
+        },
+      });
+      for (const d of desempenos) {
+        await prisma.fichaRespuestaDesempeno.create({
+          data: { id: randomUUID(), fichaId: ficha.id, desempenoId: d.id, nivel: nivelResp },
+        });
+      }
+      creadasEsp += 1;
+    }
+    totalCreadas += creadasEsp;
+    console.log(
+      `  + ${esp.persona.nombres} ${esp.persona.apellidos} (${nivel}): ${creadasEsp} fichas FINALIZADAS en ${objetivo.length} IE(s).`,
+    );
+  }
+  console.log(`  + lote ${nivel} por especialista: ${totalCreadas} fichas creadas.`);
 }

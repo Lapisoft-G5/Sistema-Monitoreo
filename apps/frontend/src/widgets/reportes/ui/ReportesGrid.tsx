@@ -189,16 +189,30 @@ export const ReportesGrid = ({
 
       const respuestasEjeItem: Record<string, number> = {};
       const evidenciaUrls: Record<string, string> = {};
+      const observacionesEjeItem: Record<string, string> = {};
       (backendFicha.respuestasEjeItem || []).forEach((re) => {
         respuestasEjeItem[re.ejeItemId] = re.nivel;
         if (re.evidenciaUrl) {
           evidenciaUrls[re.ejeItemId] = re.evidenciaUrl;
         }
+        if (re.observacion) {
+          observacionesEjeItem[re.ejeItemId] = re.observacion;
+        }
       });
 
-      // Map general evidence from backend field to the GENERAL key
+      // Evidencia general: puede venir como JSON con los slots GENERAL_1/2/3
+      // (formato nuevo) o como una sola cadena (formato legado -> clave GENERAL).
       if (backendFicha.evidenciaGeneral) {
-        evidenciaUrls['GENERAL'] = backendFicha.evidenciaGeneral;
+        const raw = backendFicha.evidenciaGeneral;
+        if (raw.trim().startsWith('{')) {
+          try {
+            Object.assign(evidenciaUrls, JSON.parse(raw) as Record<string, string>);
+          } catch {
+            evidenciaUrls['GENERAL'] = raw;
+          }
+        } else {
+          evidenciaUrls['GENERAL'] = raw;
+        }
       }
 
       return {
@@ -211,6 +225,7 @@ export const ReportesGrid = ({
         preguntaExtraAnswers,
         respuestasEjeItem,
         evidenciaUrls,
+        observacionesEjeItem,
         contexto: backendFicha.contexto,
       };
     }

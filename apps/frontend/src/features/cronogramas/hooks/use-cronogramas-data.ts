@@ -184,8 +184,9 @@ export const useCronogramasData = (enabled = true) => {
   const eliminarVisita = useEliminarVisita();
 
   const createCronograma = async (payload: ICreateVisitaRequest) => {
-    await crearVisita.mutateAsync(payload);
+    const creada = await crearVisita.mutateAsync(payload);
     qc.invalidateQueries({ queryKey: ['cronogramas'] });
+    return creada;
   };
 
   const updateCronograma = async (id: string, payload: IUpdateVisitaRequest) => {

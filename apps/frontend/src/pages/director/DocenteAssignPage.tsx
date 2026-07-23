@@ -36,8 +36,18 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
           fetchCargos(),
         ]);
 
+        // El Jefe de Taller solo puede designarse a docentes de EPT
+        // (Educación para el Trabajo); la especialidad puede ser lista por comas.
+        const esEPT = (d: Docente) =>
+          (d.especialidad ?? '')
+            .split(',')
+            .map((e) => e.trim().toLowerCase())
+            .includes('ept');
         const filtered = docentesMapped.filter(
-          (d) => d.activo && d.cargo === 'Docente de Aula'
+          (d) =>
+            d.activo &&
+            d.cargo === 'Docente de Aula' &&
+            (targetCargo !== 'Jefe de Taller' || esEPT(d)),
         );
         setDocentes(filtered);
 

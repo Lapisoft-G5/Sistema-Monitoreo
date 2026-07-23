@@ -39,7 +39,6 @@ export type MenuItem =
   | 'plantillas_ies'
   | 'instituciones'
   | 'instituciones_padron'
-  | 'instituciones_semaforo'
   | 'instituciones_padron_lista'
   | 'instituciones_padron_personal'
   | 'instituciones_docentes'
@@ -47,6 +46,8 @@ export type MenuItem =
   | 'instituciones_jefes_taller'
   | 'especialistas'
   | 'jefes_area'
+  | 'focos_atencion'
+  | 'solicitudes_visita'
   | 'reportes'
   | 'configuracion'
   | 'superadmin'
@@ -60,18 +61,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'dashboard', 'monitoreo', 'monitoreo_plan', 'monitoreo_gestion', 'monitoreo_reportes',
     'monitoreo_plan_anual', 'monitoreo_cronograma', 'monitoreo_calendario', 'plantillas',
     'plantillas_ugel', 'plantillas_ies',
-    'instituciones', 'instituciones_padron', 'instituciones_semaforo', 'instituciones_padron_lista', 'instituciones_padron_personal', 'instituciones_docentes', 'instituciones_coordinadores',
+    'instituciones', 'instituciones_padron', 'instituciones_padron_lista', 'instituciones_padron_personal', 'instituciones_docentes', 'instituciones_coordinadores',
     'instituciones_jefes_taller', 'especialistas', 'jefes_area', 'reportes', 'configuracion'
   ],
 
   director_ugel: [
-    'dashboard', 
-    'instituciones',
-    'instituciones_padron',
-    'instituciones_semaforo',
-    'instituciones_padron_lista',
-    'instituciones_padron_personal',
-    'reportes', 
+    'dashboard',
+    'reportes',
     'monitoreo_reportes'
   ],
 
@@ -85,6 +81,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas_ies',
     'especialistas',
     'jefes_area',
+    'focos_atencion',
+    'solicitudes_visita',
     'reportes',
     'monitoreo_reportes',
     'instituciones_padron',
@@ -97,6 +95,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo',
     'monitoreo_cronograma',
     'monitoreo_calendario',
+    'focos_atencion',
     'reportes',
     'monitoreo_reportes',
   ],
@@ -123,9 +122,16 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes',
   ],
 
-  especialista: ['monitoreo', 'monitoreo_calendario', 'reportes', 'monitoreo_reportes'],
+  especialista: [
+    'monitoreo',
+    'monitoreo_calendario',
+    'focos_atencion',
+    'reportes',
+    'monitoreo_reportes',
+  ],
 
   director_institucion: [
+    'dashboard',
     'monitoreo',
     'monitoreo_plan_anual',
     'monitoreo_cronograma',
@@ -184,7 +190,7 @@ export const getDefaultLandingPage = (role: UserRole): string => {
     case 'especialista':
       return '/monitoreo/calendario';
     case 'director_institucion':
-      return '/instituciones/docentes';
+      return '/dashboard';
     case 'coordinador_pedagogico':
     case 'jefe_taller':
       return '/monitoreo/calendario';

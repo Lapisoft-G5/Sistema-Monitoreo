@@ -27,6 +27,8 @@ import {
   rechazarSolicitud,
 } from './scheduling-solicitud.helper.js';
 
+import { EventEmitter2 } from '@nestjs/event-emitter';
+
 @Injectable()
 export class SchedulingService {
   constructor(
@@ -34,6 +36,7 @@ export class SchedulingService {
     private readonly solicitudRepo: SolicitudReprogramacionRepository,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly scopeFilter: ScopeFilter,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async findAllVisitas(
@@ -52,7 +55,17 @@ export class SchedulingService {
   }
 
   async actualizarVisita(id: string, dto: UpdateVisitaDto, session: SessionUser): Promise<IVisita> {
-    return actualizarVisita(this.cronogramaRepo, this.scopeFilter, id, dto, session);
+    const actualizada = await actualizarVisita(
+      this.cronogramaRepo,
+      this.scopeFilter,
+      id,
+      dto,
+      session,
+    );
+    if (dto.estado === 'REPROGRAMADO' || dto.fechaProgramada || dto.horaInicio) {
+      this.eventEmitter.emit('cronograma.reprogramado', { cronogramaId: id, emisorId: session.id });
+    }
+    return actualizada;
   }
 
   async eliminarVisita(id: string, session: SessionUser): Promise<void> {
@@ -71,7 +84,15 @@ export class SchedulingService {
     dto: CreateSolicitudReprogramacionDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return crearSolicitud(this.cronogramaRepo, this.solicitudRepo, this.storage, dto, session);
+    const res = await crearSolicitud(
+      this.cronogramaRepo,
+      this.solicitudRepo,
+      this.storage,
+      dto,
+      session,
+    );
+    this.eventEmitter.emit('reprogramacion.solicitada', { solicitudId: res.id });
+    return res;
   }
 
   async aprobarSolicitud(
@@ -79,7 +100,7 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return aprobarSolicitud(
+    const resuelta = await aprobarSolicitud(
       this.cronogramaRepo,
       this.solicitudRepo,
       this.scopeFilter,
@@ -87,6 +108,13 @@ export class SchedulingService {
       dto,
       session,
     );
+    this.eventEmitter.emit('reprogramacion.resuelta', {
+      solicitudId: id,
+      resolutorId: session.id,
+      estado: 'APROBADO',
+      comentario: dto.comentario,
+    });
+    return resuelta;
   }
 
   async rechazarSolicitud(
@@ -94,7 +122,7 @@ export class SchedulingService {
     dto: ResolverSolicitudDto,
     session: SessionUser,
   ): Promise<ISolicitudReprogramacion> {
-    return rechazarSolicitud(
+    const resuelta = await rechazarSolicitud(
       this.cronogramaRepo,
       this.solicitudRepo,
       this.scopeFilter,
@@ -102,5 +130,12 @@ export class SchedulingService {
       dto,
       session,
     );
+    this.eventEmitter.emit('reprogramacion.resuelta', {
+      solicitudId: id,
+      resolutorId: session.id,
+      estado: 'RECHAZADO',
+      comentario: dto.comentario,
+    });
+    return resuelta;
   }
 }

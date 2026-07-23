@@ -18,7 +18,11 @@ export const CalendarioPage = () => {
   const { cronogramas, reprogramaciones } = useCronogramasData();
 
   // ── Estados de Navegación ──
-  const [activeTab, setActiveTab] = useState<'CALENDARIO' | 'SOLICITUDES'>('CALENDARIO');
+  // Deep-link: si la URL trae ?tab=solicitudes (p. ej. desde la notificación de
+  // solicitud de reprogramación), abrir directo la Bandeja de Reprogramaciones.
+  const [activeTab, setActiveTab] = useState<'CALENDARIO' | 'SOLICITUDES'>(() =>
+    new URLSearchParams(location.search).get('tab') === 'solicitudes' ? 'SOLICITUDES' : 'CALENDARIO',
+  );
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [activeView, setActiveView] = useState<'MENSUAL' | 'SEMANAL' | 'DIARIO' | 'ANUAL' | 'LISTA'>('MENSUAL');
 

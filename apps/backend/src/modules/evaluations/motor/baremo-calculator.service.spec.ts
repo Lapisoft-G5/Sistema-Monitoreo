@@ -45,8 +45,8 @@ describe('BaremoCalculatorService', () => {
     it('1.4 -> INICIO (limite superior)', () => {
       expect(service.calcularNivelLogro(1.4)).toBe('INICIO');
     });
-    it('1.5 -> throw (gap intencional)', () => {
-      expect(() => service.calcularNivelLogro(1.5)).toThrow();
+    it('1.5 -> INICIO (limite superior inclusivo)', () => {
+      expect(service.calcularNivelLogro(1.5)).toBe('INICIO');
     });
     it('1.6 -> EN_PROCESO (limite inferior)', () => {
       expect(service.calcularNivelLogro(1.6)).toBe('EN_PROCESO');
@@ -57,8 +57,8 @@ describe('BaremoCalculatorService', () => {
     it('2.4 -> EN_PROCESO (limite superior)', () => {
       expect(service.calcularNivelLogro(2.4)).toBe('EN_PROCESO');
     });
-    it('2.5 -> throw (gap)', () => {
-      expect(() => service.calcularNivelLogro(2.5)).toThrow();
+    it('2.5 -> EN_PROCESO (limite superior inclusivo)', () => {
+      expect(service.calcularNivelLogro(2.5)).toBe('EN_PROCESO');
     });
     it('2.6 -> LOGRO_ESPERADO', () => {
       expect(service.calcularNivelLogro(2.6)).toBe('LOGRO_ESPERADO');
@@ -69,8 +69,8 @@ describe('BaremoCalculatorService', () => {
     it('3.4 -> LOGRO_ESPERADO (limite superior)', () => {
       expect(service.calcularNivelLogro(3.4)).toBe('LOGRO_ESPERADO');
     });
-    it('3.5 -> throw (gap)', () => {
-      expect(() => service.calcularNivelLogro(3.5)).toThrow();
+    it('3.5 -> LOGRO_ESPERADO (limite superior inclusivo)', () => {
+      expect(service.calcularNivelLogro(3.5)).toBe('LOGRO_ESPERADO');
     });
     it('3.6 -> LOGRO_DESTACADO', () => {
       expect(service.calcularNivelLogro(3.6)).toBe('LOGRO_DESTACADO');
@@ -97,8 +97,10 @@ describe('BaremoCalculatorService', () => {
       expect(r.promedio).toBe(4);
       expect(r.nivelLogro).toBe('LOGRO_DESTACADO');
     });
-    it('mezcla 2 III + 2 IV -> LOGRO_DESTACADO (promedio 3.5 -> throw)', () => {
-      expect(() => service.calcularResultadoCompleto([3, 3, 4, 4])).toThrow();
+    it('mezcla 2 III + 2 IV -> LOGRO_ESPERADO (promedio 3.5, limite inclusivo)', () => {
+      const r = service.calcularResultadoCompleto([3, 3, 4, 4]);
+      expect(r.promedio).toBe(3.5);
+      expect(r.nivelLogro).toBe('LOGRO_ESPERADO');
     });
     it('mezcla 3 III + 1 II -> LOGRO_ESPERADO (promedio 2.75)', () => {
       const r = service.calcularResultadoCompleto([3, 3, 3, 2]);

@@ -4,8 +4,8 @@ import type { RouteObject } from 'react-router-dom';
 import { LazyLoader } from '@shared/ui/LazyLoader';
 import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 
-const DashboardPage = lazy(() =>
-  import('./DashboardPage').then((m) => ({ default: m.DashboardPage })),
+const DashboardEntry = lazy(() =>
+  import('../DashboardEntry').then((m) => ({ default: m.DashboardEntry })),
 );
 
 const SemaforoInstitucionalPage = lazy(() =>
@@ -20,7 +20,7 @@ export const directorUgelRoutes: RouteObject[] = [
         path: 'dashboard',
         element: (
           <LazyLoader>
-            <DashboardPage />
+            <DashboardEntry />
           </LazyLoader>
         ),
       },

@@ -38,6 +38,7 @@ export interface IFichaRespuestaEjeItem {
   ejeItemId: string;
   nivel: number;
   evidenciaUrl: string | null;
+  observacion: string | null;
 }
 
 export interface IFichaMonitoreo {

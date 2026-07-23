@@ -6,6 +6,8 @@ import { FichaService } from './ficha.service.js';
 import { FichaRepository } from '../repositories/ficha.repository.js';
 import { STORAGE_SERVICE } from '../../../shared/storage/storage.constants.js';
 import { ScopeFilter } from '../../../shared/auth/scope-filter.js';
+import { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
   let service: FichaService;
@@ -53,6 +55,11 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         {
           provide: ScopeFilter,
           useValue: { forFicha: jest.fn<any>().mockReturnValue({}) },
+        },
+        BaremoCalculatorService,
+        {
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn<any>() },
         },
       ],
     }).compile();

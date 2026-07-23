@@ -5,6 +5,11 @@ export class CreateFichaDto {
   @IsUUID()
   cronogramaId!: string;
 
+  /** Plantilla con la que el actor está llenando la ficha (su propia plantilla). */
+  @IsOptional()
+  @IsUUID()
+  plantillaId?: string;
+
   @IsOptional()
   @IsString()
   areaCurricular?: string;
@@ -68,6 +73,10 @@ export class SaveRespuestaEjeItemDto {
   @IsOptional()
   @IsString()
   evidenciaUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  observacion?: string;
 }
 
 export class SaveRespuestasAspectoBatchDto {

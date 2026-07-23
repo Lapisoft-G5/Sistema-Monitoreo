@@ -11,6 +11,9 @@ interface StatCardProps {
   progressValue?: number; // Para la barrita de progreso (0 a 100)
   variant?: 'default' | 'solidDestructive' | 'solidPrimary';
   bottomAccent?: 'primary' | 'success' | 'destructive';
+  /** Clase para el tamaño del valor. Por defecto text-3xl (ideal para números);
+   *  usa uno menor cuando el valor es texto largo, p. ej. nombres completos. */
+  valueClassName?: string;
 }
 
 export const StatCard = ({
@@ -22,6 +25,7 @@ export const StatCard = ({
   progressValue,
   variant = 'default',
   bottomAccent,
+  valueClassName = 'text-3xl',
 }: StatCardProps) => {
   const trendColors = {
     success: 'text-green-600 bg-green-500/10',
@@ -58,7 +62,7 @@ export const StatCard = ({
           </span>
           <div className={iconClasses}>{icon}</div>
         </div>
-        <div className={`text-3xl font-extrabold tracking-tight ${valueClasses}`}>{value}</div>
+        <div className={`${valueClassName} font-extrabold tracking-tight ${valueClasses}`}>{value}</div>
       </div>
 
       <div className="mt-3">
@@ -77,9 +81,8 @@ export const StatCard = ({
         ) : (
           trendText && (
             <span
-              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-block ${
-                isSolid ? 'bg-black/20 text-current' : trendColors[trendType]
-              }`}
+              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-block ${isSolid ? 'bg-black/20 text-current' : trendColors[trendType]
+                }`}
             >
               {trendText}
             </span>

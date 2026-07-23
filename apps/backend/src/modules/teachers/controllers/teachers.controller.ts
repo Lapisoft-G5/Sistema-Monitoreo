@@ -65,8 +65,9 @@ export class TeachersController {
     return this.teachersService.getCargos();
   }
 
+  // Sin @RequirePermissions: es una búsqueda transversal (gestores de docentes y el
+  // superadmin). La autorización fina (docentes:read O especialistas:read) va en el servicio.
   @Get('buscar/:dni')
-  @RequirePermissions('docentes:read')
   @HttpCode(HttpStatus.OK)
   async findByDni(@Param('dni') dni: string, @Req() req: AuthenticatedRequest): Promise<any> {
     return this.teachersService.findPersonaByDni(dni, req.user);

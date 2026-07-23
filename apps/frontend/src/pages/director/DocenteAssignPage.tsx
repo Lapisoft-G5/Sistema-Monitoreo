@@ -65,7 +65,7 @@ export const DocenteAssignPage = ({ targetCargo, redirectPath }: Props) => {
     };
 
     loadData();
-  }, []);
+  }, [targetCargo]);
 
   // Docente actualmente seleccionado
   const selectedDocente = useMemo(() => {

@@ -27,7 +27,7 @@ export const directorUgelRoutes: RouteObject[] = [
     ],
   },
   {
-    element: <ProtectedRoute permission="instituciones_semaforo" />,
+    element: <ProtectedRoute permission="instituciones_padron" />,
     children: [
       {
         path: 'instituciones/semaforo',

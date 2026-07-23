@@ -5,6 +5,7 @@ import type {
   IInstitucionListResponse,
   IUpdateInstitucionRequest,
   IUpdateInstitucionResponse,
+  IInstitucionesDashboardStatsResponse,
 } from '@sistema-monitoreo/shared-contracts';
 import { request } from '../config/api.js';
 
@@ -100,9 +101,9 @@ export const institutionsApi = {
     }
   },
 
-  getDashboardStats: async (): Promise<{ ok: boolean; data?: unknown; error?: unknown }> => {
+  getDashboardStats: async (): Promise<{ ok: boolean; data?: IInstitucionesDashboardStatsResponse; error?: unknown }> => {
     try {
-      const data = await request<unknown>(`/api/instituciones/dashboard/stats`);
+      const data = await request<IInstitucionesDashboardStatsResponse>(`/api/instituciones/dashboard/stats`);
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };

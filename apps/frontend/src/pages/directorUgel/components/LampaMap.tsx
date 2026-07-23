@@ -166,11 +166,10 @@ export const LampaMap = ({
               <button
                 key={n}
                 onClick={() => setNivelFilter(n)}
-                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  nivelFilter === n
+                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${nivelFilter === n
                     ? 'bg-background text-foreground shadow-xs'
                     : 'text-text-muted hover:text-foreground'
-                }`}
+                  }`}
               >
                 {n}
               </button>
@@ -279,9 +278,8 @@ export const LampaMap = ({
                 <button
                   key={s.key}
                   onClick={() => setEstadoFilter(active ? 'todos' : s.key)}
-                  className={`flex items-center gap-2 w-full text-left px-1.5 py-0.5 rounded-md transition-colors ${
-                    active ? 'bg-muted font-bold text-foreground' : 'hover:bg-muted/50 text-text-muted'
-                  }`}
+                  className={`flex items-center gap-2 w-full text-left px-1.5 py-0.5 rounded-md transition-colors ${active ? 'bg-muted font-bold text-foreground' : 'hover:bg-muted/50 text-text-muted'
+                    }`}
                 >
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
                   {s.label}

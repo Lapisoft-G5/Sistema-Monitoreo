@@ -81,9 +81,8 @@ export const StatCard = ({
         ) : (
           trendText && (
             <span
-              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-block ${
-                isSolid ? 'bg-black/20 text-current' : trendColors[trendType]
-              }`}
+              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-block ${isSolid ? 'bg-black/20 text-current' : trendColors[trendType]
+                }`}
             >
               {trendText}
             </span>

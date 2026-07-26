@@ -88,6 +88,14 @@ const ESTADO_UI: Record<string, { key: string; color: string; label: string }> =
   sinRegistro: { key: 'sinRegistro', color: '#94a3b8', label: 'Sin registro' },
 };
 
+/** Leyenda del coroplético distrital: refleja los umbrales de cobertura. */
+const COBERTURA_LEYENDA = [
+  { color: '#22c55e', label: 'Cobertura ≥ 75%' },
+  { color: '#f59e0b', label: 'Cobertura 40–74%' },
+  { color: '#ef4444', label: 'Cobertura < 40%' },
+  { color: '#94a3b8', label: 'Sin registro' },
+];
+
 const NIVELES_EDUCATIVOS = ['Todos', 'Inicial', 'Primaria', 'Secundaria'];
 
 interface LampaMapProps {
@@ -111,9 +119,9 @@ export const LampaMap = ({
   const { user } = useUser();
   const isDirectorUgel = user?.role === 'director_ugel';
 
-  const [viewMode, setViewMode] = useState<'distrital' | 'institucional'>(
-    isDirectorUgel ? 'distrital' : 'institucional'
-  );
+  // El Director UGEL supervisa a nivel distrital (coroplético de cobertura); el
+  // resto de roles (Jefe de Gestión/Área, Especialista) trabaja el detalle por IE.
+  const viewMode: 'distrital' | 'institucional' = isDirectorUgel ? 'distrital' : 'institucional';
   const [nivelFilter, setNivelFilter] = useState<string>('Todos');
   const [estadoFilter, setEstadoFilter] = useState<string>('todos');
 
@@ -188,32 +196,6 @@ export const LampaMap = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Selector de modo de vista: solo se ofrece para Director UGEL */}
-          {isDirectorUgel && (
-            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border text-xs font-bold">
-              <button
-                onClick={() => setViewMode('distrital')}
-                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
-                  viewMode === 'distrital'
-                    ? 'bg-background text-foreground shadow-xs'
-                    : 'text-text-muted hover:text-foreground'
-                }`}
-              >
-                Distrital
-              </button>
-              <button
-                onClick={() => setViewMode('institucional')}
-                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
-                  viewMode === 'institucional'
-                    ? 'bg-background text-foreground shadow-xs'
-                    : 'text-text-muted hover:text-foreground'
-                }`}
-              >
-                Por II.EE.
-              </button>
-            </div>
-          )}
-
           {/* Filtros rápidos: Nivel Educativo */}
           {viewMode === 'institucional' && mostrarFiltroNivel && (
             <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
@@ -268,8 +250,8 @@ export const LampaMap = ({
             style={styleFeature as never}
             onEachFeature={onEach}
           />
-          {/* Los marcadores se muestran en modo institucional o cuando hay un distrito seleccionado */}
-          {(viewMode === 'institucional' || selected) && (
+          {/* Marcadores de IE: solo en la vista institucional (no para el Director UGEL). */}
+          {viewMode === 'institucional' && (
             <Pane name="focos-markers" style={{ zIndex: 450 }}>
               {marcadores.map((ie) => {
                 const ui = ESTADO_UI[ie.estado] ?? ESTADO_UI.sinRegistro;
@@ -313,37 +295,56 @@ export const LampaMap = ({
           )}
         </MapContainer>
 
-        {/* Leyenda interactiva por estado de monitoreo */}
+        {/* Leyenda: en distrital es estática (cobertura); en institucional es un
+            filtro interactivo por estado de monitoreo de las IE. */}
         <Card className="absolute bottom-4 left-4 z-[400] p-3 shadow-md bg-card/95 backdrop-blur-sm border-border">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
-              Filtrar por Estado
-            </h4>
-            {estadoFilter !== 'todos' && (
-              <button
-                onClick={() => setEstadoFilter('todos')}
-                className="text-[10px] text-primary hover:underline font-bold"
-              >
-                Ver todos
-              </button>
-            )}
-          </div>
-          <div className="space-y-1.5 text-xs font-medium">
-            {Object.values(ESTADO_UI).map((s) => {
-              const active = estadoFilter === s.key;
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => setEstadoFilter(active ? 'todos' : s.key)}
-                  className={`flex items-center gap-2 w-full text-left px-1.5 py-0.5 rounded-md transition-colors ${active ? 'bg-muted font-bold text-foreground' : 'hover:bg-muted/50 text-text-muted'
-                    }`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                  {s.label}
-                </button>
-              );
-            })}
-          </div>
+          {viewMode === 'distrital' ? (
+            <>
+              <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">
+                Cobertura por Distrito
+              </h4>
+              <div className="space-y-1.5 text-xs font-medium">
+                {COBERTURA_LEYENDA.map((s) => (
+                  <div key={s.label} className="flex items-center gap-2 px-1.5 py-0.5 text-text-muted">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                    {s.label}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                  Filtrar por Estado
+                </h4>
+                {estadoFilter !== 'todos' && (
+                  <button
+                    onClick={() => setEstadoFilter('todos')}
+                    className="text-[10px] text-primary hover:underline font-bold"
+                  >
+                    Ver todos
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1.5 text-xs font-medium">
+                {Object.values(ESTADO_UI).map((s) => {
+                  const active = estadoFilter === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => setEstadoFilter(active ? 'todos' : s.key)}
+                      className={`flex items-center gap-2 w-full text-left px-1.5 py-0.5 rounded-md transition-colors ${active ? 'bg-muted font-bold text-foreground' : 'hover:bg-muted/50 text-text-muted'
+                        }`}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </Card>
       </div>
     </Card>

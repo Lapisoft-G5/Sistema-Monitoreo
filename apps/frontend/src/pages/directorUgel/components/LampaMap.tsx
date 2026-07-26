@@ -108,6 +108,7 @@ export const LampaMap = ({
   onSelectInstitucion,
   selectedInstitucionId,
 }: LampaMapProps) => {
+  const [viewMode, setViewMode] = useState<'distrital' | 'institucional'>('distrital');
   const [nivelFilter, setNivelFilter] = useState<string>('Todos');
   const [estadoFilter, setEstadoFilter] = useState<string>('todos');
 
@@ -127,10 +128,30 @@ export const LampaMap = ({
   });
 
   const styleFeature = (feature?: DistritoFeature): PathOptions => {
-    const isSel = selNorm === normDistrito(String(feature?.properties?.distrito ?? ''));
+    const nombreRaw = String(feature?.properties?.distrito ?? '');
+    const nombre = normDistrito(nombreRaw);
+    const data = porDistrito.get(nombre);
+    const isSel = selNorm === nombre;
+
+    if (viewMode === 'distrital') {
+      let fillColor = '#94a3b8'; // Sin registro / por defecto
+      if (data) {
+        const cob = data.porcentajeCobertura;
+        if (cob >= 75) fillColor = '#22c55e'; // Verde - Logro previsto
+        else if (cob >= 40) fillColor = '#f59e0b'; // Amarillo - En proceso
+        else fillColor = '#ef4444'; // Rojo - Crítico
+      }
+      return {
+        fillColor,
+        fillOpacity: isSel ? 0.75 : 0.45,
+        color: isSel ? '#1e1b4b' : '#334155',
+        weight: isSel ? 2.5 : 1,
+      };
+    }
+
     return {
       fillColor: isSel ? '#6366f1' : '#cbd5e1',
-      fillOpacity: isSel ? 0.25 : 0.15,
+      fillOpacity: isSel ? 0.35 : 0.15,
       color: isSel ? '#4338ca' : '#94a3b8',
       weight: isSel ? 2.5 : 1,
     };
@@ -141,7 +162,7 @@ export const LampaMap = ({
     const nombre = normDistrito(nombreRaw);
     const data = porDistrito.get(nombre);
     const cob = data
-      ? `${data.porcentajeCobertura}% (${data.monitoreadas}/${data.totalInstituciones})`
+      ? `${data.porcentajeCobertura}% (${data.monitoreadas}/${data.totalInstituciones} II.EE.)`
       : 'sin datos';
     layer.bindTooltip(`<b>${nombreRaw}</b><br/>Cobertura: ${cob}`, { sticky: true });
     layer.on('click', () => onSelectDistrito?.(selNorm === nombre ? null : nombreRaw));
@@ -154,37 +175,66 @@ export const LampaMap = ({
         <div>
           <h3 className="text-lg font-bold">Mapa Georreferencial - Lampa</h3>
           <p className="text-xs text-text-muted">
-            Mostrando {marcadores.length} de {instituciones.length} II.EE.
+            {viewMode === 'distrital'
+              ? `Vista Distrital Coroplética · ${coberturaPorDistrito.length} Distritos`
+              : `Mostrando ${marcadores.length} de ${instituciones.length} II.EE.`}
             {selected && ` · Distrito: ${selected}`}
           </p>
         </div>
 
-        {/* Filtros rápidos: Nivel Educativo (solo si la data tiene varios niveles) */}
-        {mostrarFiltroNivel && (
-          <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
-            {NIVELES_EDUCATIVOS.map((n) => (
-              <button
-                key={n}
-                onClick={() => setNivelFilter(n)}
-                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${nivelFilter === n
-                    ? 'bg-background text-foreground shadow-xs'
-                    : 'text-text-muted hover:text-foreground'
-                  }`}
-              >
-                {n}
-              </button>
-            ))}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Selector de modo de vista: Distrital vs Por II.EE. */}
+          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border text-xs font-bold">
+            <button
+              onClick={() => setViewMode('distrital')}
+              className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                viewMode === 'distrital'
+                  ? 'bg-background text-foreground shadow-xs'
+                  : 'text-text-muted hover:text-foreground'
+              }`}
+            >
+              Distrital
+            </button>
+            <button
+              onClick={() => setViewMode('institucional')}
+              className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                viewMode === 'institucional'
+                  ? 'bg-background text-foreground shadow-xs'
+                  : 'text-text-muted hover:text-foreground'
+              }`}
+            >
+              Por II.EE.
+            </button>
           </div>
-        )}
 
-        {selected && (
-          <button
-            className="text-xs font-bold text-primary hover:underline cursor-pointer"
-            onClick={() => onSelectDistrito?.(null)}
-          >
-            Limpiar distrito ✕
-          </button>
-        )}
+          {/* Filtros rápidos: Nivel Educativo */}
+          {viewMode === 'institucional' && mostrarFiltroNivel && (
+            <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
+              {NIVELES_EDUCATIVOS.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setNivelFilter(n)}
+                  className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                    nivelFilter === n
+                      ? 'bg-background text-foreground shadow-xs'
+                      : 'text-text-muted hover:text-foreground'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selected && (
+            <button
+              className="text-xs font-bold text-primary hover:underline cursor-pointer"
+              onClick={() => onSelectDistrito?.(null)}
+            >
+              Limpiar distrito ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 w-full bg-muted/20 relative z-0 h-[420px] md:h-auto">
@@ -206,54 +256,54 @@ export const LampaMap = ({
             pathOptions={{ fillColor: '#eef1f5', fillOpacity: 1, stroke: false, interactive: false }}
           />
           <GeoJSON
-            key={selNorm ?? 'none'}
+            key={`${selNorm ?? 'none'}-${viewMode}`}
             data={lampaDistritos as never}
             style={styleFeature as never}
             onEachFeature={onEach}
           />
-          {/* Los marcadores viven en un pane con z-index alto para que sigan siendo
-              clicables por encima del polígono del distrito (que se re-agrega al
-              seleccionarlo y, si no, taparía los círculos). */}
-          <Pane name="focos-markers" style={{ zIndex: 450 }}>
-            {marcadores.map((ie) => {
-              const ui = ESTADO_UI[ie.estado] ?? ESTADO_UI.sinRegistro;
-              const isSelectedIe = selectedInstitucionId === ie.institucionId;
-              return (
-                <CircleMarker
-                  key={ie.institucionId}
-                  center={[ie.latitud, ie.longitud]}
-                  radius={isSelectedIe ? 8 : 5}
-                  pathOptions={{
-                    fillColor: ui.color,
-                    fillOpacity: 0.95,
-                    color: isSelectedIe ? '#4338ca' : 'white',
-                    weight: isSelectedIe ? 3 : 1.5,
-                  }}
-                  eventHandlers={
-                    onSelectInstitucion
-                      ? { click: () => onSelectInstitucion(ie.institucionId) }
-                      : undefined
-                  }
-                >
-                  {!onSelectInstitucion && (
-                    <Popup>
-                      <div className="text-xs space-y-1">
-                        <div className="font-bold text-foreground">{ie.nombre}</div>
-                        <div className="flex items-center gap-2 text-text-muted">
-                          <span>{ie.distrito}</span>
-                          <span>·</span>
-                          <span className="font-medium text-foreground">{ie.nivelEducativo}</span>
+          {/* Los marcadores se muestran en modo institucional o cuando hay un distrito seleccionado */}
+          {(viewMode === 'institucional' || selected) && (
+            <Pane name="focos-markers" style={{ zIndex: 450 }}>
+              {marcadores.map((ie) => {
+                const ui = ESTADO_UI[ie.estado] ?? ESTADO_UI.sinRegistro;
+                const isSelectedIe = selectedInstitucionId === ie.institucionId;
+                return (
+                  <CircleMarker
+                    key={ie.institucionId}
+                    center={[ie.latitud, ie.longitud]}
+                    radius={isSelectedIe ? 8 : 5}
+                    pathOptions={{
+                      fillColor: ui.color,
+                      fillOpacity: 0.95,
+                      color: isSelectedIe ? '#4338ca' : 'white',
+                      weight: isSelectedIe ? 3 : 1.5,
+                    }}
+                    eventHandlers={
+                      onSelectInstitucion
+                        ? { click: () => onSelectInstitucion(ie.institucionId) }
+                        : undefined
+                    }
+                  >
+                    {!onSelectInstitucion && (
+                      <Popup>
+                        <div className="text-xs space-y-1">
+                          <div className="font-bold text-foreground">{ie.nombre}</div>
+                          <div className="flex items-center gap-2 text-text-muted">
+                            <span>{ie.distrito}</span>
+                            <span>·</span>
+                            <span className="font-medium text-foreground">{ie.nivelEducativo}</span>
+                          </div>
+                          <div style={{ color: ui.color }} className="font-semibold pt-1">
+                            {ui.label}
+                          </div>
                         </div>
-                        <div style={{ color: ui.color }} className="font-semibold pt-1">
-                          {ui.label}
-                        </div>
-                      </div>
-                    </Popup>
-                  )}
-                </CircleMarker>
-              );
-            })}
-          </Pane>
+                      </Popup>
+                    )}
+                  </CircleMarker>
+                );
+              })}
+            </Pane>
+          )}
         </MapContainer>
 
         {/* Leyenda interactiva por estado de monitoreo */}

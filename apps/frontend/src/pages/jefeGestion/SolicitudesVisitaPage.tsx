@@ -5,6 +5,16 @@ import { CalendarClock, Check, X } from 'lucide-react';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
+import { Textarea } from '@shared/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@shared/ui/alert-dialog';
 import { useSolicitudesVisita, useRechazarSolicitud } from '@features/visit-requests';
 
 const ESTADOS = [
@@ -17,6 +27,10 @@ export const SolicitudesVisitaPage = () => {
   const { data, isLoading } = useSolicitudesVisita(estado);
   const rechazar = useRechazarSolicitud();
   const navigate = useNavigate();
+
+  // Solicitud seleccionada para rechazar (abre el modal) y su motivo.
+  const [rechazando, setRechazando] = useState<{ id: string; nombre: string } | null>(null);
+  const [motivo, setMotivo] = useState('');
 
   const items = data?.items ?? [];
 
@@ -33,12 +47,21 @@ export const SolicitudesVisitaPage = () => {
       },
     });
 
-  const handleRechazar = (id: string) => {
-    const comentario = window.prompt('Motivo del rechazo (opcional):') ?? undefined;
+  const abrirRechazo = (s: (typeof items)[number]) => {
+    setMotivo('');
+    setRechazando({ id: s.id, nombre: s.docenteNombre ?? s.institucionNombre });
+  };
+
+  const confirmarRechazo = () => {
+    if (!rechazando) return;
     rechazar.mutate(
-      { id, body: { comentario } },
+      { id: rechazando.id, body: { comentario: motivo.trim() || undefined } },
       {
-        onSuccess: () => toast.success('Solicitud rechazada.'),
+        onSuccess: () => {
+          toast.success('Solicitud rechazada.');
+          setRechazando(null);
+          setMotivo('');
+        },
         onError: (e) => toast.error((e as Error)?.message ?? 'No se pudo rechazar.'),
       },
     );
@@ -111,7 +134,7 @@ export const SolicitudesVisitaPage = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleRechazar(s.id)}
+                    onClick={() => abrirRechazo(s)}
                     disabled={rechazar.isPending}
                   >
                     <X className="w-4 h-4 mr-1" /> Rechazar
@@ -122,6 +145,44 @@ export const SolicitudesVisitaPage = () => {
           ))}
         </div>
       )}
+
+      {/* Modal de rechazo: captura el motivo que verá el solicitante. */}
+      <AlertDialog
+        open={rechazando !== null}
+        onOpenChange={(open) => {
+          if (!open && !rechazar.isPending) setRechazando(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rechazar solicitud de visita</AlertDialogTitle>
+            <AlertDialogDescription>
+              Indica el motivo por el que se rechaza la solicitud
+              {rechazando ? ` de ${rechazando.nombre}` : ''}. Se notificará al solicitante.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="flex flex-col gap-1.5 py-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+              Motivo del rechazo (opcional)
+            </span>
+            <Textarea
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Ej: La visita ya está contemplada en el cronograma vigente."
+              maxLength={1000}
+              rows={3}
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={rechazar.isPending}>Cancelar</AlertDialogCancel>
+            <Button variant="destructive" onClick={confirmarRechazo} disabled={rechazar.isPending}>
+              {rechazar.isPending ? 'Rechazando…' : 'Rechazar solicitud'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

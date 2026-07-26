@@ -140,6 +140,11 @@ export const LampaMap = ({
     return true;
   });
 
+  // Los puntos de las IE se muestran siempre (ubicación), pero solo son
+  // seleccionables (drill a detalle) en la vista institucional. Para el Director
+  // UGEL son informativos (popup) y no llevan al detalle por IE.
+  const marcadoresSeleccionables = viewMode === 'institucional' && !!onSelectInstitucion;
+
   const styleFeature = (feature?: DistritoFeature): PathOptions => {
     const nombreRaw = String(feature?.properties?.distrito ?? '');
     const nombre = normDistrito(nombreRaw);
@@ -250,8 +255,8 @@ export const LampaMap = ({
             style={styleFeature as never}
             onEachFeature={onEach}
           />
-          {/* Marcadores de IE: solo en la vista institucional (no para el Director UGEL). */}
-          {viewMode === 'institucional' && (
+          {/* Marcadores de IE: siempre visibles para ubicar los colegios. */}
+          {marcadores.length > 0 && (
             <Pane name="focos-markers" style={{ zIndex: 450 }}>
               {marcadores.map((ie) => {
                 const ui = ESTADO_UI[ie.estado] ?? ESTADO_UI.sinRegistro;
@@ -268,12 +273,12 @@ export const LampaMap = ({
                       weight: isSelectedIe ? 3 : 1.5,
                     }}
                     eventHandlers={
-                      onSelectInstitucion
+                      marcadoresSeleccionables && onSelectInstitucion
                         ? { click: () => onSelectInstitucion(ie.institucionId) }
                         : undefined
                     }
                   >
-                    {!onSelectInstitucion && (
+                    {!marcadoresSeleccionables && (
                       <Popup>
                         <div className="text-xs space-y-1">
                           <div className="font-bold text-foreground">{ie.nombre}</div>

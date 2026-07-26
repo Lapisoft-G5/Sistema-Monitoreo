@@ -19,6 +19,20 @@ export const useSolicitudesVisita = (estado?: string) =>
     refetchInterval: 60_000,
   });
 
+/**
+ * Conteo de solicitudes pendientes (para el badge del sidebar). Solo se
+ * dispara cuando el usuario puede gestionarlas (`enabled`), ya que el
+ * endpoint requiere el permiso `visitas:gestionar`.
+ */
+export const useSolicitudesPendientesCount = (enabled: boolean) =>
+  useQuery({
+    queryKey: [...KEY, 'pendientes-count'],
+    queryFn: () => visitsApi.listar('PENDIENTE'),
+    enabled,
+    refetchInterval: 60_000,
+    select: (data) => data.pendientes,
+  });
+
 export const useAtenderSolicitud = () => {
   const qc = useQueryClient();
   return useMutation({

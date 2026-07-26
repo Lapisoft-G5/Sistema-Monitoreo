@@ -30,8 +30,8 @@ export const RankingEspecialistasCard = ({ items }: Props) => {
   const maxMonitoreos = Math.max(1, ...items.map((e) => e.monitoreos));
 
   return (
-    <Card className="p-5 border-border shadow-xs h-full">
-      <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+    <Card className="p-5 border-border shadow-xs h-full flex flex-col">
+      <h3 className="text-lg font-bold flex items-center gap-2 mb-4 shrink-0">
         <Award className="w-5 h-5 text-primary" /> Especialistas más activos
       </h3>
 
@@ -40,7 +40,7 @@ export const RankingEspecialistasCard = ({ items }: Props) => {
           Sin monitoreos registrados en el año.
         </div>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-3 max-h-[340px] overflow-y-auto pr-1 -mr-1">
           {items.map((e, i) => (
             <li key={e.especialistaId} className="flex items-center gap-3">
               <span className="w-5 text-sm font-bold text-text-muted tabular-nums">{i + 1}</span>

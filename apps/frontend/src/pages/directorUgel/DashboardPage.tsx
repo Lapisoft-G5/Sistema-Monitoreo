@@ -7,7 +7,6 @@ import { CoberturaDistritoCard } from './components/CoberturaDistritoCard';
 import { SemaforoDonutCard } from './components/SemaforoDonutCard';
 import { EvolucionMensualCard } from './components/EvolucionMensualCard';
 import { RankingEspecialistasCard } from './components/RankingEspecialistasCard';
-import { DeterioroDistritosCard } from './components/DeterioroDistritosCard';
 import { RecentMonitoringsTable, type MonitoringRow } from './components/RecentMonitoringsTable';
 
 /** Umbral de nivel aceptable (inicio de LOGRO_ESPERADO en el baremo). */
@@ -148,9 +147,8 @@ export const DashboardPage = () => {
             onSelect={setDistrito}
           />
         </div>
-        <div className="lg:col-span-1 flex flex-col gap-6">
+        <div className="lg:col-span-1">
           <RankingEspecialistasCard items={data?.rankingEspecialistas ?? []} />
-          <DeterioroDistritosCard items={data?.distritosDeterioro ?? []} anio={anioSel} />
         </div>
       </div>
 

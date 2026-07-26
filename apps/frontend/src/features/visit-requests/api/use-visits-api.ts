@@ -33,6 +33,14 @@ export const useSolicitudesPendientesCount = (enabled: boolean) =>
     select: (data) => data.pendientes,
   });
 
+/** Detalle de trazabilidad de una solicitud (se consulta al abrir el modal). */
+export const useSolicitudDetalle = (id: string | null) =>
+  useQuery({
+    queryKey: [...KEY, 'detalle', id],
+    queryFn: () => visitsApi.detalle(id!),
+    enabled: id !== null,
+  });
+
 export const useAtenderSolicitud = () => {
   const qc = useQueryClient();
   return useMutation({

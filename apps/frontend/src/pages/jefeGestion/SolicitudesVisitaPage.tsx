@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CalendarClock, Check, X } from 'lucide-react';
+import { CalendarClock, Check, X, History } from 'lucide-react';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
@@ -15,7 +15,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@shared/ui/alert-dialog';
-import { useSolicitudesVisita, useRechazarSolicitud } from '@features/visit-requests';
+import {
+  useSolicitudesVisita,
+  useRechazarSolicitud,
+  TrazabilidadSolicitudDialog,
+} from '@features/visit-requests';
 
 const ESTADOS = [
   { value: 'PENDIENTE', label: 'Pendientes' },
@@ -31,6 +35,8 @@ export const SolicitudesVisitaPage = () => {
   // Solicitud seleccionada para rechazar (abre el modal) y su motivo.
   const [rechazando, setRechazando] = useState<{ id: string; nombre: string } | null>(null);
   const [motivo, setMotivo] = useState('');
+  // Solicitud cuya trazabilidad se está viendo.
+  const [trazabilidadId, setTrazabilidadId] = useState<string | null>(null);
 
   const items = data?.items ?? [];
 
@@ -126,21 +132,31 @@ export const SolicitudesVisitaPage = () => {
                 </p>
               </div>
 
-              {s.estado === 'PENDIENTE' && (
-                <div className="flex gap-2 shrink-0">
-                  <Button size="sm" onClick={() => handleAtender(s)}>
-                    <Check className="w-4 h-4 mr-1" /> Atender
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => abrirRechazo(s)}
-                    disabled={rechazar.isPending}
-                  >
-                    <X className="w-4 h-4 mr-1" /> Rechazar
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2 shrink-0">
+                {s.estado === 'PENDIENTE' && (
+                  <>
+                    <Button size="sm" onClick={() => handleAtender(s)}>
+                      <Check className="w-4 h-4 mr-1" /> Atender
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => abrirRechazo(s)}
+                      disabled={rechazar.isPending}
+                    >
+                      <X className="w-4 h-4 mr-1" /> Rechazar
+                    </Button>
+                  </>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setTrazabilidadId(s.id)}
+                  title="Ver trazabilidad de la solicitud"
+                >
+                  <History className="w-4 h-4 mr-1" /> Trazabilidad
+                </Button>
+              </div>
             </Card>
           ))}
         </div>
@@ -183,6 +199,12 @@ export const SolicitudesVisitaPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de trazabilidad de la solicitud seleccionada. */}
+      <TrazabilidadSolicitudDialog
+        solicitudId={trazabilidadId}
+        onClose={() => setTrazabilidadId(null)}
+      />
     </div>
   );
 };

@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { Target, BarChart4, AlertCircle, Building2 } from 'lucide-react';
 import { useUgelDashboard, nivelLogroUi, iniciales } from '@features/dashboard';
 import { KpiStat } from './components/KpiStat';
-import { LampaMap } from './components/LampaMap';
 import { normDistrito } from './utils/norm-distrito';
-import { RequierenAtencionCard } from './components/RequierenAtencionCard';
 import { CoberturaDistritoCard } from './components/CoberturaDistritoCard';
 import { SemaforoDonutCard } from './components/SemaforoDonutCard';
 import { RecentMonitoringsTable, type MonitoringRow } from './components/RecentMonitoringsTable';
@@ -46,7 +44,6 @@ export const DashboardPage = () => {
   const enDistrito = <T extends { distrito: string }>(arr: T[]) =>
     sel ? arr.filter((x) => normDistrito(x.distrito) === sel) : arr;
 
-  const atencion = enDistrito(data?.distritosCriticos ?? []);
   const recientes: MonitoringRow[] = enDistrito(data?.monitoreosRecientes ?? []).map((m) => {
     const ui = nivelLogroUi(m.nivelLogro);
     return {
@@ -96,21 +93,6 @@ export const DashboardPage = () => {
           sub={`${kpis?.monitoreadas ?? 0} monitoreadas`}
           tone="neutral"
         />
-      </div>
-
-      {/* Mapa coroplético (protagonista) + lista de atención */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[440px]">
-        <div className="lg:col-span-2">
-          <LampaMap
-            coberturaPorDistrito={data?.coberturaPorDistrito ?? []}
-            instituciones={data?.institucionesMapa ?? []}
-            selected={distrito}
-            onSelectDistrito={setDistrito}
-          />
-        </div>
-        <div className="lg:col-span-1">
-          <RequierenAtencionCard items={atencion} />
-        </div>
       </div>
 
       {/* Ranking por distrito + distribución del semáforo */}

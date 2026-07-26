@@ -67,6 +67,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   director_ugel: [
     'dashboard',
+    'focos_atencion',
     'reportes',
     'monitoreo_reportes'
   ],

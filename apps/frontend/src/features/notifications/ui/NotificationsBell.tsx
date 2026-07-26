@@ -58,6 +58,13 @@ const getNotificationBadge = (tipo: string) => {
         actionUrl: '/monitoreo/calendario',
         actionLabel: 'Ver Calendario',
       };
+    case 'SOLICITUD_VISITA':
+      return {
+        icon: Calendar,
+        bg: 'bg-primary/10 text-primary',
+        actionUrl: '/monitoreo/solicitudes-visita',
+        actionLabel: 'Ver Solicitudes',
+      };
     case 'ALERTA_INSTITUCION':
       return {
         icon: AlertTriangle,

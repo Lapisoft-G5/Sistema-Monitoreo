@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CalendarClock, Check, X, History } from 'lucide-react';
+import { CalendarClock, Check, X, History, Building2, MapPin, UserRound } from 'lucide-react';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
@@ -25,6 +25,30 @@ const ESTADOS = [
   { value: 'PENDIENTE', label: 'Pendientes' },
   { value: '', label: 'Todas' },
 ] as const;
+
+/** Estilos visuales por estado de la solicitud (acento, badge y punto). */
+const ESTADO_STYLE: Record<string, { accent: string; badge: string; dot: string; label: string }> = {
+  PENDIENTE: {
+    accent: 'border-l-amber-400',
+    badge: 'bg-amber-50 text-amber-700 border-amber-200',
+    dot: 'bg-amber-500',
+    label: 'Pendiente',
+  },
+  ATENDIDA: {
+    accent: 'border-l-emerald-500',
+    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
+    label: 'Atendida',
+  },
+  RECHAZADA: {
+    accent: 'border-l-rose-400',
+    badge: 'bg-rose-50 text-rose-700 border-rose-200',
+    dot: 'bg-rose-500',
+    label: 'Rechazada',
+  },
+};
+
+const estadoStyle = (estado: string) => ESTADO_STYLE[estado] ?? ESTADO_STYLE.PENDIENTE;
 
 export const SolicitudesVisitaPage = () => {
   const [estado, setEstado] = useState<string>('PENDIENTE');
@@ -107,58 +131,89 @@ export const SolicitudesVisitaPage = () => {
         </Card>
       ) : (
         <div className="flex flex-col gap-3">
-          {items.map((s) => (
-            <Card key={s.id} className="p-4 border-border shadow-xs flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold">{s.institucionNombre}</span>
-                  <Badge variant={s.prioridad === 'ALTA' ? 'destructive' : 'secondary'} className="text-[10px] uppercase">
-                    {s.prioridad}
-                  </Badge>
-                  {s.estado !== 'PENDIENTE' && (
-                    <Badge variant="outline" className="text-[10px] uppercase">
-                      {s.estado}
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-xs text-text-muted uppercase tracking-wide">{s.distrito}</div>
-                {s.docenteNombre && (
-                  <p className="text-sm mt-1 font-medium">Docente: {s.docenteNombre}</p>
-                )}
-                {s.motivo && <p className="text-sm mt-1 text-text-muted">{s.motivo}</p>}
-                <p className="text-xs text-text-muted mt-1">
-                  Solicitado por {s.solicitanteNombre} ·{' '}
-                  {new Date(s.createdAt).toLocaleDateString('es-PE')}
-                </p>
-              </div>
+          {items.map((s) => {
+            const est = estadoStyle(s.estado);
+            return (
+              <Card
+                key={s.id}
+                className={`p-4 border-border border-l-4 ${est.accent} shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-start justify-between gap-4`}
+              >
+                <div className="min-w-0 flex gap-3">
+                  {/* Ícono de la IE */}
+                  <div className="hidden sm:flex w-10 h-10 shrink-0 rounded-xl bg-primary/10 text-primary items-center justify-center">
+                    <Building2 className="w-5 h-5" />
+                  </div>
 
-              <div className="flex gap-2 shrink-0">
-                {s.estado === 'PENDIENTE' && (
-                  <>
-                    <Button size="sm" onClick={() => handleAtender(s)}>
-                      <Check className="w-4 h-4 mr-1" /> Atender
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => abrirRechazo(s)}
-                      disabled={rechazar.isPending}
-                    >
-                      <X className="w-4 h-4 mr-1" /> Rechazar
-                    </Button>
-                  </>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setTrazabilidadId(s.id)}
-                  title="Ver trazabilidad de la solicitud"
-                >
-                  <History className="w-4 h-4 mr-1" /> Trazabilidad
-                </Button>
-              </div>
-            </Card>
-          ))}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-[0.95rem] truncate">{s.institucionNombre}</span>
+                      <Badge
+                        variant={s.prioridad === 'ALTA' ? 'destructive' : 'secondary'}
+                        className="text-[10px] uppercase font-bold"
+                      >
+                        {s.prioridad}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] uppercase font-bold border ${est.badge}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1 ${est.dot}`} />
+                        {est.label}
+                      </Badge>
+                    </div>
+
+                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-text-muted uppercase tracking-wide">
+                      <MapPin className="w-3 h-3" /> {s.distrito}
+                    </div>
+
+                    {s.docenteNombre && (
+                      <p className="text-sm mt-1.5 font-semibold text-foreground flex items-center gap-1.5">
+                        <UserRound className="w-3.5 h-3.5 text-primary" /> {s.docenteNombre}
+                      </p>
+                    )}
+
+                    {s.motivo && (
+                      <p className="text-[13px] mt-1.5 text-text-muted italic border-l-2 border-border pl-2.5">
+                        “{s.motivo}”
+                      </p>
+                    )}
+
+                    <p className="text-[11px] text-text-muted mt-2 flex items-center gap-1">
+                      <CalendarClock className="w-3 h-3" />
+                      {s.solicitanteNombre} · {new Date(s.createdAt).toLocaleDateString('es-PE')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 shrink-0 self-start">
+                  {s.estado === 'PENDIENTE' && (
+                    <>
+                      <Button size="sm" onClick={() => handleAtender(s)}>
+                        <Check className="w-4 h-4 mr-1" /> Atender
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => abrirRechazo(s)}
+                        disabled={rechazar.isPending}
+                      >
+                        <X className="w-4 h-4 mr-1" /> Rechazar
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-text-muted hover:text-primary"
+                    onClick={() => setTrazabilidadId(s.id)}
+                    title="Ver trazabilidad de la solicitud"
+                  >
+                    <History className="w-4 h-4 mr-1" /> Trazabilidad
+                  </Button>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
 

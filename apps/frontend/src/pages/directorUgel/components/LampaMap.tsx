@@ -140,10 +140,10 @@ export const LampaMap = ({
     return true;
   });
 
-  // Los puntos de las IE se muestran siempre (ubicación), pero solo son
-  // seleccionables (drill a detalle) en la vista institucional. Para el Director
-  // UGEL son informativos (popup) y no llevan al detalle por IE.
-  const marcadoresSeleccionables = viewMode === 'institucional' && !!onSelectInstitucion;
+  // Los puntos de las IE se muestran siempre (ubicación). Al hacer clic abren el
+  // detalle de la IE en el panel lateral —informativo también para el Director
+  // UGEL—, siempre que el contenedor provea `onSelectInstitucion`.
+  const marcadoresSeleccionables = !!onSelectInstitucion;
 
   const styleFeature = (feature?: DistritoFeature): PathOptions => {
     const nombreRaw = String(feature?.properties?.distrito ?? '');

@@ -12,11 +12,21 @@ export const useSolicitarVisita = () =>
     mutationFn: (body: ICrearSolicitudVisitaRequest) => visitsApi.solicitar(body),
   });
 
-export const useSolicitudesVisita = (estado?: string) =>
+export const useSolicitudesVisita = (estado?: string, enabled = true) =>
   useQuery({
     queryKey: [...KEY, estado ?? 'todas'],
     queryFn: () => visitsApi.listar(estado),
     refetchInterval: 60_000,
+    enabled,
+  });
+
+/** Seguimiento de las solicitudes creadas por el propio usuario (Jefe de Área). */
+export const useMisSolicitudesVisita = (estado?: string, enabled = true) =>
+  useQuery({
+    queryKey: [...KEY, 'mias', estado ?? 'todas'],
+    queryFn: () => visitsApi.misSolicitudes(estado),
+    refetchInterval: 60_000,
+    enabled,
   });
 
 /**

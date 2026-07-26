@@ -24,9 +24,10 @@ export const Sidebar = () => {
   const permissions = (user && ROLE_PERMISSIONS[user.role]) ?? [];
   const has = (id: string) => permissions.includes(id as MenuItem);
 
-  // Badge de solicitudes de visita pendientes (solo para quien las gestiona).
+  // Badge de solicitudes de visita "por atender" (solo para el Jefe de Gestión,
+  // que es quien las gestiona; el Jefe de Área solo hace seguimiento de las suyas).
   const { data: solicitudesPendientes = 0 } = useSolicitudesPendientesCount(
-    has('solicitudes_visita'),
+    user?.role === 'jefe_gestion',
   );
 
   const toggleMenu = (id: string) =>

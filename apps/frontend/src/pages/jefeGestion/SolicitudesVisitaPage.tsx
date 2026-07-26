@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CalendarClock, Check, X, History, Building2, MapPin, UserRound } from 'lucide-react';
+import { useUser } from '@entities/model-user';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
@@ -17,6 +18,7 @@ import {
 } from '@shared/ui/alert-dialog';
 import {
   useSolicitudesVisita,
+  useMisSolicitudesVisita,
   useRechazarSolicitud,
   TrazabilidadSolicitudDialog,
 } from '@features/visit-requests';
@@ -51,8 +53,15 @@ const ESTADO_STYLE: Record<string, { accent: string; badge: string; dot: string;
 const estadoStyle = (estado: string) => ESTADO_STYLE[estado] ?? ESTADO_STYLE.PENDIENTE;
 
 export const SolicitudesVisitaPage = () => {
+  const { user } = useUser();
+  // El Jefe de Gestión gestiona (atiende/rechaza) todas las solicitudes; el
+  // resto (Jefe de Área, Especialista) solo hace seguimiento de las suyas.
+  const esGestor = user?.role === 'jefe_gestion';
+
   const [estado, setEstado] = useState<string>('PENDIENTE');
-  const { data, isLoading } = useSolicitudesVisita(estado);
+  const gestorQ = useSolicitudesVisita(estado, esGestor);
+  const miasQ = useMisSolicitudesVisita(estado, !esGestor);
+  const { data, isLoading } = esGestor ? gestorQ : miasQ;
   const rechazar = useRechazarSolicitud();
   const navigate = useNavigate();
 
@@ -105,7 +114,9 @@ export const SolicitudesVisitaPage = () => {
             <CalendarClock className="w-6 h-6" /> Solicitudes de visita
           </h1>
           <p className="text-sm text-text-muted">
-            Pedidos de visita de monitoreo priorizados. Atiéndelos agendando la visita.
+            {esGestor
+              ? 'Pedidos de visita de monitoreo priorizados. Atiéndelos agendando la visita.'
+              : 'Seguimiento de las visitas de monitoreo que solicitaste al Jefe de Gestión.'}
           </p>
         </div>
         <div className="flex gap-1">
@@ -186,7 +197,7 @@ export const SolicitudesVisitaPage = () => {
                 </div>
 
                 <div className="flex gap-2 shrink-0 self-start">
-                  {s.estado === 'PENDIENTE' && (
+                  {esGestor && s.estado === 'PENDIENTE' && (
                     <>
                       <Button size="sm" onClick={() => handleAtender(s)}>
                         <Check className="w-4 h-4 mr-1" /> Atender

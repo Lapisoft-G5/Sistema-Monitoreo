@@ -17,6 +17,10 @@ export const visitsApi = {
     request<ISolicitudesVisitaResponse>(
       `/api/solicitudes-visita${estado ? `?estado=${estado}` : ''}`,
     ),
+  misSolicitudes: (estado?: string) =>
+    request<ISolicitudesVisitaResponse>(
+      `/api/solicitudes-visita/mias${estado ? `?estado=${estado}` : ''}`,
+    ),
   detalle: (id: string) =>
     request<ISolicitudVisitaDetalle>(`/api/solicitudes-visita/${id}`),
   atender: (id: string, body?: IResolverSolicitudVisitaRequest) =>

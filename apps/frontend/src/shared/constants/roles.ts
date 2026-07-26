@@ -127,6 +127,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo',
     'monitoreo_calendario',
     'focos_atencion',
+    'solicitudes_visita',
     'reportes',
     'monitoreo_reportes',
   ],

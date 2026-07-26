@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import type {
   ISolicitudesVisitaResponse,
   ISolicitudVisita,
+  ISolicitudVisitaDetalle,
 } from '@sistema-monitoreo/shared-contracts';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { NotificationsService } from '../../notifications/services/notifications.service.js';
@@ -122,6 +123,57 @@ export class VisitRequestsService {
       this.prisma.solicitudVisita.count({ where: { estado: 'PENDIENTE' } }),
     ]);
     return { items: rows.map((r) => this.mapSolicitud(r)), pendientes };
+  }
+
+  /**
+   * Detalle de trazabilidad de una solicitud: solicitante y motivo, resolutor
+   * y momento de resolución, y —si fue atendida— el cronograma agendado con el
+   * especialista designado.
+   */
+  async detalle(id: string): Promise<ISolicitudVisitaDetalle> {
+    const s = await this.prisma.solicitudVisita.findUnique({
+      where: { id },
+      include: {
+        institucion: { select: { nombre: true, distrito: true } },
+        docente: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+        solicitante: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+        atendidaPor: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+      },
+    });
+    if (!s) throw new NotFoundException('Solicitud no encontrada.');
+
+    // El cronograma no tiene relación directa en el modelo; se resuelve aparte.
+    let cronograma: ISolicitudVisitaDetalle['cronograma'] = null;
+    if (s.cronogramaId) {
+      const c = await this.prisma.cronograma.findUnique({
+        where: { id: s.cronogramaId },
+        select: {
+          id: true,
+          fechaProgramada: true,
+          horaInicio: true,
+          monitor: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+        },
+      });
+      if (c) {
+        cronograma = {
+          id: c.id,
+          fechaProgramada: c.fechaProgramada.toISOString(),
+          horaInicio: c.horaInicio ?? null,
+          especialistaNombre: c.monitor
+            ? `${c.monitor.persona.nombres} ${c.monitor.persona.apellidos}`.trim()
+            : null,
+        };
+      }
+    }
+
+    return {
+      ...this.mapSolicitud(s),
+      comentario: s.comentario ?? null,
+      atendidaPorNombre: s.atendidaPor
+        ? `${s.atendidaPor.persona.nombres} ${s.atendidaPor.persona.apellidos}`.trim()
+        : null,
+      cronograma,
+    };
   }
 
   async atender(id: string, resolutorId: string, dto: ResolverSolicitudVisitaDto): Promise<void> {

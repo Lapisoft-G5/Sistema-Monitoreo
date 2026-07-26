@@ -14,6 +14,7 @@ import {
 import type {
   ISolicitudesVisitaResponse,
   ISolicitudVisita,
+  ISolicitudVisitaDetalle,
 } from '@sistema-monitoreo/shared-contracts';
 import { VisitRequestsService } from '../services/visit-requests.service.js';
 import {
@@ -52,6 +53,13 @@ export class VisitRequestsController {
   @RequirePermissions('visitas:gestionar')
   async listar(@Query('estado') estado?: string): Promise<ISolicitudesVisitaResponse> {
     return this.service.listar(estado);
+  }
+
+  /** Detalle de trazabilidad de una solicitud. */
+  @Get(':id')
+  @RequirePermissions('visitas:gestionar')
+  async detalle(@Param('id', new ParseUUIDPipe()) id: string): Promise<ISolicitudVisitaDetalle> {
+    return this.service.detalle(id);
   }
 
   @Patch(':id/atender')

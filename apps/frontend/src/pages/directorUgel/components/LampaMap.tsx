@@ -12,6 +12,7 @@ import {
 import L, { type Layer, type PathOptions } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card } from '@shared/ui/card';
+import { useUser } from '@entities/model-user';
 import lampaDistritos from '@shared/assets/lampa-distritos.geojson.json';
 import type {
   IUgelDashboardDistrito,
@@ -99,7 +100,6 @@ interface LampaMapProps {
   /** IE seleccionada actualmente (para resaltar su marcador). */
   selectedInstitucionId?: string | null;
 }
-
 export const LampaMap = ({
   coberturaPorDistrito,
   instituciones,
@@ -108,7 +108,12 @@ export const LampaMap = ({
   onSelectInstitucion,
   selectedInstitucionId,
 }: LampaMapProps) => {
-  const [viewMode, setViewMode] = useState<'distrital' | 'institucional'>('distrital');
+  const { user } = useUser();
+  const isDirectorUgel = user?.role === 'director_ugel';
+
+  const [viewMode, setViewMode] = useState<'distrital' | 'institucional'>(
+    isDirectorUgel ? 'distrital' : 'institucional'
+  );
   const [nivelFilter, setNivelFilter] = useState<string>('Todos');
   const [estadoFilter, setEstadoFilter] = useState<string>('todos');
 
@@ -183,29 +188,31 @@ export const LampaMap = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Selector de modo de vista: Distrital vs Por II.EE. */}
-          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border text-xs font-bold">
-            <button
-              onClick={() => setViewMode('distrital')}
-              className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
-                viewMode === 'distrital'
-                  ? 'bg-background text-foreground shadow-xs'
-                  : 'text-text-muted hover:text-foreground'
-              }`}
-            >
-              Distrital
-            </button>
-            <button
-              onClick={() => setViewMode('institucional')}
-              className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
-                viewMode === 'institucional'
-                  ? 'bg-background text-foreground shadow-xs'
-                  : 'text-text-muted hover:text-foreground'
-              }`}
-            >
-              Por II.EE.
-            </button>
-          </div>
+          {/* Selector de modo de vista: solo se ofrece para Director UGEL */}
+          {isDirectorUgel && (
+            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border text-xs font-bold">
+              <button
+                onClick={() => setViewMode('distrital')}
+                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                  viewMode === 'distrital'
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-text-muted hover:text-foreground'
+                }`}
+              >
+                Distrital
+              </button>
+              <button
+                onClick={() => setViewMode('institucional')}
+                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                  viewMode === 'institucional'
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-text-muted hover:text-foreground'
+                }`}
+              >
+                Por II.EE.
+              </button>
+            </div>
+          )}
 
           {/* Filtros rápidos: Nivel Educativo */}
           {viewMode === 'institucional' && mostrarFiltroNivel && (

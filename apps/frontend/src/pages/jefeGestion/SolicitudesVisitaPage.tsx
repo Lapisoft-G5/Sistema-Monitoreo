@@ -52,7 +52,7 @@ export const SolicitudesVisitaPage = () => {
             <CalendarClock className="w-6 h-6" /> Solicitudes de visita
           </h1>
           <p className="text-sm text-text-muted">
-            Pedidos de monitoreo priorizados por el Director UGEL.
+            Pedidos de visita de monitoreo priorizados. Atiéndelos agendando la visita.
           </p>
         </div>
         <div className="flex gap-1">

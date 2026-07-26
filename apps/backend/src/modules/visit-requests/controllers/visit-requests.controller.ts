@@ -55,11 +55,27 @@ export class VisitRequestsController {
     return this.service.listar(estado);
   }
 
-  /** Detalle de trazabilidad de una solicitud. */
+  /** Seguimiento de las solicitudes creadas por el propio usuario (Jefe de Área, etc.). */
+  @Get('mias')
+  @RequirePermissions('visitas:solicitar')
+  async mias(
+    @Query('estado') estado: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ISolicitudesVisitaResponse> {
+    if (!req.user) throw new ForbiddenException('Sesión no encontrada.');
+    return this.service.misSolicitudes(req.user.sub, estado);
+  }
+
+  /** Detalle de trazabilidad de una solicitud (propia si no se gestionan). */
   @Get(':id')
-  @RequirePermissions('visitas:gestionar')
-  async detalle(@Param('id', new ParseUUIDPipe()) id: string): Promise<ISolicitudVisitaDetalle> {
-    return this.service.detalle(id);
+  @RequirePermissions('visitas:solicitar')
+  async detalle(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ISolicitudVisitaDetalle> {
+    if (!req.user) throw new ForbiddenException('Sesión no encontrada.');
+    const esGestor = req.user.permissions?.includes('visitas:gestionar') ?? false;
+    return this.service.detalle(id, { userId: req.user.sub, esGestor });
   }
 
   @Patch(':id/atender')

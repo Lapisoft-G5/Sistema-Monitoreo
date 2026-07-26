@@ -126,11 +126,36 @@ export class VisitRequestsService {
   }
 
   /**
+   * Solicitudes creadas por el propio usuario (Jefe de Área, Especialista): vista
+   * de seguimiento de lo que envió al Jefe de Gestión. `pendientes` cuenta las
+   * suyas aún sin resolver.
+   */
+  async misSolicitudes(usuarioId: string, estado?: string): Promise<ISolicitudesVisitaResponse> {
+    const base = { solicitanteId: usuarioId };
+    const [rows, pendientes] = await Promise.all([
+      this.prisma.solicitudVisita.findMany({
+        where: estado ? { ...base, estado } : base,
+        orderBy: [{ estado: 'asc' }, { createdAt: 'desc' }],
+        include: {
+          institucion: { select: { nombre: true, distrito: true } },
+          docente: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+          solicitante: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+        },
+      }),
+      this.prisma.solicitudVisita.count({ where: { ...base, estado: 'PENDIENTE' } }),
+    ]);
+    return { items: rows.map((r) => this.mapSolicitud(r)), pendientes };
+  }
+
+  /**
    * Detalle de trazabilidad de una solicitud: solicitante y motivo, resolutor
    * y momento de resolución, y —si fue atendida— el cronograma agendado con el
    * especialista designado.
    */
-  async detalle(id: string): Promise<ISolicitudVisitaDetalle> {
+  async detalle(
+    id: string,
+    viewer?: { userId: string; esGestor: boolean },
+  ): Promise<ISolicitudVisitaDetalle> {
     const s = await this.prisma.solicitudVisita.findUnique({
       where: { id },
       include: {
@@ -141,6 +166,12 @@ export class VisitRequestsService {
       },
     });
     if (!s) throw new NotFoundException('Solicitud no encontrada.');
+
+    // Quien no gestiona (Jefe de Área, Especialista) solo ve el detalle de sus
+    // propias solicitudes. Se devuelve NotFound para no filtrar existencia.
+    if (viewer && !viewer.esGestor && s.solicitanteId !== viewer.userId) {
+      throw new NotFoundException('Solicitud no encontrada.');
+    }
 
     // El cronograma no tiene relación directa en el modelo; se resuelve aparte.
     let cronograma: ISolicitudVisitaDetalle['cronograma'] = null;

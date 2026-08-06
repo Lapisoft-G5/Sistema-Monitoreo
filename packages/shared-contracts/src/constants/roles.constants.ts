@@ -90,6 +90,70 @@ export const INSTITUTION_ROLES: readonly RoleCode[] = [
 export const READ_ONLY_ROLES: readonly RoleCode[] = [RoleCode.INVITADO];
 
 /**
+ * Ámbito organizativo de un rol.
+ *
+ * Responde «¿desde qué lado de la organización mira este usuario?», que es una
+ * pregunta distinta de «¿qué puede hacer?». Ambas hacen falta: un especialista
+ * de UGEL y un director de institución comparten la capacidad
+ * `monitoreo:execute`, pero ven pantallas distintas porque su ámbito difiere.
+ *
+ * Confundir las dos fue el error que produjo las 104 comparaciones literales de
+ * rol en la capa de presentación: al no existir vocabulario de ámbito, todo se
+ * resolvía enumerando roles.
+ */
+export type RoleScope = 'ugel' | 'institucion' | 'sin-ambito';
+
+const ROLE_SCOPES: Record<RoleCode, RoleScope> = {
+  [RoleCode.DIRECTOR_UGEL]: 'ugel',
+  [RoleCode.JEFE_AREA]: 'ugel',
+  [RoleCode.JEFE_GESTION]: 'ugel',
+  [RoleCode.ESPECIALISTA]: 'ugel',
+  [RoleCode.DIRECTOR_INSTITUCION]: 'institucion',
+  [RoleCode.COORDINADOR_PEDAGOGICO]: 'institucion',
+  [RoleCode.JEFE_TALLER]: 'institucion',
+  [RoleCode.DOCENTE]: 'institucion',
+  [RoleCode.INVITADO]: 'sin-ambito',
+  [RoleCode.SUPERUSUARIO]: 'sin-ambito',
+};
+
+/** Ámbito organizativo del rol indicado. */
+export function getRoleScope(rol: RoleCode): RoleScope {
+  return ROLE_SCOPES[rol];
+}
+
+/** ¿El rol pertenece a la UGEL? */
+export function isUgelRole(rol: RoleCode): boolean {
+  return ROLE_SCOPES[rol] === 'ugel';
+}
+
+/** ¿El rol pertenece al personal de una institución educativa? */
+export function isInstitutionRole(rol: RoleCode): boolean {
+  return ROLE_SCOPES[rol] === 'institucion';
+}
+
+/**
+ * Roles que ejecutan monitoreos en terreno, visitando aula.
+ *
+ * **Cruza los dos ámbitos a propósito**: `especialista` pertenece a la UGEL,
+ * mientras que `coordinador_pedagogico` y `jefe_taller` son personal de una
+ * institución educativa. Lo que comparten no es la pertenencia organizativa sino
+ * la tarea: son quienes levantan la ficha en el aula. La capa de presentación ya
+ * los agrupaba así —`CalendarioSidebar` los llamaba `isEspecialista`— y ese
+ * agrupamiento es correcto para decidir qué vista del calendario mostrar.
+ *
+ * Tampoco equivale a tener `monitoreo:execute`: un director de institución
+ * también la tiene, pero supervisa en lugar de levantar la ficha.
+ *
+ * Es decir: ni ámbito ni capacidad alcanzan por sí solos para expresar esto, y
+ * por eso se declara como un conjunto propio.
+ */
+export const MONITOR_CAMPO_ROLES: readonly RoleCode[] = [
+  RoleCode.ESPECIALISTA,
+  RoleCode.COORDINADOR_PEDAGOGICO,
+  RoleCode.JEFE_TALLER,
+];
+
+/**
  * Verifica en tiempo de ejecución que un valor arbitrario sea un código de rol
  * conocido. Necesario en la frontera con la base de datos: `Role.codigo` es una
  * columna de texto y el backend la convertía con una aserción sin comprobar.

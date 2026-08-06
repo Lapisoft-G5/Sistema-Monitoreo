@@ -113,6 +113,10 @@ export class AuthSessionService {
       nombres: payload.nombres,
       apellidos: payload.apellidos,
       role: payload.role,
+      // Las capabilities ya viajaban en el JWT pero se descartaban al armar esta
+      // respuesta, de modo que el frontend nunca las recibía y decidía por
+      // comparación literal de rol. Fase 2 de PLAN_REMEDIACION.md.
+      permissions: payload.permissions ?? [],
       institucion: payload.institucion_id || payload.colegio_id,
       institucionNombre: payload.colegio_nombre,
       institucionNivel: payload.colegio_nivel,

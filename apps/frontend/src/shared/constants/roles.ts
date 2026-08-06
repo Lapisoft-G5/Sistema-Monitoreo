@@ -166,22 +166,34 @@ export const hasPermission = (role: UserRole, item: MenuItem): boolean =>
 
 export const isReadOnlyRole = (role: UserRole): boolean => READ_ONLY_ROLES.includes(role);
 
+/**
+ * Pantalla a la que llega cada rol tras iniciar sesión.
+ *
+ * Distingue por rol **a propósito** y no se deriva del menú. Cada destino es una
+ * decisión deliberada sobre cuál es la tarea principal de esa persona: el jefe
+ * de gestión llega a Especialistas porque gestionarlos es su trabajo, no porque
+ * sea el primer ítem que le corresponda. Calcularlo como «el primer ítem
+ * disponible» sustituiría intención por un accidente del orden de declaración.
+ *
+ * Lo que sí debe garantizarse es que el destino sea alcanzable para el rol, y
+ * eso lo cubre `getDefaultLandingPage.test.ts` en lugar de un refactor.
+ */
 export const getDefaultLandingPage = (role: UserRole): string => {
   switch (role) {
     case RoleCode.SUPERUSUARIO:
       return '/superadmin';
-    case 'jefe_area':
+    case RoleCode.JEFE_AREA:
       return '/instituciones/padron';
-    case 'jefe_gestion':
+    case RoleCode.JEFE_GESTION:
       return '/especialistas';
-    case 'especialista':
+    case RoleCode.ESPECIALISTA:
       return '/monitoreo/calendario';
-    case 'director_institucion':
+    case RoleCode.DIRECTOR_INSTITUCION:
       return '/dashboard';
-    case 'coordinador_pedagogico':
-    case 'jefe_taller':
+    case RoleCode.COORDINADOR_PEDAGOGICO:
+    case RoleCode.JEFE_TALLER:
       return '/monitoreo/calendario';
-    case 'docente':
+    case RoleCode.DOCENTE:
       return '/reportes';
     default:
       return '/dashboard';

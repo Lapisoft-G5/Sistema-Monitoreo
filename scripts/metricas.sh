@@ -55,22 +55,40 @@ declaraciones_userrole=$(rg -l '^export type UserRole\s*=|^(export )?enum RoleCo
 #
 # El patrón anterior tenía dos huecos: ignoraba `!==` —había cuatro sin contar—
 # y contaba las menciones dentro de comentarios.
-PATRON_ROL_LITERAL="role\s*[!=]==\s*'"
-PATRON_ROL_TIPADA='role\s*[!=]==\s*RoleCode\.'
+# El patrón cubre DOS formas de comparar contra un rol. Sólo contaba la primera,
+# y `getDefaultLandingPage` tenía siete literales en forma de `case` que el
+# contador reportaba como cero:
+#
+#   user.role === 'jefe_area'          comparación directa
+#   switch (role) { case 'jefe_area':  rama de switch
+#
+# Los `case` se acotan a los diez códigos de rol conocidos para no capturar
+# switches sobre otros tipos —`RolObjetivo` en `roleValidation.ts` modela el rol
+# DESTINO de un formulario de alta y es una clasificación distinta.
+CODIGOS="director_ugel|jefe_area|jefe_gestion|especialista|director_institucion|coordinador_pedagogico|jefe_taller|docente|invitado|superusuario"
+PATRON_ROL_LITERAL="role\s*[!=]==\s*'|case\s+'($CODIGOS)'"
+PATRON_ROL_TIPADA="role\s*[!=]==\s*RoleCode\.|case\s+RoleCode\."
 SIN_COMENTARIOS='^[^:]+:[0-9]+:\s*(\*|//|/\*)'
 
 # `rg` termina con código 1 cuando no encuentra nada, y bajo `pipefail` eso
 # abortaba el script justo al alcanzar el objetivo de cero. El `|| true` trata la
 # ausencia de coincidencias como lo que es: un resultado válido, y el bueno.
+# `roleValidation.ts` se excluye a propósito. Su `switch` opera sobre
+# `RolObjetivo` —el rol DESTINO de un formulario de alta—, cuyos valores se
+# solapan con los de `RoleCode` por coincidencia del dominio y no porque sean el
+# mismo concepto. Un patrón de texto no puede distinguir el sujeto de un switch,
+# de modo que la exclusión se declara aquí en lugar de ensuciar el conteo.
+EXCLUIR='-g!**/roleValidation.ts'
+
 contar_ocurrencias() {
   local patron="$1"
-  rg -n --no-heading "$patron" apps/frontend/src 2>/dev/null \
+  rg -n --no-heading "$EXCLUIR" "$patron" apps/frontend/src 2>/dev/null \
     | rg -v "$SIN_COMENTARIOS" \
     | rg -o "$patron" \
     | wc -l || true
 }
 
-archivos_rol_literal=$(rg -l "$PATRON_ROL_LITERAL" apps/frontend/src 2>/dev/null | wc -l || true)
+archivos_rol_literal=$(rg -l "$EXCLUIR" "$PATRON_ROL_LITERAL" apps/frontend/src 2>/dev/null | wc -l || true)
 comparaciones_rol_literal=$(contar_ocurrencias "$PATRON_ROL_LITERAL")
 comparaciones_rol_tipada=$(contar_ocurrencias "$PATRON_ROL_TIPADA")
 

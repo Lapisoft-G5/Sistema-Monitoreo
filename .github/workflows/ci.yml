@@ -92,9 +92,17 @@ jobs:
       # Comparar contra `RoleCode` sigue permitido. El objetivo no es eliminar
       # toda comparación de rol —hay decisiones que son legítimamente sobre la
       # posición organizativa de alguien— sino que estén tipadas.
+      # Cubre las dos formas de comparar contra un rol: la comparación directa y
+      # la rama de `switch`. Sólo se vigilaba la primera, y siete literales en
+      # forma de `case` pasaban sin contarse.
+      #
+      # `roleValidation.ts` queda excluido: su switch opera sobre `RolObjetivo`,
+      # una clasificación distinta cuyos valores se solapan por coincidencia.
       - name: Gate — sin comparaciones literales de rol
         run: |
-          ENCONTRADAS=$(rg -n --no-heading "role\s*[!=]==\s*'" apps/frontend/src || true)
+          CODIGOS="director_ugel|jefe_area|jefe_gestion|especialista|director_institucion|coordinador_pedagogico|jefe_taller|docente|invitado|superusuario"
+          ENCONTRADAS=$(rg -n --no-heading -g'!**/roleValidation.ts' \
+            "role\s*[!=]==\s*'|case\s+'($CODIGOS)'" apps/frontend/src || true)
           if [ -n "$ENCONTRADAS" ]; then
             echo "::error::Comparación literal de rol detectada. Usar RoleCode del contrato compartido."
             echo "$ENCONTRADAS"

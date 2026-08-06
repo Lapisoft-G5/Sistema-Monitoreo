@@ -103,6 +103,48 @@ Referencia cruzada entre cada hallazgo, su evidencia en el código y la fase que
 | H-24 | El backend **ya tiene** un modelo de autorización por capacidades; la Fase 2 no debe construirlo sino exponerlo al frontend | `apps/backend/src/shared/auth/capability-map.ts`, `scope-filter.ts` | 2 |
 | H-25 | La matriz `rol_permisos` sembrada en la base es código muerto y ya divergió del mapa de capacidades vigente | `database/seeders/auth.js:42` vs. `capability-map.ts:49` | 2 |
 | H-26 | La capa de presentación confunde **modalidad** con **nivel educativo**, y declara un valor inexistente | `shared/types/index.ts:1`, `LampaMap.tsx:99`, `ReportesGrid.tsx:57` | 6 |
+| H-28 | **CORREGIDO.** El nivel de logro que veía el evaluador y el que se persistía se calculaban con reglas distintas | `LlenarFichaForm.tsx:468` vs. `baremo-calculator.service.ts:42` | 3 |
+
+### H-28 — el evaluador veía una calificación y se guardaba otra
+
+Detectado al buscar lógica extraíble en `LlenarFichaForm`. La regla del baremo
+estaba implementada **dos veces y de forma distinta**:
+
+| Dónde | Sobre qué calculaba |
+| --- | --- |
+| `LlenarFichaForm.tsx:468` | **puntaje total**, con una tabla propia |
+| `baremo-calculator.service.ts:42` | **promedio**, con los umbrales EDU-0009 |
+
+El valor de la pantalla **nunca llegaba al servidor**: era sólo presentación, y
+el backend recalculaba por su cuenta al finalizar. Nada obligaba a que
+coincidieran, y no coincidían.
+
+Coincidían únicamente para plantillas de **exactamente cinco desempeños**,
+porque la tabla de la pantalla era este mismo baremo precalculado para ese caso.
+La rama `else` repartía por cuartiles del rango, que no es la misma división que
+los umbrales de promedio.
+
+**Con las plantillas que siembra el proyecto, el defecto estaba vivo:**
+
+| Plantilla | Puntaje | Pantalla | Se guardaba |
+| --- | --- | --- | --- |
+| DIRECTIVO (2 desempeños) | 7 | Logro destacado | **Logro esperado** |
+| DOCENTE (3 desempeños) | 5 | Inicio | **En proceso** |
+| DOCENTE (3 desempeños) | 10 | Logro destacado | **Logro esperado** |
+
+El especialista cerraba la ficha viendo un nivel, el docente quedaba registrado
+con otro, y el reporte impreso salía del dato guardado.
+
+**Corrección aplicada.** El cálculo se traslada a
+`packages/shared-contracts/src/evaluations/baremo.ts` como única definición.
+`BaremoCalculatorService` queda como fachada inyectable que delega en él, y
+`LlenarFichaForm` lo consume en lugar de calcular. Las 26 pruebas que ya tenía el
+servicio pasan sin modificación —fueron la red que verificó el traslado— y se
+añaden 13 para las piezas que la pantalla calculaba aparte.
+
+Se corrige de paso que la pantalla escribía `'LOGRO ESPERADO'` con espacio
+mientras el contrato define `'LOGRO_ESPERADO'` con guion bajo. El texto visible
+sale ahora de `NIVEL_LOGRO_LABELS`, separado del código del nivel.
 
 ### H-26 — modalidad y nivel educativo se confunden en la interfaz
 

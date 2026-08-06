@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   claseBadgeEstado,
+  claseEtiquetaVisita,
   clasePuntoEstado,
+  formatearFechaLarga,
   formatearFechaVisita,
+  formatearHoraVisita,
 } from './visita-presentacion';
 
 /**
@@ -61,5 +64,67 @@ describe('clasePuntoEstado', () => {
 
   it('cae al punto neutro ante un estado desconocido', () => {
     expect(clasePuntoEstado('ANULADO')).toBe('bg-slate-400');
+  });
+});
+
+describe('formatearHoraVisita', () => {
+  it('convierte la hora ISO a formato de 12 horas', () => {
+    expect(formatearHoraVisita('2026-03-09T14:30:00')).toBe('2:30 PM');
+  });
+
+  it('muestra la medianoche como 12 AM, no como 0', () => {
+    expect(formatearHoraVisita('2026-03-09T00:15:00')).toBe('12:15 AM');
+  });
+
+  it('muestra el mediodía como 12 PM, no como 0', () => {
+    expect(formatearHoraVisita('2026-03-09T12:00:00')).toBe('12:00 PM');
+  });
+
+  it('trata las once de la mañana como AM y las once de la noche como PM', () => {
+    expect(formatearHoraVisita('2026-03-09T11:59:00')).toBe('11:59 AM');
+    expect(formatearHoraVisita('2026-03-09T23:59:00')).toBe('11:59 PM');
+  });
+
+  it('devuelve el valor original cuando no hay hora que leer', () => {
+    expect(formatearHoraVisita('no-es-fecha')).toBe('no-es-fecha');
+  });
+});
+
+describe('formatearFechaLarga', () => {
+  it('escribe la fecha en palabras con el día de la semana', () => {
+    const resultado = formatearFechaLarga('2026-03-09T14:30:00');
+
+    expect(resultado).toContain('9');
+    expect(resultado).toContain('marzo');
+    expect(resultado).toContain('2026');
+  });
+
+  it('empieza en mayúscula', () => {
+    const resultado = formatearFechaLarga('2026-03-09');
+    expect(resultado[0]).toBe(resultado[0].toUpperCase());
+  });
+
+  it('interpreta la fecha en horario local, sin desplazarla por zona horaria', () => {
+    // Con interpretación UTC, un 1 de mes retrocedería al mes anterior.
+    expect(formatearFechaLarga('2026-03-01')).toContain('marzo');
+  });
+
+  it('devuelve el valor original cuando no es una fecha', () => {
+    expect(formatearFechaLarga('cualquier-cosa')).toBe('cualquier-cosa');
+  });
+});
+
+describe('claseEtiquetaVisita', () => {
+  it.each([
+    ['PROGRAMADO', 'blue'],
+    ['EN_PROCESO', 'rose'],
+    ['COMPLETADO', 'emerald'],
+    ['REPROGRAMADO', 'amber'],
+  ])('usa la paleta %s → %s', (estado, paleta) => {
+    expect(claseEtiquetaVisita(estado)).toContain(paleta);
+  });
+
+  it('cae a la paleta neutra ante un estado desconocido', () => {
+    expect(claseEtiquetaVisita('ANULADO')).toContain('slate');
   });
 });

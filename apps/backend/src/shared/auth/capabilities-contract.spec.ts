@@ -10,6 +10,10 @@ import {
   isUgelRole,
   isInstitutionRole,
   MONITOR_CAMPO_ROLES,
+  UGEL_ROLES,
+  INSTITUTION_ROLES,
+  READ_ONLY_ROLES,
+  ALL_ROLE_CODES,
 } from '@sistema-monitoreo/shared-contracts';
 import {
   BASE_CAPABILITIES,
@@ -122,6 +126,43 @@ describe('Contrato de capacidades', () => {
       for (const rol of Object.values(RoleCode)) {
         expect(['ugel', 'institucion', 'sin-ambito']).toContain(getRoleScope(rol));
       }
+    });
+
+    it('los tres ámbitos particionan el conjunto de roles sin solapamiento ni huecos', () => {
+      const sinAmbito = ALL_ROLE_CODES.filter((r) => getRoleScope(r) === 'sin-ambito');
+
+      expect(UGEL_ROLES.length + INSTITUTION_ROLES.length + sinAmbito.length).toBe(
+        ALL_ROLE_CODES.length,
+      );
+      // Ningún rol puede estar en dos ámbitos a la vez.
+      for (const rol of UGEL_ROLES) {
+        expect(INSTITUTION_ROLES).not.toContain(rol);
+      }
+    });
+
+    it('UGEL_ROLES e INSTITUTION_ROLES se derivan del mapa de ámbitos', () => {
+      // Si alguna vez se volvieran a enumerar a mano, esta prueba detectaría la
+      // divergencia: son la misma clasificación y deben coincidir siempre.
+      for (const rol of UGEL_ROLES) {
+        expect(getRoleScope(rol)).toBe('ugel');
+      }
+      for (const rol of INSTITUTION_ROLES) {
+        expect(getRoleScope(rol)).toBe('institucion');
+      }
+      expect(UGEL_ROLES).toHaveLength(ALL_ROLE_CODES.filter((r) => isUgelRole(r)).length);
+      expect(INSTITUTION_ROLES).toHaveLength(
+        ALL_ROLE_CODES.filter((r) => isInstitutionRole(r)).length,
+      );
+    });
+
+    it('los ejes de agrupación son independientes entre sí', () => {
+      // READ_ONLY_ROLES agrupa por capacidad de mutar, no por ámbito: no debe
+      // coincidir con ninguna de las listas de ámbito.
+      expect(READ_ONLY_ROLES).not.toEqual(UGEL_ROLES);
+      expect(READ_ONLY_ROLES).not.toEqual(INSTITUTION_ROLES);
+      // MONITOR_CAMPO_ROLES agrupa por tarea y cruza ámbitos a propósito.
+      expect(MONITOR_CAMPO_ROLES.some((r) => isUgelRole(r))).toBe(true);
+      expect(MONITOR_CAMPO_ROLES.some((r) => isInstitutionRole(r))).toBe(true);
     });
 
     it.each([

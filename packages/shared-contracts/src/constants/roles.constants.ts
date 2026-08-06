@@ -64,33 +64,23 @@ export const ROLE_LABELS: Record<RoleCode, string> = {
   [RoleCode.SUPERUSUARIO]: 'Super Administrador',
 };
 
-// ── Agrupaciones lógicas ─────────────────────────────────────────────────────
-// Se declaran una sola vez y se consumen desde ambas aplicaciones. No son un
-// modelo de autorización: la decisión de si un usuario puede ejecutar una acción
-// la toma el mapa de capacidades del backend (`shared/auth/capability-map.ts`).
-// Estas agrupaciones sólo describen a qué ámbito organizativo pertenece un rol.
-
-/** Roles con alcance sobre toda la UGEL. */
-export const UGEL_ROLES: readonly RoleCode[] = [
-  RoleCode.DIRECTOR_UGEL,
-  RoleCode.JEFE_AREA,
-  RoleCode.JEFE_GESTION,
-  RoleCode.ESPECIALISTA,
-];
-
-/** Roles cuyo alcance se limita a una institución educativa. */
-export const INSTITUTION_ROLES: readonly RoleCode[] = [
-  RoleCode.DIRECTOR_INSTITUCION,
-  RoleCode.COORDINADOR_PEDAGOGICO,
-  RoleCode.JEFE_TALLER,
-  RoleCode.DOCENTE,
-];
-
-/** Roles sin capacidad de mutar datos. */
-export const READ_ONLY_ROLES: readonly RoleCode[] = [RoleCode.INVITADO];
+// ── Agrupaciones de roles ────────────────────────────────────────────────────
+//
+// Hay tres ejes distintos por los que este sistema agrupa roles, y conviene no
+// mezclarlos:
+//
+//   1. ÁMBITO ORGANIZATIVO  — ¿desde qué lado de la organización mira?
+//   2. CAPACIDAD DE MUTAR   — ¿puede modificar datos o sólo consultarlos?
+//   3. TAREA QUE EJECUTA    — ¿qué hace en terreno? (cruza los ámbitos)
+//
+// Ninguno es un modelo de autorización: la decisión de si un usuario puede
+// ejecutar una acción la toma el mapa de capacidades
+// (`capabilities.constants.ts` + `shared/auth/capability-map.ts` del backend).
+// Estas agrupaciones responden preguntas que las capacidades no pueden
+// responder, como qué variante de una pantalla corresponde mostrar.
 
 /**
- * Ámbito organizativo de un rol.
+ * Ámbito organizativo de un rol — eje 1, y única fuente de esa clasificación.
  *
  * Responde «¿desde qué lado de la organización mira este usuario?», que es una
  * pregunta distinta de «¿qué puede hacer?». Ambas hacen falta: un especialista
@@ -130,6 +120,29 @@ export function isUgelRole(rol: RoleCode): boolean {
 export function isInstitutionRole(rol: RoleCode): boolean {
   return ROLE_SCOPES[rol] === 'institucion';
 }
+
+/** Roles de un ámbito dado. */
+function rolesConAmbito(ambito: RoleScope): readonly RoleCode[] {
+  return ALL_ROLE_CODES.filter((rol) => ROLE_SCOPES[rol] === ambito);
+}
+
+// Estas dos listas se DERIVAN de `ROLE_SCOPES` en lugar de enumerarse aparte.
+// Declararlas a mano las convertía en una segunda fuente de verdad del mismo
+// hecho: nada impedía agregar un rol a `UGEL_ROLES` y clasificarlo como
+// `institucion` en el mapa de ámbitos, y ambas versiones habrían compilado.
+
+/** Roles con alcance sobre toda la UGEL. */
+export const UGEL_ROLES: readonly RoleCode[] = rolesConAmbito('ugel');
+
+/** Roles cuyo alcance se limita a una institución educativa. */
+export const INSTITUTION_ROLES: readonly RoleCode[] = rolesConAmbito('institucion');
+
+// ── Eje 2: capacidad de mutar ────────────────────────────────────────────────
+
+/** Roles sin capacidad de mutar datos. */
+export const READ_ONLY_ROLES: readonly RoleCode[] = [RoleCode.INVITADO];
+
+// ── Eje 3: tarea que ejecuta ─────────────────────────────────────────────────
 
 /**
  * Roles que ejecutan monitoreos en terreno, visitando aula.

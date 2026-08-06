@@ -46,8 +46,13 @@ export const useScope = () => {
        * y jefe de taller, que son personal de institución.
        */
       isMonitorCampo: rol ? MONITOR_CAMPO_ROLES.includes(rol) : false,
-      /** Dirige una institución educativa. */
-      isDirectorInstitucion: rol === RoleCode.DIRECTOR_INSTITUCION,
     };
+    // Deliberadamente NO se expone un `isDirectorInstitucion`. Sería una
+    // comparación de un solo rol con la apariencia de un ámbito, es decir el
+    // mismo acoplamiento que esta fase elimina, sólo que centralizado. Su único
+    // consumidor —el filtro de submenús de Secundaria en el sidebar— resultó
+    // estar expresando una regla sobre el NIVEL de la institución, no sobre
+    // quién la mira. Si vuelve a hacer falta, conviene revisar antes si la
+    // condición real es una capacidad o un atributo de los datos.
   }, [rol]);
 };

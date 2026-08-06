@@ -28,7 +28,7 @@ export const Sidebar = () => {
   // Badge de solicitudes de visita "por atender": lo ve quien las gestiona. El
   // Jefe de Área solo hace seguimiento de las suyas y no tiene visitas:gestionar.
   const { can } = useCan();
-  const { isUgel, isInstitution, isDirectorInstitucion } = useScope();
+  const { isUgel, isInstitution } = useScope();
   const { data: solicitudesPendientes = 0 } = useSolicitudesPendientesCount(
     can(Capability.VISITAS_GESTIONAR),
   );
@@ -79,11 +79,18 @@ export const Sidebar = () => {
           const isEvaluatedRole = isInstitution;
 
           const baseItems = SIDEBAR_CONFIG.filter((item) => {
-            const isSecundary = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
+            // Los cargos de Coordinador Pedagógico y Jefe de Taller sólo existen
+            // en Secundaria. La regla es sobre el NIVEL de la institución, no
+            // sobre el rol de quien mira: antes se comprobaba
+            // `director_institucion` únicamente porque es a quien se le puebla
+            // `institucionNivel`. Enunciarla sobre el nivel evita que el filtro
+            // haya que revisarlo cada vez que otro rol reciba estos submenús.
+            const tieneInstitucion = !!user?.institucionNivel;
+            const esSecundaria = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
             if (
               (item.id === 'instituciones_coordinadores' || item.id === 'instituciones_jefes_taller') &&
-              isDirectorInstitucion &&
-              !isSecundary
+              tieneInstitucion &&
+              !esSecundaria
             ) {
               return false;
             }

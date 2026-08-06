@@ -45,8 +45,7 @@ describe('PermissionsGuard', () => {
   });
 
   describe('peticiones sin capacidades identificables', () => {
-    const guard = () =>
-      new PermissionsGuard(reflectorQueExige([Capability.DOCENTES_READ]));
+    const guard = () => new PermissionsGuard(reflectorQueExige([Capability.DOCENTES_READ]));
 
     it.each([
       ['sin usuario en la petición', undefined],
@@ -65,9 +64,7 @@ describe('PermissionsGuard', () => {
 
   describe('evaluación conjuntiva de capacidades', () => {
     const conPermisos = (permissions: string[], exigidas: Capability[]) =>
-      new PermissionsGuard(reflectorQueExige(exigidas)).canActivate(
-        contextoCon({ permissions }),
-      );
+      new PermissionsGuard(reflectorQueExige(exigidas)).canActivate(contextoCon({ permissions }));
 
     it('permite cuando el usuario tiene la capacidad exigida', () => {
       expect(conPermisos([Capability.DOCENTES_READ], [Capability.DOCENTES_READ])).toBe(true);

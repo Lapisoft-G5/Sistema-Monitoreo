@@ -581,7 +581,16 @@ cubren únicamente lo que la Fase 2 incorporó, sin duplicar las existentes.
 | `pages/jefeGestion/PlanMonitoreoAnualPage.tsx` | 4 |
 | 15 archivos con 1 comparación cada uno | 15 |
 
-**H-27 — la regla de quién decide una reprogramación está escrita dos veces.**
+**H-27 — RESUELTO.** La regla de quién decide una reprogramación estaba escrita
+dos veces. Se extrajo a `puedeDecidirReprogramacion` en
+`entities/model-reprogramaciones/decision.ts`, con 30 pruebas de caracterización
+en `decision.test.ts` escritas **antes** de reemplazar las copias. Las pruebas
+documentan además dos casos de borde que ninguna de las dos versiones dejaba
+explícitos: un jefe de área sin nivel asignado no queda restringido, y el
+director de institución se identifica por nombre de colegio —sin distinguir
+mayúsculas— cuando no hay identificador. Descripción original del hallazgo:
+
+
 `canDecide` en `widgets/calendario/ui/CalendarioSidebar.tsx` y `canDecideRequest`
 en `widgets/reprogramaciones/ui/BandejaReprogramaciones.tsx` implementan la misma
 regla de negocio con el mismo árbol de decisión: monitor de campo no decide, jefe

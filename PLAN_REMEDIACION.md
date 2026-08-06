@@ -46,8 +46,9 @@ modo que CI y desarrollo local calculan exactamente lo mismo.
 | **Cobertura de sentencias — backend** | **19,51 %** | ≥ 60 % |
 | Ratio de archivos con prueba | 5,0 % | ≥ 20 % |
 | Declaraciones de rol (`UserRole` / `RoleCode`) | 4 | 1 |
-| Archivos con comparación literal `user?.role === '...'` | 25 | 0 |
-| Comparaciones literales de rol | 104 | 0 |
+| Archivos con comparación **literal** de rol | 25 | 0 |
+| Comparaciones **literales** de rol (`role === 'jefe_area'`) | 104 | 0 |
+| Comparaciones **tipadas** de rol (`role === RoleCode.JEFE_AREA`) | 0 | sin objetivo |
 | Ocurrencias de `any` en código fuente | 121 | ≤ 20 |
 | Archivos con `eslint-disable` a nivel de archivo | 26 | 0 |
 | Componentes de más de 300 líneas | 19 | 0 |
@@ -477,11 +478,35 @@ Además, `ROLE_PERMISSIONS` (`roles.ts:59-172`) es una matriz estática de 11 ro
 8. **Volver bloqueante** la barrera de CI que cuenta `role ===`.
 
 **Criterio de salida.**
-- Cero ocurrencias de `user?.role === '...'` en `apps/frontend/src`.
+- Cero comparaciones **literales** de rol (`role === 'jefe_area'`) en `apps/frontend/src`.
+- Toda comparación de rol que permanezca es **tipada** contra `RoleCode` y lleva escrito al lado por qué no es una capacidad ni un ámbito.
 - Módulo de política con cobertura de pruebas ≥ 90 % (es la pieza de mayor riesgo del sistema).
 - Backend y frontend evaluando permisos desde la misma fuente.
 - Matriz de menú derivada, no mantenida a mano.
 - Barrera de CI activa y bloqueante.
+
+> **Corrección del objetivo, introducida al migrar `CalendarioSidebar.tsx`.**
+> El criterio original exigía «cero ocurrencias de `user?.role === '...'`», dando
+> por supuesto que toda comparación de rol es una decisión de autorización
+> encubierta. No lo es.
+>
+> Las tres ramas de `canDecide` en ese archivo enrutan **qué solicitudes de
+> reprogramación le corresponden a cada posición organizativa**. El permiso de
+> fondo ya lo aplica el backend: los endpoints de aprobar y rechazar exigen
+> `monitoreo:execute`. Jefe de gestión y jefe de área comparten ámbito y
+> comparten esa capacidad, pero resuelven ámbitos de decisión distintos — algo
+> que ni `useCan` ni `useScope` pueden expresar.
+>
+> Perseguir el cero absoluto ahí obligaría a inventar capacidades falsas para
+> bajar el contador: mejorar la métrica en lugar del código. El objetivo correcto
+> distingue el literal suelto —que el compilador no verifica y que se escribe mal
+> sin que nadie lo note— de la comparación tipada y justificada.
+>
+> `scripts/metricas.sh` mide ahora ambas por separado. El patrón anterior tenía
+> además dos defectos: ignoraba `!==` —había cuatro comparaciones sin contar en
+> `CronogramaPage.tsx` y `SuperadminPanel.tsx`— y contaba las menciones dentro de
+> comentarios. Por ese cambio de criterio, las cifras posteriores a la Fase 2 no
+> son directamente comparables con las de la línea base.
 
 **Riesgo de omitir esta fase.** El sistema permanece sin capacidad de incorporar roles o ajustar permisos sin intervención manual en decenas de archivos, con fuga de permisos como modo de fallo más probable.
 
@@ -500,8 +525,20 @@ Además, `ROLE_PERMISSIONS` (`roles.ts:59-172`) es una matriz estática de 11 ro
 | `permissions` en el modelo de usuario | `entities/model-user/model.ts`, `login-service.tsx` |
 | Cobertura del contrato: 29 pruebas | `shared/auth/capabilities-contract.spec.ts` |
 | Migración: `sidebar.tsx` (12 → 0) | `widgets/layouts/sidebar/ui/sidebar.tsx` |
+| Migración: `CalendarioSidebar.tsx` (13 → 3 tipadas) | `widgets/calendario/ui/CalendarioSidebar.tsx` |
+| Invariante modalidad ↔ nivel: 6 pruebas | `common/validators/modalidad-nivel.spec.ts` |
 
-268 pruebas en verde · typecheck y lint limpios en ambas aplicaciones.
+277 pruebas en verde · typecheck y lint limpios en ambas aplicaciones.
+
+**Duplicación introducida y corregida dentro de la propia fase.** Al incorporar
+el ámbito organizativo se dejaron en pie `UGEL_ROLES` e `INSTITUTION_ROLES`, que
+ya enumeraban a mano la misma clasificación que `ROLE_SCOPES`. Eran dos fuentes
+de verdad del mismo hecho sin nada que las obligara a coincidir. Ahora se derivan
+del mapa de ámbitos, con tres pruebas que verifican la partición.
+
+Se retiró también `isDirectorInstitucion` de `useScope`: era una comparación de
+un solo rol con apariencia de ámbito. Su único consumidor resultó estar
+expresando una regla sobre el **nivel** de la institución, no sobre el rol.
 
 **Hallazgo que reformula la tarea 1 de esta fase: hacían falta DOS vocabularios.**
 
@@ -803,7 +840,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | --- | --- | --- | --- | --- | --- |
 | 0 — Línea base y seguridad | **Completada** | 2026-08-05 | 2026-08-05 | | Pendiente: actualizar `.env.example` y los `.env` locales (ver §10) |
 | 1 — Contrato de roles | **Completada** | 2026-08-05 | 2026-08-05 | | `admin` eliminado; exhaustividad verificada; H-24/H-25 redefinen la Fase 2 |
-| 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Base completa y verificada; migración 1 de 25 archivos (92 comparaciones restantes) |
+| 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Base completa; migrados `sidebar.tsx` y `CalendarioSidebar.tsx`; quedan 24 archivos y 82 literales |
 | 3 — Red de pruebas | Pendiente | | | | |
 | 4 — Tipado en capa de datos | Pendiente | | | | |
 | 5 — Descomposición de componentes | Pendiente | | | | |
@@ -838,8 +875,11 @@ Los comandos siguientes son el desglose de ese script, útiles para comprobacion
 puntuales durante una fase:
 
 ```bash
-# Archivos con autorización literal en presentación  (objetivo: 0)
-rg -l "role ===" apps/frontend/src | wc -l
+# Archivos con comparacion LITERAL de rol  (objetivo: 0)
+rg -l "role\s*[!=]==\s*'" apps/frontend/src | wc -l
+
+# Comparaciones TIPADAS de rol: no tienen objetivo, se revisan una por una
+rg -n "role\s*[!=]==\s*RoleCode\." apps/frontend/src
 
 # Ocurrencias de any en código fuente  (objetivo: <= 20)
 rg -o ':\s*any\b|as any' apps/*/src packages/*/src | wc -l

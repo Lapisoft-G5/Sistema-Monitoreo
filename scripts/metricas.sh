@@ -36,9 +36,34 @@ archivos_prueba=$(fd -e spec.ts -e test.ts -e spec.tsx -e test.tsx --type f . ap
 declaraciones_userrole=$(rg -l '^export type UserRole\s*=|^(export )?enum RoleCode\s*\{' \
   apps packages -g '!node_modules' -g '!dist' | wc -l)
 
-# ── Fase 2: autorización en capa de presentación (objetivo: 0) ───────────────
-archivos_rol_literal=$(rg -l 'role ===' apps/frontend/src | wc -l)
-comparaciones_rol_literal=$(rg -o 'role === ' apps/frontend/src | wc -l)
+# ── Fase 2: autorización en capa de presentación ─────────────────────────────
+#
+# Se distinguen DOS cosas que el patrón anterior contaba igual:
+#
+#   literal  `user.role === 'jefe_area'`        objetivo: 0
+#   tipada   `user.role === RoleCode.JEFE_AREA` objetivo: sin objetivo
+#
+# El objetivo de la fase NO es eliminar toda comparación de rol. Existe
+# comparación legítima: cuando la decisión es genuinamente sobre la posición
+# organizativa de alguien y no sobre lo que puede hacer. En CalendarioSidebar,
+# las tres ramas de `canDecide` enrutan qué solicitudes le corresponden a cada
+# posición; el permiso de fondo ya lo aplica el backend. Perseguir el cero ahí
+# obligaría a inventar capacidades falsas para bajar el contador.
+#
+# Lo que sí debe llegar a cero son los literales sueltos, que el compilador no
+# verifica y que se escriben mal sin que nadie lo note.
+#
+# El patrón anterior tenía dos huecos: ignoraba `!==` —había cuatro sin contar—
+# y contaba las menciones dentro de comentarios.
+PATRON_ROL_LITERAL="role\s*[!=]==\s*'"
+PATRON_ROL_TIPADA='role\s*[!=]==\s*RoleCode\.'
+SIN_COMENTARIOS='^[^:]+:[0-9]+:\s*(\*|//|/\*)'
+
+archivos_rol_literal=$(rg -l "$PATRON_ROL_LITERAL" apps/frontend/src | wc -l)
+comparaciones_rol_literal=$(rg -n --no-heading "$PATRON_ROL_LITERAL" apps/frontend/src \
+  | rg -v "$SIN_COMENTARIOS" | rg -o "$PATRON_ROL_LITERAL" | wc -l)
+comparaciones_rol_tipada=$(rg -n --no-heading "$PATRON_ROL_TIPADA" apps/frontend/src \
+  | rg -v "$SIN_COMENTARIOS" | rg -o "$PATRON_ROL_TIPADA" | wc -l)
 
 # ── Fase 4: tipado en capa de datos (objetivos: 0 y <= 20) ───────────────────
 supresiones_archivo=$(rg -l '^/\* eslint-disable' apps/backend/src apps/frontend/src | wc -l)
@@ -103,6 +128,7 @@ cat <<JSON
     "declaraciones_userrole": $declaraciones_userrole,
     "archivos_rol_literal": $archivos_rol_literal,
     "comparaciones_rol_literal": $comparaciones_rol_literal,
+    "comparaciones_rol_tipada": $comparaciones_rol_tipada,
     "supresiones_lint_archivo": $supresiones_archivo,
     "ocurrencias_any": $ocurrencias_any,
     "componentes_sobre_300_lineas": $componentes_sobre_300,

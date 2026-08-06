@@ -59,11 +59,20 @@ PATRON_ROL_LITERAL="role\s*[!=]==\s*'"
 PATRON_ROL_TIPADA='role\s*[!=]==\s*RoleCode\.'
 SIN_COMENTARIOS='^[^:]+:[0-9]+:\s*(\*|//|/\*)'
 
-archivos_rol_literal=$(rg -l "$PATRON_ROL_LITERAL" apps/frontend/src | wc -l)
-comparaciones_rol_literal=$(rg -n --no-heading "$PATRON_ROL_LITERAL" apps/frontend/src \
-  | rg -v "$SIN_COMENTARIOS" | rg -o "$PATRON_ROL_LITERAL" | wc -l)
-comparaciones_rol_tipada=$(rg -n --no-heading "$PATRON_ROL_TIPADA" apps/frontend/src \
-  | rg -v "$SIN_COMENTARIOS" | rg -o "$PATRON_ROL_TIPADA" | wc -l)
+# `rg` termina con código 1 cuando no encuentra nada, y bajo `pipefail` eso
+# abortaba el script justo al alcanzar el objetivo de cero. El `|| true` trata la
+# ausencia de coincidencias como lo que es: un resultado válido, y el bueno.
+contar_ocurrencias() {
+  local patron="$1"
+  rg -n --no-heading "$patron" apps/frontend/src 2>/dev/null \
+    | rg -v "$SIN_COMENTARIOS" \
+    | rg -o "$patron" \
+    | wc -l || true
+}
+
+archivos_rol_literal=$(rg -l "$PATRON_ROL_LITERAL" apps/frontend/src 2>/dev/null | wc -l || true)
+comparaciones_rol_literal=$(contar_ocurrencias "$PATRON_ROL_LITERAL")
+comparaciones_rol_tipada=$(contar_ocurrencias "$PATRON_ROL_TIPADA")
 
 # ── Fase 4: tipado en capa de datos (objetivos: 0 y <= 20) ───────────────────
 supresiones_archivo=$(rg -l '^/\* eslint-disable' apps/backend/src apps/frontend/src | wc -l)

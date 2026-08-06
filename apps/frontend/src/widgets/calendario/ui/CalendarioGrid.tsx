@@ -17,6 +17,8 @@ import { Badge } from '@/shared/ui/badge';
 import { SelectField } from '@/shared/ui/form-controls';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
+import { useScope } from '@shared/auth';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface CalendarioGridProps {
   currentDate: Date;
@@ -196,11 +198,11 @@ export const CalendarioGrid = ({
   handleClearFilters,
 }: CalendarioGridProps) => {
   const { user } = useUser();
-  const isEspecialista =
-    user?.role === 'especialista' ||
-    user?.role === 'coordinador_pedagogico' ||
-    user?.role === 'jefe_taller';
-  const isDirector = user?.role === 'director_institucion';
+  // `isEspecialista` incluía también al coordinador pedagógico y al jefe de
+  // taller: quienes levantan la ficha en el aula, no un cargo concreto.
+  const { isMonitorCampo } = useScope();
+  const isEspecialista = isMonitorCampo;
+  const isDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();

@@ -1,11 +1,11 @@
 {
-  "generado": "2026-08-06T14:28:48Z",
+  "generado": "2026-08-06T14:52:59Z",
   "rama": "fix/env-secrets-metricas-baseline",
-  "commit": "542d522",
+  "commit": "f3fe5fb",
   "metricas": {
-    "archivos_fuente": 562,
-    "archivos_prueba": 37,
-    "ratio_pruebas": 0.0658,
+    "archivos_fuente": 567,
+    "archivos_prueba": 42,
+    "ratio_pruebas": 0.0741,
     "declaraciones_userrole": 1,
     "archivos_rol_literal": 0,
     "comparaciones_rol_literal": 0,
@@ -17,7 +17,7 @@
     "componente_mayor_lineas": 1446,
     "lineas_formbase": 1926,
     "cobertura_sentencias_frontend": 2.88,
-    "cobertura_sentencias_backend": 20.67
+    "cobertura_sentencias_backend": 24.32
   },
   "objetivos": {
     "declaraciones_userrole": 1,

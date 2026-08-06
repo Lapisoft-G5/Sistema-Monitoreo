@@ -38,7 +38,11 @@ describe('Autenticación y autorización (e2e)', () => {
   const sesiones = {} as Record<keyof typeof USUARIOS_SEMBRADOS, Sesion>;
 
   beforeAll(async () => {
-    app = await crearAppE2E();
+    // Con el limitador de frecuencia ACTIVO: esta suite hace un solo inicio de
+    // sesión por usuario y lo tolera. Es la que deja verificado que el control
+    // existe, de modo que `autorizacion.e2e-spec.ts` pueda desactivarlo sin
+    // dejar un hueco.
+    app = await crearAppE2E(true);
 
     for (const [clave, usuario] of Object.entries(USUARIOS_SEMBRADOS)) {
       const res = await request(app.getHttpServer())

@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module.js';
@@ -49,10 +50,30 @@ function exigirBaseEfimera(): void {
   }
 }
 
-export async function crearAppE2E(): Promise<INestApplication> {
+/**
+ * Crea la aplicación para pruebas.
+ *
+ * @param limitarFrecuencia Deja activo el `ThrottlerGuard`. Por defecto se
+ * desactiva: una suite hace en segundos las peticiones que un usuario haría en
+ * minutos, y el límite devuelve 429 a mitad de ejecución. Que funciona ya lo
+ * comprueba `auth.e2e-spec.ts`, donde el arranque hace un solo inicio de sesión
+ * por usuario; desactivarlo aquí no deja el control sin verificar.
+ */
+export async function crearAppE2E(limitarFrecuencia = false): Promise<INestApplication> {
   exigirBaseEfimera();
 
-  const moduleFixture = await Test.createTestingModule({ imports: [AppModule] }).compile();
+  const builder = Test.createTestingModule({ imports: [AppModule] });
+  if (!limitarFrecuencia) {
+    // Se anula por PROVEEDOR y no con `overrideGuard`: el limitador está
+    // registrado como `APP_GUARD` en `AppModule`, y `overrideGuard` sólo
+    // alcanza a los guards aplicados con `@UseGuards`.
+    //
+    // El tope efectivo lo fija `@Throttle({ limit: 5 })` sobre `POST /login`,
+    // no el global de 100: cuatro usuarios que inician sesión dos veces cada
+    // uno ya lo superan.
+    builder.overrideProvider(APP_GUARD).useValue({ canActivate: () => true });
+  }
+  const moduleFixture = await builder.compile();
 
   const app = moduleFixture.createNestApplication();
 
@@ -85,3 +106,67 @@ export const USUARIOS_SEMBRADOS = {
   jefeGestion: credencial('40000002'),
   jefeArea: credencial('40000003'),
 } as const;
+
+/**
+ * Contraseña definitiva que la suite fija para poder operar.
+ *
+ * Cumple las reglas de `ChangePasswordDto`: ocho caracteres, una mayúscula y un
+ * número. Sin este paso, `AuthGuard` bloquea con 403 toda petición mientras
+ * `firstLogin` siga en verdadero, de modo que ningún recorrido puede llegar al
+ * guard de capacidades ni a los datos de negocio.
+ */
+export const PASSWORD_E2E = 'PruebaE2E2026';
+
+export interface SesionE2E {
+  cookies: string[];
+  user: { dni: string; role: string; permissions: string[] };
+}
+
+/**
+ * Cambia la contraseña temporal de un usuario recién sembrado.
+ *
+ * `change-password` está marcado con `@AllowFirstLogin`, de modo que es de lo
+ * poco alcanzable mientras la cuenta siga con la contraseña provisional. Al
+ * terminar, el backend limpia las cookies por seguridad: la sesión usada para
+ * el cambio deja de servir y hay que iniciar otra.
+ */
+export async function cambiarPasswordTemporal(
+  servidor: unknown,
+  usuario: { dni: string; password: string },
+): Promise<void> {
+  const { default: request } = await import('supertest');
+  const app = servidor as Parameters<typeof request>[0];
+
+  const inicial = await request(app)
+    .post('/api/auth/login')
+    .send({ dni: usuario.dni, password: usuario.password });
+
+  // Si la cuenta ya fue preparada por una ejecución anterior, no hay nada que
+  // hacer: la contraseña temporal ya no está vigente.
+  if (inicial.status !== 200) return;
+
+  await request(app)
+    .post('/api/auth/change-password')
+    .set('Cookie', (inicial.headers['set-cookie'] as unknown as string[]) ?? [])
+    .send({ newPassword: PASSWORD_E2E })
+    .expect(200);
+}
+
+/** Inicia sesión con la contraseña definitiva y devuelve la sesión operativa. */
+export async function sesionOperativa(
+  servidor: unknown,
+  usuario: { dni: string },
+): Promise<SesionE2E> {
+  const { default: request } = await import('supertest');
+  const app = servidor as Parameters<typeof request>[0];
+
+  const res = await request(app)
+    .post('/api/auth/login')
+    .send({ dni: usuario.dni, password: PASSWORD_E2E })
+    .expect(200);
+
+  return {
+    cookies: (res.headers['set-cookie'] as unknown as string[]) ?? [],
+    user: res.body.user as SesionE2E['user'],
+  };
+}

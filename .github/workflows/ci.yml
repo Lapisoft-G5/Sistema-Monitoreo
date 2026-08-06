@@ -183,11 +183,31 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter backend exec prisma generate
 
-      - name: Aplicar migraciones sobre la base efímera
-        run: pnpm --filter backend exec prisma migrate deploy
+      # Cada suite se ejecuta contra una base recién sembrada.
+      #
+      # `migrate reset` se acompaña de `db seed` explícito: en este proyecto el
+      # reset aplica las migraciones pero deja la base vacía, de modo que sin la
+      # siembra las suites no tienen usuarios con los que autenticarse.
+      # `--skip-generate` NO es válido para `reset`; pasarlo hace que el comando
+      # imprima la ayuda y no ejecute nada, fallo silencioso que costó una tarde.
+      #
+      # `auth.e2e-spec.ts` necesita cuentas con su contraseña temporal intacta;
+      # `autorizacion.e2e-spec.ts` necesita cuentas ya preparadas, y al
+      # prepararlas deja la base en un estado donde la primera no puede iniciar
+      # sesión. Son dos estados distintos del mismo sistema y ambos merecen
+      # verificarse, de modo que no se encadenan sobre la misma base.
+      - name: Arranque y autenticación
+        run: |
+          pnpm --filter backend exec prisma migrate reset --force
+          pnpm --filter backend exec prisma db seed
+          pnpm --filter backend exec cross-env NODE_OPTIONS=--experimental-vm-modules \
+            jest --config ./test/jest-e2e.json --runInBand app.e2e auth.e2e
+        working-directory: .
 
-      - name: Sembrar datos de prueba
-        run: pnpm --filter backend exec prisma db seed
-
-      - name: Recorridos de extremo a extremo
-        run: pnpm --filter backend test:e2e
+      - name: Autorización por capacidades
+        run: |
+          pnpm --filter backend exec prisma migrate reset --force
+          pnpm --filter backend exec prisma db seed
+          pnpm --filter backend exec cross-env NODE_OPTIONS=--experimental-vm-modules \
+            jest --config ./test/jest-e2e.json --runInBand autorizacion.e2e
+        working-directory: .

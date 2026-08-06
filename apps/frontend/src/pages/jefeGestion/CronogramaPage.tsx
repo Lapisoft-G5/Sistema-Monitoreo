@@ -15,6 +15,7 @@ import {
   fechaProgramadaPorDefecto,
   validarProgramacion,
 } from '@features/cronogramas/lib/formulario';
+import { cronogramasVisibles } from '@features/cronogramas/lib/visibilidad';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { TextField, SelectField } from '@shared/ui/form-controls';
@@ -26,7 +27,6 @@ import { useUser } from '@entities/model-user';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import type { Cronograma } from '@entities/model-cronogramas';
 import {
-  RoleCode,
   type EstadoVisita,
   type IUpdateVisitaRequest,
   type Modalidad,
@@ -332,41 +332,12 @@ export const CronogramaPage = () => {
     setPrevFilters(filters);
   }
 
-  // --- Lógica de Filtro ---
-  const filteredBaseCronogramas = useMemo(() => {
-    if (!user) return cronogramas;
-    if (!isDirector && user.role !== RoleCode.JEFE_AREA) return cronogramas;
-
-    return cronogramas.filter((item) => {
-      if (isDirector) {
-        const isSameSchool =
-          user.institucionNombre &&
-          item.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
-
-        const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
-        const isDirectedToMe =
-          item.tipo === 'DIRECTIVO' &&
-          (item.docenteDirectivo.toLowerCase().includes(userFullName) ||
-            userFullName.includes(item.docenteDirectivo.toLowerCase()) ||
-            item.docenteDirectivo.toLowerCase().includes(user.nombres.toLowerCase()));
-
-        if (!isSameSchool && !isDirectedToMe) return false;
-      }
-
-      if (user?.role === RoleCode.JEFE_AREA && user.especialistaNivel) {
-        const nivel = user.especialistaNivel;
-        if (nivel === 'Inicial') {
-          if (item.modalidad !== 'EBE' && item.nivel !== 'Inicial') return false;
-        } else if (nivel === 'Primaria') {
-          if (item.nivel !== 'Primaria') return false;
-        } else if (nivel === 'Secundaria') {
-          if (!['SECUNDARIA', 'EBA', 'CEPTRO'].includes(item.modalidad?.toUpperCase() ?? '') && item.nivel !== 'Secundaria') return false;
-        }
-      }
-
-      return true;
-    });
-  }, [cronogramas, isDirector, user]);
+  // Regla unica de visibilidad, compartida con CalendarioPage y con cobertura
+  // en `features/cronogramas/lib/visibilidad.test.ts`.
+  const filteredBaseCronogramas = useMemo(
+    () => cronogramasVisibles(cronogramas, user),
+    [cronogramas, user],
+  );
 
   const filteredCronogramas = useMemo(() => {
     return filteredBaseCronogramas.filter((item) => {

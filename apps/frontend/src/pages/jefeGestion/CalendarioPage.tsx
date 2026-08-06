@@ -6,6 +6,7 @@ import { useUser } from '@entities/model-user';
 import { useScope } from '@shared/auth';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
+import { cronogramasVisibles } from '@features/cronogramas/lib/visibilidad';
 import { useFiltrosCalendario } from '@/widgets/calendario/model/use-filtros-calendario';
 import { CalendarioGrid, CalendarioSidebar } from '@widgets/calendario';
 import { BandejaReprogramaciones } from '@widgets/reprogramaciones';
@@ -137,39 +138,10 @@ export const CalendarioPage = () => {
 
   // Filtrado de visitas
   const filteredVisits = useMemo(() => {
-    return cronogramas.filter((visit) => {
-      if (isEspecialista && specialistFilterName) {
-        if (visit.especialista !== specialistFilterName) {
-          return false;
-        }
-      }
-      if (isDirector && user) {
-        const isSameSchool =
-          (user.institucion && visit.institucionId === user.institucion) ||
-          (user.institucionNombre &&
-            visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase());
-
-        const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
-        const isDirectedToMe =
-          visit.tipo === 'DIRECTIVO' &&
-          (visit.docenteDirectivo.toLowerCase().includes(userFullName) ||
-            userFullName.includes(visit.docenteDirectivo.toLowerCase()) ||
-            visit.docenteDirectivo.toLowerCase().includes(user.nombres.toLowerCase()));
-
-        if (!isSameSchool && !isDirectedToMe) {
-          return false;
-        }
-      }
-
-      if (user?.role === RoleCode.JEFE_AREA && user.especialistaNivel) {
-        const nivel = user.especialistaNivel;
-        if (nivel === 'Inicial') {
-          if (visit.modalidad !== 'EBE' && visit.nivel !== 'Inicial') return false;
-        } else if (nivel === 'Primaria') {
-          if (visit.nivel !== 'Primaria') return false;
-        } else if (nivel === 'Secundaria') {
-          if (!['SECUNDARIA', 'EBA', 'CEPTRO'].includes((visit.modalidad ?? '').toUpperCase()) && visit.nivel !== 'Secundaria') return false;
-        }
+    // Regla unica de visibilidad, compartida con CronogramaPage.
+    return cronogramasVisibles(cronogramas, user).filter((visit) => {
+      if (isEspecialista && specialistFilterName && visit.especialista !== specialistFilterName) {
+        return false;
       }
 
       // Filtros específicos de Director

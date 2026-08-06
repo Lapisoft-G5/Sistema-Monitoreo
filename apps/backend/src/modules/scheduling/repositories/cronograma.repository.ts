@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   IVisita,
   ISolicitudReprogramacion,
   TipoMonitoreo,
   EstadoVisita,
-  EstadoSolicitudReprogramacion,
 } from '@sistema-monitoreo/shared-contracts';
 
 export interface CreateVisitaData {

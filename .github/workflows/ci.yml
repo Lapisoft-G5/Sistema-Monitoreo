@@ -64,3 +64,34 @@ jobs:
 
       - name: Test (backend)
         run: pnpm --filter backend test
+
+      # ── Instrumentación de deuda técnica ───────────────────────────────────
+      # Fase 0 de PLAN_REMEDIACION.md. Estos pasos MIDEN, no bloquean: su
+      # propósito es producir una serie temporal comparable desde el primer día.
+      # Cada barrera pasa a bloqueante al cierre de la fase que la resuelve:
+      #   cobertura            -> Fase 3
+      #   rol literal          -> Fase 2
+      #   any / supresiones    -> Fase 4
+      #   tamaño de componente -> Fase 5
+      - name: Coverage (frontend + backend)
+        continue-on-error: true
+        run: pnpm test:cov
+
+      - name: Métricas de deuda técnica
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ripgrep fd-find
+          ln -sf "$(command -v fdfind)" /usr/local/bin/fd
+          ./scripts/metricas.sh | tee metricas-actual.json
+
+      - name: Publicar informes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metricas-y-cobertura
+          path: |
+            metricas-actual.json
+            apps/frontend/coverage/
+            apps/backend/coverage/
+          if-no-files-found: warn
+          retention-days: 30

@@ -154,8 +154,12 @@ export const READ_ONLY_ROLES: readonly RoleCode[] = [RoleCode.INVITADO];
  * los agrupaba así —`CalendarioSidebar` los llamaba `isEspecialista`— y ese
  * agrupamiento es correcto para decidir qué vista del calendario mostrar.
  *
- * Tampoco equivale a tener `monitoreo:execute`: un director de institución
- * también la tiene, pero supervisa en lugar de levantar la ficha.
+ * Tampoco equivale a tener `monitoreo:execute`: el director de institución
+ * también la tiene y también firma fichas, pero no comparte el resto de las
+ * reglas de este conjunto —por ejemplo, decide sobre solicitudes de
+ * reprogramación, y los monitores de campo no—. Donde haga falta agrupar «quien
+ * figura como autor de una ficha», que sí lo incluye, hay que componerlo
+ * explícitamente en lugar de ampliar este conjunto: ver `ReportesPage.tsx`.
  *
  * Es decir: ni ámbito ni capacidad alcanzan por sí solos para expresar esto, y
  * por eso se declara como un conjunto propio.

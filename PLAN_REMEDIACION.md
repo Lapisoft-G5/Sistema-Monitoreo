@@ -602,6 +602,42 @@ aprobar. Ninguna de las dos tiene cobertura. Extraerla a una función pura con
 pruebas propias corresponde a esta fase y está pendiente; no se hizo durante la
 migración para no mezclar el cambio de vocabulario con un cambio de estructura.
 
+### Decisión pendiente de producto — qué debe ver el rol `invitado`
+
+**Bloquea la derivación de `ROLE_PERMISSIONS`. No es una decisión técnica.**
+
+Al preparar la derivación se midió la discrepancia entre la matriz de menú y el
+modelo de capacidades (`shared/constants/menu-capabilities.test.ts`). La matriz
+concede a `invitado` **cinco ítems que el backend rechaza**:
+
+```
+instituciones · instituciones_padron · instituciones_docentes
+instituciones_coordinadores · especialistas
+```
+
+`invitado` sólo tiene `dashboard:read` más las capacidades base. `GET /especialistas`
+exige `especialistas:read`, de modo que **hoy un invitado hace clic en esos ítems
+y recibe 403**. Es navegación rota, visible para el usuario, en producción.
+
+Las dos salidas son incompatibles y dependen de qué debe ser esa cuenta:
+
+| | Qué implica |
+| --- | --- |
+| **A — Derivar de capacidades** | El menú se reduce a lo que el invitado puede usar: dashboard, monitoreo, plantillas, reportes, configuración. Se acaba el 403. Pierde cinco ítems que hoy ve sin que funcionen. |
+| **B — Ampliar las capacidades** | Si el invitado debe consultar instituciones y especialistas, se le conceden `instituciones:read`, `docentes:read` y `especialistas:read` en `capability-map.ts` y en el seeder. El menú queda igual y los clics empiezan a funcionar. |
+
+La diferencia de fondo: si `invitado` es una cuenta de consulta con vista amplia
+de sólo lectura, o una cuenta mínima. **El código actual afirma las dos cosas a
+la vez.** Cualquiera de las dos salidas es coherente; el estado actual no.
+
+Estado al 2026-08-05: pendiente de definición con el cliente. Hasta entonces no
+se altera el comportamiento. `MENU_CAPABILITIES` y sus pruebas quedan como
+inventario exacto de lo que cambiaría, de modo que la decisión pueda ejecutarse
+sin volver a investigar.
+
+También queda a la espera la sustitución de `getDefaultLandingPage`, que se
+apoya en la misma matriz.
+
 Quedan también por hacer, dentro de esta misma fase: derivar `ROLE_PERMISSIONS`
 del vocabulario de capacidades en lugar de mantenerla a mano, sustituir
 `getDefaultLandingPage`, retirar la matriz muerta `ROL_PERMISOS` del seeder

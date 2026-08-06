@@ -10,13 +10,9 @@ export class PrismaUserRepository implements UserRepository {
 
   private buildInclude() {
     return {
-      rol: {
-        include: {
-          rolPermisos: {
-            include: { permiso: true },
-          },
-        },
-      },
+      // Sólo se necesita `rol.codigo`: las capabilities las computa el mapa de
+      // capacidades, no la tabla `rol_permisos`. Ver H-25 de PLAN_REMEDIACION.md.
+      rol: true,
       persona: {
         include: {
           docente: {

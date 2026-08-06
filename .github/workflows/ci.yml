@@ -84,6 +84,24 @@ jobs:
           ln -sf "$(command -v fdfind)" /usr/local/bin/fd
           ./scripts/metricas.sh | tee metricas-actual.json
 
+      # ── Barrera bloqueante: comparaciones literales de rol ──────────────────
+      # Activada al cierre de la migración de la Fase 2, con el contador en cero.
+      # Impide que vuelvan a aparecer: una comparación contra una cadena suelta
+      # no la verifica el compilador y se escribe mal sin que nadie lo note.
+      #
+      # Comparar contra `RoleCode` sigue permitido. El objetivo no es eliminar
+      # toda comparación de rol —hay decisiones que son legítimamente sobre la
+      # posición organizativa de alguien— sino que estén tipadas.
+      - name: Gate — sin comparaciones literales de rol
+        run: |
+          ENCONTRADAS=$(rg -n --no-heading "role\s*[!=]==\s*'" apps/frontend/src || true)
+          if [ -n "$ENCONTRADAS" ]; then
+            echo "::error::Comparación literal de rol detectada. Usar RoleCode del contrato compartido."
+            echo "$ENCONTRADAS"
+            exit 1
+          fi
+          echo "Sin comparaciones literales de rol."
+
       - name: Publicar informes
         if: always()
         uses: actions/upload-artifact@v4

@@ -30,15 +30,11 @@ export interface JwtPayload {
 
 export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
   include: {
-    rol: {
-      include: {
-        rolPermisos: {
-          include: {
-            permiso: true;
-          };
-        };
-      };
-    };
+    // `rolPermisos` se cargaba aquí para derivar los permisos leyendo la tabla
+    // `rol_permisos`. Desde que `computeEffectivePermissions` los calcula con el
+    // mapa de capacidades, nadie leía el valor: era un join en cada
+    // autenticación cuyo resultado se descartaba. H-25 de PLAN_REMEDIACION.md.
+    rol: true;
     persona: {
       include: {
         docente: {

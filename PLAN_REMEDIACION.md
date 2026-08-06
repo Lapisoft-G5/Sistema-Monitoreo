@@ -1024,7 +1024,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | 1 — Contrato de roles | **Completada** | 2026-08-05 | 2026-08-05 | | `admin` eliminado; exhaustividad verificada; H-24/H-25 redefinen la Fase 2 |
 | 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Migración completa (104 → 0 literales), barrera de CI bloqueante, política al 96 %; falta derivar el menú, bloqueado por decisión de producto |
 | 3 — Red de pruebas | Pendiente | | | | |
-| 4 — Tipado en capa de datos | Pendiente | | | | |
+| 4 — Tipado en capa de datos | **Completada** | 2026-08-06 | 2026-08-06 | | 16 → 0 supresiones; destapó dos defectos reales, H-29 entre ellos |
 | 5 — Descomposición de componentes | Pendiente | | | | |
 | 6 — Extracción de dominio | Pendiente | | | | |
 | 7 — Higiene y consolidación | Pendiente | | | | |

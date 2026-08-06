@@ -14,6 +14,8 @@ import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { SolicitudReprogramacion } from '@/entities/model-reprogramaciones';
 import { useUser } from '@/entities/model-user';
+import { useScope } from '@shared/auth';
+import { RoleCode, NivelEducativoEBR } from '@sistema-monitoreo/shared-contracts';
 import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm
@@ -34,27 +36,31 @@ const formatVisitDate = (fechaHoraStr: string) => {
 
 export const BandejaReprogramaciones = () => {
   const { user } = useUser();
-  const isEspecialista =
-    user?.role === 'especialista' ||
-    user?.role === 'coordinador_pedagogico' ||
-    user?.role === 'jefe_taller';
+  // Quien levanta la ficha en el aula: solicita reprogramaciones, no las decide.
+  const { isMonitorCampo } = useScope();
 
+  // ATENCIÓN: esta función replica casi textualmente `canDecide` de
+  // `widgets/calendario/ui/CalendarioSidebar.tsx`. Son la misma regla de negocio
+  // escrita dos veces, de modo que un cambio en una y no en la otra produce dos
+  // pantallas que discrepan sobre quién puede decidir. Extraerla a una función
+  // pura con pruebas propias está anotado en el plan como parte de esta fase; no
+  // se hace aquí para no mezclar la migración con un cambio de estructura.
   const canDecideRequest = (visit: Cronograma, req?: SolicitudReprogramacion) => {
-    if (isEspecialista) return false;
+    if (isMonitorCampo) return false;
     const isIERequest =
-      req?.solicitanteRolAlCrear === 'coordinador_pedagogico' ||
-      req?.solicitanteRolAlCrear === 'jefe_taller';
+      req?.solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
+      req?.solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
 
-    if (user?.role === 'jefe_gestion') {
+    if (user?.role === RoleCode.JEFE_GESTION) {
       return !isIERequest;
     }
-    if (user?.role === 'jefe_area') {
+    if (user?.role === RoleCode.JEFE_AREA) {
       if (isIERequest) return false;
       if (user.especialistaNivel && visit.nivel !== user.especialistaNivel) return false;
       return true;
     }
-    if (user?.role === 'director_institucion') {
-      if (visit.nivel !== 'Secundaria') return false;
+    if (user?.role === RoleCode.DIRECTOR_INSTITUCION) {
+      if (visit.nivel !== NivelEducativoEBR.SECUNDARIA) return false;
       const isSameSchool =
         (user.institucion && visit.institucionId === user.institucion) ||
         (user.institucionNombre &&
@@ -105,13 +111,13 @@ export const BandejaReprogramaciones = () => {
   const filteredRequests = useMemo(() => {
     return allRequests.filter((req) => {
       // 1. Requesters (Specialists, Coordinators, Workshop Heads) only see their own requests
-      if (isEspecialista && req.visit.especialista !== specialistFilterName) {
+      if (isMonitorCampo && req.visit.especialista !== specialistFilterName) {
         return false;
       }
 
       // 2. Deciders filter:
-      if (!isEspecialista) {
-        const isDirector = user?.role === 'director_institucion';
+      if (!isMonitorCampo) {
+        const isDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
         if (isDirector) {
           // Director only sees requests from their own school AND created at IE level (CP or JT)
           const isSameSchool =
@@ -120,8 +126,8 @@ export const BandejaReprogramaciones = () => {
               req.visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase());
           
           const isIERequest =
-            req.solicitanteRolAlCrear === 'coordinador_pedagogico' ||
-            req.solicitanteRolAlCrear === 'jefe_taller';
+            req.solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
+            req.solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
 
           if (!isSameSchool || !isIERequest) {
             return false;
@@ -129,15 +135,15 @@ export const BandejaReprogramaciones = () => {
         } else {
           // Jefe de Gestión / Admin / Jefe de Área only see requests from Specialists (UGEL)
           const isIERequest =
-            req.solicitanteRolAlCrear === 'coordinador_pedagogico' ||
-            req.solicitanteRolAlCrear === 'jefe_taller';
+            req.solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
+            req.solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
 
           if (isIERequest) {
             return false;
           }
 
           // Filtro adicional para Jefe de Área: solo ver de su nivel
-          if (user?.role === 'jefe_area') {
+          if (user?.role === RoleCode.JEFE_AREA) {
             if (user.especialistaNivel && req.visit.nivel !== user.especialistaNivel) return false;
           }
         }
@@ -148,7 +154,7 @@ export const BandejaReprogramaciones = () => {
       }
       return true;
     });
-  }, [allRequests, isEspecialista, specialistFilterName, filterRequestStatus, user]);
+  }, [allRequests, isMonitorCampo, specialistFilterName, filterRequestStatus, user]);
 
   const selectedVisit = useMemo(() => {
     return cronogramas.find((c) => c.id === selectedVisitId) || null;
@@ -188,15 +194,15 @@ export const BandejaReprogramaciones = () => {
             <span>Bandeja de Solicitudes de Reprogramación</span>
           </h3>
           <p className="text-xs text-text-muted mt-1">
-            {isEspecialista
+            {isMonitorCampo
               ? 'Revisa el estado de tus solicitudes enviadas o registra una nueva reprogramación para tus visitas a futuro.'
-              : user?.role === 'director_institucion'
+              : user?.role === RoleCode.DIRECTOR_INSTITUCION
                 ? 'Audita y aprueba o rechaza los cambios de fecha propuestos por los coordinadores pedagógicos y jefes de taller.'
                 : 'Audita y aprueba o rechaza los cambios de fecha propuestos por los especialistas de monitoreo.'}
           </p>
         </div>
 
-        {isEspecialista && (
+        {isMonitorCampo && (
           <Button
             onClick={handleNewRequestClick}
             className="bg-primary hover:bg-primary-hover text-white text-xs font-bold px-4 py-2 h-10 rounded-xl flex items-center gap-1.5 shadow cursor-pointer"

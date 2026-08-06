@@ -581,6 +581,18 @@ cubren únicamente lo que la Fase 2 incorporó, sin duplicar las existentes.
 | `pages/jefeGestion/PlanMonitoreoAnualPage.tsx` | 4 |
 | 15 archivos con 1 comparación cada uno | 15 |
 
+**H-27 — la regla de quién decide una reprogramación está escrita dos veces.**
+`canDecide` en `widgets/calendario/ui/CalendarioSidebar.tsx` y `canDecideRequest`
+en `widgets/reprogramaciones/ui/BandejaReprogramaciones.tsx` implementan la misma
+regla de negocio con el mismo árbol de decisión: monitor de campo no decide, jefe
+de gestión resuelve lo nacido en UGEL, jefe de área lo mismo dentro de su nivel,
+director de institución lo nacido en su colegio y sólo en Secundaria.
+
+Un cambio en una y no en la otra deja dos pantallas discrepando sobre quién puede
+aprobar. Ninguna de las dos tiene cobertura. Extraerla a una función pura con
+pruebas propias corresponde a esta fase y está pendiente; no se hizo durante la
+migración para no mezclar el cambio de vocabulario con un cambio de estructura.
+
 Quedan también por hacer, dentro de esta misma fase: derivar `ROLE_PERMISSIONS`
 del vocabulario de capacidades en lugar de mantenerla a mano, sustituir
 `getDefaultLandingPage`, retirar la matriz muerta `ROL_PERMISOS` del seeder

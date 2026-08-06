@@ -801,6 +801,44 @@ A esto se suman 121 ocurrencias de `any`, concentradas en `scheduling.service.sp
 
 **Riesgo de omitir esta fase.** Los desajustes entre el esquema de datos y el código siguen sin detectarse en compilación. Toda migración de base de datos futura conlleva riesgo de fallo en tiempo de ejecución en los tres módulos de mayor complejidad del sistema.
 
+#### Progreso — iniciada el 2026-08-06
+
+**Alcance medido.** Al retirar las 16 supresiones de archivo aparecen **156
+errores**:
+
+| Regla | Errores |
+| --- | --- |
+| `no-unsafe-member-access` | 80 |
+| `no-unsafe-assignment` | 42 |
+| `no-unused-vars` | 22 |
+| `no-unsafe-argument` | 11 |
+| `no-unsafe-return` | 1 |
+
+Repartidos de forma muy desigual: desde 2 errores en
+`prisma-ficha.repository.ts` hasta **50 en `prisma-cronograma.repository.ts`**.
+
+**Corrección al plan.** Los 22 `no-unused-vars` no eran parámetros de interfaz
+declarados y no usados, como preveía este documento, sino **nueve imports
+muertos** en cinco archivos. No había nada que tipar ni que justificar: se
+borran los imports y la supresión sobra. Cinco de los dieciséis archivos no
+tenían ningún problema de tipado, sólo basura acumulada bajo una supresión que
+la escondía.
+
+**Supresiones retiradas hasta ahora: 6 de 16.**
+
+- Cinco archivos de interfaz y DTO, por imports muertos
+- `prisma-ficha.repository.ts`: sus dos `as any` eran residuo; el tipo ya
+  encajaba sin ellos
+
+**Hallazgo en `prisma-user.repository.ts`.** Su `as any` sobre el `include` de
+Prisma **no era residuo**: al retirarlo aflora un desajuste real entre lo que
+Prisma devuelve y la entidad `Usuario` que el repositorio declara devolver. La
+supresión ocultaba una discrepancia de contrato, no ruido del linter.
+
+Se revirtió para no dejar la rama en rojo. Resolverlo exige reconciliar la
+entidad con la carga útil de Prisma, y es la clase de trabajo que da sentido a
+esta fase: cada supresión restante puede esconder lo mismo.
+
 ---
 
 ### Fase 5 — Descomposición de componentes monolíticos

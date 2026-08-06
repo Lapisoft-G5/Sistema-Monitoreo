@@ -1,9 +1,20 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAtenderSolicitud } from '@features/visit-requests';
 import { Compass, PlusCircle, Search, Trash2, Eye, Pencil, X, AlertCircle, Calendar, User, BookOpen, Layers, FileText } from 'lucide-react';
 import { Button } from '@shared/ui/button';
+import {
+  especialistasAsignables,
+  institucionesAsignables,
+  modalidadesPermitidas,
+  nivelesPermitidos,
+} from '@features/cronogramas/lib/asignacion';
+import { useFormularioCronograma } from '@features/cronogramas/hooks/use-formulario-cronograma';
+import {
+  fechaProgramadaPorDefecto,
+  validarProgramacion,
+} from '@features/cronogramas/lib/formulario';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { TextField, SelectField } from '@shared/ui/form-controls';
@@ -15,17 +26,12 @@ import { useUser } from '@entities/model-user';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import type { Cronograma } from '@entities/model-cronogramas';
 import {
-  ModalidadEducativa,
-  MODALIDAD_NIVEL_MAP,
   RoleCode,
   type EstadoVisita,
   type IUpdateVisitaRequest,
   type Modalidad,
 } from '@sistema-monitoreo/shared-contracts';
 import { useScope } from '@shared/auth';
-
-// ── Constantes de modalidades ──
-const MODALIDADES = Object.values(ModalidadEducativa);
 
 const getInitialsColor = (initials: string) => {
   const colors: Record<string, string> = {
@@ -100,18 +106,42 @@ export const CronogramaPage = () => {
   const [editCronogramaId, setEditCronogramaId] = useState<string | null>(null);
 
   // --- Valores del Formulario ---
-  const [formFechaHora, setFormFechaHora] = useState('');
-  const [formEspecialista, setFormEspecialista] = useState('');
-  const [formInstitucion, setFormInstitucion] = useState('');
-  const [formDocente, setFormDocente] = useState('');
-  const [formTipo, setFormTipo] = useState<'DOCENTE' | 'DIRECTIVO'>('DOCENTE');
-  const [formVisita, setFormVisita] = useState('01');
-  const [formEstado, setFormEstado] = useState<Cronograma['estado']>('PROGRAMADO');
-  const [formModalidad, setFormModalidad] = useState('');
-  const [formNivel, setFormNivel] = useState('');
-  const [formObservaciones, setFormObservaciones] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
-  const [formSubmitting, setFormSubmitting] = useState(false);
+  // Una sola pieza de estado, con actualizadores estables: es lo que permite
+  // que el efecto de precarga declare sus dependencias en lugar de silenciarlas.
+  const {
+    valores: form,
+    error: formError,
+    enviando: formSubmitting,
+    cambiar: cambiarForm,
+    cargar: cargarForm,
+    reiniciar: reiniciarForm,
+    setError: setFormError,
+    setEnviando: setFormSubmitting,
+  } = useFormularioCronograma();
+
+  const {
+    fechaHora: formFechaHora,
+    especialista: formEspecialista,
+    institucion: formInstitucion,
+    docente: formDocente,
+    tipo: formTipo,
+    visita: formVisita,
+    estado: formEstado,
+    modalidad: formModalidad,
+    nivel: formNivel,
+    observaciones: formObservaciones,
+  } = form;
+
+  const setFormFechaHora = (v: string) => cambiarForm('fechaHora', v);
+  const setFormEspecialista = (v: string) => cambiarForm('especialista', v);
+  const setFormInstitucion = (v: string) => cambiarForm('institucion', v);
+  const setFormDocente = (v: string) => cambiarForm('docente', v);
+  const setFormTipo = (v: 'DOCENTE' | 'DIRECTIVO') => cambiarForm('tipo', v);
+  const setFormVisita = (v: string) => cambiarForm('visita', v);
+  const setFormEstado = (v: Cronograma['estado']) => cambiarForm('estado', v);
+  const setFormObservaciones = (v: string) => cambiarForm('observaciones', v);
+  const setFormModalidad = (v: string) => cargarForm({ modalidad: v });
+  const setFormNivel = (v: string) => cargarForm({ nivel: v });
 
   // Docente actualmente seleccionado en el formulario y sus visitas existentes
   const selectedDocente = useMemo(() => {
@@ -183,11 +213,11 @@ export const CronogramaPage = () => {
     );
     if (!isValid) {
       const t = setTimeout(() => {
-        setFormDocente('');
+        cambiarForm('docente', '');
       }, 0);
       return () => clearTimeout(t);
     }
-  }, [formEspecialista, docentesDeLaInstitucion, formDocente, editCronogramaId]);
+  }, [formEspecialista, docentesDeLaInstitucion, formDocente, editCronogramaId, cambiarForm]);
 
   const docenteOptions = useMemo(() => {
     const list = docentesDeLaInstitucion.map((doc) => ({
@@ -261,92 +291,35 @@ export const CronogramaPage = () => {
     const maxVisita = visitasPrevias.length > 0 ? Math.max(...visitasPrevias) : 0;
     const next = maxVisita + 1;
     const t = setTimeout(() => {
-      setFormVisita(String(next).padStart(2, '0'));
+      cambiarForm('visita', String(next).padStart(2, '0'));
     }, 0);
     return () => clearTimeout(t);
-  }, [formDocente, formTipo, editCronogramaId, docentes, cronogramas]);
+  }, [formDocente, formTipo, editCronogramaId, docentes, cronogramas, cambiarForm]);
 
-  const allowedModalidades = useMemo(() => {
-    if (user?.role !== RoleCode.JEFE_AREA || !user?.especialistaNivel) {
-      return MODALIDADES;
-    }
-    const list = [];
-    if (user.especialistaNivel === 'Inicial') {
-      list.push('EBR', 'EBE');
-    } else if (user.especialistaNivel === 'Primaria') {
-      list.push('EBR');
-    } else if (user.especialistaNivel === 'Secundaria') {
-      list.push('EBR', 'EBA', 'CEPTRO');
-    }
-    return list;
-  }, [user]);
+  // Cascada de asignacion: modalidad -> nivel -> especialista e institucion.
+  // Las cuatro reglas viven en `features/cronogramas/lib/asignacion.ts`, con
+  // cobertura propia; aca solo se les pasa el estado del formulario.
+  const allowedModalidades = useMemo(() => modalidadesPermitidas(user), [user]);
 
-  // ── Niveles filtrados por modalidad seleccionada ──
-  const nivelesDisponibles = useMemo(() => {
-    if (!formModalidad) return [];
-    const allNiveles = MODALIDAD_NIVEL_MAP[formModalidad] || [];
-    if (user?.role === RoleCode.JEFE_AREA && user?.especialistaNivel) {
-      if (formModalidad === 'EBR') {
-        return allNiveles.filter((n) => n === user.especialistaNivel);
-      }
-    }
-    return allNiveles;
-  }, [formModalidad, user]);
+  const nivelesDisponibles = useMemo(
+    () => nivelesPermitidos(formModalidad, user),
+    [formModalidad, user],
+  );
 
-  // ── Especialistas filtrados por modalidad + nivel + cargo monitor ──
-  const especialistasFiltrados = useMemo(() => {
-    const MONITOR_CARGOS = ['Especialista', 'Jefe de Gestión'];
-    if (!formModalidad || !formNivel) return [];
-    return especialistas.filter((esp) => {
-      // Por defecto, si el especialista no tiene modalidad, asumimos EBR (que es la principal de UGEL).
-      const espModalidad = esp.modalidad || 'EBR';
-      let matchModalidad = espModalidad === formModalidad;
-      let matchNivel = esp.nivelEducativo === formNivel;
+  const especialistasFiltrados = useMemo(
+    () => especialistasAsignables(especialistas, formModalidad, formNivel, user),
+    [formModalidad, formNivel, especialistas, user],
+  );
 
-      // REGLAS DE NEGOCIO:
-      if (formModalidad === 'CEPTRO') {
-        matchModalidad = true;
-        const tieneEpt = esp.especialidades && esp.especialidades.includes('EPT');
-        matchNivel = esp.nivelEducativo === 'Secundaria' && !!tieneEpt;
-      } else if (formModalidad === 'EBA' || formModalidad === 'EBE') {
-        matchModalidad = true;
-        matchNivel = esp.nivelEducativo === 'Primaria' || esp.nivelEducativo === 'Inicial';
-      }
+  const institucionesFiltradas = useMemo(
+    () => institucionesAsignables(instituciones, formModalidad, formNivel),
+    [formModalidad, formNivel, instituciones],
+  );
 
-      const isActive = esp.activo === true;
-      const isMonitorCargo = MONITOR_CARGOS.includes(esp.cargo);
-      
-      // Un Jefe de Gestión no puede asignar a OTRO Jefe de Gestión
-      // Solo puede asignarse a sí mismo
-      const isOtherJefeGestion = esp.cargo === 'Jefe de Gestión' && esp.id !== user?.especialistaId;
-
-      return matchModalidad && matchNivel && isActive && isMonitorCargo && !isOtherJefeGestion;
-    });
-  }, [formModalidad, formNivel, especialistas, user]);
-
-  // ── Instituciones filtradas por modalidad + nivel ──
-  const institucionesFiltradas = useMemo(() => {
-    if (!formModalidad || !formNivel) return [];
-    return instituciones.filter(
-      (inst) => 
-        inst.modalidad === formModalidad && 
-        inst.nivelEducativo === formNivel && 
-        (inst.estado === 'Activa' || inst.activo === true)
-    );
-  }, [formModalidad, formNivel, instituciones]);
-
-  const handleFormModalidadChange = (modalidad: string) => {
-    setFormModalidad(modalidad);
-    setFormNivel('');
-    setFormEspecialista('');
-    setFormInstitucion('');
-  };
-
-  const handleFormNivelChange = (nivel: string) => {
-    setFormNivel(nivel);
-    setFormEspecialista('');
-    setFormInstitucion('');
-  };
+  // La cascada (limpiar nivel, especialista e institución) la aplica
+  // `aplicarCambioDeAsignacion`, con cobertura en `formulario.test.ts`.
+  const handleFormModalidadChange = (modalidad: string) => cambiarForm('modalidad', modalidad);
+  const handleFormNivelChange = (nivel: string) => cambiarForm('nivel', nivel);
 
   // Resetear paginación síncronamente cuando cambian los filtros
   const filters = useMemo(
@@ -429,35 +402,16 @@ export const CronogramaPage = () => {
   }, [filteredCronogramas, fromIndex, toIndex]);
 
   // --- Generar datetime default (ahora + 1 día a las 08:00) ---
-  const getDefaultDateTime = () => {
-    const now = new Date();
-    now.setDate(now.getDate() + 1);
-    now.setHours(8, 0, 0, 0);
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}T08:00`;
-  };
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setEditCronogramaId(null);
-    setFormFechaHora('');
-    setFormEspecialista('');
-    setFormInstitucion('');
-    setFormDocente('');
-    setFormTipo('DOCENTE');
-    setFormVisita('01');
-    setFormEstado('PROGRAMADO');
-    setFormModalidad('');
-    setFormNivel('');
-    setFormObservaciones('');
-    setFormError(null);
-  };
+    reiniciarForm();
+  }, [reiniciarForm]);
 
   // --- Abrir Modal de Registro ---
   const handleOpenCreate = () => {
     resetForm();
-    setFormFechaHora(getDefaultDateTime());
+    setFormFechaHora(fechaProgramadaPorDefecto());
 
     if (isDirector && user) {
       setFormInstitucion(user.institucionNombre || '');
@@ -509,15 +463,17 @@ export const CronogramaPage = () => {
     const doc = prefill.docenteId ? docentes.find((d) => d.id === prefill.docenteId) : null;
 
     const timer = setTimeout(() => {
-      resetForm();
-      setFormFechaHora(getDefaultDateTime());
-      if (ie) {
-        setFormModalidad(ie.modalidad);
-        setFormNivel(ie.nivelEducativo);
-        setFormInstitucion(ie.nombre);
-      }
-      setFormTipo('DOCENTE');
-      if (doc) setFormDocente(`${doc.nombres} ${doc.apellidos}`.trim());
+      setEditCronogramaId(null);
+      // Una sola escritura del formulario en lugar de siete asignaciones
+      // sueltas: es lo que permite declarar las dependencias de este efecto.
+      reiniciarForm({
+        fechaHora: fechaProgramadaPorDefecto(),
+        tipo: 'DOCENTE',
+        ...(ie
+          ? { modalidad: ie.modalidad, nivel: ie.nivelEducativo, institucion: ie.nombre }
+          : {}),
+        ...(doc ? { docente: `${doc.nombres} ${doc.apellidos}`.trim() } : {}),
+      });
       setPendingSolicitudId(prefill.solicitudId ?? null);
       setShowFormModal(true);
 
@@ -526,40 +482,19 @@ export const CronogramaPage = () => {
     }, 0);
 
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state, instituciones, docentes]);
+  }, [location.state, location.pathname, instituciones, docentes, reiniciarForm, navigate]);
 
   // --- Guardar Formulario ---
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
-    if (!formModalidad || !formNivel || !formEspecialista || !formInstitucion || !formDocente.trim() || !formFechaHora) {
-      setFormError('Todos los campos con asterisco (*) son obligatorios.');
+    // Campos obligatorios y fecha no anterior al presente. Las reglas viven en
+    // `lib/formulario.ts`, con cobertura; al editar no se revalida la fecha.
+    const falta = validarProgramacion(form, { esEdicion: !!editCronogramaId });
+    if (falta) {
+      setFormError(falta);
       return;
-    }
-
-    const [datePart, timePart] = formFechaHora.split('T');
-
-    if (!editCronogramaId) {
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
-      const currentDay = String(now.getDate()).padStart(2, '0');
-      const currentDateStr = `${currentYear}-${currentMonth}-${currentDay}`;
-      const currentHourStr = String(now.getHours()).padStart(2, '0');
-      const currentMinStr = String(now.getMinutes()).padStart(2, '0');
-      const currentTimeStr = `${currentHourStr}:${currentMinStr}`;
-
-      if (datePart < currentDateStr) {
-        setFormError('La fecha programada no puede ser anterior a la fecha actual.');
-        return;
-      } else if (datePart === currentDateStr) {
-        if (timePart < currentTimeStr) {
-          setFormError('La hora programada no puede ser anterior a la hora actual.');
-          return;
-        }
-      }
     }
 
     const matchedEsp = especialistas.find(e => e.nombre === formEspecialista);

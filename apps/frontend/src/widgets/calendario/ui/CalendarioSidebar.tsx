@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { useState, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   Sparkles,
   X,
@@ -18,11 +16,15 @@ import {
 import { Button } from '@/shared/ui/button';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
-import type { Cronograma } from '@entities/model-cronogramas';
+import { puedeEvaluarVisita, type Cronograma } from '@entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
 import { useScope } from '@shared/auth';
 import { puedeDecidirReprogramacion } from '@entities/model-reprogramaciones';
+import { seleccionarPlantillaActiva } from '@/entities/model-plantillas';
 import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
+import { claveDeHoy } from '@/shared/lib/calendario/grid';
+import { fichaAEstadoFormulario } from '@/features/monitoreos/lib/ficha-estado';
+import { useFichaPersistence } from '@/features/monitoreos/hooks/use-ficha-persistence';
 import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
 import { FEATURES } from '@shared/config/features';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
@@ -99,9 +101,7 @@ export const CalendarioSidebar = ({
   // institución: los une la tarea, no el ámbito.
   const { isMonitorCampo, isInstitution } = useScope();
 
-const qc = useQueryClient();
-
-const {
+  const {
   cronogramas,
   reprogramaciones,
   submitRescheduleRequest,
@@ -147,91 +147,29 @@ const {
     return filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === selectedDateStr);
   }, [filteredVisits, selectedDateStr]);
 
+  // Reglas de negocio extraídas a `entities/`, con cobertura propia: qué
+  // instrumento se aplica (`seleccion.test.ts`) y quién puede levantar la ficha
+  // (`evaluador.test.ts`). Acá sólo queda el enlace con el estado del widget.
   const activeTemplate = useMemo(() => {
     if (!selectedVisit || !user) return null;
-    const searchType = selectedVisit.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    const isInstitucionRole = isInstitution;
+    return seleccionarPlantillaActiva(plantillas, {
+      tipoVisita: selectedVisit.tipo,
+      usuarioId: user.id,
+      institucionUsuarioId: user.institucion,
+      esInstitucion: isInstitution,
+      esMonitorCampo: isMonitorCampo,
+    });
+  }, [selectedVisit, plantillas, user, isInstitution, isMonitorCampo]);
 
-    const matchTypeAndEstado = (p: (typeof plantillas)[number]) =>
-      p.tipoMonitoreo === searchType && p.estado === 'Vigente';
+  const isEvaluadorAutorizado = useMemo(
+    () => puedeEvaluarVisita(user, selectedVisit),
+    [selectedVisit, user],
+  );
 
-    // Priority 1: plantilla de la IE (para roles institucionales)
-    let matchedTemplate: (typeof plantillas)[number] | undefined;
-    if (isInstitucionRole && user.institucion) {
-      // Priorizar la plantilla creada por el propio evaluador (coordinador o jefe de taller)
-      // Monitores de campo del lado de la institución: levantan ficha y además
-      // crean su propia plantilla, que tiene prioridad sobre la de la I.E.
-      if (isMonitorCampo && isInstitution) {
-        matchedTemplate = plantillas.find(
-          (p) =>
-            matchTypeAndEstado(p) &&
-            p.creadoPorRole === 'director_ie' &&
-            p.ieId === user.institucion &&
-            p.creadoPorId === user.id,
-        );
-      }
-
-      // Si no se encontró plantilla propia, buscar la de la IE (director_ie)
-      if (!matchedTemplate) {
-        matchedTemplate = plantillas.find(
-          (p) => matchTypeAndEstado(p) && p.creadoPorRole === 'director_ie' && p.ieId === user.institucion,
-        );
-      }
-    }
-
-    // Priority 2: plantilla UGEL
-    if (!matchedTemplate) {
-      matchedTemplate = plantillas.find(
-        (p) => matchTypeAndEstado(p) && (!p.creadoPorRole || p.creadoPorRole === 'jefe_gestion'),
-      );
-    }
-
-    // Ultimate fallback
-    return matchedTemplate ?? plantillas.find((p) => p.tipoMonitoreo === searchType && p.estado === 'Vigente') ?? plantillas[0] ?? null;
-  }, [selectedVisit, plantillas, user]);
-
-  // Determinar si el usuario actual es el evaluador autorizado para iniciar esta visita
-  // Solo la persona asignada como especialista/coordinador/jefe de taller/director puede llenar la ficha.
-  const isEvaluadorAutorizado = useMemo(() => {
-    if (!selectedVisit || !user) return false;
-
-    // Roles que pueden evaluar (deben coincidir con el asignado a la visita)
-    const allowedRoles = [
-      'especialista',
-      'coordinador_pedagogico',
-      'jefe_taller',
-      'jefe_gestion',
-      'jefe_area',
-      'director_institucion',
-    ];
-    if (!allowedRoles.includes(user.role)) return false;
-
-    // Si el usuario tiene Especialista vinculado, comparar por id
-    if (user.especialistaId && selectedVisit.monitorId) {
-      return user.especialistaId === selectedVisit.monitorId;
-    }
-    // Fallback: coincidencia por nombre (legacy)
-    const userFullName = `${user.nombres} ${user.apellidos}`.toLowerCase();
-    const visitEspecialista = selectedVisit.especialista.toLowerCase();
-    return (
-      userFullName.includes(visitEspecialista) ||
-      visitEspecialista.includes(userFullName) ||
-      visitEspecialista.includes(user.nombres.toLowerCase())
-    );
-  }, [selectedVisit, user, activeTemplate]);
-
-  // Determinar si el día actual coincide con la fecha programada
+  // ¿Hoy es el día programado? Restringe el inicio de la visita a su fecha.
   const isFechaCoincidente = useMemo(() => {
     if (!selectedVisit) return false;
-
-    // Fecha actual real (en formato YYYY-MM-DD local)
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-    // Fecha programada
-    const visitDateStr = selectedVisit.fechaHora.substring(0, 10);
-
-    return todayStr === visitDateStr;
+    return claveDeHoy() === selectedVisit.fechaHora.substring(0, 10);
   }, [selectedVisit]);
 
   const simulateFichaLlena = (visitId: string) => {
@@ -273,183 +211,41 @@ const {
     }
   };
 
-  const handleSaveBorrador = async (
-    visitId: string,
-    data: {
-      checkedAspects: Record<string, boolean>;
-      selectedLevels: Record<string, string>;
-      generalComments: string;
-      sugerencias?: string;
-      compromisos?: string;
-      rubricComments?: Record<string, string>;
-      preguntaExtraAnswers?: Record<string, boolean>;
-      respuestasEjeItem?: Record<string, number>;
-      evidenciaUrls?: Record<string, string>;
-      observacionesEjeItem?: Record<string, string>;
-      contexto?: {
-        areaCurricular: string;
-        grado: string;
-        seccion: string;
-        cantidadEstudiantes: number;
-        cantidadEstudiantesNee: number;
-      };
-    }
-  ) => {
-    // Persistir localmente (UX inmediata)
-    if (!FEATURES.apiOnly) {
-      safeSetLocalStorage(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
-    }
-    qc.setQueryData(['cronogramas'], (prev: any) =>
-      Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'EN_PROCESO' } : c)) : prev
-    );
+  // Escritura del resultado del monitoreo. Vive en `use-ficha-persistence`
+  // porque no es maquetación; acá sólo se enlazan sus efectos con los modales.
+  const { guardarBorrador, finalizar } = useFichaPersistence({
+    plantillaId: activeTemplate?.id,
+    onPersistido: () => setShowFichaModal(false),
+    onPlantillaVersionada: (contexto) => {
+      // ILA-0046: la plantilla pasó a Histórico; se ofrece migrar.
+      setMigracionContext(contexto);
+      setShowMigracionModal(true);
+    },
+  });
 
-    // Persistir en backend (best-effort, no bloquea la UI)
-    try {
-      const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
-      let ficha = await fichasApi.findByVisita(visitId);
-      if (!ficha) {
-        ficha = await fichasApi.create({
-          cronogramaId: visitId,
-          // Vincular la ficha a la plantilla que realmente se está usando (la del
-          // actor), para que sus respuestas coincidan al renderizar/reportar.
-          plantillaId: activeTemplate?.id,
-          areaCurricular: data.contexto?.areaCurricular,
-          grado: data.contexto?.grado,
-          seccion: data.contexto?.seccion,
-          cantidadEstudiantes: data.contexto?.cantidadEstudiantes,
-          cantidadEstudiantesNee: data.contexto?.cantidadEstudiantesNee,
-        });
-      }
-      // Guardar respuestas de desempeno (1-4)
-      const desempenoMap = data.selectedLevels;
-      for (const [desempenoId, nivelRoman] of Object.entries(desempenoMap)) {
-        const obs = data.rubricComments?.[desempenoId];
-        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman), obs);
-      }
-      // Guardar respuestas de aspecto
-      for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
-        await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
-      }
-      // Guardar respuestas de eje item
-      if (data.respuestasEjeItem) {
-        for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
-          const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
-          const observacion = data.observacionesEjeItem?.[ejeItemId];
-          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl, observacion);
+  /**
+   * Abre una ficha ya cerrada. Si no hay estado local, lo reconstruye desde el
+   * backend; sólo si tampoco hay ficha recurre al relleno de demostración.
+   */
+  const abrirFichaLlena = async (visitId: string) => {
+    if (!localStorage.getItem(`sistema-monitoreo:ficha-state:${visitId}`)) {
+      try {
+        const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+        const ficha = await fichasApi.findByVisita(visitId);
+        if (ficha) {
+          safeSetLocalStorage(
+            `sistema-monitoreo:ficha-state:${visitId}`,
+            JSON.stringify(fichaAEstadoFormulario(ficha)),
+          );
+        } else {
+          simulateFichaLlena(visitId);
         }
+      } catch (e) {
+        console.error(e);
+        simulateFichaLlena(visitId);
       }
-      setShowFichaModal(false);
-    } catch (err: unknown) {
-      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string; message?: string } }; message?: string };
-      if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
-        // ILA-0046: la plantilla paso a Historico, abrir modal de migracion
-        setMigracionContext({
-          visitId,
-          plantillaVigenteId: apiErr.response.data.plantillaVigenteId ?? null,
-          plantillaVigenteNombre: apiErr.response.data.plantillaVigenteNombre ?? 'Plantilla vigente',
-        });
-        setShowMigracionModal(true);
-        return;
-      }
-      const msg = apiErr?.response?.data?.message || apiErr?.message || 'Error desconocido al guardar borrador.';
-      alert(`Error: ${msg}`);
-      console.warn('No se pudo persistir la ficha en backend:', err);
     }
-  };
-
-  const handleFinalizeMonitoreo = async (
-    visitId: string,
-    data: {
-      checkedAspects: Record<string, boolean>;
-      selectedLevels: Record<string, string>;
-      generalComments: string;
-      sugerencias?: string;
-      compromisos?: string;
-      rubricComments?: Record<string, string>;
-      preguntaExtraAnswers?: Record<string, boolean>;
-      respuestasEjeItem?: Record<string, number>;
-      evidenciaUrls?: Record<string, string>;
-      observacionesEjeItem?: Record<string, string>;
-      contexto?: {
-        areaCurricular: string;
-        grado: string;
-        seccion: string;
-        cantidadEstudiantes: number;
-        cantidadEstudiantesNee: number;
-      };
-    }
-  ) => {
-    safeSetLocalStorage(`sistema-monitoreo:ficha-state:${visitId}`, JSON.stringify(data));
-    qc.setQueryData(['cronogramas'], (prev: any) =>
-      Array.isArray(prev) ? prev.map((c: any) => (c.id === visitId ? { ...c, estado: 'COMPLETADO' } : c)) : prev
-    );
-
-    try {
-      const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
-      let ficha = await fichasApi.findByVisita(visitId);
-      if (!ficha) {
-        ficha = await fichasApi.create({
-          cronogramaId: visitId,
-          // Vincular la ficha a la plantilla que realmente se está usando (la del
-          // actor), para que sus respuestas coincidan al renderizar/reportar.
-          plantillaId: activeTemplate?.id,
-          areaCurricular: data.contexto?.areaCurricular,
-          grado: data.contexto?.grado,
-          seccion: data.contexto?.seccion,
-          cantidadEstudiantes: data.contexto?.cantidadEstudiantes,
-          cantidadEstudiantesNee: data.contexto?.cantidadEstudiantesNee,
-        });
-      }
-      for (const [desempenoId, nivelRoman] of Object.entries(data.selectedLevels)) {
-        const obs = data.rubricComments?.[desempenoId];
-        const extraRes = data.preguntaExtraAnswers?.[desempenoId];
-        await fichasApi.saveRespuestaDesempeno(ficha.id, desempenoId, romanToNumber(nivelRoman), obs, extraRes);
-      }
-      for (const [aspectoId, marcado] of Object.entries(data.checkedAspects)) {
-        await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
-      }
-      if (data.respuestasEjeItem) {
-        for (const [ejeItemId, nivel] of Object.entries(data.respuestasEjeItem)) {
-          const evidenciaUrl = data.evidenciaUrls?.[ejeItemId];
-          const observacion = data.observacionesEjeItem?.[ejeItemId];
-          await fichasApi.saveRespuestaEjeItem(ficha.id, ejeItemId, nivel, evidenciaUrl, observacion);
-        }
-      }
-      // Evidencias generales (slots GENERAL_1/2/3) se persisten como JSON en
-      // evidenciaGeneral; si solo hay la clave legada 'GENERAL', se envía tal cual.
-      const generalEvidencias = Object.fromEntries(
-        Object.entries(data.evidenciaUrls ?? {}).filter(([k]) => k.startsWith('GENERAL')),
-      );
-      const evidenciaGeneralPayload =
-        Object.keys(generalEvidencias).length > 0 ? JSON.stringify(generalEvidencias) : undefined;
-      await fichasApi.finalizar(
-        ficha.id,
-        data.generalComments,
-        data.sugerencias,
-        data.compromisos,
-        evidenciaGeneralPayload,
-      );
-      setShowFichaModal(false);
-    } catch (err: unknown) {
-      const apiErr = err as { response?: { status?: number; data?: { code?: string; plantillaVigenteId?: string; plantillaVigenteNombre?: string; message?: string } }; message?: string };
-      if (apiErr?.response?.status === 409 && apiErr.response?.data?.code === 'PLANTILLA_VERSIONADA') {
-        setMigracionContext({
-          visitId,
-          plantillaVigenteId: apiErr.response.data.plantillaVigenteId ?? null,
-          plantillaVigenteNombre: apiErr.response.data.plantillaVigenteNombre ?? 'Plantilla vigente',
-        });
-        setShowMigracionModal(true);
-        return;
-      }
-      const msg = apiErr?.response?.data?.message || apiErr?.message || 'Error desconocido al finalizar la ficha.';
-      alert(`Error: ${msg}`);
-      console.warn('No se pudo finalizar la ficha en backend:', err);
-    }
-  };
-
-  const romanToNumber = (roman: string): number => {
-    const map: Record<string, number> = { I: 1, II: 2, III: 3, IV: 4 };
-    return map[roman] || 1;
+    setShowFichaModal(true);
   };
 
   const handleDeleteConfirm = () => {
@@ -702,70 +498,7 @@ const {
 
                 <Button
                   variant="outline"
-                  onClick={async () => {
-                    const saved = localStorage.getItem(`sistema-monitoreo:ficha-state:${selectedVisit.id}`);
-                    if (!saved) {
-                      try {
-                        const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
-                        const ficha = await fichasApi.findByVisita(selectedVisit.id);
-                        if (ficha) {
-                          const checkedAspects: Record<string, boolean> = {};
-                          for (const r of ficha.respuestasAspecto) {
-                            checkedAspects[r.aspectoId] = r.marcado;
-                          }
-                          const selectedLevels: Record<string, string> = {};
-                          const rubricComments: Record<string, string> = {};
-                          const romanMap = ['I', 'II', 'III', 'IV'];
-                          for (const r of ficha.respuestasDesempeno) {
-                            selectedLevels[r.desempenoId] = romanMap[r.nivel - 1] || 'I';
-                            if (r.observaciones) {
-                              rubricComments[r.desempenoId] = r.observaciones;
-                            }
-                          }
-                          const respuestasEjeItem: Record<string, number> = {};
-                          const evidenciaUrls: Record<string, string> = {};
-                          const observacionesEjeItem: Record<string, string> = {};
-                          for (const r of ficha.respuestasEjeItem || []) {
-                            respuestasEjeItem[r.ejeItemId] = r.nivel;
-                            if (r.evidenciaUrl) evidenciaUrls[r.ejeItemId] = r.evidenciaUrl;
-                            if (r.observacion) observacionesEjeItem[r.ejeItemId] = r.observacion;
-                          }
-                          // Evidencia general: JSON con slots GENERAL_1/2/3, o cadena legada.
-                          if (ficha.evidenciaGeneral) {
-                            const raw = ficha.evidenciaGeneral;
-                            if (raw.trim().startsWith('{')) {
-                              try {
-                                Object.assign(evidenciaUrls, JSON.parse(raw) as Record<string, string>);
-                              } catch {
-                                evidenciaUrls['GENERAL'] = raw;
-                              }
-                            } else {
-                              evidenciaUrls['GENERAL'] = raw;
-                            }
-                          }
-                          const mappedData = {
-                            checkedAspects,
-                            selectedLevels,
-                            generalComments: ficha.observaciones || '',
-                            sugerencias: ficha.sugerencias || '',
-                            compromisos: ficha.compromisos || '',
-                            rubricComments,
-                            respuestasEjeItem,
-                            evidenciaUrls,
-                            observacionesEjeItem,
-                            contexto: ficha.contexto,
-                          };
-                          safeSetLocalStorage(`sistema-monitoreo:ficha-state:${selectedVisit.id}`, JSON.stringify(mappedData));
-                        } else {
-                          simulateFichaLlena(selectedVisit.id);
-                        }
-                      } catch (e) {
-                        console.error(e);
-                        simulateFichaLlena(selectedVisit.id);
-                      }
-                    }
-                    setShowFichaModal(true);
-                  }}
+                  onClick={() => abrirFichaLlena(selectedVisit.id)}
                   className="w-full justify-center border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold py-2 cursor-pointer"
                 >
                   Ver Ficha de Monitoreo Llena
@@ -822,8 +555,8 @@ const {
           onClose={() => setShowFichaModal(false)}
           visit={selectedVisit}
           template={activeTemplate}
-          onSave={handleSaveBorrador}
-          onFinalize={handleFinalizeMonitoreo}
+          onSave={guardarBorrador}
+          onFinalize={finalizar}
         />
       )}
 

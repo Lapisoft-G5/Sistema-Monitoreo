@@ -2,13 +2,15 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'node:crypto';
-import { Prisma } from '../../../generated/prisma/client.js';
 import { RoleCode, isRoleCode } from '../../../common/enums/role.enum.js';
+import type { AuthUserWithRelations } from '../repositories/user.repository.js';
 import {
   computeEffectivePermissions,
   CargoNombre,
   EspecialistaCargoEnum,
 } from '../../../shared/auth/capability-map.js';
+
+export type { AuthUserWithRelations };
 
 export interface JwtPayload {
   sub: string;
@@ -27,40 +29,6 @@ export interface JwtPayload {
   especialista_especialidades?: string[];
   firstLogin: boolean;
 }
-
-export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
-  include: {
-    // `rolPermisos` se cargaba aquí para derivar los permisos leyendo la tabla
-    // `rol_permisos`. Desde que `computeEffectivePermissions` los calcula con el
-    // mapa de capacidades, nadie leía el valor: era un join en cada
-    // autenticación cuyo resultado se descartaba. H-25 de PLAN_REMEDIACION.md.
-    rol: true;
-    persona: {
-      include: {
-        docente: {
-          include: {
-            institucion: { include: { nivelEducativoRel: true } };
-            docenteCargos: {
-              where: { fechaFin: null };
-              include: { cargo: true };
-            };
-            docenteEspecialidades: { include: { especialidad: true } };
-          };
-        };
-        especialista: {
-          include: {
-            especialidades: { include: { especialidad: true } };
-            cargos: {
-              where: { fechaFin: null; esPrincipal: true };
-              orderBy: { fechaInicio: 'desc' };
-              take: 1;
-            };
-          };
-        };
-      };
-    };
-  };
-}>;
 
 @Injectable()
 export class AuthTokenService {

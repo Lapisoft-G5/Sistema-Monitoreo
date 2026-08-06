@@ -12,10 +12,14 @@ import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import type { Cronograma } from '@entities/model-cronogramas';
-import type { SolicitudReprogramacion } from '@/entities/model-reprogramaciones';
+import {
+  puedeDecidirReprogramacion,
+  esSolicitudDeInstitucion,
+  type SolicitudReprogramacion,
+} from '@/entities/model-reprogramaciones';
 import { useUser } from '@/entities/model-user';
 import { useScope } from '@shared/auth';
-import { RoleCode, NivelEducativoEBR } from '@sistema-monitoreo/shared-contracts';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm
@@ -39,36 +43,8 @@ export const BandejaReprogramaciones = () => {
   // Quien levanta la ficha en el aula: solicita reprogramaciones, no las decide.
   const { isMonitorCampo } = useScope();
 
-  // ATENCIÓN: esta función replica casi textualmente `canDecide` de
-  // `widgets/calendario/ui/CalendarioSidebar.tsx`. Son la misma regla de negocio
-  // escrita dos veces, de modo que un cambio en una y no en la otra produce dos
-  // pantallas que discrepan sobre quién puede decidir. Extraerla a una función
-  // pura con pruebas propias está anotado en el plan como parte de esta fase; no
-  // se hace aquí para no mezclar la migración con un cambio de estructura.
-  const canDecideRequest = (visit: Cronograma, req?: SolicitudReprogramacion) => {
-    if (isMonitorCampo) return false;
-    const isIERequest =
-      req?.solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
-      req?.solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
-
-    if (user?.role === RoleCode.JEFE_GESTION) {
-      return !isIERequest;
-    }
-    if (user?.role === RoleCode.JEFE_AREA) {
-      if (isIERequest) return false;
-      if (user.especialistaNivel && visit.nivel !== user.especialistaNivel) return false;
-      return true;
-    }
-    if (user?.role === RoleCode.DIRECTOR_INSTITUCION) {
-      if (visit.nivel !== NivelEducativoEBR.SECUNDARIA) return false;
-      const isSameSchool =
-        (user.institucion && visit.institucionId === user.institucion) ||
-        (user.institucionNombre &&
-          visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase());
-      return !!(isSameSchool && isIERequest);
-    }
-    return false;
-  };
+  const canDecideRequest = (visit: Cronograma, req?: SolicitudReprogramacion) =>
+    puedeDecidirReprogramacion(user, visit, req?.solicitanteRolAlCrear);
 
   const {
     cronogramas,
@@ -117,6 +93,7 @@ export const BandejaReprogramaciones = () => {
 
       // 2. Deciders filter:
       if (!isMonitorCampo) {
+        const esDeInstitucion = esSolicitudDeInstitucion(req.solicitanteRolAlCrear);
         const isDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
         if (isDirector) {
           // Director only sees requests from their own school AND created at IE level (CP or JT)
@@ -124,21 +101,13 @@ export const BandejaReprogramaciones = () => {
             (user.institucion && req.visit.institucionId === user.institucion) ||
             (user.institucionNombre &&
               req.visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase());
-          
-          const isIERequest =
-            req.solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
-            req.solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
 
-          if (!isSameSchool || !isIERequest) {
+          if (!isSameSchool || !esDeInstitucion) {
             return false;
           }
         } else {
           // Jefe de Gestión / Admin / Jefe de Área only see requests from Specialists (UGEL)
-          const isIERequest =
-            req.solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
-            req.solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
-
-          if (isIERequest) {
+          if (esDeInstitucion) {
             return false;
           }
 

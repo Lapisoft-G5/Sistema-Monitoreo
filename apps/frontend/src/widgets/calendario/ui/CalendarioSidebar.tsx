@@ -21,7 +21,7 @@ import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-
 import type { Cronograma } from '@entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
 import { useScope } from '@shared/auth';
-import { RoleCode, NivelEducativoEBR } from '@sistema-monitoreo/shared-contracts';
+import { puedeDecidirReprogramacion } from '@entities/model-reprogramaciones';
 import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
 import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
 import { FEATURES } from '@shared/config/features';
@@ -135,47 +135,13 @@ const {
     return reprogramaciones[selectedVisit.id] || null;
   }, [reprogramaciones, selectedVisit]);
 
-  // Quién puede DECIDIR sobre una solicitud de reprogramación.
-  //
-  // El permiso de fondo lo aplica el backend: los endpoints de aprobar y
-  // rechazar exigen `monitoreo:execute`. Lo que sigue no es autorización sino
-  // el enrutamiento de negocio que decide QUÉ solicitudes le corresponden a
-  // cada posición: las nacidas en la institución las resuelve su director; las
-  // nacidas en la UGEL, el jefe de gestión o el de área dentro de su nivel.
-  //
-  // Esas tres ramas siguen distinguiendo por rol a propósito. No hay capacidad
-  // ni ámbito que las exprese: jefe de gestión y jefe de área comparten ámbito
-  // pero resuelven ámbitos de decisión distintos.
-  const canDecide = useMemo(() => {
-    if (!selectedVisit || !user) return false;
-    // Quien levanta la ficha no decide sobre su propia reprogramación.
-    if (isMonitorCampo) return false;
-
-    // Rol del SOLICITANTE, tomado del dato de la solicitud: no es el rol de
-    // quien está mirando la pantalla.
-    const isIERequest =
-      activeRequest?.solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
-      activeRequest?.solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
-
-    if (user.role === RoleCode.JEFE_GESTION) {
-      return !isIERequest;
-    }
-    if (user.role === RoleCode.JEFE_AREA) {
-      if (isIERequest) return false;
-      if (user.especialistaNivel && selectedVisit.nivel !== user.especialistaNivel) return false;
-      return true;
-    }
-    if (user.role === RoleCode.DIRECTOR_INSTITUCION) {
-      if (selectedVisit.nivel !== NivelEducativoEBR.SECUNDARIA) return false;
-      const isSameSchool = !!(
-        (user.institucion && selectedVisit.institucionId === user.institucion) ||
-        (user.institucionNombre &&
-          selectedVisit.institucion.toLowerCase() === user.institucionNombre.toLowerCase())
-      );
-      return !!(isSameSchool && isIERequest);
-    }
-    return false;
-  }, [selectedVisit, user, isMonitorCampo, activeRequest]);
+  // Regla única, compartida con `BandejaReprogramaciones` y con cobertura propia
+  // en `entities/model-reprogramaciones/decision.test.ts`.
+  const canDecide = useMemo(
+    () =>
+      puedeDecidirReprogramacion(user, selectedVisit, activeRequest?.solicitanteRolAlCrear),
+    [selectedVisit, user, activeRequest],
+  );
 
   const visitsOnSelectedDate = useMemo(() => {
     return filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === selectedDateStr);

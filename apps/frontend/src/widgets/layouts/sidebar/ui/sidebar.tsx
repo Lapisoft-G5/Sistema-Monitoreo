@@ -80,11 +80,17 @@ export const Sidebar = () => {
 
           const baseItems = SIDEBAR_CONFIG.filter((item) => {
             // Los cargos de Coordinador Pedagógico y Jefe de Taller sólo existen
-            // en Secundaria. La regla es sobre el NIVEL de la institución, no
-            // sobre el rol de quien mira: antes se comprobaba
-            // `director_institucion` únicamente porque es a quien se le puebla
-            // `institucionNivel`. Enunciarla sobre el nivel evita que el filtro
-            // haya que revisarlo cada vez que otro rol reciba estos submenús.
+            // en EBR, nivel Secundaria — la misma regla que aplica
+            // `validateCargoRestrictivo` en el backend.
+            //
+            // Basta comprobar el nivel: `'Secundaria'` no figura en ninguna
+            // modalidad distinta de EBR, de modo que el nivel implica la
+            // modalidad. Esa implicación no es evidente y la protege
+            // `common/validators/modalidad-nivel.spec.ts`.
+            //
+            // La regla habla del NIVEL de la institución, no del rol de quien
+            // mira: antes se comprobaba `director_institucion` únicamente porque
+            // es a quien se le puebla `institucionNivel`.
             const tieneInstitucion = !!user?.institucionNivel;
             const esSecundaria = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
             if (

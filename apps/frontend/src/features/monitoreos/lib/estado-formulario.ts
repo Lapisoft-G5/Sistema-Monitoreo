@@ -149,3 +149,6 @@ export function aDatosFicha(
         : undefined,
   };
 }
+
+/** Clave con la que se guarda el borrador de una ficha en el navegador. */
+export const claveEstadoLocal = (visitId: string) => `sistema-monitoreo:ficha-state:${visitId}`;

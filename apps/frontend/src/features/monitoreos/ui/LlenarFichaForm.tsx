@@ -7,8 +7,6 @@ import {
   CheckCircle2,
   Clock,
   Trophy,
-  Upload,
-  Eye,
   Download,
   Activity
 } from 'lucide-react';
@@ -22,6 +20,21 @@ import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
+import {
+  formatearFechaVisita as formatVisitDate,
+  formatearHoraVisita as formatVisitTime,
+} from '@/shared/lib/fecha-visita';
+import { useFormularioFicha } from '../hooks/use-formulario-ficha';
+import type { DatosFicha } from '../lib/ficha-estado';
+import {
+  aDatosFicha,
+  claveEstadoLocal,
+  leerEstadoGuardado,
+  tieneContextoCargado,
+} from '../lib/estado-formulario';
+import { validarCierreDeFicha } from '../lib/validacion-ficha';
+import { ContextoDeAulaSeccion } from './ficha/ContextoDeAulaSeccion';
+import { EvidenciaGeneralSeccion } from './ficha/EvidenciaGeneralSeccion';
 import {
   NIVEL_LOGRO_LABELS,
   calcularResultadoBaremo,
@@ -40,165 +53,23 @@ const COLORES_NIVEL: Record<NivelLogro, { nivelColor: string; nivelBg: string }>
   LOGRO_DESTACADO: { nivelColor: '#6366f1', nivelBg: '#eef2ff' },
 };
 import { fetchDocenteById } from '@features/docentes/docente-service';
-import type { Docente, SeccionDocente } from '@entities/model-docentes';
+import type { Docente } from '@entities/model-docentes';
 
+/**
+ * Los tres campos que describían la ficha repetían la misma forma de dieciocho
+ * líneas, una por cada uno. Es `DatosFicha`, que ya está declarado y es lo que
+ * consume la persistencia.
+ */
 interface LlenarFichaFormProps {
   isOpen: boolean;
   onClose: () => void;
   visit: Cronograma;
   template: Plantilla;
-  onSave?: (
-    visitId: string,
-    data: {
-      checkedAspects: Record<string, boolean>;
-      selectedLevels: Record<string, string>;
-      generalComments: string;
-      sugerencias?: string;
-      compromisos?: string;
-      rubricComments?: Record<string, string>;
-      preguntaExtraAnswers?: Record<string, boolean>;
-      respuestasEjeItem?: Record<string, number>;
-      evidenciaUrls?: Record<string, string>;
-      observacionesEjeItem?: Record<string, string>;
-      contexto?: {
-        areaCurricular: string;
-        grado: string;
-        seccion: string;
-        cantidadEstudiantes: number;
-        cantidadEstudiantesNee: number;
-      };
-    }
-  ) => void;
-  onFinalize?: (
-    visitId: string,
-    data: {
-      checkedAspects: Record<string, boolean>;
-      selectedLevels: Record<string, string>;
-      generalComments: string;
-      sugerencias?: string;
-      compromisos?: string;
-      rubricComments?: Record<string, string>;
-      preguntaExtraAnswers?: Record<string, boolean>;
-      respuestasEjeItem?: Record<string, number>;
-      evidenciaUrls?: Record<string, string>;
-      observacionesEjeItem?: Record<string, string>;
-      contexto?: {
-        areaCurricular: string;
-        grado: string;
-        seccion: string;
-        cantidadEstudiantes: number;
-        cantidadEstudiantesNee: number;
-      };
-    }
-  ) => void;
-  initialState?: {
-    checkedAspects: Record<string, boolean>;
-    selectedLevels: Record<string, string>;
-    generalComments: string;
-    sugerencias?: string;
-    compromisos?: string;
-    rubricComments?: Record<string, string>;
-    preguntaExtraAnswers?: Record<string, boolean>;
-    respuestasEjeItem?: Record<string, number>;
-    evidenciaUrls?: Record<string, string>;
-    observacionesEjeItem?: Record<string, string>;
-    contexto?: {
-      areaCurricular: string;
-      grado: string;
-      seccion: string;
-      cantidadEstudiantes: number;
-      cantidadEstudiantesNee: number;
-    };
-  };
+  onSave?: (visitId: string, datos: DatosFicha) => void;
+  onFinalize?: (visitId: string, datos: DatosFicha) => void;
+  /** Estado con el que abrir el formulario, si se reabre una ficha ya cargada. */
+  initialState?: DatosFicha;
 }
-
-const formatVisitTime = (fechaHoraStr: string) => {
-  try {
-    const parts = fechaHoraStr.split('T');
-    if (parts.length > 1) {
-      const [h, m] = parts[1].split(':');
-      const hour = parseInt(h);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const formattedHour = hour % 12 || 12;
-      return `${formattedHour}:${m} ${ampm}`;
-    }
-    const d = new Date(fechaHoraStr);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true });
-    }
-    return fechaHoraStr;
-  } catch {
-    return fechaHoraStr;
-  }
-};
-
-const formatVisitDate = (fechaHoraStr: string) => {
-  try {
-    const d = new Date(fechaHoraStr);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    const parts = fechaHoraStr.split('T');
-    return parts[0];
-  } catch {
-    return fechaHoraStr;
-  }
-};
-
-const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.7): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(event.target?.result as string);
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              resolve(event.target?.result as string);
-              return;
-            }
-            const reader2 = new FileReader();
-            reader2.onloadend = () => {
-              resolve(reader2.result as string);
-            };
-            reader2.readAsDataURL(blob);
-          },
-          'image/jpeg',
-          quality
-        );
-      };
-      img.onerror = () => reject(new Error('Error al cargar la imagen en memoria.'));
-      img.src = event.target?.result as string;
-    };
-    reader.onerror = () => reject(new Error('Error al leer el archivo.'));
-    reader.readAsDataURL(file);
-  });
-};
 
 export const LlenarFichaForm = ({
   isOpen,
@@ -209,23 +80,47 @@ export const LlenarFichaForm = ({
   onFinalize,
   initialState,
 }: LlenarFichaFormProps) => {
-  const [checkedAspects, setCheckedAspects] = useState<Record<string, boolean>>({});
-  const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({});
-  const [generalComments, setGeneralComments] = useState('');
-  const [sugerencias, setSugerencias] = useState('');
-  const [compromisos, setCompromisos] = useState('');
-  const [rubricComments, setRubricComments] = useState<Record<string, string>>({});
-  const [preguntaExtraAnswers, setPreguntaExtraAnswers] = useState<Record<string, boolean>>({});
-  const [fichaSelectedDesempenoId, setFichaSelectedDesempenoId] = useState<string>('');
-  const [respuestasEjeItem, setRespuestasEjeItem] = useState<Record<string, number>>({});
-  const [evidenciaUrls, setEvidenciaUrls] = useState<Record<string, string>>({});
-  const [observacionesEjeItem, setObservacionesEjeItem] = useState<Record<string, string>>({});
+  // Una sola pieza de estado; los actualizadores conservan la firma de
+  // `useState` para que los sitios de uso del formulario no cambien.
+  const {
+    estado,
+    hidratar,
+    setSelectedLevels,
+    setSugerencias,
+    setCompromisos,
+    setRubricComments,
+    setPreguntaExtraAnswers,
+    setRespuestasEjeItem,
+    setEvidenciaUrls,
+    setObservacionesEjeItem,
+    setContextoArea,
+    setContextoGrado,
+    setContextoSeccion,
+    setContextoCampo,
+  } = useFormularioFicha();
 
-  const [contextoArea, setContextoArea] = useState<string>('');
-  const [contextoGrado, setContextoGrado] = useState<string>('');
-  const [contextoSeccion, setContextoSeccion] = useState<string>('');
-  const [contextoAlumnos, setContextoAlumnos] = useState<number | ''>('');
-  const [contextoAlumnosNee, setContextoAlumnosNee] = useState<number | ''>('');
+  const {
+    checkedAspects,
+    selectedLevels,
+    generalComments,
+    sugerencias,
+    compromisos,
+    rubricComments,
+    preguntaExtraAnswers,
+    respuestasEjeItem,
+    evidenciaUrls,
+    observacionesEjeItem,
+  } = estado;
+  const {
+    area: contextoArea,
+    grado: contextoGrado,
+    seccion: contextoSeccion,
+    alumnos: contextoAlumnos,
+    alumnosNee: contextoAlumnosNee,
+  } = estado.contexto;
+
+  const [fichaSelectedDesempenoId, setFichaSelectedDesempenoId] = useState<string>('');
+
   const [evaluadoDocente, setEvaluadoDocente] = useState<Docente | null>(null);
 
   const [activeTab, setActiveTab] = useState<'FICHA' | 'HISTORIAL'>('FICHA');
@@ -235,95 +130,21 @@ export const LlenarFichaForm = ({
   const handlePrint = useReactToPrint({ contentRef: printRef });
 
   useEffect(() => {
-    if (isOpen && visit) {
-      if (initialState) {
-        setTimeout(() => {
-          setCheckedAspects(initialState.checkedAspects || {});
-          setSelectedLevels(initialState.selectedLevels || {});
-          setGeneralComments(initialState.generalComments || '');
-          setSugerencias(initialState.sugerencias || '');
-          setCompromisos(initialState.compromisos || '');
-          setRubricComments(initialState.rubricComments || {});
-          setPreguntaExtraAnswers(initialState.preguntaExtraAnswers || {});
-          setRespuestasEjeItem(initialState.respuestasEjeItem || {});
-          setEvidenciaUrls(initialState.evidenciaUrls || {});
-          setObservacionesEjeItem(initialState.observacionesEjeItem || {});
-          if (initialState.contexto) {
-            setContextoArea(initialState.contexto.areaCurricular);
-            setContextoGrado(initialState.contexto.grado);
-            setContextoSeccion(initialState.contexto.seccion);
-            setContextoAlumnos(initialState.contexto.cantidadEstudiantes);
-            setContextoAlumnosNee(initialState.contexto.cantidadEstudiantesNee);
-          }
-        }, 0);
-      } else {
-        const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
-        if (savedState) {
-          try {
-            const parsed = JSON.parse(savedState);
-            setTimeout(() => {
-              setCheckedAspects(parsed.checkedAspects || {});
-              setSelectedLevels(parsed.selectedLevels || {});
-              setGeneralComments(parsed.generalComments || '');
-              setSugerencias(parsed.sugerencias || '');
-              setCompromisos(parsed.compromisos || '');
-              setRubricComments(parsed.rubricComments || {});
-              setPreguntaExtraAnswers(parsed.preguntaExtraAnswers || {});
-              setRespuestasEjeItem(parsed.respuestasEjeItem || {});
-              setEvidenciaUrls(parsed.evidenciaUrls || {});
-              setObservacionesEjeItem(parsed.observacionesEjeItem || {});
-              if (parsed.contexto) {
-                setContextoArea(parsed.contexto.areaCurricular);
-                setContextoGrado(parsed.contexto.grado);
-                setContextoSeccion(parsed.contexto.seccion);
-                setContextoAlumnos(parsed.contexto.cantidadEstudiantes);
-                setContextoAlumnosNee(parsed.contexto.cantidadEstudiantesNee);
-              }
-            }, 0);
-          } catch (e) {
-            console.warn('Error parsing saved state', e);
-            setTimeout(() => {
-              setCheckedAspects({});
-              setSelectedLevels({});
-              setGeneralComments('');
-              setSugerencias('');
-              setCompromisos('');
-              setRubricComments({});
-              setPreguntaExtraAnswers({});
-              setRespuestasEjeItem({});
-              setEvidenciaUrls({});
-              setContextoArea('');
-              setContextoGrado('');
-              setContextoSeccion('');
-              setContextoAlumnos('');
-              setContextoAlumnosNee('');
-            }, 0);
-          }
-        } else {
-          setTimeout(() => {
-            setCheckedAspects({});
-            setSelectedLevels({});
-            setGeneralComments('');
-            setSugerencias('');
-            setCompromisos('');
-            setRubricComments({});
-            setPreguntaExtraAnswers({});
-            setRespuestasEjeItem({});
-            setEvidenciaUrls({});
-            setContextoArea('');
-            setContextoGrado('');
-            setContextoSeccion('');
-            setContextoAlumnos('');
-            setContextoAlumnosNee('');
-          }, 0);
-        }
-      }
+    if (!isOpen || !visit) return;
 
-      if (template && template.desempenos.length > 0) {
-        setTimeout(() => setFichaSelectedDesempenoId(template.desempenos[0].id), 0);
-      }
+    // Estado recibido, o el borrador local, o formulario en blanco. Un borrador
+    // ilegible se descarta: impedir abrir la ficha sería peor que perderlo.
+    const fuente =
+      initialState ?? leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visit.id)));
+
+    // El diferido es el comportamiento original y se conserva: la hidratación
+    // ocurre fuera del ciclo de render que la dispara.
+    setTimeout(() => hidratar(fuente), 0);
+
+    if (template && template.desempenos.length > 0) {
+      setTimeout(() => setFichaSelectedDesempenoId(template.desempenos[0].id), 0);
     }
-  }, [isOpen, visit, template, initialState]);
+  }, [isOpen, visit, template, initialState, hidratar]);
 
   useEffect(() => {
     if (isOpen && visit && visit.evaluadoId) {
@@ -332,23 +153,14 @@ export const LlenarFichaForm = ({
           setTimeout(() => {
             setEvaluadoDocente(doc);
 
-            const savedState = localStorage.getItem(`sistema-monitoreo:ficha-state:${visit.id}`);
-            let hasSavedContext = false;
-            if (savedState) {
-              try {
-                const parsed = JSON.parse(savedState);
-                if (parsed.contexto?.areaCurricular || parsed.contexto?.grado || parsed.contexto?.seccion) {
-                  hasSavedContext = true;
-                }
-              } catch (e) {
-                console.warn('Error parsing saved state', e);
-              }
-            }
-            if (initialState?.contexto?.areaCurricular || initialState?.contexto?.grado || initialState?.contexto?.seccion) {
-              hasSavedContext = true;
-            }
+            // No se pisa un contexto ya cargado, venga del borrador local o del
+            // estado recibido: lo que escribió el evaluador manda.
+            const guardado = leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visit.id)));
+            const hayContexto =
+              tieneContextoCargado(guardado?.contexto) ||
+              tieneContextoCargado(initialState?.contexto);
 
-            if (!hasSavedContext) {
+            if (!hayContexto) {
               setContextoArea(doc.especialidad || 'General');
               if (doc.secciones && doc.secciones.length > 0) {
                 setContextoGrado(doc.secciones[0].grado || '');
@@ -363,7 +175,7 @@ export const LlenarFichaForm = ({
         setEvaluadoDocente(null);
       }, 0);
     }
-  }, [isOpen, visit, initialState]);
+  }, [isOpen, visit, initialState, setContextoArea, setContextoGrado, setContextoSeccion]);
 
   const activeFichaDesempeno = useMemo(() => {
     if (!template) return null;
@@ -384,93 +196,20 @@ export const LlenarFichaForm = ({
   const isDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
 
   const handleSaveClick = () => {
-    onSave?.(visit.id, {
-      checkedAspects,
-      selectedLevels,
-      generalComments,
-      sugerencias,
-      compromisos,
-      rubricComments,
-      preguntaExtraAnswers,
-      respuestasEjeItem,
-      evidenciaUrls,
-      observacionesEjeItem,
-      contexto: visit.tipo === 'DOCENTE' ? {
-        areaCurricular: contextoArea,
-        grado: contextoGrado,
-        seccion: contextoSeccion,
-        cantidadEstudiantes: Number(contextoAlumnos) || 0,
-        cantidadEstudiantesNee: Number(contextoAlumnosNee) || 0,
-      } : undefined
-    });
+    onSave?.(visit.id, aDatosFicha(estado, visit.tipo));
   };
 
   const handleFinalizeClick = () => {
-    // Validar que todos los desempeños tengan nivel calificado
-    const missing = template.desempenos.filter((d) => !selectedLevels[d.id]);
-    if (missing.length > 0) {
-      alert(
-        `Faltan calificar niveles. Por favor califique el nivel de logro para: \n${missing
-          .map((m) => `• ${m.nombre.substring(0, 45)}...`)
-          .join('\n')}`
-      );
+    // Las cinco condiciones de cierre viven en `lib/validacion-ficha.ts`, con
+    // cobertura propia; acá sólo se informa la primera que falte.
+    const falta = validarCierreDeFicha(template, estado);
+    if (falta) {
+      alert(falta);
       return;
     }
 
-    const missingComments = template.desempenos.filter((d) => !rubricComments[d.id] || rubricComments[d.id].trim() === '');
-    if (missingComments.length > 0) {
-      alert(
-        `Faltan justificaciones. Por favor ingrese un comentario u observación que justifique la evaluación para: \n${missingComments
-          .map((m) => `• ${m.nombre.substring(0, 45)}...`)
-          .join('\n')}`
-      );
-      return;
-    }
+    onFinalize?.(visit.id, aDatosFicha(estado, visit.tipo));
 
-    if (template.ejesItems && template.ejesItems.length > 0) {
-      const missingObs = template.ejesItems.filter(
-        (it) => !observacionesEjeItem[it.id] || observacionesEjeItem[it.id].trim() === ''
-      );
-      if (missingObs.length > 0) {
-        alert(
-          `Faltan observaciones. Por favor ingrese la observación para los ejes/ítems: \n${missingObs
-            .map((m) => `• ${m.numero}. ${m.descripcion.substring(0, 45)}...`)
-            .join('\n')}`
-        );
-        return;
-      }
-    }
-
-    if (!sugerencias || sugerencias.trim() === '') {
-      alert('Las sugerencias son obligatorias para finalizar la ficha.');
-      return;
-    }
-
-    if (!compromisos || compromisos.trim() === '') {
-      alert('Los compromisos son obligatorios para finalizar la ficha.');
-      return;
-    }
-
-    onFinalize?.(visit.id, {
-      checkedAspects,
-      selectedLevels,
-      generalComments,
-      sugerencias,
-      compromisos,
-      rubricComments,
-      preguntaExtraAnswers,
-      respuestasEjeItem,
-      evidenciaUrls,
-      observacionesEjeItem,
-      contexto: visit.tipo === 'DOCENTE' ? {
-        areaCurricular: contextoArea,
-        grado: contextoGrado,
-        seccion: contextoSeccion,
-        cantidadEstudiantes: Number(contextoAlumnos) || 0,
-        cantidadEstudiantesNee: Number(contextoAlumnosNee) || 0,
-      } : undefined
-    });
-    
     // Toast indicating email automation
     toast.success('Ficha finalizada con éxito', {
       description: 'El PDF oficial se está generando y enviando por correo al docente evaluado de forma automática.',
@@ -572,104 +311,16 @@ export const LlenarFichaForm = ({
           <div>Fecha Programada: <span className="text-slate-800">{formatVisitDate(visit.fechaHora)} - {formatVisitTime(visit.fechaHora)}</span></div>
         </div>
 
-        {visit.tipo === 'DOCENTE' && !isCompleted && (
-          <div className="bg-slate-50 border-b border-border">
-            <div className="px-6 pt-4 pb-2 text-sm grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500">Área Curricular</label>
-                <input
-                  type="text"
-                  value={contextoArea}
-                  onChange={(e) => setContextoArea(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
-                  placeholder="Ej. Matemática"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500">Grado</label>
-                <input
-                  type="text"
-                  value={contextoGrado}
-                  onChange={(e) => setContextoGrado(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
-                  placeholder="Ej. 1er Grado"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500">Sección</label>
-                <input
-                  type="text"
-                  value={contextoSeccion}
-                  onChange={(e) => setContextoSeccion(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white"
-                  placeholder="Ej. A"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500">Nro Estudiantes</label>
-                <input type="number" min="0" max="50" value={contextoAlumnos} onChange={(e) => {
-                  const val = e.target.value ? Number(e.target.value) : '';
-                  if (val !== '' && val > 50) return;
-                  setContextoAlumnos(val);
-                }} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500">Est. NEE (Opcional)</label>
-                <input type="number" min="0" value={contextoAlumnosNee} onChange={(e) => setContextoAlumnosNee(e.target.value ? Number(e.target.value) : '')} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="0" />
-              </div>
-            </div>
-
-            {(sugerenciasAreas.length > 0 || (evaluadoDocente && evaluadoDocente.secciones && evaluadoDocente.secciones.length > 0)) && (
-              <div className="px-6 pb-3 pt-1 grid grid-cols-2 gap-x-6 text-xs animate-in fade-in slide-in-from-top-1 duration-200">
-                {sugerenciasAreas.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 items-center">
-                    <span className="text-slate-500 font-semibold w-full">Área sugerida:</span>
-                    {sugerenciasAreas.map((area, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setContextoArea(area);
-                          toast.success(`Se sugirió el área ${area}`);
-                        }}
-                        className="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-200 text-emerald-700 font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-                      >
-                        {area}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {evaluadoDocente && evaluadoDocente.secciones && evaluadoDocente.secciones.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 items-center">
-                    <span className="text-slate-500 font-semibold w-full">Grado y Sección sugeridos:</span>
-                    {evaluadoDocente.secciones.map((sec: SeccionDocente, idx: number) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setContextoGrado(sec.grado);
-                          setContextoSeccion(sec.seccion);
-                          toast.success(`Se sugirió ${sec.grado} - Sección ${sec.seccion}`);
-                        }}
-                        className="px-2.5 py-1 rounded bg-primary-light hover:bg-primary-hover hover:text-white border border-primary/20 text-primary font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-                      >
-                        {sec.grado} - {sec.seccion}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-        {visit.tipo === 'DOCENTE' && isCompleted && (
-          <div className="px-6 py-3 bg-slate-50 border-b border-border text-xs font-bold text-slate-600 grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div>Área: <span className="text-slate-800">{contextoArea || '-'}</span></div>
-            <div>Grado: <span className="text-slate-800">{contextoGrado || '-'}</span></div>
-            <div>Sección: <span className="text-slate-800">{contextoSeccion || '-'}</span></div>
-            <div>Estudiantes: <span className="text-slate-800">{contextoAlumnos || '-'}</span></div>
-            <div>Est. NEE: <span className="text-slate-800">{contextoAlumnosNee || '-'}</span></div>
-          </div>
+        {visit.tipo === 'DOCENTE' && (
+          <ContextoDeAulaSeccion
+            contexto={estado.contexto}
+            onCambiar={setContextoCampo}
+            sugerencias={{
+              areas: sugerenciasAreas,
+              secciones: evaluadoDocente?.secciones ?? [],
+            }}
+            soloLectura={isCompleted}
+          />
         )}
 
         {visit.tipo === 'DOCENTE' && (
@@ -1017,104 +668,20 @@ export const LlenarFichaForm = ({
           </div>
         </div>
 
-        {/* Evidencia General */}
-        <div className="p-5 border-t border-border bg-white">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-              Evidencia del Monitoreo
-            </span>
-            <span className="text-[10px] text-slate-400 font-semibold">
-              {Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length}/3 imágenes
-            </span>
-          </div>
-          <div className="mt-2 flex flex-row flex-wrap gap-2">
-            {(['GENERAL_1', 'GENERAL_2', 'GENERAL_3'] as const).map((slot, idx) => {
-              const url = evidenciaUrls[slot];
-              const totalLoaded = Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length;
-              if (url) {
-                return (
-                  <div key={slot} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 max-w-[400px]">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-red-100 text-red-500 rounded-lg flex items-center justify-center shrink-0">
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-700">Evidencia {idx + 1} Cargada</p>
-                        <p className="text-[10px] text-slate-400 truncate w-40">evidencia-monitoreo-{idx + 1}.png</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 gap-2"
-                        onClick={() => setPreviewImageUrl(url)}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        Ver
-                      </Button>
-                      {!isCompleted && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
-                          onClick={() => {
-                            setEvidenciaUrls((prev) => {
-                              const next = { ...prev };
-                              delete next[slot];
-                              safeSetLocalStorage(
-                                `sistema-monitoreo:ficha-state:${visit.id}`,
-                                JSON.stringify({ checkedAspects, selectedLevels, generalComments, sugerencias, compromisos, rubricComments, preguntaExtraAnswers, respuestasEjeItem, evidenciaUrls: next })
-                              );
-                              return next;
-                            });
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              }
-              if (!isCompleted && !url && totalLoaded < 3) {
-                return (
-                  <label key={slot} className="inline-flex items-center justify-center gap-2 w-full max-w-[240px] h-[40px] rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-bold cursor-pointer hover:border-primary hover:text-primary hover:bg-primary/3 transition-all duration-150">
-                    <Upload className="h-4 w-4" />
-                    Subir evidencia {idx + 1}
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".jpg,.jpeg,.png"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const compressedBase64 = await compressImage(file);
-                          setEvidenciaUrls((prev) => {
-                            const next = { ...prev, [slot]: compressedBase64 };
-                            safeSetLocalStorage(
-                              `sistema-monitoreo:ficha-state:${visit.id}`,
-                              JSON.stringify({ checkedAspects, selectedLevels, generalComments, sugerencias, compromisos, rubricComments, preguntaExtraAnswers, respuestasEjeItem, evidenciaUrls: next })
-                            );
-                            return next;
-                          });
-                        } catch (err) {
-                          console.error('Error compressing image:', err);
-                          toast.error('Error al procesar la imagen.');
-                        }
-                      }}
-                    />
-                  </label>
-                );
-              }
-              return null;
-            })}
-            {isCompleted && Object.keys(evidenciaUrls).filter(k => k.startsWith('GENERAL')).length === 0 && (
-              <span className="text-[11px] text-slate-300 italic block">— Sin evidencias cargadas</span>
-            )}
-          </div>
-        </div>
+        <EvidenciaGeneralSeccion
+          evidencias={evidenciaUrls}
+          onCambiar={(siguientes) => {
+            setEvidenciaUrls(siguientes);
+            // Se persiste el estado completo: antes se armaba a mano y perdía
+            // las observaciones de ejes y el contexto de aula.
+            safeSetLocalStorage(
+              claveEstadoLocal(visit.id),
+              JSON.stringify(aDatosFicha({ ...estado, evidenciaUrls: siguientes }, visit.tipo)),
+            );
+          }}
+          onVerImagen={setPreviewImageUrl}
+          soloLectura={isCompleted}
+        />
 
         {/* CONSOLIDADO DE NIVELES DE LOGRO */}
         {calificacion && (

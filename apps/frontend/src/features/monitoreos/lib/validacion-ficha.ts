@@ -15,7 +15,8 @@ const LARGO_MAXIMO_EN_LISTA = 45;
 
 export interface PlantillaValidable {
   desempenos: readonly { id: string; nombre: string }[];
-  ejesItems?: readonly { id: string; numero: string; descripcion: string }[];
+  /** `numero` llega como número desde el contrato de plantilla. */
+  ejesItems?: readonly { id: string; numero: string | number; descripcion: string }[];
 }
 
 export interface RespuestasAValidar {

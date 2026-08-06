@@ -436,6 +436,70 @@ Además, `ROLE_PERMISSIONS` (`roles.ts:59-172`) es una matriz estática de 11 ro
 
 **Riesgo de omitir esta fase.** El sistema permanece sin capacidad de incorporar roles o ajustar permisos sin intervención manual en decenas de archivos, con fuga de permisos como modo de fallo más probable.
 
+#### Estado — base completada el 2026-08-05, migración en curso
+
+**Entregado y verificado.**
+
+| Entregable | Ubicación |
+| --- | --- |
+| Vocabulario de 14 capacidades | `packages/shared-contracts/src/constants/capabilities.constants.ts` |
+| Ámbito organizativo (`RoleScope`, `getRoleScope`, `MONITOR_CAMPO_ROLES`) | `constants/roles.constants.ts` |
+| `permissions` expuesto en la respuesta de login | `login.contract.ts`, `auth-session.service.ts` |
+| `RequirePermissions` tipado contra `Capability` | `auth/decorators/permissions.decorator.ts` |
+| Mapa de capacidades tipado | `shared/auth/capability-map.ts` |
+| `useCan`, `useScope`, `<Can>` | `apps/frontend/src/shared/auth/` |
+| `permissions` en el modelo de usuario | `entities/model-user/model.ts`, `login-service.tsx` |
+| Cobertura del contrato: 29 pruebas | `shared/auth/capabilities-contract.spec.ts` |
+| Migración: `sidebar.tsx` (12 → 0) | `widgets/layouts/sidebar/ui/sidebar.tsx` |
+
+268 pruebas en verde · typecheck y lint limpios en ambas aplicaciones.
+
+**Hallazgo que reformula la tarea 1 de esta fase: hacían falta DOS vocabularios.**
+
+La fase suponía que toda comparación literal de rol era una decisión de
+autorización encubierta. No lo es. Al clasificarlas aparecieron dos preguntas
+distintas mezcladas:
+
+| Pregunta | Herramienta | Ejemplo |
+| --- | --- | --- |
+| ¿Puede ejecutar esta acción? | `useCan()` | mostrar el badge de solicitudes por atender |
+| ¿Desde qué lado de la organización mira? | `useScope()` | rotular el padrón «Directores» o «Docentes» |
+
+`especialista` (UGEL) y `director_institucion` (institución) comparten la
+capacidad `monitoreo:execute` pero ven pantallas distintas. Convertir esas
+comparaciones a capacidades habría cambiado el comportamiento. Por eso el
+contrato incorpora `RoleScope` junto al vocabulario de capacidades, y la
+migración exige clasificar cada caso en lugar de aplicar una sustitución
+mecánica.
+
+En `sidebar.tsx`, de doce comparaciones **una sola** era autorización.
+
+**Corrección al inventario.** `capability-map.ts` y `scope-filter.ts` sí tenían
+cobertura previa —23 y 28 pruebas—, contra lo afirmado al registrar H-24. La
+señal «no covering tests found» de CodeGraph se refería al símbolo
+`ROL_CAPABILITIES` y se dio por buena sin comprobarla. Las 29 pruebas nuevas
+cubren únicamente lo que la Fase 2 incorporó, sin duplicar las existentes.
+
+**Pendiente: 24 archivos, 92 comparaciones.** Orden sugerido por concentración:
+
+| Archivo | Comparaciones |
+| --- | --- |
+| `widgets/calendario/ui/CalendarioSidebar.tsx` | 13 |
+| `pages/jefeGestion/ReportesPage.tsx` | 11 |
+| `widgets/reprogramaciones/ui/BandejaReprogramaciones.tsx` | 9 |
+| `widgets/plantillas/ui/PlantillasCatalog.tsx` | 8 |
+| `pages/jefeGestion/CronogramaPage.tsx` | 7 |
+| `pages/director/DocenteSwitchers.tsx` | 6 |
+| `pages/jefeGestion/CalendarioPage.tsx` | 5 |
+| `widgets/calendario/ui/CalendarioGrid.tsx` | 4 |
+| `pages/jefeGestion/PlanMonitoreoAnualPage.tsx` | 4 |
+| 15 archivos con 1 comparación cada uno | 15 |
+
+Quedan también por hacer, dentro de esta misma fase: derivar `ROLE_PERMISSIONS`
+del vocabulario de capacidades en lugar de mantenerla a mano, sustituir
+`getDefaultLandingPage`, retirar la matriz muerta `ROL_PERMISOS` del seeder
+(H-25) y volver bloqueante la barrera de CI que cuenta comparaciones literales.
+
 ---
 
 ### Fase 3 — Red de pruebas sobre los símbolos de mayor impacto
@@ -690,7 +754,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | --- | --- | --- | --- | --- | --- |
 | 0 — Línea base y seguridad | **Completada** | 2026-08-05 | 2026-08-05 | | Pendiente: actualizar `.env.example` y los `.env` locales (ver §10) |
 | 1 — Contrato de roles | **Completada** | 2026-08-05 | 2026-08-05 | | `admin` eliminado; exhaustividad verificada; H-24/H-25 redefinen la Fase 2 |
-| 2 — Autorización centralizada | Pendiente | | | | |
+| 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Base completa y verificada; migración 1 de 25 archivos (92 comparaciones restantes) |
 | 3 — Red de pruebas | Pendiente | | | | |
 | 4 — Tipado en capa de datos | Pendiente | | | | |
 | 5 — Descomposición de componentes | Pendiente | | | | |

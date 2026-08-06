@@ -20,6 +20,8 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import type { Cronograma } from '@entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
+import { useScope } from '@shared/auth';
+import { RoleCode, NivelEducativoEBR } from '@sistema-monitoreo/shared-contracts';
 import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
 import { LlenarFichaForm, ModalMigracionPlantilla } from '@/features/monitoreos';
 import { FEATURES } from '@shared/config/features';
@@ -92,10 +94,10 @@ export const CalendarioSidebar = ({
   filteredVisits,
 }: CalendarioSidebarProps) => {
   const { user } = useUser();
-  const isEspecialista =
-    user?.role === 'especialista' ||
-    user?.role === 'coordinador_pedagogico' ||
-    user?.role === 'jefe_taller';
+  // Quien levanta la ficha en el aula. Se llamaba `isEspecialista`, pero incluía
+  // también al coordinador pedagógico y al jefe de taller, que son personal de
+  // institución: los une la tarea, no el ámbito.
+  const { isMonitorCampo, isInstitution } = useScope();
 
 const qc = useQueryClient();
 
@@ -133,23 +135,38 @@ const {
     return reprogramaciones[selectedVisit.id] || null;
   }, [reprogramaciones, selectedVisit]);
 
+  // Quién puede DECIDIR sobre una solicitud de reprogramación.
+  //
+  // El permiso de fondo lo aplica el backend: los endpoints de aprobar y
+  // rechazar exigen `monitoreo:execute`. Lo que sigue no es autorización sino
+  // el enrutamiento de negocio que decide QUÉ solicitudes le corresponden a
+  // cada posición: las nacidas en la institución las resuelve su director; las
+  // nacidas en la UGEL, el jefe de gestión o el de área dentro de su nivel.
+  //
+  // Esas tres ramas siguen distinguiendo por rol a propósito. No hay capacidad
+  // ni ámbito que las exprese: jefe de gestión y jefe de área comparten ámbito
+  // pero resuelven ámbitos de decisión distintos.
   const canDecide = useMemo(() => {
     if (!selectedVisit || !user) return false;
-    if (isEspecialista) return false;
-    const isIERequest =
-      activeRequest?.solicitanteRolAlCrear === 'coordinador_pedagogico' ||
-      activeRequest?.solicitanteRolAlCrear === 'jefe_taller';
+    // Quien levanta la ficha no decide sobre su propia reprogramación.
+    if (isMonitorCampo) return false;
 
-    if (user.role === 'jefe_gestion') {
+    // Rol del SOLICITANTE, tomado del dato de la solicitud: no es el rol de
+    // quien está mirando la pantalla.
+    const isIERequest =
+      activeRequest?.solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
+      activeRequest?.solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
+
+    if (user.role === RoleCode.JEFE_GESTION) {
       return !isIERequest;
     }
-    if (user.role === 'jefe_area') {
+    if (user.role === RoleCode.JEFE_AREA) {
       if (isIERequest) return false;
       if (user.especialistaNivel && selectedVisit.nivel !== user.especialistaNivel) return false;
       return true;
     }
-    if (user.role === 'director_institucion') {
-      if (selectedVisit.nivel !== 'Secundaria') return false;
+    if (user.role === RoleCode.DIRECTOR_INSTITUCION) {
+      if (selectedVisit.nivel !== NivelEducativoEBR.SECUNDARIA) return false;
       const isSameSchool = !!(
         (user.institucion && selectedVisit.institucionId === user.institucion) ||
         (user.institucionNombre &&
@@ -158,7 +175,7 @@ const {
       return !!(isSameSchool && isIERequest);
     }
     return false;
-  }, [selectedVisit, user, isEspecialista, activeRequest]);
+  }, [selectedVisit, user, isMonitorCampo, activeRequest]);
 
   const visitsOnSelectedDate = useMemo(() => {
     return filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === selectedDateStr);
@@ -167,10 +184,7 @@ const {
   const activeTemplate = useMemo(() => {
     if (!selectedVisit || !user) return null;
     const searchType = selectedVisit.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    const isInstitucionRole =
-      user.role === 'director_institucion' ||
-      user.role === 'coordinador_pedagogico' ||
-      user.role === 'jefe_taller';
+    const isInstitucionRole = isInstitution;
 
     const matchTypeAndEstado = (p: (typeof plantillas)[number]) =>
       p.tipoMonitoreo === searchType && p.estado === 'Vigente';
@@ -179,7 +193,9 @@ const {
     let matchedTemplate: (typeof plantillas)[number] | undefined;
     if (isInstitucionRole && user.institucion) {
       // Priorizar la plantilla creada por el propio evaluador (coordinador o jefe de taller)
-      if (user.role === 'coordinador_pedagogico' || user.role === 'jefe_taller') {
+      // Monitores de campo del lado de la institución: levantan ficha y además
+      // crean su propia plantilla, que tiene prioridad sobre la de la I.E.
+      if (isMonitorCampo && isInstitution) {
         matchedTemplate = plantillas.find(
           (p) =>
             matchTypeAndEstado(p) &&
@@ -663,10 +679,8 @@ const {
                         </span>
                       </Button>
 
-                      {/* Reprogramar: para el Especialista, Coordinador Pedagógico o Jefe de Taller */}
-                      {(user?.role === 'especialista' ||
-                        user?.role === 'coordinador_pedagogico' ||
-                        user?.role === 'jefe_taller') && (
+                      {/* Reprogramar: lo solicita quien levanta la ficha en el aula */}
+                      {isMonitorCampo && (
                         <Button
                           variant="outline"
                           onClick={() => {

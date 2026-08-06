@@ -7,6 +7,7 @@ import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'luci
 import { Button } from '@shared/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
 import { useSolicitudesPendientesCount } from '@features/visit-requests';
+import { useCan, useScope, Capability } from '@shared/auth';
 
 // Importamos la configuración pura
 import { SIDEBAR_CONFIG } from '../config/config';
@@ -24,20 +25,16 @@ export const Sidebar = () => {
   const permissions = (user && ROLE_PERMISSIONS[user.role]) ?? [];
   const has = (id: string) => permissions.includes(id as MenuItem);
 
-  // Badge de solicitudes de visita "por atender" (solo para el Jefe de Gestión,
-  // que es quien las gestiona; el Jefe de Área solo hace seguimiento de las suyas).
+  // Badge de solicitudes de visita "por atender": lo ve quien las gestiona. El
+  // Jefe de Área solo hace seguimiento de las suyas y no tiene visitas:gestionar.
+  const { can } = useCan();
+  const { isUgel, isInstitution, isDirectorInstitucion } = useScope();
   const { data: solicitudesPendientes = 0 } = useSolicitudesPendientesCount(
-    user?.role === 'jefe_gestion',
+    can(Capability.VISITAS_GESTIONAR),
   );
 
   const toggleMenu = (id: string) =>
     setOpenMenus((p) => (p.includes(id) ? p.filter((m) => m !== id) : [...p, id]));
-
-  const isJefeArea = user?.role === 'jefe_area';
-  const isSchoolStaffUser =
-    user?.role === 'director_institucion' ||
-    user?.role === 'coordinador_pedagogico' ||
-    user?.role === 'jefe_taller';
 
   return (
     <aside
@@ -77,18 +74,15 @@ export const Sidebar = () => {
       {/* ── Navegación Dinámica ── */}
       <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
         {(() => {
-          const isEvaluatedRole =
-            user?.role === 'docente' ||
-            user?.role === 'director_institucion' ||
-            user?.role === 'coordinador_pedagogico' ||
-            user?.role === 'jefe_taller';
+          // Quien es evaluado, en lugar de evaluar: todo el personal del lado de
+          // la institución educativa. Antes se enumeraban sus cuatro roles.
+          const isEvaluatedRole = isInstitution;
 
           const baseItems = SIDEBAR_CONFIG.filter((item) => {
-            const isDirector = user?.role === 'director_institucion';
             const isSecundary = user?.institucionNivel?.toUpperCase() === 'SECUNDARIA';
             if (
               (item.id === 'instituciones_coordinadores' || item.id === 'instituciones_jefes_taller') &&
-              isDirector &&
+              isDirectorInstitucion &&
               !isSecundary
             ) {
               return false;
@@ -129,13 +123,14 @@ export const Sidebar = () => {
             (item.path && location.pathname.startsWith(item.path)) ||
             visibleChildren.some((c) => location.pathname.startsWith(c.path));
 
+          // El padrón se rotula según desde dónde se mira: la UGEL ve la lista
+          // de directores de institución; una institución ve a sus docentes.
           const displayLabel =
             item.id === 'instituciones_docentes'
-              ? isJefeArea || user?.role === 'jefe_gestion'
+              ? isUgel
                 ? 'Directores'
                 : 'Docentes'
-              : item.id === 'monitoreo' &&
-                (user?.role === 'jefe_gestion' || isSchoolStaffUser)
+              : item.id === 'monitoreo' && (can(Capability.VISITAS_GESTIONAR) || isInstitution)
                 ? 'Plan Monitoreo'
                 : item.label;
 

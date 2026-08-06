@@ -121,3 +121,73 @@ jobs:
             apps/backend/coverage/
           if-no-files-found: warn
           retention-days: 30
+
+  # ── Recorridos de extremo a extremo ──────────────────────────────────────────
+  # En un trabajo aparte y con base de datos propia, creada y destruida con la
+  # ejecución.
+  #
+  # Existe por un incidente: una primera versión de la suite se ejecutó contra la
+  # base de desarrollo y dejó bloqueada la cuenta del Director de UGEL al
+  # comprobar el rechazo de credenciales incorrectas. Un recorrido de extremo a
+  # extremo nunca es de sólo lectura —iniciar sesión registra la conexión y crea
+  # la fila de sesión, y fallar al iniciarla bloquea la cuenta—, de modo que la
+  # base tiene que ser desechable.
+  #
+  # `bootstrap-e2e.ts` se niega a arrancar si `DATABASE_URL` no apunta a una base
+  # reconocible como efímera.
+  e2e:
+    name: Recorridos e2e
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: monitoring_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://e2e:e2e@localhost:5432/monitoring_e2e?schema=public
+      JWT_SECRET: e2e-only-insecure-secret-replace-before-deploying-to-production
+      JWT_REFRESH_SECRET: e2e-only-insecure-refresh-secret-replace-before-deploying-to-production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared-contracts
+        run: pnpm --filter @sistema-monitoreo/shared-contracts build
+
+      - name: Generate Prisma client
+        run: pnpm --filter backend exec prisma generate
+
+      - name: Aplicar migraciones sobre la base efímera
+        run: pnpm --filter backend exec prisma migrate deploy
+
+      - name: Sembrar datos de prueba
+        run: pnpm --filter backend exec prisma db seed
+
+      - name: Recorridos de extremo a extremo
+        run: pnpm --filter backend test:e2e

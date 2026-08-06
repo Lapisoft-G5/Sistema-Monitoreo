@@ -99,6 +99,43 @@ Referencia cruzada entre cada hallazgo, su evidencia en el código y la fase que
 | H-21 | Migraciones pendientes declaradas y no ejecutadas | `entities/model-plantillas/use-plantillas-api.ts:9`, `entities/model-cronogramas/use-cronogramas-api.ts:16` | 7 |
 | H-22 | `packages/shared-validation` está vacío: sólo contiene `.gitkeep` | `packages/shared-validation/` | 4, 6 |
 | H-23 | `app-config.types.ts` es código muerto: 75 líneas sin ningún importador | `apps/backend/src/config/app-config.types.ts` | 7 |
+| H-24 | El backend **ya tiene** un modelo de autorización por capacidades; la Fase 2 no debe construirlo sino exponerlo al frontend | `apps/backend/src/shared/auth/capability-map.ts`, `scope-filter.ts` | 2 |
+| H-25 | La matriz `rol_permisos` sembrada en la base es código muerto y ya divergió del mapa de capacidades vigente | `database/seeders/auth.js:42` vs. `capability-map.ts:49` | 2 |
+
+### Hallazgo incorporado durante la Fase 1 — H-24 redefine la Fase 2
+
+La Fase 2, tal como se redactó, proponía *construir* un módulo de política de
+autorización. **Ese módulo ya existe en el backend, y es mejor que el propuesto.**
+
+`apps/backend/src/shared/auth/capability-map.ts` implementa un modelo por
+capacidades que compone tres fuentes —el rol de autenticación, el cargo activo del
+especialista y los cargos docentes vigentes— mediante
+`computeEffectivePermissions()`. Incluye además reglas de coexistencia de cargos
+(`CARGO_COMPATIBILITY`, `canAddCargo`) y resolución de cargo principal por
+prioridad. Las reglas contextuales que la Fase 2 daba por «implícitas y dispersas»
+están modeladas en `shared/auth/scope-filter.ts` (`isAllScope`,
+`isInstitucionScope`, `isMonitorScope`, `isJefeAreaScope`, `isOwnScope`).
+
+El consumo también está resuelto del lado del servidor: `RequirePermissions` se
+aplica en 28 controladores, `PermissionsGuard` valida contra
+`user.permissions`, y las capacidades viajan en el JWT desde
+`auth-token.service.ts`.
+
+**Lo que falta es exclusivamente el lado del frontend**, que sigue decidiendo por
+comparación literal de rol en 25 archivos e ignora las capacidades que ya recibe
+en el token. La Fase 2 se reformula en consecuencia: *no* diseñar un vocabulario de
+capacidades —ya existe y está sembrado en `PERMISOS`—, sino consumir en el
+frontend el que el backend emite. Eso reduce su esfuerzo estimado de **L a M** y
+elimina el riesgo principal que tenía: que frontend y backend evaluaran permisos
+con reglas distintas.
+
+**H-25** es un efecto colateral del mismo hallazgo. `database/seeders/auth.js:42`
+siembra una matriz `ROL_PERMISOS` en la base que `auth-token.service.ts` ya no lee
+—fue reemplazada por el mapa de capacidades— y que **ya divergió**: para
+`director_ugel` el seeder concede `['dashboard:read', 'reports:read']` mientras
+`ROL_CAPABILITIES` concede `['dashboard:read', 'instituciones:read',
+'notificaciones:send', 'visitas:solicitar']`. Es un quinto punto de verdad sobre
+autorización, inerte pero engañoso para quien lea el seeder. Se retira en la Fase 2.
 
 ### Hallazgos incorporados durante la Fase 0
 
@@ -286,6 +323,68 @@ Los dos primeros bloques coinciden en valores; el problema ahí es la duplicaci�
 - Cascada de errores de tipado registrada como insumo de Fase 2.
 
 **Riesgo de omitir esta fase.** Toda fase posterior queda construida sobre definiciones contradictorias. La centralización de autorización de la Fase 2 se volvería un tercer punto de verdad en competencia con los existentes, empeorando el estado actual.
+
+#### Resultado — completada el 2026-08-05
+
+| Entregable | Ubicación |
+| --- | --- |
+| Contrato canónico de roles | `packages/shared-contracts/src/constants/roles.constants.ts` |
+| `RoleCode` del backend derivado del contrato | `apps/backend/src/common/enums/role.enum.ts` |
+| Reexportaciones de compatibilidad | `shared/constants/roles.ts`, `entities/model-user/constants.ts` |
+| `UserRole` huérfano retirado | `constants/domain.constants.ts` |
+| Frontera con la base endurecida (`isRoleCode`) | `auth/services/auth-token.service.ts` |
+| Esquema Zod derivado del contrato | `entities/model-user/validator.tsx` |
+| `RolObjetivo` documentado como eje distinto | `shared/constants/roleValidation.ts` |
+| Cobertura del contrato: 26 pruebas | `apps/backend/src/common/enums/role.enum.spec.ts` |
+
+**Verificación ejecutada.** `pnpm typecheck` limpio (forzado con `tsc -b --force`,
+sin caché incremental) · `pnpm lint` limpio en ambas aplicaciones · 239 pruebas en
+verde (213 previas + 26 nuevas) · métrica `declaraciones_userrole` en **1**.
+
+**La propiedad comprada en esta fase está verificada, no supuesta.** Se añadió un
+rol temporal al contrato y se comprobó que la compilación falla en las tres capas:
+
+```
+packages/shared-contracts/…/roles.constants.ts:55   ROLE_LABELS incompleto
+apps/backend/src/shared/auth/capability-map.ts:49   ROL_CAPABILITIES incompleto
+apps/frontend/src/shared/constants/roles.ts:53      ROLE_PERMISSIONS incompleto
+```
+
+El rol temporal se retiró tras la comprobación.
+
+**Decisión sobre el rol `admin` (H-03): eliminado.** La auditoría previa a escribir
+el contrato lo confirmó como residuo por cuatro vías independientes: no figura en
+`RoleCode`, no lo siembra `database/seeders/auth.js:16-27`, el JWT lo toma de
+`Role.codigo` y `ADMIN_ROLES` nunca lo incluyó. Un usuario con ese código habría
+recibido `ROL_CAPABILITIES['admin'] ?? []` — cero capacidades — de modo que ya
+estaría inoperante hoy.
+
+El rol que gestiona altos cargos (Director UGEL y Jefe de Gestión) es
+**`superusuario`**, que se conserva sin cambios: DNI `00000000` en
+`database/seeders/personas.js:23-30`, permiso `superadmin:access`, endpoint
+`superuser.controller.ts` y landing `/superadmin`.
+
+**Correcciones al diagnóstico previo.**
+
+1. *H-02 era más matizado de lo enunciado.* El comentario de `domain.constants.ts`
+   no describía un enum imaginario: `CREATE TYPE "UserRole" AS ENUM ('ADMIN',
+   'SPECIALIST', 'DIRECTOR', 'TEACHER')` existió realmente en
+   `migrations/20260530062223_init/migration.sql:2`. La normalización posterior lo
+   retiró y modeló los roles como tabla `Role` con columna `codigo` en snake_case.
+   El tipo no era inventado: quedó **obsoleto**.
+
+2. *La cascada de tipos fue nula.* La Fase 1 preveía resolver una cascada de
+   errores como inventario de puntos acoplados. No hubo ninguno, porque `RoleCode`
+   y las copias del frontend ya coincidían en valores. Eso confirma el diagnóstico:
+   el problema era duplicación, no divergencia semántica. La única divergencia real
+   —las etiquetas de `director_ugel`— se resolvió al unificar.
+
+3. *La métrica `declaraciones_userrole` estaba mal calculada.* Contaba menciones
+   del identificador, incluidas reexportaciones e imports, y reportaba 4 donde hay
+   una sola declaración. Se corrigió en `scripts/metricas.sh` para exigir el ancla
+   de declaración.
+
+**Hallazgo que reduce el alcance de la Fase 2 — ver H-24.**
 
 ---
 
@@ -590,7 +689,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | Fase | Estado | Inicio | Cierre | Responsable | Observaciones |
 | --- | --- | --- | --- | --- | --- |
 | 0 — Línea base y seguridad | **Completada** | 2026-08-05 | 2026-08-05 | | Pendiente: actualizar `.env.example` y los `.env` locales (ver §10) |
-| 1 — Contrato de roles | Pendiente | | | | |
+| 1 — Contrato de roles | **Completada** | 2026-08-05 | 2026-08-05 | | `admin` eliminado; exhaustividad verificada; H-24/H-25 redefinen la Fase 2 |
 | 2 — Autorización centralizada | Pendiente | | | | |
 | 3 — Red de pruebas | Pendiente | | | | |
 | 4 — Tipado en capa de datos | Pendiente | | | | |
@@ -608,6 +707,19 @@ La medición canónica es un único comando, que emite el mismo JSON que la lín
 pnpm metricas                      # todas las métricas
 pnpm test:cov && pnpm metricas     # incluyendo cobertura actualizada
 ```
+
+`docs/metricas/baseline-2026-08.json` queda **congelado** como referencia inicial y
+no debe regenerarse. Cada fase archiva su propia medición junto a él
+(`fase-1-2026-08.json`, y así sucesivamente), de modo que la serie temporal quede
+comparable.
+
+| Instantánea | `declaraciones_userrole` | `archivos_rol_literal` | Cobertura backend |
+| --- | --- | --- | --- |
+| `baseline-2026-08.json` (Fase 0) | 4 | 25 | 19,51 % |
+| `fase-1-2026-08.json` (Fase 1) | **1** | 25 | 19,28 % |
+
+La cobertura de backend baja 0,23 puntos porque el contrato añadió líneas de
+código fuente; el número de pruebas subió de 213 a 239.
 
 Los comandos siguientes son el desglose de ese script, útiles para comprobaciones
 puntuales durante una fase:

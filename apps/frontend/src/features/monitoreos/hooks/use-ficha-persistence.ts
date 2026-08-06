@@ -6,8 +6,10 @@ import { safeSetLocalStorage } from '@/shared/lib/utils';
 import {
   aNivelNumerico,
   extraerEvidenciasGenerales,
+  fichaAEstadoFormulario,
   type DatosFicha,
 } from '../lib/ficha-estado';
+import { sembrarFichaDeDemostracion } from '../lib/ficha-demo';
 
 /**
  * Persistencia de la ficha de monitoreo: borrador y cierre.
@@ -190,5 +192,29 @@ export function useFichaPersistence({
     [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido],
   );
 
-  return { guardarBorrador, finalizar };
+  /**
+   * Deja lista en el estado local una ficha ya cerrada, para poder reabrirla.
+   *
+   * Si no hay estado local la reconstruye desde el backend; sólo si tampoco hay
+   * ficha recurre al relleno de demostración, que no escribe nada en un
+   * despliegue real.
+   */
+  const prepararFichaLlena = useCallback(async (visitId: string) => {
+    if (localStorage.getItem(claveEstadoLocal(visitId))) return;
+
+    try {
+      const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+      const ficha = await fichasApi.findByVisita(visitId);
+      if (ficha) {
+        safeSetLocalStorage(claveEstadoLocal(visitId), JSON.stringify(fichaAEstadoFormulario(ficha)));
+      } else {
+        sembrarFichaDeDemostracion(visitId);
+      }
+    } catch (error) {
+      console.error(error);
+      sembrarFichaDeDemostracion(visitId);
+    }
+  }, []);
+
+  return { guardarBorrador, finalizar, prepararFichaLlena };
 }

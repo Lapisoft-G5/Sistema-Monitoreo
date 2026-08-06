@@ -755,6 +755,52 @@ Esta fase es la más costosa del plan y también la que determina si las siguien
 
 **Riesgo de omitir esta fase.** Las Fases 5 y 6 se vuelven inejecutables con responsabilidad. Descomponer 4.775 líneas de componentes sin cobertura previa es reescribir a ciegas, y las regresiones se descubrirían en producción.
 
+#### Cierre con alcance revisado — 2026-08-06
+
+| | Inicio | Cierre | Objetivo original |
+| --- | --- | --- | --- |
+| Cobertura backend | 19,59 % | **23,91 %** | 60 % |
+| Cobertura frontend | 2,08 % | **3,97 %** | 45 % |
+| Archivos de prueba | 26 | **45** | — |
+| Pruebas | 381 | **636** | — |
+
+**El objetivo de cobertura del frontend era circular.** Su volumen está en cuatro
+componentes de más de 900 líneas —`CronogramaPage` 1.443, `LlenarFichaForm`
+1.309, `CalendarioGrid` 1.011, `CalendarioSidebar` 937— cuyo borde la Fase 5 va a
+rehacer. Cubrirlos hoy como monolitos produce pruebas que habría que reescribir
+tras descomponerlos, y no cubrirlos deja el porcentaje donde está.
+
+Se traslada el 45 % a criterio de salida de la **Fase 5**, cuando los componentes
+ya sean cubribles. No es bajar la vara: es ponerla en la fase que puede
+alcanzarla.
+
+**Umbrales activados en el nivel alcanzado, no en el objetivo.** Su función es
+impedir el retroceso: que nadie borre pruebas ni sume código sin cubrir por
+debajo de lo conseguido. Un umbral en el objetivo dejaría la barrera en rojo
+permanente, y una barrera siempre roja se ignora a los tres días.
+
+**Lo cubierto, por radio de impacto.**
+
+| | Antes | Después |
+| --- | --- | --- |
+| `model-user` (73 consumidores de `useUser`) | 0 % | **100 %** |
+| `permissions.guard.ts` | 18,75 % | **100 %** |
+| `prisma-client-exception.filter.ts` | 0 % | **97,77 %** |
+| `visit-requests.service.ts` | 0 % | **96,66 %** |
+| `ficha.mapper.ts` | 0 % | **100 %** |
+| `roleValidation.ts` | 0 % | **100 %** |
+| `shared/lib/calendario` (extraído) | — | **100 %** |
+
+**Queda explícitamente sin hacer:**
+
+- Dos de los cuatro recorridos de extremo a extremo: completar ficha y aprobar
+  reprogramación. Los dos existentes cubren autenticación y autorización.
+- `auth.e2e-spec.ts` no verifica el guard de capacidades: `AuthGuard` corta antes
+  mientras `firstLogin` siga en verdadero. Requiere completar el cambio de
+  contraseña dentro de la suite.
+- La cobertura de los repositorios Prisma queda entre 18 % y 35 %, no en el 60 %
+  del objetivo.
+
 ---
 
 ### Fase 4 — Recuperación del tipado en la capa de datos
@@ -1023,7 +1069,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | 0 — Línea base y seguridad | **Completada** | 2026-08-05 | 2026-08-05 | | Pendiente: actualizar `.env.example` y los `.env` locales (ver §10) |
 | 1 — Contrato de roles | **Completada** | 2026-08-05 | 2026-08-05 | | `admin` eliminado; exhaustividad verificada; H-24/H-25 redefinen la Fase 2 |
 | 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Migración completa (104 → 0 literales), barrera de CI bloqueante, política al 96 %; falta derivar el menú, bloqueado por decisión de producto |
-| 3 — Red de pruebas | Pendiente | | | | |
+| 3 — Red de pruebas | **Cerrada con alcance revisado** | 2026-08-06 | 2026-08-06 | | Umbrales activos como guarda de retroceso; el objetivo de cobertura se traslada a la Fase 5 |
 | 4 — Tipado en capa de datos | **Completada** | 2026-08-06 | 2026-08-06 | | 16 → 0 supresiones; destapó dos defectos reales, H-29 entre ellos |
 | 5 — Descomposición de componentes | Pendiente | | | | |
 | 6 — Extracción de dominio | Pendiente | | | | |

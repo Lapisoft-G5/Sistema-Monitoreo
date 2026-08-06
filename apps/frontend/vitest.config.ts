@@ -28,6 +28,17 @@ export default defineConfig({
     // defender; imponerlos antes sólo produciría una barrera roja permanente.
     coverage: {
       provider: 'v8',
+
+      // Umbral fijado al cierre de la Fase 3, en el nivel alcanzado. Impide el
+      // retroceso, no persigue el objetivo: el 45 % exige que la Fase 5 parta
+      // antes los cuatro componentes de más de 900 líneas, donde vive el grueso
+      // del código sin cubrir.
+      thresholds: {
+        statements: 3.9,
+        branches: 3.5,
+        functions: 2.9,
+        lines: 3.9,
+      },
       reporter: ['text-summary', 'json-summary', 'lcov'],
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],

@@ -29,7 +29,12 @@ archivos_fuente=$(fd -e ts -e tsx --type f . "${SRC_GLOBS[@]}" | wc -l)
 archivos_prueba=$(fd -e spec.ts -e test.ts -e spec.tsx -e test.tsx --type f . apps packages | wc -l)
 
 # ── Fase 1: unicidad del contrato de roles (objetivo: 1) ─────────────────────
-declaraciones_userrole=$(rg -l 'type UserRole|enum RoleCode' apps packages -g '!node_modules' | wc -l)
+# Cuenta DECLARACIONES, no reexportaciones. Un `export { type UserRole } from …`
+# o un `import { … }` mencionan el nombre sin declararlo; contarlos daba 4 donde
+# hay una sola definicion. El ancla a inicio de linea y la exigencia de `=` o `{`
+# distinguen la declaracion de la mera mencion.
+declaraciones_userrole=$(rg -l '^export type UserRole\s*=|^(export )?enum RoleCode\s*\{' \
+  apps packages -g '!node_modules' -g '!dist' | wc -l)
 
 # ── Fase 2: autorización en capa de presentación (objetivo: 0) ───────────────
 archivos_rol_literal=$(rg -l 'role ===' apps/frontend/src | wc -l)

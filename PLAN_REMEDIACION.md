@@ -101,6 +101,55 @@ Referencia cruzada entre cada hallazgo, su evidencia en el código y la fase que
 | H-23 | `app-config.types.ts` es código muerto: 75 líneas sin ningún importador | `apps/backend/src/config/app-config.types.ts` | 7 |
 | H-24 | El backend **ya tiene** un modelo de autorización por capacidades; la Fase 2 no debe construirlo sino exponerlo al frontend | `apps/backend/src/shared/auth/capability-map.ts`, `scope-filter.ts` | 2 |
 | H-25 | La matriz `rol_permisos` sembrada en la base es código muerto y ya divergió del mapa de capacidades vigente | `database/seeders/auth.js:42` vs. `capability-map.ts:49` | 2 |
+| H-26 | La capa de presentación confunde **modalidad** con **nivel educativo**, y declara un valor inexistente | `shared/types/index.ts:1`, `LampaMap.tsx:99`, `ReportesGrid.tsx:57` | 6 |
+
+### H-26 — modalidad y nivel educativo se confunden en la interfaz
+
+El catálogo canónico vive en `packages/shared-contracts/src/constants/domain.constants.ts`
+y distingue con claridad cuatro modalidades y sus doce niveles:
+
+| Modalidad | Niveles |
+| --- | --- |
+| EBR | Inicial · Primaria · Secundaria |
+| EBA | Inicial-Intermedio · Avanzado |
+| EBE | CEBE · PRITE |
+| CEPTRO | Corte y Ensamblaje · Mecánica de Motos y Vehículos Afines · Peluquería y barbería · Fabricación artesanal de productos de madera · Plataformas y servicios de tecnologías de la información |
+
+Ningún nombre de nivel se repite entre modalidades, invariante ya protegido por
+`apps/backend/src/common/validators/modalidad-nivel.spec.ts`.
+
+**La capa de presentación no respeta esa distinción.** El caso más claro:
+
+```ts
+// apps/frontend/src/shared/types/index.ts:1
+export type NivelInstitucion = 'Inicial' | 'Primaria' | 'Secundaria' | 'EBA' | 'EBE' | 'CEPROs';
+```
+
+`Inicial`, `Primaria` y `Secundaria` son **niveles**; `EBA` y `EBE` son
+**modalidades**. Conviven en una misma unión bajo un tipo que dice ser de
+niveles. Y `'CEPROs'` **no existe en el dominio**: no es modalidad —el catálogo
+declara `CEPTRO`, sin ese sufijo— ni es nivel. Ese valor inventado es la
+evidencia de que el tipo se escribió mezclando ambos ejes sin consultar el
+catálogo.
+
+Divergencias restantes:
+
+| Ubicación | Problema |
+| --- | --- |
+| `entities/model-especialistas/model.ts:1` | Segundo tipo homónimo `NivelInstitucion`, con contenido distinto (sólo EBR) |
+| `pages/directorUgel/components/LampaMap.tsx:99` | Niveles escritos a mano; el mapa de cobertura **no puede filtrar instituciones EBA, EBE ni CEPTRO** |
+| `widgets/reportes/ui/ReportesGrid.tsx:57` | `MODALIDADES` enumeradas a mano |
+| `entities/model-especialistas/constants.ts:16` | `NIVELES_INSTITUCION = NIVELES_EBR`: el nombre afirma más de lo que contiene |
+| `features/cronogramas/api/cronogramas.api.ts:18` | Unión de modalidades declarada en línea |
+
+`features/directores/ui/filter-directores.tsx` es la excepción: consume
+`MODALIDAD_NIVEL_MAP` del contrato. Demuestra que la vía correcta existe y que
+lo que faltó fue consistencia.
+
+**Descarte, para no perder tiempo al abordarlo.** `NIVELES_ROMANOS` y
+`NIVELES_DEFAULT` (`entities/model-plantillas/constants.ts`) **no** pertenecen a
+este dominio: son niveles de *logro* (I a IV, de «Muy Insatisfactorio» a
+«Destacado»). Coinciden en el nombre, no en el concepto.
 
 ### Hallazgo incorporado durante la Fase 1 — H-24 redefine la Fase 2
 

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAtenderSolicitud } from '@features/visit-requests';
-import { Compass, PlusCircle, Search, Trash2, Eye, Pencil, X, AlertCircle, Calendar, User, BookOpen, Layers, FileText } from 'lucide-react';
+import { Compass, PlusCircle, Trash2, Eye, Pencil, X, AlertCircle, Calendar, User, BookOpen, Layers, FileText } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import {
   especialistasAsignables,
@@ -15,10 +15,12 @@ import {
   fechaProgramadaPorDefecto,
   validarProgramacion,
 } from '@features/cronogramas/lib/formulario';
+import { useListadoCronogramas } from '@features/cronogramas/hooks/use-listado-cronogramas';
 import { cronogramasVisibles } from '@features/cronogramas/lib/visibilidad';
+import { BarraFiltros } from './cronograma/BarraFiltros';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { TextField, SelectField } from '@shared/ui/form-controls';
+import { SelectField } from '@shared/ui/form-controls';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
@@ -94,12 +96,7 @@ export const CronogramaPage = () => {
   } = useCronogramasData();
 
   // --- Estados de Filtro ---
-  const [searchEsp, setSearchEsp] = useState('');
-  const [searchDocente, setSearchDocente] = useState('');
-  const [filterInst, setFilterInst] = useState('Todos');
-  const [filterTipo, setFilterTipo] = useState('Todos');
-  const [filterEstado, setFilterEstado] = useState('Todos');
-  const [currentPage, setCurrentPage] = useState(1);
+
 
   // --- Estados de Registro / Edición ---
   const [showFormModal, setShowFormModal] = useState(false);
@@ -321,17 +318,6 @@ export const CronogramaPage = () => {
   const handleFormModalidadChange = (modalidad: string) => cambiarForm('modalidad', modalidad);
   const handleFormNivelChange = (nivel: string) => cambiarForm('nivel', nivel);
 
-  // Resetear paginación síncronamente cuando cambian los filtros
-  const filters = useMemo(
-    () => ({ searchEsp, searchDocente, filterInst, filterTipo, filterEstado }),
-    [searchEsp, searchDocente, filterInst, filterTipo, filterEstado]
-  );
-  const [prevFilters, setPrevFilters] = useState(filters);
-  if (JSON.stringify(filters) !== JSON.stringify(prevFilters)) {
-    setCurrentPage(1);
-    setPrevFilters(filters);
-  }
-
   // Regla unica de visibilidad, compartida con CalendarioPage y con cobertura
   // en `features/cronogramas/lib/visibilidad.test.ts`.
   const filteredBaseCronogramas = useMemo(
@@ -339,40 +325,13 @@ export const CronogramaPage = () => {
     [cronogramas, user],
   );
 
-  const filteredCronogramas = useMemo(() => {
-    return filteredBaseCronogramas.filter((item) => {
-      const matchSearchEvaluador =
-        searchEsp.trim() === '' ||
-        item.especialista.toLowerCase().includes(searchEsp.toLowerCase());
+  // Filtrado y paginacion del listado, en `use-listado-cronogramas`.
+  const listado = useListadoCronogramas(filteredBaseCronogramas, isDirector);
 
-      const matchSearchDocente =
-        searchDocente.trim() === '' ||
-        item.docenteDirectivo.toLowerCase().includes(searchDocente.toLowerCase());
-
-      const matchInst = isDirector || filterInst === 'Todos' || item.institucion === filterInst;
-      const matchTipo = filterTipo === 'Todos' || item.tipo === filterTipo;
-      const matchEstado = (filterEstado === 'Todos' && item.estado !== 'ANULADO') || item.estado === filterEstado;
-
-      return matchSearchEvaluador && matchSearchDocente && matchInst && matchTipo && matchEstado;
-    });
-  }, [filteredBaseCronogramas, searchEsp, searchDocente, filterInst, filterTipo, filterEstado, isDirector]);
-
-  // --- Instituciones únicas para filtro de tabla ---
-  const uniqueInstituciones = useMemo(() => {
-    return [...new Set(cronogramas.map((c) => c.institucion))].sort();
-  }, [cronogramas]);
-
-  // --- Paginación local ---
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(filteredCronogramas.length / itemsPerPage) || 1;
-  const fromIndex = (currentPage - 1) * itemsPerPage;
-  const toIndex = Math.min(currentPage * itemsPerPage, filteredCronogramas.length);
-
-  const paginatedCronogramas = useMemo(() => {
-    return filteredCronogramas.slice(fromIndex, toIndex);
-  }, [filteredCronogramas, fromIndex, toIndex]);
-
-  // --- Generar datetime default (ahora + 1 día a las 08:00) ---
+  const uniqueInstituciones = useMemo(
+    () => [...new Set(cronogramas.map((c) => c.institucion))].sort(),
+    [cronogramas],
+  );
 
   const resetForm = useCallback(() => {
     setEditCronogramaId(null);
@@ -631,75 +590,12 @@ export const CronogramaPage = () => {
         }
       />
 
-      {/* ── Barra de Filtros ── */}
-      <Card className="border border-border bg-surface shadow-sm rounded-2xl p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          {isDirector ? (
-            <>
-              <TextField
-                label="Docente Evaluado"
-                value={searchDocente}
-                onChange={setSearchDocente}
-                placeholder="Buscar docente..."
-                adornment={<Search className="w-[18px] h-[18px] text-text-muted" />}
-              />
-              <TextField
-                label="Evaluador"
-                value={searchEsp}
-                onChange={setSearchEsp}
-                placeholder="Buscar evaluador..."
-                adornment={<Search className="w-[18px] h-[18px] text-text-muted" />}
-              />
-            </>
-          ) : (
-            <>
-              <TextField
-                label="Especialista"
-                value={searchEsp}
-                onChange={setSearchEsp}
-                placeholder="Buscar especialista..."
-                adornment={<Search className="w-[18px] h-[18px] text-text-muted" />}
-              />
-              <SelectField
-                label="Institución"
-                value={filterInst}
-                onChange={setFilterInst}
-                placeholder="Seleccionar institución..."
-                options={[
-                  { value: 'Todos', label: 'Todas las instituciones' },
-                  ...uniqueInstituciones.map((inst) => ({ value: inst, label: inst })),
-                ]}
-              />
-            </>
-          )}
-          <SelectField
-            label="Tipo de Monitoreo"
-            value={filterTipo}
-            onChange={setFilterTipo}
-            placeholder="Seleccionar tipo..."
-            options={[
-              { value: 'Todos', label: 'Todos los tipos' },
-              { value: 'DOCENTE', label: 'DOCENTE' },
-              { value: 'DIRECTIVO', label: 'DIRECTIVO' },
-            ]}
-          />
-          <SelectField
-            label="Estado"
-            value={filterEstado}
-            onChange={setFilterEstado}
-            placeholder="Seleccionar estado..."
-            options={[
-              { value: 'Todos', label: 'Todos los estados' },
-              { value: 'PROGRAMADO', label: 'PROGRAMADO' },
-              { value: 'EN_PROCESO', label: 'EN_PROCESO' },
-              { value: 'COMPLETADO', label: 'COMPLETADO' },
-              { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
-              { value: 'CANCELADO', label: 'CANCELADO' },
-              { value: 'ANULADO', label: 'ANULADO' },
-            ]}
-          />
-        </div>
-      </Card>
+      <BarraFiltros
+        filtros={listado.filtros}
+        onCambiar={listado.cambiarFiltro}
+        instituciones={uniqueInstituciones}
+        esDirector={isDirector}
+      />
 
       {/* ── Tabla de Cronogramas ── */}
       <Card className="p-0 border border-border shadow-xs overflow-hidden rounded-2xl">
@@ -736,7 +632,7 @@ export const CronogramaPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedCronogramas.map((item) => {
+              {listado.paginados.map((item) => {
                 const { datePart, timePart } = formatTableDateTime(item.fechaHora);
                 return (
                   <TableRow key={item.id} className="hover:bg-muted/30 transition-colors border-b border-border/50">
@@ -835,7 +731,7 @@ export const CronogramaPage = () => {
                 );
               })}
 
-              {paginatedCronogramas.length === 0 && (
+              {listado.paginados.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={isDirector ? 7 : 8} className="text-center text-text-muted py-16">
                     <div className="flex flex-col items-center justify-center gap-2">
@@ -853,12 +749,12 @@ export const CronogramaPage = () => {
 
         {/* Paginación */}
         <TablePagination
-          from={filteredCronogramas.length > 0 ? fromIndex + 1 : 0}
-          to={toIndex}
-          totalItems={filteredCronogramas.length}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
+          from={listado.filtrados.length > 0 ? listado.desde + 1 : 0}
+          to={listado.hasta}
+          totalItems={listado.filtrados.length}
+          currentPage={listado.pagina}
+          totalPages={listado.totalPaginas}
+          onPageChange={listado.irAPagina}
           itemName="cronogramas"
         />
       </Card>

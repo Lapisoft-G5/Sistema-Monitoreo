@@ -9,10 +9,10 @@ import { useUser } from '@entities/model-user';
 /**
  * Consulta de capacidades del usuario autenticado.
  *
- * Fase 2 de PLAN_REMEDIACION.md. Sustituye la comparación literal de rol
- * (`user?.role === 'jefe_area'`) que estaba dispersa en 25 archivos de la capa
- * de presentación. La pregunta correcta no es qué rol tiene alguien, sino qué
- * puede hacer: así, incorporar un rol nuevo no obliga a recorrer la UI.
+ * Fase 2 de PLAN_REMEDIACION.md. Sustituye la comparación literal de rol que
+ * estaba dispersa en 25 archivos de la capa de presentación. La pregunta
+ * correcta no es qué rol tiene alguien, sino qué puede hacer: así, incorporar
+ * un rol nuevo no obliga a recorrer la UI.
  *
  * ── Esto NO es un control de seguridad ──
  * Decide únicamente qué se muestra. Las capacidades viajan en el objeto de

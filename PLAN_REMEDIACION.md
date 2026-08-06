@@ -638,10 +638,30 @@ sin volver a investigar.
 También queda a la espera la sustitución de `getDefaultLandingPage`, que se
 apoya en la misma matriz.
 
-Quedan también por hacer, dentro de esta misma fase: derivar `ROLE_PERMISSIONS`
-del vocabulario de capacidades en lugar de mantenerla a mano, sustituir
-`getDefaultLandingPage`, retirar la matriz muerta `ROL_PERMISOS` del seeder
-(H-25) y volver bloqueante la barrera de CI que cuenta comparaciones literales.
+**Estado de las tareas restantes de la fase.**
+
+| Tarea | Estado |
+| --- | --- |
+| Migrar los 25 archivos a capacidades y ámbito | ✅ 104 → 0 literales |
+| Barrera de CI bloqueante | ✅ verificada en ambos sentidos |
+| Cobertura del módulo de política ≥ 90 % | ✅ 96 % de media |
+| Retirar el join muerto de `rol_permisos` (H-25) | ✅ |
+| Derivar `ROLE_PERMISSIONS` de las capacidades | ⛔ bloqueado: decisión de producto sobre `invitado` |
+| Sustituir `getDefaultLandingPage` | ⛔ bloqueado por lo mismo |
+
+Cobertura del módulo de política tras la fase:
+
+| Archivo | Antes | Después |
+| --- | --- | --- |
+| `modules/auth/guards/permissions.guard.ts` | 18,75 % | **100 %** |
+| `shared/auth/capability-map.ts` | 100 % | 100 % |
+| `shared/auth/scope-filter.ts` | 88,13 % | 88,13 % |
+
+El guard era la pieza de menor cobertura siendo la de mayor consecuencia: es lo
+que efectivamente devuelve 403. El mapa de capacidades decide qué tiene cada
+usuario, pero sin el guard esa decisión no se aplica a ninguna petición.
+`scope-filter.ts` queda por debajo del 90 % individual con sus 28 pruebas
+previas; el conjunto del módulo alcanza el 96 %.
 
 ---
 
@@ -897,7 +917,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | --- | --- | --- | --- | --- | --- |
 | 0 — Línea base y seguridad | **Completada** | 2026-08-05 | 2026-08-05 | | Pendiente: actualizar `.env.example` y los `.env` locales (ver §10) |
 | 1 — Contrato de roles | **Completada** | 2026-08-05 | 2026-08-05 | | `admin` eliminado; exhaustividad verificada; H-24/H-25 redefinen la Fase 2 |
-| 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Base completa; migrados `sidebar.tsx` y `CalendarioSidebar.tsx`; quedan 24 archivos y 82 literales |
+| 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Migración completa (104 → 0 literales), barrera de CI bloqueante, política al 96 %; falta derivar el menú, bloqueado por decisión de producto |
 | 3 — Red de pruebas | Pendiente | | | | |
 | 4 — Tipado en capa de datos | Pendiente | | | | |
 | 5 — Descomposición de componentes | Pendiente | | | | |

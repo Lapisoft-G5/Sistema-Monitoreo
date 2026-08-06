@@ -21,5 +21,25 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: false,
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
+
+    // ── Cobertura ──────────────────────────────────────────────────────────
+    // Fase 0 del plan de remediación: se mide sin umbral bloqueante. Los
+    // umbrales se activan al cierre de la Fase 3, cuando exista cobertura que
+    // defender; imponerlos antes sólo produciría una barrera roja permanente.
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'json-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.{test,spec}.{ts,tsx}',
+        'src/test/**',
+        'src/**/*.d.ts',
+        'src/main.tsx',
+        'src/vite-env.d.ts',
+        // Datos simulados dentro del árbol de producción; se retiran en Fase 7.
+        'src/**/mocks.ts',
+      ],
+    },
   },
 });

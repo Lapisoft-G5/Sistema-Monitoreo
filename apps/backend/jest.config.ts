@@ -52,6 +52,11 @@ const config: Config = {
     '!**/main.ts', // bootstrap de NestJS, no testeable unitariamente
   ],
   coverageDirectory: '../coverage',
+
+  // Mismos formatos que el frontend, para que ambos informes sean comparables.
+  // Fase 0 del plan de remediación: se mide sin umbral bloqueante; los umbrales
+  // (`coverageThreshold`) se activan al cierre de la Fase 3.
+  coverageReporters: ['text-summary', 'json-summary', 'lcov'],
 };
 
 export default config;

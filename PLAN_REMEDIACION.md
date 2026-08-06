@@ -830,6 +830,31 @@ la escondía.
 - `prisma-ficha.repository.ts`: sus dos `as any` eran residuo; el tipo ya
   encajaba sin ellos
 
+**H-29 — el filtro de reportes por institución apuntaba a un campo inexistente.**
+
+En `prisma-reporte.repository.ts`, el `where` de la consulta de fichas se
+construía sobre un objeto `any`:
+
+```ts
+if (filters.institucionId) where.institucionId = filters.institucionId;
+```
+
+`FichaMonitoreo` **no tiene** `institucionId`: la institución se alcanza a través
+de `cronograma`, que sí lo declara. Al tipar el objeto contra
+`Prisma.FichaMonitoreoWhereInput`, el compilador lo señaló de inmediato:
+
+```
+Property 'institucionId' does not exist on type 'FichaMonitoreoWhereInput'
+```
+
+Prisma valida los argumentos de la consulta, de modo que filtrar reportes por
+institución no devolvía resultados incorrectos: **fallaba**. El `any` mantuvo
+oculto un defecto de la pantalla de reportes durante todo el tiempo que llevó
+esa supresión.
+
+Corregido: el filtro pasa a `where.cronograma.institucionId`, junto al de tipo de
+monitoreo, que ya apuntaba correctamente ahí.
+
 **Hallazgo en `prisma-user.repository.ts`.** Su `as any` sobre el `include` de
 Prisma **no era residuo**: al retirarlo aflora un desajuste real entre lo que
 Prisma devuelve y la entidad `Usuario` que el repositorio declara devolver. La

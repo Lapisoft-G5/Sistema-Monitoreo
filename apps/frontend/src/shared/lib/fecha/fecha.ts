@@ -175,6 +175,23 @@ export function formatearFechaConMes(
   return `${fecha.getDate()} de ${mes}, ${fecha.getHours()}:${DOS_DIGITOS(fecha.getMinutes())} hrs`;
 }
 
+/**
+ * Día, mes en palabras y año: `9 de Marzo, 2026`.
+ *
+ * Es el formato de los reportes y de la ficha imprimible. Estaba escrito tres
+ * veces —una de ellas con su propia copia de los nombres de mes dentro de la
+ * función— y las tres con un `try/catch` que devolvía la cadena original.
+ */
+export function formatearFechaEnPalabras(
+  valor: string | null | undefined,
+  siNoEsFecha = FECHA_INVALIDA,
+): string {
+  const fecha = aFechaLocal(valor);
+  if (!fecha) return siNoEsFecha;
+
+  return `${fecha.getDate()} de ${NOMBRES_DE_MES[fecha.getMonth()]}, ${fecha.getFullYear()}`;
+}
+
 /** Fecha y hora juntas: `09/03/2026, 2:30 PM`. */
 export function formatearFechaHora(
   valor: string | null | undefined,

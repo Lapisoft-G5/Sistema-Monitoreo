@@ -4,6 +4,7 @@ import {
   hoyISO,
   aFechaLocal,
   formatearFechaConMes,
+  formatearFechaEnPalabras,
   esFechaValida,
   formatearFechaCorta,
   formatearFechaHora,
@@ -209,5 +210,19 @@ describe('hoyISO', () => {
   it('no adelanta el día por la noche', () => {
     expect(hoyISO(new Date(2026, 2, 9, 20, 30))).toBe('2026-03-09');
     expect(hoyISO(new Date(2026, 2, 9, 23, 59))).toBe('2026-03-09');
+  });
+});
+
+describe('formatearFechaEnPalabras', () => {
+  it('escribe día, mes en palabras y año', () => {
+    expect(formatearFechaEnPalabras('2026-03-09T14:30:00')).toBe('9 de Marzo, 2026');
+  });
+
+  it('funciona con una fecha sin hora, sin correrse de día', () => {
+    expect(formatearFechaEnPalabras('2026-03-01')).toBe('1 de Marzo, 2026');
+  });
+
+  it('avisa en lugar de devolver la cadena original', () => {
+    expect(formatearFechaEnPalabras('cualquier-cosa')).toBe('Fecha inválida');
   });
 });

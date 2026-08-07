@@ -4,6 +4,7 @@ import type { Plantilla } from '@/entities/model-plantillas';
 import { useCronogramasData } from '@/features/cronogramas/hooks/use-cronogramas-data';
 import { useQuery } from '@tanstack/react-query';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
+import { formatearFechaEnPalabras } from '@shared/lib/fecha/fecha';
 
 interface FichaPrintableProps {
   visit: Cronograma;
@@ -29,21 +30,6 @@ interface FichaPrintableProps {
   };
 }
 
-const formatVisitDate = (fechaHoraStr: string) => {
-  try {
-    const d = new Date(fechaHoraStr);
-    if (!isNaN(d.getTime())) {
-      const MONTH_NAMES = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-      ];
-      return `${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}, ${d.getFullYear()}`;
-    }
-    return fechaHoraStr.split('T')[0];
-  } catch {
-    return fechaHoraStr;
-  }
-};
 
 const getLevelStyle = (level: string) => {
   switch (level) {
@@ -498,7 +484,7 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           <tbody>
             <tr>
               <td className="bg-gray">FECHA:</td>
-              <td>{formatVisitDate(visit.fechaHora)}</td>
+              <td>{formatearFechaEnPalabras(visit.fechaHora)}</td>
               <td className="bg-gray">HORA INICIO:</td>
               <td>{
                 !isNaN(new Date(visit.fechaHora).getTime()) 

@@ -13,9 +13,11 @@ import {
   SelectField,
   TextAreaField,
   TextField,
+} from '@shared/ui/form-controls';
+import {
   toOptions,
   twoCols,
-} from '@shared/ui/form-controls';
+} from '@shared/ui/form-controls.types';
 import { useUser } from '@entities/model-user';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 

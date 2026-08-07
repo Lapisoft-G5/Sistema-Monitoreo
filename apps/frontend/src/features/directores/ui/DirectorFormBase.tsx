@@ -3,7 +3,16 @@ import { Briefcase } from 'lucide-react';
 import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import { directorSchema } from '@entities/model-docentes/validator';
-import { SectionCard, TextField, SelectField, FormButton, twoCols, DatosPersonalesSection } from '@shared/ui/form-controls';
+import {
+  SectionCard,
+  TextField,
+  SelectField,
+  FormButton,
+  DatosPersonalesSection,
+} from '@shared/ui/form-controls';
+import {
+  twoCols,
+} from '@shared/ui/form-controls.types';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { usePersonForm } from '@shared/hooks/usePersonForm';
 import {

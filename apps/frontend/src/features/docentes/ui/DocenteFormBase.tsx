@@ -5,7 +5,16 @@ import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
 import { CARGA_HORARIA } from '@shared/config/constants';
-import { FormButton, SectionCard, SelectField, TextField, twoCols, DatosPersonalesSection } from '@shared/ui/form-controls';
+import {
+  FormButton,
+  SectionCard,
+  SelectField,
+  TextField,
+  DatosPersonalesSection,
+} from '@shared/ui/form-controls';
+import {
+  twoCols,
+} from '@shared/ui/form-controls.types';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';

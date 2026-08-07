@@ -13,47 +13,7 @@ import {
   reportesPropios,
   reportesVisibles,
 } from '@features/reportes/lib/visibilidad-reportes';
-
-const getFichaState = (visitId: string) => {
-  const saved = localStorage.getItem(`sistema-monitoreo:ficha-state:${visitId}`);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (err) {
-      console.warn('Invalid JSON in localStorage', err);
-    }
-  }
-  
-  // Mock pre-filled state for completed mock visits
-  const defaultComments = 'Se evidencia un óptimo desempeño de las actividades. El plan de trabajo institucional está alineado con las directrices de la UGEL. Se recomienda reforzar el acompañamiento en aula para asegurar la continuidad pedagógica e incrementar el monitoreo formativo.';
-  const defaultAspects: Record<string, boolean> = {
-    'd1_a1': true, 'd1_a2': true, 'd1_a3': true,
-    'd2_a1': true, 'd2_a2': true, 'd2_a3': false,
-    'd3_a1': true, 'd3_a2': true, 'd3_a3': true,
-    'a1_1': true, 'a1_2': true, 'a1_3': true,
-    'a2_1': true, 'a2_2': true, 'a2_3': true,
-    'a3_1': true, 'a3_2': true, 'a3_3': false,
-    'dd1_a1': true, 'dd1_a2': true, 'dd1_a3': true,
-    'dd2_a1': true, 'dd2_a2': true, 'dd2_a3': true,
-    'dd3_a1': true, 'dd3_a2': true, 'dd3_a3': true,
-    'ad1_1': true, 'ad1_2': true, 'ad1_3': true,
-    'ad2_1': true, 'ad2_2': true, 'ad2_3': true,
-    'ad3_1': true, 'ad3_2': true, 'ad3_3': true,
-  };
-  
-  const defaultLevels: Record<string, string> = {
-    'd1': 'III', 'd2': 'III', 'd3': 'IV',
-    'a1': 'III', 'a2': 'III', 'a3': 'IV',
-    'dd1': 'III', 'dd2': 'III', 'dd3': 'IV',
-    'ad1': 'III', 'ad2': 'III', 'ad3': 'IV',
-  };
-  
-  return {
-    checkedAspects: defaultAspects,
-    selectedLevels: defaultLevels,
-    generalComments: defaultComments
-  };
-};
+import { calcularEstadisticas } from '@features/reportes/lib/estadisticas-reportes';
 
 export const ReportesPage = () => {
   const location = useLocation();
@@ -203,60 +163,25 @@ export const ReportesPage = () => {
 
   // ── Métricas Estadísticas (KPIs) ──
   const stats = useMemo(() => {
-    const total = completedVisits.length;
-    const docentes = completedVisits.filter((v) => v.tipo === 'DOCENTE').length;
-    const directivos = completedVisits.filter((v) => v.tipo === 'DIRECTIVO').length;
+    // Se calculan con `nivelLogro` y `promedio`, que ya vienen del backend.
+    // Antes el nivel satisfactorio se derivaba del borrador guardado en
+    // `localStorage` y, cuando faltaba —lo normal, porque el borrador vive en
+    // el navegador de quien llenó la ficha— caía a un relleno inventado con
+    // todos los niveles en III y IV, que empujaba la métrica al 100 %.
+    const base = calcularEstadisticas(completedVisits);
 
-    // Calcular promedios de calificación simulados / cargados
-    let totalLevelsCount = 0;
-    let highLevelsCount = 0; // Niveles III y IV
-
-    completedVisits.forEach((v) => {
-      const fichaState = getFichaState(v.id);
-      Object.values(fichaState.selectedLevels).forEach((level) => {
-        totalLevelsCount++;
-        if (level === 'III' || level === 'IV') {
-          highLevelsCount++;
-        }
-      });
-    });
-
-    const satisfactionPercent =
-      totalLevelsCount > 0 ? Math.round((highLevelsCount / totalLevelsCount) * 100) : 85;
-
-    // Contar IEs únicas
-    const uniqueIEs = new Set(completedVisits.map((v) => v.institucion.split(' - ')[0])).size;
-
-    // ── Métricas exclusivas para vista de evaluado (docente) ──
-    const promedioGeneral =
-      total > 0
-        ? Number(
-            (
-              completedVisits.reduce((acc, v) => acc + (v.promedio ?? 0), 0) / total
-            ).toFixed(2),
-          )
-        : undefined;
-
-    // Nivel logro más reciente (último por fechaHora)
-    const sorted = [...completedVisits].sort(
+    // Nivel de logro más reciente (último por fechaHora)
+    const masReciente = [...completedVisits].sort(
       (a, b) => new Date(b.fechaHora).getTime() - new Date(a.fechaHora).getTime(),
-    );
-    const nivelLogroMasFrecuente = sorted[0]?.nivelLogro ?? undefined;
-
-    // Especialistas únicos que evaluaron al docente
-    const uniqueEspecialistas = new Set(
-      completedVisits.map((v) => v.especialista).filter(Boolean),
-    ).size;
+    )[0];
 
     return {
-      total,
-      docentes,
-      directivos,
-      satisfactionPercent,
-      uniqueIEs,
-      promedioGeneral,
-      nivelLogroMasFrecuente,
-      uniqueEspecialistas,
+      ...base,
+      uniqueIEs: base.institucionesDistintas,
+      nivelLogroMasFrecuente: masReciente?.nivelLogro,
+      // Por identificador y no por nombre: dos especialistas homónimos se
+      // contaban como uno solo.
+      uniqueEspecialistas: new Set(completedVisits.map((v) => v.monitorId).filter(Boolean)).size,
     };
   }, [completedVisits]);
 

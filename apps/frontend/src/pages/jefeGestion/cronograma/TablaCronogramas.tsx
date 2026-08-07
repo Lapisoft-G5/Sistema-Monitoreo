@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@shared/ui/table';
-import { TablePagination } from '@shared/ui/TablePagination';
+import { TablePagination } from '@shared/ui/table-pagination';
 import type { Cronograma } from '@entities/model-cronogramas';
 
 /** Estados en los que una visita todavía admite cambios. */

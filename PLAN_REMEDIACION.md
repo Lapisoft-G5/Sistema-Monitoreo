@@ -963,6 +963,33 @@ Adicionalmente, dos efectos tienen sus dependencias silenciadas (`CronogramaPage
 
 **Riesgo de omitir esta fase.** Los cuatro archivos siguen siendo intocables en la práctica: cualquier cambio en ellos requiere comprender más de mil líneas de contexto, lo que hace que las estimaciones sean poco fiables y las revisiones de código superficiales.
 
+**Resultado (2026-08-06).**
+
+| Archivo | Antes | Después |
+| --- | --- | --- |
+| `CronogramaPage.tsx` | 1.446 | 180 |
+| `LlenarFichaForm.tsx` | 1.294 | 292 |
+| `CalendarioGrid.tsx` | 1.011 | 219 |
+| `CalendarioSidebar.tsx` | 917 | 278 |
+| **Total** | **4.668** | **969** |
+
+`CalendarioPage.tsx` bajó además de 367 a 306 al perder su copia de la
+regla de visibilidad, que estaba duplicada y divergente respecto de
+`CronogramaPage`.
+
+Criterios cumplidos: ningún archivo del alcance supera 300 líneas,
+ninguna interfaz de props supera 8 propiedades, y el proyecto quedó con
+**cero** supresiones de `react-hooks/exhaustive-deps` (eran 3).
+
+**Alcance no cubierto.** El criterio «ningún componente supera 300
+líneas» se cumple para los cuatro archivos que esta fase enumera, no para
+el proyecto entero: quedan 8 componentes por encima de ese umbral
+—`PlanMonitoreoAnualPage` (775), `FichaPrintable` (763),
+`PlantillasCatalog` (695), `ReportesGrid` (631), `DocenteFormBase` (523),
+`EspecialistaFormBase` (499), `ReportesPage` (393) y `JefeAreaFormBase`
+(369)—, unas 4.600 líneas que ninguna tarea de esta fase menciona.
+Cerrarlos requiere una fase propia.
+
 ---
 
 ### Fase 6 — Extracción del dominio fuera de la capa de presentación
@@ -1071,7 +1098,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Migración completa (104 → 0 literales), barrera de CI bloqueante, política al 96 %; falta derivar el menú, bloqueado por decisión de producto |
 | 3 — Red de pruebas | **Cerrada con alcance revisado** | 2026-08-06 | 2026-08-06 | | Umbrales activos como guarda de retroceso; el objetivo de cobertura se traslada a la Fase 5 |
 | 4 — Tipado en capa de datos | **Completada** | 2026-08-06 | 2026-08-06 | | 16 → 0 supresiones; destapó dos defectos reales, H-29 entre ellos |
-| 5 — Descomposición de componentes | Pendiente | | | | |
+| 5 — Descomposición de componentes | **Completada (alcance del plan)** | 2026-08-06 | 2026-08-06 | | Los 4 archivos objetivo: 4.668 → 969 líneas. Cero supresiones de `exhaustive-deps` en el proyecto. Quedan 8 componentes >300 líneas fuera del alcance de esta fase (ver nota) |
 | 6 — Extracción de dominio | Pendiente | | | | |
 | 7 — Higiene y consolidación | Pendiente | | | | |
 

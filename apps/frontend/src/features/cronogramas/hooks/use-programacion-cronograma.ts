@@ -3,12 +3,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { Docente } from '@entities/model-docentes';
-import { useAtenderSolicitud } from '@features/solicitudes-visita';
+import { useAtenderSolicitud } from '@features/visit-requests';
 import {
   especialistasAsignables,
   institucionesAsignables,
   modalidadesPermitidas,
   nivelesPermitidos,
+  type EspecialistaAsignable,
+  type InstitucionAsignable,
   type UsuarioAsignador,
 } from '../lib/asignacion';
 import { fechaProgramadaPorDefecto, validarProgramacion } from '../lib/formulario';
@@ -39,13 +41,8 @@ interface ProgramacionParams {
   esDeInstitucion: boolean;
   catalogos: {
     cronogramas: readonly Cronograma[];
-    especialistas: readonly { id: string; nombre: string }[];
-    instituciones: readonly {
-      id: string;
-      nombre: string;
-      modalidad: string;
-      nivelEducativo: string;
-    }[];
+    especialistas: readonly (EspecialistaAsignable & { nombre: string })[];
+    instituciones: readonly (InstitucionAsignable & { nombre: string })[];
     docentes: readonly Docente[];
   };
   crear: (payload: never) => Promise<{ id?: string } | undefined | void>;
@@ -129,16 +126,14 @@ export function useProgramacionCronograma({
       modalidades: modalidadesPermitidas(usuario),
       niveles: nivelesPermitidos(form.modalidad, usuario),
       especialistas: especialistasAsignables(
-        especialistas as never,
+        especialistas,
         form.modalidad,
         form.nivel,
         usuario,
-      ).map((e: { nombre: string }) => ({ value: e.nombre, label: e.nombre })),
-      instituciones: institucionesAsignables(
-        instituciones as never,
-        form.modalidad,
-        form.nivel,
-      ).map((i: { nombre: string }) => ({ value: i.nombre, label: i.nombre })),
+      ).map((e) => ({ value: e.nombre, label: e.nombre })),
+      instituciones: institucionesAsignables(instituciones, form.modalidad, form.nivel).map(
+        (i) => ({ value: i.nombre, label: i.nombre }),
+      ),
       evaluados: opcionesDeEvaluado,
       evaluadores: opcionesDeEvaluador,
       visitas: numerosDeVisitaDisponibles(

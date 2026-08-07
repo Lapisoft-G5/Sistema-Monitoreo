@@ -1,4 +1,5 @@
 import { Filter } from 'lucide-react';
+import { ESTADOS_VISITA } from '@sistema-monitoreo/shared-contracts';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SelectField } from '@/shared/ui/form-controls';
@@ -20,13 +21,10 @@ const OPCIONES_NRO_VISITA = [
   { value: '04', label: 'Monitoreo 04' },
 ];
 
+/** Derivadas del contrato: un estado nuevo aparece solo, sin tocar esta lista. */
 const OPCIONES_ESTADO = [
   { value: SIN_FILTRAR, label: 'Todos los estados' },
-  { value: 'PROGRAMADO', label: 'PROGRAMADO' },
-  { value: 'EN_PROCESO', label: 'EN_PROCESO' },
-  { value: 'COMPLETADO', label: 'COMPLETADO' },
-  { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
-  { value: 'CANCELADO', label: 'CANCELADO' },
+  ...ESTADOS_VISITA.map((estado) => ({ value: estado, label: estado })),
 ];
 
 /** Listas que se derivan de las visitas cargadas, no de una constante. */

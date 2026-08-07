@@ -1,6 +1,7 @@
 import { FileText, X, AlertCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { SelectField } from '@shared/ui/form-controls';
+import { ESTADOS_VISITA } from '@sistema-monitoreo/shared-contracts';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { FormularioCronograma } from '@features/cronogramas/lib/formulario';
 import { SelectorNumeroVisita, type BotonVisita } from './SelectorNumeroVisita';
@@ -46,14 +47,11 @@ interface ModalCronogramaProps {
 const CLASES_CAMPO_FIJO =
   'bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm shadow-inner leading-none h-10 flex items-center';
 
-const OPCIONES_ESTADO: Opcion[] = [
-  { value: 'PROGRAMADO', label: 'PROGRAMADO' },
-  { value: 'EN_PROCESO', label: 'EN_PROCESO' },
-  { value: 'COMPLETADO', label: 'COMPLETADO' },
-  { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
-  { value: 'CANCELADO', label: 'CANCELADO' },
-  { value: 'ANULADO', label: 'ANULADO' },
-];
+/** Derivadas del contrato: un estado nuevo aparece solo, sin tocar esta lista. */
+const OPCIONES_ESTADO: Opcion[] = ESTADOS_VISITA.map((estado) => ({
+  value: estado,
+  label: estado,
+}));
 
 /** Campo de sólo lectura, para lo que el perfil no elige. */
 const CampoFijo = ({ etiqueta, valor }: { etiqueta: string; valor: string }) => (

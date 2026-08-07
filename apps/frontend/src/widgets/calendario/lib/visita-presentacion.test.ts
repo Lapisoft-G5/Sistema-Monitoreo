@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { ESTADOS_VISITA } from '@sistema-monitoreo/shared-contracts';
 import {
   claseBadgeEstado,
   claseEtiquetaVisita,
@@ -42,12 +43,23 @@ describe('claseBadgeEstado', () => {
     ['COMPLETADO', 'emerald'],
     ['REPROGRAMADO', 'amber'],
     ['CANCELADO', 'slate'],
-  ])('usa la paleta %s → %s', (estado, paleta) => {
+  ] as const)('usa la paleta %s → %s', (estado, paleta) => {
     expect(claseBadgeEstado(estado)).toContain(paleta);
   });
 
-  it('cae a la paleta neutra ante un estado desconocido', () => {
+  it('declara una paleta para ANULADO, que antes caía a la neutra', () => {
     expect(claseBadgeEstado('ANULADO')).toBe('bg-slate-100 text-slate-700');
+  });
+
+  /**
+   * La tabla se tipa contra `EstadoVisita`. Esta prueba comprueba en ejecución
+   * lo que el compilador ya exige: que no falte ninguno. Si el contrato suma un
+   * estado, falla acá además de romper la compilación.
+   */
+  it('cubre todos los estados del contrato', () => {
+    for (const estado of ESTADOS_VISITA) {
+      expect(claseBadgeEstado(estado)).toBeTruthy();
+    }
   });
 });
 
@@ -58,12 +70,18 @@ describe('clasePuntoEstado', () => {
     ['COMPLETADO', 'bg-emerald-500'],
     ['REPROGRAMADO', 'bg-amber-500'],
     ['CANCELADO', 'bg-slate-400'],
-  ])('asigna a %s el punto %s', (estado, esperado) => {
+  ] as const)('asigna a %s el punto %s', (estado, esperado) => {
     expect(clasePuntoEstado(estado)).toBe(esperado);
   });
 
-  it('cae al punto neutro ante un estado desconocido', () => {
+  it('declara un punto para ANULADO, que antes caía al neutro', () => {
     expect(clasePuntoEstado('ANULADO')).toBe('bg-slate-400');
+  });
+
+  it('cubre todos los estados del contrato', () => {
+    for (const estado of ESTADOS_VISITA) {
+      expect(clasePuntoEstado(estado)).toBeTruthy();
+    }
   });
 });
 
@@ -120,11 +138,18 @@ describe('claseEtiquetaVisita', () => {
     ['EN_PROCESO', 'rose'],
     ['COMPLETADO', 'emerald'],
     ['REPROGRAMADO', 'amber'],
-  ])('usa la paleta %s → %s', (estado, paleta) => {
+  ] as const)('usa la paleta %s → %s', (estado, paleta) => {
     expect(claseEtiquetaVisita(estado)).toContain(paleta);
   });
 
-  it('cae a la paleta neutra ante un estado desconocido', () => {
+  it('declara una etiqueta para ANULADO, sin hover: no es pulsable', () => {
     expect(claseEtiquetaVisita('ANULADO')).toContain('slate');
+    expect(claseEtiquetaVisita('ANULADO')).not.toContain('hover');
+  });
+
+  it('cubre todos los estados del contrato', () => {
+    for (const estado of ESTADOS_VISITA) {
+      expect(claseEtiquetaVisita(estado)).toBeTruthy();
+    }
   });
 });

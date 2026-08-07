@@ -1,4 +1,5 @@
 import { Search } from 'lucide-react';
+import { ESTADOS_VISITA } from '@sistema-monitoreo/shared-contracts';
 import { Card } from '@shared/ui/card';
 import { SelectField, TextField } from '@shared/ui/form-controls';
 
@@ -29,14 +30,10 @@ const OPCIONES_TIPO = [
   { value: 'DIRECTIVO', label: 'DIRECTIVO' },
 ];
 
+/** Derivadas del contrato: un estado nuevo aparece solo, sin tocar esta lista. */
 const OPCIONES_ESTADO = [
   { value: 'Todos', label: 'Todos los estados' },
-  { value: 'PROGRAMADO', label: 'PROGRAMADO' },
-  { value: 'EN_PROCESO', label: 'EN_PROCESO' },
-  { value: 'COMPLETADO', label: 'COMPLETADO' },
-  { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
-  { value: 'CANCELADO', label: 'CANCELADO' },
-  { value: 'ANULADO', label: 'ANULADO' },
+  ...ESTADOS_VISITA.map((estado) => ({ value: estado, label: estado })),
 ];
 
 const LUPA = <Search className="w-[18px] h-[18px] text-text-muted" />;

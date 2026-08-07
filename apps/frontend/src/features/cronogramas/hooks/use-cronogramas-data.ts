@@ -14,6 +14,8 @@ import type { ICreateVisitaRequest, IUpdateVisitaRequest } from '@sistema-monito
 
 export interface EspecialistaLite {
   id: string;
+  /** Persona a la que pertenece; vincula con su registro docente si lo tiene. */
+  personaId: string;
   nombre: string;
   initials: string;
   modalidad: string;
@@ -92,6 +94,7 @@ export const useCronogramasData = (enabled = true) => {
     if (!espQuery.data?.ok || !espQuery.data?.data) return [];
     return espQuery.data.data.map((e) => ({
       id: e.id,
+      personaId: e.personaId,
       nombre: `${e.persona.nombres} ${e.persona.apellidos}`,
       initials: getInitials(`${e.persona.nombres} ${e.persona.apellidos}`),
       modalidad: e.modalidad || 'EBR',

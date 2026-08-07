@@ -14,6 +14,11 @@ import {
   type UsuarioAsignador,
 } from '../lib/asignacion';
 import { fechaProgramadaPorDefecto, validarProgramacion } from '../lib/formulario';
+import {
+  opcionesDeEspecialista,
+  opcionesDeInstitucion,
+  type InstitucionOfrecible,
+} from '../lib/opciones-de-asignacion';
 import { numerosDeVisitaDisponibles } from '../lib/numeracion-visitas';
 import { aPayloadDeCreacion, aPayloadDeEdicion, resolverReferencias } from '../lib/payload';
 import { useFormularioCronograma } from './use-formulario-cronograma';
@@ -28,11 +33,10 @@ interface PrefillSolicitud {
 }
 
 interface UsuarioProgramador extends UsuarioAsignador {
-  nombres: string;
-  apellidos: string;
+  /** Identificador de su institución, cuando pertenece a una. */
   institucion?: string;
-  institucionNombre?: string;
-  institucionNivel?: string;
+  /** Identificador de su registro de especialista, con el que se lo asigna. */
+  especialistaId?: string;
 }
 
 interface ProgramacionParams {
@@ -41,8 +45,13 @@ interface ProgramacionParams {
   esDeInstitucion: boolean;
   catalogos: {
     cronogramas: readonly Cronograma[];
-    especialistas: readonly (EspecialistaAsignable & { nombre: string })[];
-    instituciones: readonly (InstitucionAsignable & { nombre: string })[];
+    especialistas: readonly (EspecialistaAsignable & {
+      id: string;
+      personaId: string;
+      nombre: string;
+      cargo?: string;
+    })[];
+    instituciones: readonly (InstitucionAsignable & InstitucionOfrecible)[];
     docentes: readonly Docente[];
   };
   crear: (payload: never) => Promise<{ id?: string } | undefined | void>;
@@ -88,31 +97,27 @@ export function useProgramacionCronograma({
 
   /** Evaluado elegido, resuelto a su registro. */
   const evaluadoResuelto = useMemo(
-    () =>
-      form.docente
-        ? (docentes.find(
-            (d) => `${d.nombres} ${d.apellidos}`.trim() === form.docente.trim(),
-          ) ?? null)
-        : null,
-    [form.docente, docentes],
+    () => (form.evaluadoId ? (docentes.find((d) => d.id === form.evaluadoId) ?? null) : null),
+    [form.evaluadoId, docentes],
   );
 
   const { evaluados, esSecundaria, opcionesDeEvaluado, opcionesDeEvaluador } =
     useOpcionesDeEvaluacion({
       docentes,
       instituciones,
+      especialistas,
       esDirector: esDeInstitucion,
-      institucionDelUsuario: { id: usuario?.institucion, nombre: usuario?.institucionNombre },
-      institucionElegida: form.institucion,
+      institucionDelUsuarioId: usuario?.institucion,
+      institucionElegidaId: form.institucionId,
       tipoDeVisita: form.tipo,
-      evaluadorElegido: form.especialista,
-      evaluadoElegido: form.docente,
+      evaluadorElegidoId: form.monitorId,
+      evaluadoElegidoId: form.evaluadoId,
     });
 
   useSincronizacionFormulario({
     esEdicion: editandoId !== null,
-    evaluadorElegido: form.especialista,
-    evaluadoElegido: form.docente,
+    evaluadorElegidoId: form.monitorId,
+    evaluadoElegidoId: form.evaluadoId,
     tipoDeVisita: form.tipo,
     evaluadosDisponibles: evaluados,
     evaluadoResuelto,
@@ -125,14 +130,11 @@ export function useProgramacionCronograma({
     () => ({
       modalidades: modalidadesPermitidas(usuario),
       niveles: nivelesPermitidos(form.modalidad, usuario),
-      especialistas: especialistasAsignables(
-        especialistas,
-        form.modalidad,
-        form.nivel,
-        usuario,
-      ).map((e) => ({ value: e.nombre, label: e.nombre })),
-      instituciones: institucionesAsignables(instituciones, form.modalidad, form.nivel).map(
-        (i) => ({ value: i.nombre, label: i.nombre }),
+      especialistas: opcionesDeEspecialista(
+        especialistasAsignables(especialistas, form.modalidad, form.nivel, usuario),
+      ),
+      instituciones: opcionesDeInstitucion(
+        institucionesAsignables(instituciones, form.modalidad, form.nivel),
       ),
       evaluados: opcionesDeEvaluado,
       evaluadores: opcionesDeEvaluador,
@@ -162,19 +164,19 @@ export function useProgramacionCronograma({
     setEditandoId(null);
 
     // Quien pertenece a una institución programa siempre sobre la suya: se
-    // precarga para que no tenga que elegir lo único que puede elegir.
-    const suInstitucion = instituciones.find(
-      (i) => i.nombre.toLowerCase() === usuario?.institucionNombre?.toLowerCase(),
-    );
+    // precarga para que no tenga que elegir lo único que puede elegir. Se busca
+    // por identificador, que el token ya trae; antes se buscaba por nombre y,
+    // si no acertaba, se rellenaba con 'EBR' y 'Primaria' inventados.
+    const suInstitucion = instituciones.find((i) => i.id === usuario?.institucion);
 
     reiniciar({
       fechaHora: fechaProgramadaPorDefecto(),
-      ...(esDeInstitucion && usuario
+      ...(esDeInstitucion && suInstitucion
         ? {
-            institucion: usuario.institucionNombre || '',
-            especialista: `${usuario.nombres} ${usuario.apellidos}`,
-            modalidad: suInstitucion?.modalidad ?? 'EBR',
-            nivel: suInstitucion?.nivelEducativo ?? usuario.institucionNivel ?? 'Primaria',
+            institucionId: suInstitucion.id,
+            monitorId: usuario?.especialistaId ?? '',
+            modalidad: suInstitucion.modalidad,
+            nivel: suInstitucion.nivelEducativo,
           }
         : {}),
     });
@@ -188,13 +190,13 @@ export function useProgramacionCronograma({
       fechaHora: visita.fechaHora,
       modalidad: visita.modalidad,
       nivel: visita.nivel,
-      docente: visita.docenteDirectivo,
       tipo: visita.tipo,
       visita: visita.nroVisita,
       estado: visita.estado,
       observaciones: visita.observaciones || '',
-      especialista: visita.especialista,
-      institucion: visita.institucion,
+      monitorId: visita.monitorId,
+      institucionId: visita.institucionId,
+      evaluadoId: visita.evaluadoId ?? '',
     });
     setAbierto(true);
   };
@@ -204,7 +206,7 @@ export function useProgramacionCronograma({
     const prefill = (location.state as { prefillSolicitud?: PrefillSolicitud } | null)
       ?.prefillSolicitud;
     if (!prefill) return;
-    // Esperar a que los catálogos estén cargados para poder resolver los nombres.
+    // Esperar a que los catálogos estén cargados para poder resolver los datos.
     if (instituciones.length === 0 || docentes.length === 0) return;
 
     const ie = instituciones.find((i) => i.id === prefill.institucionId);
@@ -215,10 +217,8 @@ export function useProgramacionCronograma({
       reiniciar({
         fechaHora: fechaProgramadaPorDefecto(),
         tipo: 'DOCENTE',
-        ...(ie
-          ? { modalidad: ie.modalidad, nivel: ie.nivelEducativo, institucion: ie.nombre }
-          : {}),
-        ...(doc ? { docente: `${doc.nombres} ${doc.apellidos}`.trim() } : {}),
+        ...(ie ? { modalidad: ie.modalidad, nivel: ie.nivelEducativo, institucionId: ie.id } : {}),
+        ...(doc ? { evaluadoId: doc.id } : {}),
       });
       setSolicitudPendiente(prefill.solicitudId ?? null);
       setAbierto(true);

@@ -54,8 +54,6 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/main.tsx',
         'src/vite-env.d.ts',
-        // Datos simulados dentro del árbol de producción; se retiran en Fase 7.
-        'src/**/mocks.ts',
       ],
     },
   },

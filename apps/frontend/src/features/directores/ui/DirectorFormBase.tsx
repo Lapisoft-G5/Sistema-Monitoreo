@@ -1,11 +1,11 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Briefcase } from 'lucide-react';
 import { CONDICION_DIRECTIVA, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import type { DirectorFormData } from '@entities/model-docentes/validator';
 import { directorSchema } from '@entities/model-docentes/validator';
 import { SectionCard, TextField, SelectField, FormButton, twoCols, DatosPersonalesSection } from '@shared/ui/form-controls';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
+import { usePersonForm } from '@shared/hooks/usePersonForm';
 import {
   DATOS_BASICOS_VACIOS,
   datosBasicosDePersona,
@@ -67,10 +67,10 @@ export const DirectorFormBase = ({
     }
   };
 
-  const errors = useMemo(() => extractErrors(directorSchema.safeParse(form)), [form]);
 
   const {
-    submitted,
+    showError,
+    celularRef,
     persona,
     searchingDni,
     isDniLocked,
@@ -88,7 +88,9 @@ export const DirectorFormBase = ({
     rolObjetivo: 'director',
     onValidSubmit: () => onSubmit(form),
     isLoading,
-    errors,
+    schema: directorSchema,
+    form,
+    serverError,
     setPersonaFields: useCallback((persona) => {
       const docente = persona.docente;
       // Un director sólo puede estar designado, encargado o por función; el
@@ -117,20 +119,8 @@ export const DirectorFormBase = ({
     }, []),
   });
 
-  const celularRef = useRef<HTMLDivElement>(null);
-  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
 
-  useEffect(() => {
-    if (esErrorCelular && celularRef.current) {
-      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      celularRef.current.querySelector('input')?.focus();
-    }
-  }, [esErrorCelular]);
 
-  const showError = (key: keyof DirectorFormData) => {
-    if (key === 'celular' && esErrorCelular) return serverError ?? '';
-    return submitted ? errors[key] : '';
-  };
   const opcionesIE = useMemo(() => {
     const list = instituciones.map((i) => ({ value: i.id, label: i.nombre }));
     if (persona?.docente?.institucion) {

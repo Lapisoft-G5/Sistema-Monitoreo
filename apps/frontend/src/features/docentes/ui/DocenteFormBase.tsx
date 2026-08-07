@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Briefcase, Plus, Trash2, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
@@ -9,7 +9,7 @@ import { FormButton, SectionCard, SelectField, TextField, twoCols, DatosPersonal
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';
-import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
+import { usePersonForm } from '@shared/hooks/usePersonForm';
 import {
   DATOS_BASICOS_VACIOS,
   datosBasicosDePersona,
@@ -128,10 +128,10 @@ export const DocenteFormBase = ({
   const set = <K extends keyof DocenteFormData>(key: K, value: DocenteFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const errors = useMemo(() => extractErrors(docenteSchema.safeParse(form)), [form]);
 
   const {
-    submitted,
+    showError,
+    celularRef,
     persona,
     searchingDni,
     isDniLocked,
@@ -149,7 +149,9 @@ export const DocenteFormBase = ({
     rolObjetivo: form.cargo === 'Director' ? 'director' : 'docente',
     onValidSubmit: () => onSubmit(form),
     isLoading,
-    errors,
+    schema: docenteSchema,
+    form,
+    serverError,
     setPersonaFields: useCallback((persona) => {
       const docente = persona.docente;
 
@@ -179,10 +181,6 @@ export const DocenteFormBase = ({
     }, []),
   });
 
-  const showError = (key: keyof DocenteFormData) => {
-    if (key === 'celular' && esErrorCelular) return serverError ?? '';
-    return submitted ? errors[key] : '';
-  };
 
   const opcionesIE = useMemo(() => {
     const list = instituciones.map((i) => ({ value: i.id, label: i.nombre }));
@@ -229,15 +227,7 @@ export const DocenteFormBase = ({
     );
   };
 
-  const celularRef = useRef<HTMLDivElement>(null);
-  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
 
-  useEffect(() => {
-    if (esErrorCelular && celularRef.current) {
-      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      celularRef.current.querySelector('input')?.focus();
-    }
-  }, [esErrorCelular]);
 
   const celularOk = /^9\d{8}$/.test(form.celular);
 

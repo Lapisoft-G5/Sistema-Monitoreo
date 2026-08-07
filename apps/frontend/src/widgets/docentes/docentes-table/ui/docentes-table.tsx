@@ -202,7 +202,7 @@ export const DocentesTableWidget = ({
               <TableCell className="text-text text-sm">{doc.celular}</TableCell>
               <TableCell>
                 <div className="text-xs font-medium text-text">{doc.condicion}</div>
-                <div className="text-[0.65rem] text-text-muted mt-0.5">Escala: {doc.escala}</div>
+                <div className="text-[0.65rem] text-text-muted mt-0.5">Escala: {doc.escala ?? "no registrada"}</div>
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">

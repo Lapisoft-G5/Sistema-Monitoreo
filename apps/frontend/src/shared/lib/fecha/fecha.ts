@@ -100,6 +100,23 @@ export function partesDeFechaHora(valor: string): { dia: string; hora: string } 
 
 const DOS_DIGITOS = (n: number) => String(n).padStart(2, '0');
 
+/**
+ * Formato libre, con interpretación segura de la fecha.
+ *
+ * Para los formatos de una sola pantalla, que no justifican una función con
+ * nombre propio. Lo que aporta sobre llamar a `toLocaleDateString` directo es
+ * lo mismo que el resto del módulo: la fecha se interpreta sin corrimiento de
+ * zona, y una que no se puede leer se informa en lugar de mostrarse mal.
+ */
+export function formatearFecha(
+  valor: string | null | undefined,
+  opciones: Intl.DateTimeFormatOptions,
+  siNoEsFecha = FECHA_INVALIDA,
+): string {
+  const fecha = aFechaLocal(valor);
+  return fecha ? fecha.toLocaleDateString('es-PE', opciones) : siNoEsFecha;
+}
+
 /** Fecha en formato peruano: `09/03/2026`. */
 export function formatearFechaCorta(
   valor: string | null | undefined,

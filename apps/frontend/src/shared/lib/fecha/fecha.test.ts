@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   aFechaISOLocal,
+  formatearFecha,
   hoyISO,
   aFechaLocal,
   formatearFechaConMes,
@@ -252,5 +253,23 @@ describe('formatearFechaEnPalabras', () => {
 
   it('avisa en lugar de devolver la cadena original', () => {
     expect(formatearFechaEnPalabras('cualquier-cosa')).toBe('Fecha inválida');
+  });
+});
+
+describe('formatearFecha', () => {
+  it('aplica las opciones que le pasan', () => {
+    const resultado = formatearFecha('2026-03-09', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    expect(resultado).toContain('09');
+    expect(resultado).toContain('2026');
+  });
+
+  /** El mismo beneficio que el resto del módulo: no se corre de día. */
+  it('no adelanta ni atrasa el día', () => {
+    expect(formatearFecha('2026-03-01', { day: '2-digit' })).toBe('01');
+  });
+
+  it('avisa cuando no es una fecha', () => {
+    expect(formatearFecha('cualquier-cosa', { day: '2-digit' })).toBe('Fecha inválida');
   });
 });

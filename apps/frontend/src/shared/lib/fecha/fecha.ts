@@ -109,6 +109,30 @@ export function formatearFechaCorta(
   return `${DOS_DIGITOS(fecha.getDate())}/${DOS_DIGITOS(fecha.getMonth() + 1)}/${fecha.getFullYear()}`;
 }
 
+/**
+ * Fecha en formato `YYYY-MM-DD`, en horario **local**.
+ *
+ * Reemplaza a `new Date(x).toISOString().split('T')[0]`, que estaba en tres
+ * servicios y devolvía la fecha en UTC: en Perú (UTC-5), todo lo registrado
+ * después de las 19:00 aparecía con la fecha del día siguiente. Un cargo
+ * asignado un martes a las 20:00 se mostraba como del miércoles.
+ */
+export function aFechaISOLocal(valor: string | Date | null | undefined): string {
+  const fecha = valor instanceof Date ? valor : aFechaLocal(valor);
+  if (!fecha || isNaN(fecha.getTime())) return '';
+
+  return `${fecha.getFullYear()}-${DOS_DIGITOS(fecha.getMonth() + 1)}-${DOS_DIGITOS(fecha.getDate())}`;
+}
+
+/**
+ * Hoy, en formato `YYYY-MM-DD` y en horario local.
+ *
+ * Reemplaza a `new Date().toISOString().split('T')[0]`, que devuelve el día en
+ * UTC: en Perú, después de las 19:00 daba el día siguiente. Finalizar un cargo
+ * a las 20:00 lo registraba con la fecha de mañana.
+ */
+export const hoyISO = (ahora: Date = new Date()): string => aFechaISOLocal(ahora);
+
 /** Hora en formato de 12 horas: `2:30 PM`. */
 function formatearHora(fecha: Date): string {
   const hora = fecha.getHours();

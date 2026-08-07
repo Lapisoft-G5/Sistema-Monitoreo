@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+  aFechaISOLocal,
+  hoyISO,
   aFechaLocal,
   formatearFechaConMes,
   esFechaValida,
@@ -162,5 +164,50 @@ describe('formatearFechaConMes', () => {
     expect(resultado).toBe('Fecha inválida');
     expect(resultado).not.toContain('Oct');
     expect(resultado).not.toContain('2023');
+  });
+});
+
+describe('aFechaISOLocal', () => {
+  it('devuelve la fecha en formato ISO corto', () => {
+    expect(aFechaISOLocal('2026-03-09T14:30:00')).toBe('2026-03-09');
+  });
+
+  /**
+   * Éste es el caso que estaba mal. `toISOString()` devuelve UTC: en Perú
+   * (UTC-5), todo lo registrado después de las 19:00 caía en el día siguiente.
+   * Un cargo asignado un martes a las 20:00 se mostraba como del miércoles.
+   */
+  it('no adelanta el día en un registro de la noche', () => {
+    expect(aFechaISOLocal('2026-03-09T20:30:00')).toBe('2026-03-09');
+    expect(aFechaISOLocal('2026-03-09T23:59:00')).toBe('2026-03-09');
+  });
+
+  it('acepta un objeto Date además de una cadena', () => {
+    expect(aFechaISOLocal(new Date(2026, 2, 9, 20, 30))).toBe('2026-03-09');
+  });
+
+  it('antepone ceros a mes y día', () => {
+    expect(aFechaISOLocal('2026-01-05T10:00:00')).toBe('2026-01-05');
+  });
+
+  it('devuelve cadena vacía ante un valor que no es fecha', () => {
+    expect(aFechaISOLocal('cualquier-cosa')).toBe('');
+    expect(aFechaISOLocal(null)).toBe('');
+    expect(aFechaISOLocal(undefined)).toBe('');
+  });
+});
+
+describe('hoyISO', () => {
+  it('devuelve el día local en formato ISO corto', () => {
+    expect(hoyISO(new Date(2026, 2, 9, 10, 0))).toBe('2026-03-09');
+  });
+
+  /**
+   * El caso que estaba mal: `new Date().toISOString()` da el día en UTC, de
+   * modo que en Perú, después de las 19:00, devolvía el día siguiente.
+   */
+  it('no adelanta el día por la noche', () => {
+    expect(hoyISO(new Date(2026, 2, 9, 20, 30))).toBe('2026-03-09');
+    expect(hoyISO(new Date(2026, 2, 9, 23, 59))).toBe('2026-03-09');
   });
 });

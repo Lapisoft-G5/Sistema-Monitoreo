@@ -61,6 +61,17 @@ describe('aplicarCambioDeAsignacion', () => {
     expect(resultado.institucion).toBe('');
   });
 
+  it('cambiar la institución limpia el docente elegido', () => {
+    const resultado = aplicarCambioDeAsignacion(cargado, 'institucion', 'IE 9999');
+    expect(resultado.docente).toBe('');
+  });
+
+  it('cambiar el tipo de monitoreo limpia el docente elegido', () => {
+    const resultado = aplicarCambioDeAsignacion(cargado, 'tipo', 'DIRECTIVO');
+    expect(resultado.docente).toBe('');
+    expect(resultado.institucion).toBe('IE 1234');
+  });
+
   it('cambiar el especialista no limpia nada', () => {
     const resultado = aplicarCambioDeAsignacion(cargado, 'especialista', 'Otro Nombre');
 

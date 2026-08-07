@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAtenderSolicitud } from '@features/visit-requests';
-import { Compass, PlusCircle, Trash2, Eye, Pencil, X, AlertCircle, Calendar, User, BookOpen, Layers, FileText } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import {
   especialistasAsignables,
@@ -18,13 +18,11 @@ import {
 import { useListadoCronogramas } from '@features/cronogramas/hooks/use-listado-cronogramas';
 import { cronogramasVisibles } from '@features/cronogramas/lib/visibilidad';
 import { BarraFiltros } from './cronograma/BarraFiltros';
+import { ModalCronograma } from './cronograma/ModalCronograma';
+import { TablaCronogramas } from './cronograma/TablaCronogramas';
+import { ModalDetalleCronograma } from './cronograma/ModalDetalleCronograma';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { SelectField } from '@shared/ui/form-controls';
-import { Card } from '@shared/ui/card';
-import { Badge } from '@shared/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
-import { TablePagination } from '@shared/ui/table-pagination';
 import { useUser } from '@entities/model-user';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import type { Cronograma } from '@entities/model-cronogramas';
@@ -313,11 +311,6 @@ export const CronogramaPage = () => {
     [formModalidad, formNivel, instituciones],
   );
 
-  // La cascada (limpiar nivel, especialista e institución) la aplica
-  // `aplicarCambioDeAsignacion`, con cobertura en `formulario.test.ts`.
-  const handleFormModalidadChange = (modalidad: string) => cambiarForm('modalidad', modalidad);
-  const handleFormNivelChange = (nivel: string) => cambiarForm('nivel', nivel);
-
   // Regla unica de visibilidad, compartida con CalendarioPage y con cobertura
   // en `features/cronogramas/lib/visibilidad.test.ts`.
   const filteredBaseCronogramas = useMemo(
@@ -597,636 +590,62 @@ export const CronogramaPage = () => {
         esDirector={isDirector}
       />
 
-      {/* ── Tabla de Cronogramas ── */}
-      <Card className="p-0 border border-border shadow-xs overflow-hidden rounded-2xl">
-        <div className="overflow-x-auto w-full">
-          <Table>
-            <TableHeader className="bg-muted/40 border-b border-border/80">
-              <TableRow>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider pl-5 py-3">
-                  Fecha y Hora
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
-                  {isDirector ? 'Evaluador' : 'Especialista'}
-                </TableHead>
-                {!isDirector && (
-                  <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
-                    Institución
-                  </TableHead>
-                )}
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
-                  {isDirector ? 'Evaluado' : 'Docente/Directivo'}
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
-                  Tipo
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-center py-3">
-                  Nº Visita
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider py-3">
-                  Estado
-                </TableHead>
-                <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5 py-3">
-                  Acciones
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {listado.paginados.map((item) => {
-                const { datePart, timePart } = formatTableDateTime(item.fechaHora);
-                return (
-                  <TableRow key={item.id} className="hover:bg-muted/30 transition-colors border-b border-border/50">
-                    {/* Fecha y Hora */}
-                    <TableCell className="pl-5 text-xs text-text leading-normal">
-                      <div className="flex flex-col">
-                        <span className="font-bold">{datePart}</span>
-                        <span className="text-[10px] text-text-muted">{timePart}</span>
-                      </div>
-                    </TableCell>
+      <TablaCronogramas
+        cronogramas={listado.paginados}
+        esDirector={isDirector}
+        paginacion={{
+          desde: listado.desde,
+          hasta: listado.hasta,
+          total: listado.filtrados.length,
+          pagina: listado.pagina,
+          totalPaginas: listado.totalPaginas,
+          onPagina: listado.irAPagina,
+        }}
+        onVer={setViewCronograma}
+        onEditar={handleOpenEdit}
+        onEliminar={setDeleteCronogramaId}
+        formatearFechaHora={formatTableDateTime}
+        colorDeIniciales={getInitialsColor}
+        estiloTipo={getTipoStyle}
+        estiloEstado={getEstadoStyle}
+      />
 
-                    {/* Especialista / Evaluador */}
-                    <TableCell className="py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 select-none ${getInitialsColor(
-                            item.especialistaInitials
-                          )}`}
-                        >
-                          {item.especialistaInitials}
-                        </div>
-                        <span className="text-xs font-bold text-text truncate max-w-[120px]">
-                          {item.especialista}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    {/* Institución */}
-                    {!isDirector && (
-                      <TableCell className="text-xs font-medium text-text truncate max-w-[140px]">
-                        {item.institucion}
-                      </TableCell>
-                    )}
-
-                    {/* Docente / Directivo / Evaluado */}
-                    <TableCell className="text-xs text-text truncate max-w-[150px]">
-                      {item.docenteDirectivo}
-                    </TableCell>
-
-                    {/* Tipo */}
-                    <TableCell>
-                      <Badge className={`text-[9px] font-bold px-2 py-0.5 rounded ${getTipoStyle(item.tipo)}`}>
-                        {item.tipo}
-                      </Badge>
-                    </TableCell>
-
-                    {/* Número de visita */}
-                    <TableCell className="text-center font-bold text-xs text-text">
-                      {item.nroVisita}
-                    </TableCell>
-
-                    {/* Estado */}
-                    <TableCell>
-                      <Badge className={`text-[9px] font-bold px-2 py-0.5 rounded ${getEstadoStyle(item.estado)}`}>
-                        {item.estado}
-                      </Badge>
-                    </TableCell>
-
-                    {/* Acciones */}
-                    <TableCell className="text-right pr-5">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setViewCronograma(item)}
-                          className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/10 transition-colors rounded-lg cursor-pointer"
-                          title="Ver detalle"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {(!isDirector || item.tipo === 'DOCENTE') && (item.estado === 'PROGRAMADO' || item.estado === 'REPROGRAMADO') && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenEdit(item)}
-                              className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/10 transition-colors rounded-lg cursor-pointer"
-                              title="Editar cronograma"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteCronogramaId(item.id)}
-                              className="h-8 w-8 text-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors rounded-lg cursor-pointer"
-                              title="Eliminar cronograma"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-
-              {listado.paginados.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={isDirector ? 7 : 8} className="text-center text-text-muted py-16">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Compass className="w-9 h-9 text-text-muted/55" strokeWidth={1.5} />
-                      <span className="text-xs font-medium">
-                        No se encontraron cronogramas con los criterios seleccionados.
-                      </span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Paginación */}
-        <TablePagination
-          from={listado.filtrados.length > 0 ? listado.desde + 1 : 0}
-          to={listado.hasta}
-          totalItems={listado.filtrados.length}
-          currentPage={listado.pagina}
-          totalPages={listado.totalPaginas}
-          onPageChange={listado.irAPagina}
-          itemName="cronogramas"
-        />
-      </Card>
-
-      {/* ── Modal de Formulario: Registro o Edición ── */}
       {showFormModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-200">
-          <div className="bg-surface border border-border w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-            {/* Header del modal */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-              <div className="flex flex-col gap-0.5">
-                <h3 className="text-base font-bold text-text flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-primary" />
-                  {editCronogramaId ? 'Editar Cronograma' : 'Registro de Cronograma'}
-                </h3>
-                <p className="text-xs text-text-muted">
-                  Complete los datos para {editCronogramaId ? 'actualizar' : 'programar'} una visita de monitoreo.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowFormModal(false)}
-                className="p-1.5 hover:bg-muted text-text-muted hover:text-text rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body del modal con scroll */}
-            <form onSubmit={handleFormSubmit} className="flex flex-col overflow-y-auto flex-1">
-              <div className="p-6 flex flex-col gap-5">
-                {formError && (
-                  <div className="flex items-start gap-2 bg-rose-50 border-2 border-rose-300 rounded-xl p-4 text-rose-700 text-sm font-semibold shadow-sm">
-                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-rose-600" />
-                    <div className="flex-1">
-                      <p className="font-extrabold uppercase tracking-wide text-xs mb-1">No se pudo guardar el cronograma</p>
-                      <p className="font-normal">{formError}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Fila 1: Modalidad Educativa & Nivel Educativo (oculto para Director) */}
-                {!isDirector && (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <SelectField
-                        label="Modalidad Educativa *"
-                        value={formModalidad}
-                        onChange={handleFormModalidadChange}
-                        placeholder="Seleccionar modalidad..."
-                        options={allowedModalidades.map((m) => ({ value: m, label: m }))}
-                      />
-                      <SelectField
-                        label="Nivel Educativo *"
-                        value={formNivel}
-                        onChange={handleFormNivelChange}
-                        placeholder={formModalidad ? 'Seleccionar nivel...' : 'Seleccione modalidad primero'}
-                        options={nivelesDisponibles.map((n) => ({ value: n, label: n }))}
-                      />
-                    </div>
-
-                    {/* Nota informativa si no hay modalidad/nivel seleccionado */}
-                    {(!formModalidad || !formNivel) && (
-                      <div className="flex items-center gap-2 bg-primary/5 border border-primary/15 rounded-xl p-3 text-primary text-xs">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>Seleccione modalidad y nivel educativo para habilitar la selección de especialista e institución.</span>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Fila 2: Especialista & Institución Educativa (filtrados) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    {isDirector ? (
-                      isSecundaria ? (
-                        <SelectField
-                          label="Evaluador *"
-                          value={formEspecialista}
-                          onChange={setFormEspecialista}
-                          placeholder="Seleccionar evaluador..."
-                          options={evaluadorOptions}
-                          disabled={isCoordOrTaller}
-                        />
-                      ) : (
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-bold text-text-muted">Evaluador *</label>
-                          <div className="bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm shadow-inner leading-none h-10 flex items-center">
-                            {formEspecialista}
-                          </div>
-                        </div>
-                      )
-                    ) : (
-                      <>
-                        <SelectField
-                          label="Especialista (filtro por nivel) *"
-                          value={formEspecialista}
-                          onChange={setFormEspecialista}
-                          placeholder={
-                            !formModalidad || !formNivel
-                              ? 'Seleccione modalidad y nivel...'
-                              : especialistasFiltrados.length === 0
-                                ? 'No hay especialistas para este nivel'
-                                : 'Seleccionar especialista...'
-                          }
-                          options={especialistasFiltrados.map((esp) => ({
-                            value: esp.nombre,
-                            label: esp.nombre,
-                          }))}
-                        />
-                        {formModalidad && formNivel && especialistasFiltrados.length > 0 && (
-                          <span className="text-[10px] text-text-muted pl-1">
-                            {especialistasFiltrados.length} especialista(s) de {formModalidad} - {formNivel}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {isDirector ? (
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-bold text-text-muted">Institución Educativa *</label>
-                        <div className="bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-lg text-sm shadow-inner leading-none h-10 flex items-center">
-                          {formInstitucion}
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <SelectField
-                          label="Institución Educativa (filtro) *"
-                          value={formInstitucion}
-                          onChange={(val) => {
-                            setFormInstitucion(val);
-                            setFormDocente('');
-                          }}
-                          placeholder={
-                            !formModalidad || !formNivel
-                              ? 'Seleccione modalidad y nivel...'
-                              : institucionesFiltradas.length === 0
-                                ? 'No hay instituciones para este nivel'
-                                : 'Seleccionar institución...'
-                          }
-                          options={institucionesFiltradas.map((inst) => ({
-                            value: inst.nombre,
-                            label: inst.nombre,
-                          }))}
-                        />
-                        {formModalidad && formNivel && institucionesFiltradas.length > 0 && (
-                          <span className="text-[10px] text-text-muted pl-1">
-                            {institucionesFiltradas.length} institución(es) de {formModalidad} - {formNivel}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Tipo de Monitoreo - Toggle Buttons */}
-                {!isDirector && (
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-text-muted">Tipo de Monitoreo *</label>
-                    <div className="flex items-center gap-0 rounded-xl border border-border overflow-hidden w-fit">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormTipo('DOCENTE');
-                          setFormDocente('');
-                        }}
-                        className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
-                          formTipo === 'DOCENTE'
-                            ? 'bg-primary text-white shadow-sm'
-                            : 'bg-surface text-text-muted hover:bg-muted/60'
-                        }`}
-                      >
-                        Docente
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormTipo('DIRECTIVO');
-                          setFormDocente('');
-                        }}
-                        className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer border-l border-border ${
-                          formTipo === 'DIRECTIVO'
-                            ? 'bg-primary text-white shadow-sm'
-                            : 'bg-surface text-text-muted hover:bg-muted/60'
-                        }`}
-                      >
-                        Directivo
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Seleccionar Docente a Evaluar */}
-                {isDirector ? (
-                  <SelectField
-                    label="Docente a Evaluar *"
-                    value={formDocente}
-                    onChange={setFormDocente}
-                    placeholder="Seleccionar docente..."
-                    options={docenteOptions}
-                  />
-                ) : (
-                  <SelectField
-                    label={`Seleccionar ${formTipo === 'DOCENTE' ? 'Docente' : 'Directivo'} a Evaluar *`}
-                    value={formDocente}
-                    onChange={setFormDocente}
-                    placeholder={
-                      !formInstitucion
-                        ? 'Seleccione institución primero...'
-                        : docenteOptions.length === 0
-                          ? `No hay ${formTipo === 'DOCENTE' ? 'docentes' : 'directivos'} para esta institución`
-                          : 'Seleccionar...'
-                    }
-                    disabled={!formInstitucion}
-                    options={docenteOptions}
-                  />
-                )}
-
-                {/* Fila: Fecha y Hora Programada & Número de Visita */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Fecha y Hora Programada */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-text-muted">Fecha y Hora Programada *</label>
-                    <input
-                      type="datetime-local"
-                      value={formFechaHora}
-                      onChange={(e) => setFormFechaHora(e.target.value)}
-                      className="flex h-10 w-full rounded-xl border border-input bg-surface px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium text-text placeholder:text-text-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      required
-                      disabled={editCronogramaId !== null}
-                    />
-                    {editCronogramaId && (
-                      <span className="text-[10px] text-amber-600 font-medium">
-                        Para cambiar fecha/hora, use Solicitud de Reprogramación desde el calendario.
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Número de Visita - dinámico con soporte de gaps */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-text-muted">Número de Visita *</label>
-                    <div className="flex flex-wrap gap-2 mt-0.5">
-                      {visitaButtons.map((btn) => {
-                        const isSelected = formVisita === btn.value;
-                        let btnClass = 'w-10 h-10 rounded-xl text-xs font-bold transition-all duration-200 border shrink-0 ';
-                        let disabled = true;
-                        let clickHandler: (() => void) | undefined;
-
-                        if (editCronogramaId) {
-                          btnClass += isSelected
-                            ? 'bg-primary text-white border-primary shadow-sm'
-                            : 'bg-surface text-text-muted border-border opacity-40';
-                        } else if (btn.isOcupado || btn.isFuture) {
-                          btnClass += 'bg-surface text-text-muted border-border opacity-40 cursor-not-allowed';
-                        } else {
-                          disabled = false;
-                          clickHandler = () => setFormVisita(btn.value);
-                          if (isSelected) {
-                            btnClass += 'bg-primary text-white border-primary shadow-sm cursor-pointer';
-                          } else if (btn.isAnulado) {
-                            btnClass += 'bg-surface text-amber-600 border-2 border-dashed border-amber-300 hover:bg-amber-50 hover:border-amber-400 cursor-pointer';
-                          } else {
-                            btnClass += 'bg-surface text-text-muted border-border hover:bg-muted cursor-pointer';
-                          }
-                        }
-
-                        return (
-                          <button
-                            key={btn.value}
-                            type="button"
-                            disabled={disabled}
-                            aria-disabled={disabled}
-                            onClick={clickHandler}
-                            className={btnClass}
-                          >
-                            {btn.num}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <span className="text-[10px] text-text-muted pl-1">
-                      {editCronogramaId
-                        ? 'El número de visita no se puede modificar en edición.'
-                        : 'Se sugiere automáticamente. Puede seleccionar un número ANULADO (borde punteado) para rellenar el espacio.'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Estado (Solo visible en edición) */}
-                {editCronogramaId && (
-                  <SelectField
-                    label="Estado de Visita *"
-                    value={formEstado}
-                    onChange={(val) => setFormEstado(val as Cronograma['estado'])}
-                    placeholder="Seleccionar estado..."
-                    options={[
-                      { value: 'PROGRAMADO', label: 'PROGRAMADO' },
-                      { value: 'EN_PROCESO', label: 'EN_PROCESO' },
-                      { value: 'COMPLETADO', label: 'COMPLETADO' },
-                      { value: 'REPROGRAMADO', label: 'REPROGRAMADO' },
-              { value: 'CANCELADO', label: 'CANCELADO' },
-              { value: 'ANULADO', label: 'ANULADO' },
-                    ]}
-                  />
-                )}
-
-                {/* Detalles / Observaciones */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-text-muted">Detalles / Observaciones (opcional)</label>
-                  <textarea
-                    value={formObservaciones}
-                    onChange={(e) => setFormObservaciones(e.target.value)}
-                    placeholder="Escriba cualquier detalle adicional o instrucciones..."
-                    rows={3}
-                    className="flex w-full rounded-xl border border-input bg-surface px-3 py-2.5 text-sm ring-offset-background text-text placeholder:text-text-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* Acciones del formulario */}
-              <div className="flex justify-end gap-3 px-6 py-4 border-t border-border shrink-0 bg-muted/20">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowFormModal(false)}
-                  className="cursor-pointer border-border"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={formSubmitting}
-                  className="bg-primary hover:bg-primary/95 text-white font-bold cursor-pointer transition-colors"
-                >
-                  {formSubmitting ? 'Guardando…' : 'Guardar Cronograma'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ModalCronograma
+          form={form}
+          onCambiar={cambiarForm}
+          opciones={{
+            modalidades: allowedModalidades,
+            niveles: nivelesDisponibles,
+            especialistas: especialistasFiltrados.map((e) => ({ value: e.nombre, label: e.nombre })),
+            instituciones: institucionesFiltradas.map((i) => ({ value: i.nombre, label: i.nombre })),
+            evaluados: docenteOptions,
+            evaluadores: evaluadorOptions,
+            visitas: visitaButtons,
+          }}
+          perfil={{
+            esDirector: isDirector,
+            esSecundaria: isSecundaria,
+            esCoordinadorOTaller: isCoordOrTaller,
+          }}
+          esEdicion={editCronogramaId !== null}
+          envio={{ error: formError, enviando: formSubmitting }}
+          onEnviar={handleFormSubmit}
+          onCerrar={() => setShowFormModal(false)}
+        />
       )}
 
-      {/* ── Modal de Detalle (Ver Ficha) ── */}
-      {viewCronograma && (() => {
-        const { datePart, timePart } = formatTableDateTime(viewCronograma.fechaHora);
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-200">
-            <div className="bg-surface border border-border w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <h3 className="text-base font-bold text-text flex items-center gap-2">
-                  <Compass className="w-5 h-5 text-primary" />
-                  Detalle del Cronograma
-                </h3>
-                <button
-                  onClick={() => setViewCronograma(null)}
-                  className="p-1 hover:bg-muted text-text-muted hover:text-text rounded-lg transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-5 flex flex-col gap-4">
-                <div className="flex flex-col gap-3">
-                  {/* Especialista info card */}
-                  <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-border/80">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${getInitialsColor(viewCronograma.especialistaInitials)}`}>
-                      {viewCronograma.especialistaInitials}
-                    </div>
-                    <div>
-                      <div className="text-xs text-text-muted">{isDirector ? 'Evaluador' : 'Especialista Asignado'}</div>
-                      <div className="text-sm font-bold text-text">{viewCronograma.especialista}</div>
-                    </div>
-                  </div>
-
-                  {/* Modalidad y Nivel */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase font-bold text-text-muted">Modalidad</span>
-                      <span className="text-xs font-semibold text-text">{viewCronograma.modalidad}</span>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase font-bold text-text-muted">Nivel Educativo</span>
-                      <span className="text-xs font-semibold text-text">{viewCronograma.nivel}</span>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-border/60 my-1" />
-
-                  {/* Grid details */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase font-bold text-text-muted flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-text-muted/80" /> Fecha y Hora
-                      </span>
-                      <span className="text-xs font-semibold text-text">{datePart}</span>
-                      <span className="text-[10px] text-text-muted">{timePart}</span>
-                    </div>
-
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase font-bold text-text-muted flex items-center gap-1">
-                        <Layers className="w-3 h-3 text-text-muted/80" /> Nº de Visita
-                      </span>
-                      <span className="text-xs font-bold text-text">{viewCronograma.nroVisita}</span>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-border/60 my-1" />
-
-                  {!isDirector && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase font-bold text-text-muted flex items-center gap-1">
-                        <BookOpen className="w-3 h-3 text-text-muted/80" /> Institución Educativa
-                      </span>
-                      <span className="text-xs font-semibold text-text">{viewCronograma.institucion}</span>
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] uppercase font-bold text-text-muted flex items-center gap-1">
-                      <User className="w-3 h-3 text-text-muted/80" /> {isDirector ? 'Evaluado' : 'Docente / Directivo Monitoreado'}
-                    </span>
-                    <span className="text-xs font-semibold text-text">{viewCronograma.docenteDirectivo}</span>
-                  </div>
-
-                  <div className="border-t border-border/60 my-1" />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] uppercase font-bold text-text-muted">Tipo de Monitoreo</span>
-                      <div>
-                        <Badge className={`text-[9px] font-bold px-2 py-0.5 rounded ${getTipoStyle(viewCronograma.tipo)}`}>
-                          {viewCronograma.tipo}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] uppercase font-bold text-text-muted">Estado Actual</span>
-                      <div>
-                        <Badge className={`text-[9px] font-bold px-2 py-0.5 rounded ${getEstadoStyle(viewCronograma.estado)}`}>
-                          {viewCronograma.estado}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Observaciones si existen */}
-                  {viewCronograma.observaciones && (
-                    <>
-                      <div className="border-t border-border/60 my-1" />
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] uppercase font-bold text-text-muted">Observaciones</span>
-                        <span className="text-xs text-text bg-muted/30 rounded-lg p-2.5 border border-border/60">{viewCronograma.observaciones}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="flex justify-end mt-4 border-t border-border pt-4">
-                  <Button
-                    onClick={() => setViewCronograma(null)}
-                    className="bg-primary hover:bg-primary/95 text-white font-bold cursor-pointer transition-colors"
-                  >
-                    Cerrar
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {viewCronograma && (
+        <ModalDetalleCronograma
+          cronograma={viewCronograma}
+          esDirector={isDirector}
+          onCerrar={() => setViewCronograma(null)}
+          formatearFechaHora={formatTableDateTime}
+          colorDeIniciales={getInitialsColor}
+          estiloTipo={getTipoStyle}
+          estiloEstado={getEstadoStyle}
+        />
+      )}
 
       {/* ── Modal de Confirmación para Eliminado ── */}
       {deleteCronogramaId && (

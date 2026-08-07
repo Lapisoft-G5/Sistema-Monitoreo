@@ -42,6 +42,10 @@ export const FORMULARIO_CRONOGRAMA_VACIO: FormularioCronograma = {
 const DEPENDIENTES: Partial<Record<keyof FormularioCronograma, (keyof FormularioCronograma)[]>> = {
   modalidad: ['nivel', 'especialista', 'institucion'],
   nivel: ['especialista', 'institucion'],
+  // El evaluado se elige de una institución concreta, y la lista difiere según
+  // se evalúe a un docente o a un directivo.
+  institucion: ['docente'],
+  tipo: ['docente'],
 };
 
 /**

@@ -18,6 +18,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+
+    // El sistema opera en Perú (UTC-5). Sin fijarlo, las pruebas de fecha
+    // pasarían en cualquier huso y no guardarían nada: el corrimiento de un día
+    // al interpretar una fecha sin hora sólo aparece al oeste de Greenwich.
+    // Fase 6 de PLAN_REMEDIACION.md, H-17.
+    env: { TZ: 'America/Lima' },
     setupFiles: ['./src/test/setup.ts'],
     css: false,
     include: ['src/**/*.{test,spec}.{ts,tsx}'],

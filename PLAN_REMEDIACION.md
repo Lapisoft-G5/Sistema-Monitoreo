@@ -1099,6 +1099,36 @@ sistema; consolidarlas sería inventarlas.
 - Cero reexportaciones de compatibilidad.
 - Comparación final de métricas documentada.
 
+**Medición final (2026-08-06).**
+
+| Métrica | Objetivo | Línea base | Final |
+| --- | --- | --- | --- |
+| Archivos con comparación literal de rol | 0 | 104 | **0** ✅ |
+| Ocurrencias de `any` en fuente | ≤ 20 | — | **4** ✅ |
+| Supresiones de lint a nivel de archivo | 0 | 16 | **0** ✅ |
+| Supresiones de `react-hooks/exhaustive-deps` | 0 | 3 | **0** ✅ |
+| Notas `TODO` sin fecha | 0 | 2 | **0** ✅ |
+| Datos simulados fuera de pruebas | 0 | 1.080 líneas | **0** ✅ |
+| Reexportaciones de compatibilidad | 0 | 2 | **0** ✅ |
+| Componentes de más de 300 líneas | 0 | 20 | **17** ❌ |
+
+**Sobre el comando de medición de `UserRole`.** El comando del anexo
+(`rg -n "type UserRole"`) cuenta también las **importaciones**, no sólo las
+declaraciones. Reporta 3 cuando la declaración es una sola, en el contrato
+compartido. El comando está mal, no la métrica.
+
+**Sobre los 17 componentes de más de 300 líneas.** La Fase 5 redujo los cuatro
+que enumeraba —de 4.668 a 969 líneas—, pero su criterio de salida estaba escrito
+como si aplicara a todo el proyecto. Los 17 restantes nunca formaron parte del
+alcance de ninguna fase: `PlanMonitoreoAnualPage` (775), `FichaPrintable` (763),
+`PlantillasCatalog` (695), `ReportesGrid` (631) y otros trece. Cerrarlos requiere
+una fase propia con su propio inventario.
+
+**Tarea 5 sin hacer.** La actualización de la documentación de arquitectura en
+`docs/` queda pendiente: el directorio contiene entregables de gestión —actas,
+backlogs, informes— y no documentación técnica que refleje esta estructura.
+Escribirla desde cero es una tarea de redacción, no de consolidación.
+
 ---
 
 ## 6. Secuencia y paralelización
@@ -1146,7 +1176,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | 4 — Tipado en capa de datos | **Completada** | 2026-08-06 | 2026-08-06 | | 16 → 0 supresiones; destapó dos defectos reales, H-29 entre ellos |
 | 5 — Descomposición de componentes | **Completada (alcance del plan)** | 2026-08-06 | 2026-08-06 | | Los 4 archivos objetivo: 4.668 → 969 líneas. Cero supresiones de `exhaustive-deps` en el proyecto. Quedan 8 componentes >300 líneas fuera del alcance de esta fase (ver nota) |
 | 6 — Extracción de dominio | **Parcial** | 2026-08-06 | | | H-16 y H-18 cerrados; H-17 con primitivas y los peores casos migrados, faltan 27 archivos. Dos premisas del plan resultaron falsas (ver nota) |
-| 7 — Higiene y consolidación | Pendiente | | | | |
+| 7 — Higiene y consolidación | **Parcial** | 2026-08-06 | | | 4 de 5 tareas cerradas. Falta la tarea 5 (documentación de arquitectura). El criterio «cero componentes >300 líneas» no se cumple: 17, fuera del alcance de las fases |
 
 ---
 

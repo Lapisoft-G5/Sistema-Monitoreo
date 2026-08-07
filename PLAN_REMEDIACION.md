@@ -1027,6 +1027,52 @@ Cerrarlos requiere una fase propia.
 
 **Riesgo de omitir esta fase.** Cada cambio en las reglas de dominio requiere modificaciones dispersas en la capa de presentación, con omisión parcial como modo de fallo característico y difícil de detectar en revisión.
 
+**Estado (2026-08-06) y correcciones al enunciado.**
+
+Dos premisas de esta fase resultaron falsas al verificarlas:
+
+1. **«`roleValidation` vive del lado del cliente, sin contraparte verificable en
+   el servidor».** Falso para tres de los cuatro casos que bloquea: especialista
+   duplicado (`especialista-create.helper.ts:44`), docente duplicado
+   (`docente-create.helper.ts:58`) e institución con director activo
+   (`docente-shared.helper.ts:27`). Uno de esos archivos lleva un comentario que
+   dice «defense-in-depth». El único hueco real era otro: el cliente bloqueaba a
+   nivel **persona** y el servidor a nivel **institución**, de modo que una
+   persona podía quedar como director de dos colegios llamando a la API sin
+   pasar por el formulario. Cerrado con `checkPersonaYaEsDirector`.
+
+2. **«Los cinco `*FormBase` tienen estructura equivalente».** Falso:
+   `CreateInstitutionFormBase` registra un colegio y `JefeAreaFormBase` asigna
+   un especialista existente; ninguno es formulario de persona. Los tres que sí
+   lo son ya compartían `usePersonForm`. Además, más de la mitad de esos
+   archivos es la declaración de sus propios campos, que es lo que el plan pide
+   que quede. El criterio «≤ 700 líneas en conjunto» medía la cosa equivocada y
+   se sustituyó por: la lógica compartida se escribe una vez y con cobertura.
+
+También quedó sin hacer, por no existir: las **transiciones válidas** entre
+estados de visita que pide la tarea 1. No están declaradas en ninguna parte del
+sistema; consolidarlas sería inventarlas.
+
+**Hecho.**
+
+| Tarea | Estado |
+| --- | --- |
+| 1 — Registro de estados de visita | ✅ `ESTADOS_VISITA` en el contrato; tablas `Record<EstadoVisita, …>` exhaustivas; catálogos derivados. Sin transiciones (no existen) |
+| 2 — Fechas | ⚠️ Parcial: `shared/lib/fecha` con 23 pruebas y huso fijado; migrados los dos peores casos. Quedan 27 archivos |
+| 3 — Abstracción de formularios | ✅ Con criterio revisado: traspaso desde el padrón, escala magisterial, atribución de error y regla de visualización, cada una una sola vez y con cobertura |
+| 4 — `shared-validation` | ⚠️ Parcial: paquete creado con las primitivas de campo, consumido por el frontend. El backend valida con `class-validator` y no tiene Zod: unificar ambos lados es una decisión de arquitectura pendiente |
+| 5 — Catálogos de dominio | ⚠️ Parcial: estados derivados del contrato. Tipos de monitoreo y números de visita siguen escritos a mano |
+
+**Defectos encontrados y corregidos durante la fase.**
+
+| Defecto | Dónde |
+| --- | --- |
+| Datos personales volcados a la consola del navegador | `DocenteFormBase`, `DirectorFormBase` |
+| Una persona podía quedar como director de dos instituciones | backend, sin validación por persona |
+| Fecha mostrada un día antes por interpretación UTC | todo formateo con `new Date` sobre fecha sin hora |
+| Fecha ilegible mostrada como «Oct 2023» | los dos formularios de reprogramación |
+| Escala magisterial con respaldos divergentes | `DocenteFormBase` caía a `''`, `DirectorFormBase` a `'I'` |
+
 ---
 
 ### Fase 7 — Higiene y consolidación
@@ -1099,7 +1145,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | 3 — Red de pruebas | **Cerrada con alcance revisado** | 2026-08-06 | 2026-08-06 | | Umbrales activos como guarda de retroceso; el objetivo de cobertura se traslada a la Fase 5 |
 | 4 — Tipado en capa de datos | **Completada** | 2026-08-06 | 2026-08-06 | | 16 → 0 supresiones; destapó dos defectos reales, H-29 entre ellos |
 | 5 — Descomposición de componentes | **Completada (alcance del plan)** | 2026-08-06 | 2026-08-06 | | Los 4 archivos objetivo: 4.668 → 969 líneas. Cero supresiones de `exhaustive-deps` en el proyecto. Quedan 8 componentes >300 líneas fuera del alcance de esta fase (ver nota) |
-| 6 — Extracción de dominio | Pendiente | | | | |
+| 6 — Extracción de dominio | **Parcial** | 2026-08-06 | | | H-16 y H-18 cerrados; H-17 con primitivas y los peores casos migrados, faltan 27 archivos. Dos premisas del plan resultaron falsas (ver nota) |
 | 7 — Higiene y consolidación | Pendiente | | | | |
 
 ---

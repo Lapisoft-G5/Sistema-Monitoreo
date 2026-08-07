@@ -7,6 +7,10 @@ import { FormButton, SectionCard, SelectField, TextField, DatosPersonalesSection
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
+import {
+  DATOS_BASICOS_VACIOS,
+  datosBasicosDePersona,
+} from '@shared/lib/persona-formulario';
 
 interface Props {
   onCancel: () => void;
@@ -131,23 +135,16 @@ export const EspecialistaFormBase = ({
     isLoading,
     errors,
     setPersonaFields: useCallback((persona) => {
-      setForm((prev) => {
-        const next = { ...prev };
-        next.nombres = persona.nombres;
-        next.apellidos = persona.apellidos;
-        next.correo = persona.correo ?? '';
-        next.celular = persona.telefono ?? '';
-        if (persona.docente?.cursoAsignado) {
-          next.especialidad = persona.docente.cursoAsignado;
-        }
-        return next;
-      });
+      setForm((prev) => ({
+        ...prev,
+        ...datosBasicosDePersona(persona),
+        ...(persona.docente?.cursoAsignado
+          ? { especialidad: persona.docente.cursoAsignado }
+          : {}),
+      }));
     }, []),
     clearPersonaFields: useCallback(() => {
-      set('nombres', '');
-      set('apellidos', '');
-      set('correo', '');
-      set('celular', '');
+      setForm((prev) => ({ ...prev, ...DATOS_BASICOS_VACIOS }));
     }, []),
   });
 

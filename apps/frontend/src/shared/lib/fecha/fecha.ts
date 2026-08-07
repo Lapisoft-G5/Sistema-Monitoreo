@@ -23,7 +23,8 @@
 export const FECHA_INVALIDA = 'Fecha inválida';
 
 const ISO_CORTA = /^(\d{4})-(\d{2})-(\d{2})$/;
-const ISO_CON_HORA = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/;
+/** Sin zona al final: la cadena describe un horario local, no un instante. */
+const ISO_SIN_ZONA = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/;
 
 /**
  * Construye la fecha en horario local, sin pasar por el análisis de cadenas del
@@ -63,7 +64,7 @@ export function aFechaLocal(valor: string | null | undefined): Date | null {
     return construir(Number(corta[1]), Number(corta[2]), Number(corta[3]));
   }
 
-  const conHora = ISO_CON_HORA.exec(valor);
+  const conHora = ISO_SIN_ZONA.exec(valor);
   if (conHora) {
     return construir(
       Number(conHora[1]),
@@ -75,8 +76,9 @@ export function aFechaLocal(valor: string | null | undefined): Date | null {
     );
   }
 
-  // Formatos que no reconocemos —incluido el ISO con zona explícita— se dejan
-  // al constructor, que sí sabe leerlos.
+  // Con zona explícita —`Z` o `±HH:MM`— la cadena describe un INSTANTE, no un
+  // horario local: convertirlo es justamente el trabajo del constructor.
+  // Tratarlo como local desplazaría la fecha en cinco horas.
   const fecha = new Date(valor);
   return isNaN(fecha.getTime()) ? null : fecha;
 }

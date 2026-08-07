@@ -56,6 +56,34 @@ describe('aFechaLocal', () => {
     expect(fecha?.getMinutes()).toBe(30);
   });
 
+  /**
+   * DEFECTO CORREGIDO. La primera versión de esta función, escrita en la Fase 6,
+   * ignoraba la zona: aplicaba la construcción local a cualquier cadena que
+   * empezara con `YYYY-MM-DDTHH:MM`, incluida la que termina en `Z`. Un instante
+   * UTC quedaba desplazado cinco horas y podía cambiar de día.
+   */
+  it('convierte a hora local una cadena con zona explícita', () => {
+    // 2026-03-10 01:30 UTC son las 20:30 del 9 de marzo en Lima.
+    const fecha = aFechaLocal('2026-03-10T01:30:00.000Z');
+
+    expect(fecha?.getDate()).toBe(9);
+    expect(fecha?.getHours()).toBe(20);
+  });
+
+  it('respeta también un desplazamiento explícito', () => {
+    const fecha = aFechaLocal('2026-03-09T20:30:00-05:00');
+
+    expect(fecha?.getDate()).toBe(9);
+    expect(fecha?.getHours()).toBe(20);
+  });
+
+  it('trata como local la cadena SIN zona, que es la del formulario', () => {
+    const fecha = aFechaLocal('2026-03-09T20:30');
+
+    expect(fecha?.getDate()).toBe(9);
+    expect(fecha?.getHours()).toBe(20);
+  });
+
   it('devuelve null ante un valor que no es fecha', () => {
     expect(aFechaLocal('cualquier-cosa')).toBeNull();
     expect(aFechaLocal('')).toBeNull();

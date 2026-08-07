@@ -90,7 +90,6 @@ export const DirectorFormBase = ({
     isLoading,
     errors,
     setPersonaFields: useCallback((persona) => {
-      console.log('setPersonaFields trigger. Persona received:', persona);
       const docente = persona.docente;
       // Un director sólo puede estar designado, encargado o por función; el
       // resto de las condiciones laborales no le corresponden.

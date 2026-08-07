@@ -90,7 +90,6 @@ export const DocenteFormBase = ({
   serverError,
 }: Props) => {
   const { user } = useUser();
-  console.log('User context in DocenteFormBase:', user);
   const isDirectorIe = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   const [form, setForm] = useState<DocenteFormData>(() => {

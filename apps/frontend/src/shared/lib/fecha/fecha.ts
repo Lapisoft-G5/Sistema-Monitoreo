@@ -135,8 +135,8 @@ export function aFechaISOLocal(valor: string | Date | null | undefined): string 
  */
 export const hoyISO = (ahora: Date = new Date()): string => aFechaISOLocal(ahora);
 
-/** Hora en formato de 12 horas: `2:30 PM`. */
-function formatearHora(fecha: Date): string {
+/** Hora en formato de 12 horas a partir de una `Date` ya resuelta. */
+function formatearSoloHora(fecha: Date): string {
   const hora = fecha.getHours();
   const meridiano = hora >= 12 ? 'PM' : 'AM';
   // El resto de 12 da 0 tanto a medianoche como al mediodía; ambas se muestran
@@ -194,6 +194,34 @@ export function formatearFechaEnPalabras(
   return `${fecha.getDate()} de ${NOMBRES_DE_MES[fecha.getMonth()]}, ${fecha.getFullYear()}`;
 }
 
+/**
+ * Fecha en palabras con el día de la semana: `Lunes, 9 de marzo de 2026`.
+ *
+ * Venía de `shared/lib/fecha-visita.ts`, que la Fase 5 creó y la Fase 6
+ * duplicó sin querer con este módulo. Se consolidan acá.
+ */
+export function formatearFechaLarga(
+  valor: string | null | undefined,
+  siNoEsFecha = FECHA_INVALIDA,
+): string {
+  const fecha = aFechaLocal(valor);
+  if (!fecha) return siNoEsFecha;
+
+  const texto = fecha.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+/** Hora sola, en formato de 12 horas: `2:30 PM`. */
+export function formatearHora(valor: string | null | undefined, siNoEsFecha = FECHA_INVALIDA): string {
+  const fecha = aFechaLocal(valor);
+  return fecha ? formatearSoloHora(fecha) : siNoEsFecha;
+}
+
 /** Fecha y hora juntas: `09/03/2026, 2:30 PM`. */
 export function formatearFechaHora(
   valor: string | null | undefined,
@@ -202,5 +230,5 @@ export function formatearFechaHora(
   const fecha = aFechaLocal(valor);
   if (!fecha) return siNoEsFecha;
 
-  return `${formatearFechaCorta(valor, siNoEsFecha)}, ${formatearHora(fecha)}`;
+  return `${formatearFechaCorta(valor, siNoEsFecha)}, ${formatearSoloHora(fecha)}`;
 }

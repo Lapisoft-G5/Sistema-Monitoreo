@@ -9,6 +9,10 @@ import { ReportesStats, ReportesGrid, type BackendReportVisit } from '@widgets/r
 import { MODALIDAD_NIVEL_MAP, RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { useUser } from '@entities/model-user';
 import { useScope } from '@shared/auth';
+import {
+  reportesPropios,
+  reportesVisibles,
+} from '@features/reportes/lib/visibilidad-reportes';
 
 const getFichaState = (visitId: string) => {
   const saved = localStorage.getItem(`sistema-monitoreo:ficha-state:${visitId}`);
@@ -95,7 +99,7 @@ export const ReportesPage = () => {
   // ── Filtrado de Fichas Completadas (Backend con Fallback Local) ──
   const completedVisits = useMemo<BackendReportVisit[]>(() => {
     if (fichasCompletadasData?.data && fichasCompletadasData.data.length > 0) {
-      let list = fichasCompletadasData.data.map((f) => ({
+      const list = fichasCompletadasData.data.map((f) => ({
         id: f.id, // Ficha ID
         cronogramaId: f.cronogramaId,
         fechaHora: f.fechaEjecucion,
@@ -120,76 +124,16 @@ export const ReportesPage = () => {
         evaluadoId: f.evaluadoId,
       }));
 
-      if (isEvaluatedView) {
-        const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
-        list = list.filter((v) => {
-          const visitDocente = v.docenteDirectivo.toLowerCase();
-          return (
-            userFullName.includes(visitDocente) ||
-            visitDocente.includes(userFullName)
-          );
-        });
-      } else {
-        const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
-        list = list.filter((v) => {
-          const visitDocente = v.docenteDirectivo.toLowerCase();
-          return !(
-            userFullName.includes(visitDocente) ||
-            visitDocente.includes(userFullName)
-          );
-        });
-      }
-      return list;
+      // Visibilidad por identificador, no por nombre. Las reglas viven en
+      // `features/reportes/lib/visibilidad-reportes.ts`, con cobertura.
+      return isEvaluatedView ? reportesPropios(list, user) : reportesVisibles(list, user);
     }
 
-    let list = cronogramas.filter((c) => c.estado === 'COMPLETADO');
-    const userFullName = `${user?.nombres} ${user?.apellidos}`.toLowerCase();
-
-    if (isEvaluatedView) {
-      list = list.filter((v) => {
-        const visitDocente = v.docenteDirectivo.toLowerCase();
-        return (
-          userFullName.includes(visitDocente) ||
-          visitDocente.includes(userFullName)
-        );
-      });
-    } else {
-      // Exclude own reports from completed sheets list for school evaluators
-      list = list.filter((v) => {
-        const visitDocente = v.docenteDirectivo.toLowerCase();
-        return !(
-          userFullName.includes(visitDocente) ||
-          visitDocente.includes(userFullName)
-        );
-      });
-
-      // Quien puede figurar como evaluador asignado de una visita filtra por sí
-      // mismo; el director de institución filtra por su colegio (rama de abajo).
-      // El jefe de área se suma a los monitores de campo porque su cargo de
-      // especialista le concede `monitoreo:execute` y puede quedar asignado.
-      // El `user &&` no es defensivo de más: antes, la comparación `user?.role`
-      // estrechaba el tipo a no nulo dentro de la rama, y `isMonitorCampo` no lo
-      // hace. Sin él, el acceso a `user.nombres` de abajo queda sin garantía.
-      if (user && (isMonitorCampo || user.role === RoleCode.JEFE_AREA)) {
-        const nombrePila = user.nombres.toLowerCase();
-        list = list.filter((v) => {
-          const visitEspecialista = v.especialista.toLowerCase();
-          return (
-            userFullName.includes(visitEspecialista) ||
-            visitEspecialista.includes(userFullName) ||
-            visitEspecialista.includes(nombrePila)
-          );
-        });
-      } else if (user?.role === RoleCode.DIRECTOR_INSTITUCION) {
-        list = list.filter((v) => {
-          const userSchool = (user.institucionNombre || '').toLowerCase();
-          const visitSchool = v.institucion.toLowerCase();
-          return visitSchool.includes(userSchool) || userSchool.includes(visitSchool);
-        });
-      }
-    }
-    return list;
-  }, [fichasCompletadasData, cronogramas, user, isEvaluatedView, isMonitorCampo]);
+    const completadas = cronogramas.filter((c) => c.estado === 'COMPLETADO');
+    return isEvaluatedView
+      ? reportesPropios(completadas, user)
+      : reportesVisibles(completadas, user);
+  }, [fichasCompletadasData, cronogramas, user, isEvaluatedView]);
 
   const añosDisponibles = useMemo(() => {
     const yearsSet = new Set<string>();

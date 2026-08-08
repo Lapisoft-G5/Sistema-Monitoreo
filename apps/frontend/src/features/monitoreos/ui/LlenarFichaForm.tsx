@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
 import { HistorialChart } from './HistorialChart';
 import type { Cronograma } from '@/entities/model-cronogramas';
@@ -99,6 +99,8 @@ export const LlenarFichaForm = ({
 
   const [activeTab, setActiveTab] = useState<PestanaFicha>('FICHA');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  /** Motivo por el que la ficha todavía no se puede cerrar. */
+  const [faltaParaCerrar, setFaltaParaCerrar] = useState<string | null>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printRef });
@@ -136,11 +138,18 @@ export const LlenarFichaForm = ({
   const handleFinalizeClick = () => {
     // Las cinco condiciones de cierre viven en `lib/validacion-ficha.ts`, con
     // cobertura propia; acá sólo se informa la primera que falte.
+    //
+    // Antes esto era un `alert()`: había que descartarlo para ir a buscar lo
+    // que faltaba, y al descartarlo el motivo desaparecía. En una ficha de
+    // cinco desempeños con sus aspectos, eso es pedirle al evaluador que lo
+    // memorice.
     const falta = validarCierreDeFicha(template, estado);
     if (falta) {
-      alert(falta);
+      setFaltaParaCerrar(falta);
       return;
     }
+
+    setFaltaParaCerrar(null);
 
     onFinalize?.(visit.id, aDatosFicha(estado, visit.tipo));
 
@@ -280,6 +289,23 @@ export const LlenarFichaForm = ({
           </>
         )} {/* fin FICHA */}
         </div> {/* fin scroll interno */}
+
+        {faltaParaCerrar && (
+          <div
+            role="alert"
+            className="mx-6 mb-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-amber-800 text-sm font-medium"
+          >
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <span className="flex-1">{faltaParaCerrar}</span>
+            <button
+              type="button"
+              onClick={() => setFaltaParaCerrar(null)}
+              className="text-xs font-bold underline cursor-pointer shrink-0"
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
 
         <PieDeFicha
           soloLectura={isCompleted}

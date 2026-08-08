@@ -1145,7 +1145,7 @@ agosto y se conserva como tal. Al día siguiente, los PR #61 y #62 cerraron el
 | Métrica | Objetivo | 2026-08-06 | 2026-08-07 |
 | --- | --- | --- | --- |
 | Componentes de más de 300 líneas | 0 | 17 ❌ | **0** ✅ |
-| Componente mayor | ≤ 300 | — | **296 líneas** ✅ |
+| Componente mayor | ≤ 300 | — | **280 líneas** ✅ |
 
 **Sobre las dos cifras de `any`.** La tabla del 6 de agosto mide el frontend, y
 sus 4 ocurrencias siguen siendo correctas. `pnpm metricas` reporta 54 porque
@@ -1215,7 +1215,7 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Migración completa (104 → 0 literales), barrera de CI bloqueante, política al 96 %; falta derivar el menú, bloqueado por decisión de producto |
 | 3 — Red de pruebas | **Cerrada con alcance revisado** | 2026-08-06 | 2026-08-06 | | Umbrales activos como guarda de retroceso; el objetivo de cobertura se traslada a la Fase 5 |
 | 4 — Tipado en capa de datos | **Completada** | 2026-08-06 | 2026-08-06 | | 16 → 0 supresiones; destapó dos defectos reales, H-29 entre ellos |
-| 5 — Descomposición de componentes | **Completada** | 2026-08-06 | 2026-08-07 | | Los 4 archivos objetivo del plan: 4.668 → 969 líneas. Cero supresiones de `exhaustive-deps`. Los componentes >300 líneas que quedaban fuera del alcance se cerraron después en los PR #61 y #62: **0**, mayor archivo 296 líneas |
+| 5 — Descomposición de componentes | **Completada** | 2026-08-06 | 2026-08-07 | | Los 4 archivos objetivo del plan: 4.668 → 969 líneas. Cero supresiones de `exhaustive-deps`. Los componentes >300 líneas que quedaban fuera del alcance se cerraron después en los PR #61 a #64: **0**, mayor archivo 280 líneas |
 | 6 — Extracción de dominio | **Parcial** | 2026-08-06 | | | H-16 y H-18 cerrados. H-17: quedan **2** archivos con formateo manual de fechas (`features/cronogramas/lib/formulario.ts` y `hooks/use-cronogramas-data.ts`); el resto migró al módulo compartido. Faltan las tareas 4 y 5 (ver nota) |
 | 7 — Higiene y consolidación | **Parcial** | 2026-08-06 | | | El criterio «cero componentes >300 líneas» **se cumple**. Falta la tarea 5, documentación de arquitectura. Ver §8.1 para lo que se cerró después de la fase |
 

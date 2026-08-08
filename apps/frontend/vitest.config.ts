@@ -43,10 +43,10 @@ export default defineConfig({
       // sobre `ModalCronograma` cubren mucho más que su propio archivo. Las
       // pruebas de `lib/` que había hasta ahora cubren reglas, no pantallas.
       thresholds: {
-        statements: 19,
-        branches: 21,
-        functions: 15,
-        lines: 18,
+        statements: 19.8,
+        branches: 22,
+        functions: 16.5,
+        lines: 18.9,
       },
       reporter: ['text-summary', 'json-summary', 'lcov'],
       reportsDirectory: './coverage',

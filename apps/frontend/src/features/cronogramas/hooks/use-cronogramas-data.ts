@@ -10,6 +10,10 @@ import { mapApiDocenteToFrontend } from '@features/docentes/docente-service';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
 import type { Docente } from '@entities/model-docentes';
+import {
+  adjuntoDeSolicitud,
+  nombreDelAprobador,
+} from '@features/reprogramaciones/lib/adjunto-de-solicitud';
 import type { ICreateVisitaRequest, IUpdateVisitaRequest } from '@sistema-monitoreo/shared-contracts';
 
 export interface EspecialistaLite {
@@ -168,12 +172,12 @@ export const useCronogramasData = (enabled = true) => {
         fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
         fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
         motivo: s.justificacion,
-        archivoNombre: s.archivoSustentoUrl && s.archivoSustentoUrl !== '' ? (s.archivoSustentoUrl.split('/').pop() || 'oficio.pdf') : '',
+        adjunto: adjuntoDeSolicitud(s.archivoSustentoUrl),
         estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
         fechaRegistro: s.createdAt,
-        aprobador: s.resueltoPorNombre
-          ? `${s.resueltoPorRol || ''} ${s.resueltoPorNombre}`.trim()
-          : (s.resueltoPorId || undefined),
+        // Sin nombre queda sin aprobador: el respaldo era `resueltoPorId`, de
+        // modo que la trazabilidad mostraba un UUID donde va un nombre.
+        aprobador: nombreDelAprobador(s.resueltoPorRol, s.resueltoPorNombre) ?? undefined,
         aprobadorComentario: s.comentarioResolucion || undefined,
         fechaAprobacion: s.fechaResolucion || undefined,
         solicitanteRolAlCrear: s.solicitanteRolAlCrear,

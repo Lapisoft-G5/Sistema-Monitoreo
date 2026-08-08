@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
@@ -105,18 +105,29 @@ export const LlenarFichaForm = ({
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printRef });
 
-  useEffect(() => {
-    if (!isOpen || !visit) return;
+  /**
+   * La ficha se carga una vez por visita abierta: con el estado recibido, con
+   * el borrador local, o en blanco. Un borrador ilegible se descarta —impedir
+   * abrir la ficha sería peor que perderlo—.
+   *
+   * Se ajusta durante el render en vez de diferirse con `setTimeout(…, 0)`
+   * dentro de un efecto. La condición de «una vez por visita» queda escrita en
+   * el código y no depende de que las dependencias del efecto se mantengan
+   * estables: hoy lo son —`initialState` viene memoizado desde `ReportesGrid`—
+   * pero nada lo garantizaba, y volver a hidratar borraría lo que el evaluador
+   * llevara escrito.
+   */
+  const [visitaHidratada, setVisitaHidratada] = useState<string | null>(null);
 
-    // Estado recibido, o el borrador local, o formulario en blanco. Un borrador
-    // ilegible se descarta: impedir abrir la ficha sería peor que perderlo.
-    const fuente =
-      initialState ?? leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visit.id)));
+  if (isOpen && visit && visitaHidratada !== visit.id) {
+    setVisitaHidratada(visit.id);
+    hidratar(initialState ?? leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visit.id))));
+  }
 
-    // El diferido es el comportamiento original y se conserva: la hidratación
-    // ocurre fuera del ciclo de render que la dispara.
-    setTimeout(() => hidratar(fuente), 0);
-  }, [isOpen, visit, template, initialState, hidratar]);
+  // Al cerrar se olvida, para que la próxima apertura vuelva a cargar.
+  if (!isOpen && visitaHidratada !== null) {
+    setVisitaHidratada(null);
+  }
 
   const { docente: evaluadoDocente, areasSugeridas } = useDocenteEvaluado({
     activo: isOpen,

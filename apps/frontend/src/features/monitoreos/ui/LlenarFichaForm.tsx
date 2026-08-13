@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useUser } from '@entities/model-user';
 import { Card } from '@/shared/ui/card';
 import { AvisoDeError } from '@shared/ui/AvisoDeError';
 import { useHidratacionDeFicha } from '../hooks/use-hidratacion-de-ficha';
@@ -28,6 +29,8 @@ import { ConsolidadoSeccion } from './ficha/ConsolidadoSeccion';
 import { PieDeFicha } from './ficha/PieDeFicha';
 import { VistaPreviaEvidencia } from './ficha/VistaPreviaEvidencia';
 import { CabeceraFicha, type PestanaFicha } from './ficha/CabeceraFicha';
+import { firmasApi } from '@/shared/api/firmas.api';
+import { toast } from 'sonner';
 
 
 /**
@@ -55,6 +58,7 @@ export const LlenarFichaForm = ({
   onFinalize,
   initialState,
 }: LlenarFichaFormProps) => {
+  const { user } = useUser();
   // Una sola pieza de estado; los actualizadores conservan la firma de
   // `useState` para que los sitios de uso del formulario no cambien.
   const {
@@ -158,6 +162,18 @@ export const LlenarFichaForm = ({
     : null;
 
   const currentFichaState = aDatosFicha(estado, visit.tipo);
+
+  const handleFirmar = async () => {
+    try {
+      await firmasApi.signFicha(visit.id, {
+        rolFirmante: user?.id === visit.evaluadoId ? 'EVALUADO' : 'EVALUADOR',
+        consentimiento: true,
+      });
+      toast.success('Ficha firmada con éxito');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Error al firmar la ficha');
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-200">
@@ -288,6 +304,7 @@ export const LlenarFichaForm = ({
           onCerrar={onClose}
           onGuardarBorrador={guardarBorrador}
           onFinalizar={finalizar}
+          onFirmar={isCompleted ? handleFirmar : undefined}
         />
       </Card>
 

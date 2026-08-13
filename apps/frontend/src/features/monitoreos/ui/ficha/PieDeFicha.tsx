@@ -1,4 +1,4 @@
-import { Clock, CheckCircle2 } from 'lucide-react';
+import { Clock, CheckCircle2, PenTool } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 
 interface PieDeFichaProps {
@@ -7,6 +7,7 @@ interface PieDeFichaProps {
   onCerrar: () => void;
   onGuardarBorrador: () => void;
   onFinalizar: () => void;
+  onFirmar?: () => void;
 }
 
 /** Acciones sobre la ficha: descartar, guardar el avance o cerrarla. */
@@ -15,6 +16,7 @@ export const PieDeFicha = ({
   onCerrar,
   onGuardarBorrador,
   onFinalizar,
+  onFirmar,
 }: PieDeFichaProps) => (
   <div className="p-4 border-t border-border bg-slate-50 flex justify-between items-center">
     <div>
@@ -27,12 +29,23 @@ export const PieDeFicha = ({
 
     <div className="flex items-center gap-3">
       {soloLectura ? (
-        <Button
-          onClick={onCerrar}
-          className="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-6 py-2.5 h-10 rounded-xl cursor-pointer"
-        >
-          Cerrar Consulta
-        </Button>
+        <>
+          {onFirmar && (
+            <Button
+              onClick={onFirmar}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-6 py-2.5 h-10 rounded-xl cursor-pointer mr-2 flex items-center gap-1.5"
+            >
+              <PenTool className="h-4.5 w-4.5" />
+              Firmar Plantilla
+            </Button>
+          )}
+          <Button
+            onClick={onCerrar}
+            className="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-6 py-2.5 h-10 rounded-xl cursor-pointer"
+          >
+            Cerrar Consulta
+          </Button>
+        </>
       ) : (
         <>
           <Button

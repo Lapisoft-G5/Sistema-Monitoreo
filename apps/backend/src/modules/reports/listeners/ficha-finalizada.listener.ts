@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
 import { ReporteService } from '../services/reporte.service.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';

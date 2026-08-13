@@ -17,6 +17,7 @@ export interface IReporteFicha {
   promedio: number;
   puntajeTotal: number;
   estado: EstadoFicha;
+  correoEnviado?: boolean;
   fechaEjecucion: string;
   modalidad: string;
   nivel: string;

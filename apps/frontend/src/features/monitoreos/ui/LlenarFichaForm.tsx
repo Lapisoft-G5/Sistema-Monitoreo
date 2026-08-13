@@ -9,6 +9,7 @@ import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
+import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
 import { useFormularioFicha } from '../hooks/use-formulario-ficha';
@@ -129,10 +130,19 @@ export const LlenarFichaForm = ({
     onFinalize,
   });
 
+  const isCompleted = visit?.estado === 'COMPLETADO';
+  const isDirectivo = template?.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+
+  const { data: firmasData, refetch: refetchFirmas } = useQuery({
+    queryKey: ['ficha-firmas', visit?.id],
+    queryFn: () => firmasApi.getFirmasDeFicha(visit.id),
+    enabled: !!visit?.id && isCompleted,
+    staleTime: 30_000,
+  });
+
   if (!isOpen || !visit || !template) return null;
 
-  const isCompleted = visit.estado === 'COMPLETADO';
-  const isDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+
 
   /**
    * Calificación consolidada que se muestra al cerrar la ficha.
@@ -163,6 +173,10 @@ export const LlenarFichaForm = ({
 
   const currentFichaState = aDatosFicha(estado, visit.tipo);
 
+
+  const rolEsperado = user?.id === visit.evaluadoId ? 'EVALUADO' : 'EVALUADOR';
+  const yaFirmo = firmasData?.firmas?.some(f => f.rolFirmante === rolEsperado);
+
   const handleFirmar = async () => {
     try {
       await firmasApi.signFicha(visit.id, {
@@ -170,6 +184,7 @@ export const LlenarFichaForm = ({
         consentimiento: true,
       });
       toast.success('Ficha firmada con éxito');
+      refetchFirmas();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : 'Error al firmar la ficha');
     }
@@ -305,6 +320,7 @@ export const LlenarFichaForm = ({
           onGuardarBorrador={guardarBorrador}
           onFinalizar={finalizar}
           onFirmar={isCompleted ? handleFirmar : undefined}
+          yaFirmo={yaFirmo}
         />
       </Card>
 

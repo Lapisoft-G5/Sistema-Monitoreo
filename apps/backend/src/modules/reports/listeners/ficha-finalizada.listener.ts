@@ -20,7 +20,7 @@ export class FichaFinalizadaListener {
     private readonly prisma: PrismaService,
   ) {}
 
-  @OnEvent('ficha.finalizada', { async: true })
+  // @OnEvent('ficha.finalizada', { async: true })
   async handleFichaFinalizada(event: FichaFinalizadaEvent) {
     this.logger.log(`Procesando evento ficha.finalizada para ficha ${event.fichaId}`);
 

@@ -775,6 +775,7 @@ model FichaMonitoreo {
   sugerencias      String?   @db.Text
   compromisos      String?   @db.Text
   evidenciaGeneral String?   @map("evidencia_general") @db.Text
+  correoEnviado    Boolean   @default(false) @map("correo_enviado")
   createdAt        DateTime  @default(now()) @map("created_at")
   finalizadaAt     DateTime? @map("finalizada_at")
 

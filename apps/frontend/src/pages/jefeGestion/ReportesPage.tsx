@@ -85,6 +85,7 @@ export const ReportesPage = () => {
         monitorId: f.especialistaId,
         institucionId: f.institucionId,
         evaluadoId: f.evaluadoId,
+        correoEnviado: f.correoEnviado,
       }));
 
       // Visibilidad por identificador, no por nombre. Las reglas viven en

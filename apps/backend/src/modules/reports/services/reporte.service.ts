@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { IReporteFicha, IReporteResumenIE } from '@sistema-monitoreo/shared-contracts';
 import {
   QueryFichasCompletadas,
@@ -10,12 +10,16 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import { PdfGeneratorService } from './pdf-generator.service.js';
+import { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import { MailerService } from '../../../shared/mailer/mailer.service.js';
 
 @Injectable()
 export class ReporteService {
   constructor(
     private readonly repository: ReporteRepository,
     private readonly pdfGenerator: PdfGeneratorService,
+    private readonly prisma: PrismaService,
+    private readonly mailerService: MailerService,
   ) {}
 
   async listFichasCompletadas(
@@ -33,6 +37,46 @@ export class ReporteService {
     const ficha = await this.repository.findFichaByIdParaExport(id, session);
     if (!ficha) throw new NotFoundException(`Ficha ${id} no encontrada o sin acceso.`);
     return this.renderHtml(ficha);
+  }
+
+  async enviarFichaPorCorreo(id: string, session: SessionScope): Promise<{ success: boolean; message: string }> {
+    const ficha = await this.prisma.fichaMonitoreo.findUnique({
+      where: { id },
+      include: {
+        cronograma: { include: { evaluado: { include: { persona: true } } } },
+      },
+    });
+
+    if (!ficha) throw new NotFoundException(`Ficha ${id} no encontrada.`);
+    if (ficha.correoEnviado) throw new BadRequestException(`La ficha ${id} ya fue enviada.`);
+
+    const docente = ficha.cronograma.evaluado.persona;
+    const email = docente.correo;
+    const nombreCompleto = `${docente.nombres} ${docente.apellidos}`;
+
+    if (!email) {
+      throw new BadRequestException('El docente evaluado no tiene un correo registrado.');
+    }
+
+    const pdfBuffer = await this.exportarFichaPDF(id, session);
+    const fileName = `Ficha_Monitoreo_${ficha.id.split('-')[0]}.pdf`;
+
+    await this.mailerService.sendResumenFichaEmail(email, nombreCompleto, pdfBuffer, fileName);
+
+    await this.prisma.fichaMonitoreo.update({
+      where: { id },
+      data: { correoEnviado: true },
+    });
+    
+    await this.prisma.logAuditoria.create({
+      data: {
+        usuarioId: session.id,
+        eventType: 'EMAIL_ENVIADO',
+        eventDetail: `Correo con PDF enviado exitosamente a ${email} para la ficha ${ficha.id}.`,
+      }
+    });
+
+    return { success: true, message: 'Correo enviado correctamente' };
   }
 
   async exportarFichaPDF(id: string, session: SessionScope): Promise<Buffer> {

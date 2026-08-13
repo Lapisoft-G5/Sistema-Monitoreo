@@ -8,6 +8,7 @@ interface PieDeFichaProps {
   onGuardarBorrador: () => void;
   onFinalizar: () => void;
   onFirmar?: () => void;
+  yaFirmo?: boolean;
 }
 
 /** Acciones sobre la ficha: descartar, guardar el avance o cerrarla. */
@@ -17,6 +18,7 @@ export const PieDeFicha = ({
   onGuardarBorrador,
   onFinalizar,
   onFirmar,
+  yaFirmo,
 }: PieDeFichaProps) => (
   <div className="p-4 border-t border-border bg-slate-50 flex justify-between items-center">
     <div>
@@ -33,10 +35,13 @@ export const PieDeFicha = ({
           {onFirmar && (
             <Button
               onClick={onFirmar}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-6 py-2.5 h-10 rounded-xl cursor-pointer mr-2 flex items-center gap-1.5"
+              disabled={yaFirmo}
+              className={`font-bold text-xs px-6 py-2.5 h-10 rounded-xl cursor-pointer mr-2 flex items-center gap-1.5 ${
+                yaFirmo ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
             >
               <PenTool className="h-4.5 w-4.5" />
-              Firmar Plantilla
+              {yaFirmo ? 'Plantilla Firmada' : 'Firmar Plantilla'}
             </Button>
           )}
           <Button

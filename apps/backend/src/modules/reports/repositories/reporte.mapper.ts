@@ -40,6 +40,7 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     promedio: Number(f.promedio),
     puntajeTotal: f.puntajeTotal,
     estado: f.estado as EstadoFicha,
+    correoEnviado: f.correoEnviado,
     fechaEjecucion: f.createdAt.toISOString(),
     modalidad: f.cronograma.modalidad,
     nivel: f.cronograma.nivelEducativo,

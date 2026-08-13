@@ -138,8 +138,8 @@ export class FirmasController {
         id: true,
         cronograma: {
           select: {
-            evaluadoId: true,   // ID del Docente evaluado
-            monitorId: true,    // ID del Especialista evaluador
+            evaluadoId: true, // ID del Docente evaluado
+            monitorId: true, // ID del Especialista evaluador
             evaluado: { select: { personaId: true } },
             monitor: { select: { personaId: true } },
           },

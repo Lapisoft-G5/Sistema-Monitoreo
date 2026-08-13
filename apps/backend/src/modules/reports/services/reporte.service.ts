@@ -39,7 +39,10 @@ export class ReporteService {
     return this.renderHtml(ficha);
   }
 
-  async enviarFichaPorCorreo(id: string, session: SessionScope): Promise<{ success: boolean; message: string }> {
+  async enviarFichaPorCorreo(
+    id: string,
+    session: SessionScope,
+  ): Promise<{ success: boolean; message: string }> {
     const ficha = await this.prisma.fichaMonitoreo.findUnique({
       where: { id },
       include: {
@@ -67,13 +70,13 @@ export class ReporteService {
       where: { id },
       data: { correoEnviado: true },
     });
-    
+
     await this.prisma.logAuditoria.create({
       data: {
         usuarioId: session.id,
         eventType: 'EMAIL_ENVIADO',
         eventDetail: `Correo con PDF enviado exitosamente a ${email} para la ficha ${ficha.id}.`,
-      }
+      },
     });
 
     return { success: true, message: 'Correo enviado correctamente' };

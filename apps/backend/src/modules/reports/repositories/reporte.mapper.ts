@@ -15,6 +15,11 @@ type FichaReportePayload = Prisma.FichaMonitoreoGetPayload<{
         monitor: { include: { persona: { select: { nombres: true; apellidos: true } } } };
       };
     };
+    firmas: {
+      include: {
+        firmante: { include: { persona: { select: { nombres: true; apellidos: true } } } };
+      };
+    };
   };
 }>;
 
@@ -38,5 +43,11 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     fechaEjecucion: f.createdAt.toISOString(),
     modalidad: f.cronograma.modalidad,
     nivel: f.cronograma.nivelEducativo,
+    firmas: f.firmas?.map((firma) => ({
+      rolFirmante: firma.rolFirmante,
+      firmanteNombre: `${firma.firmante.persona.nombres} ${firma.firmante.persona.apellidos}`,
+      imagenUrl: firma.imagenUrl ?? '',
+      fechaFirma: firma.createdAt.toISOString(),
+    })),
   };
 }

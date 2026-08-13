@@ -6,6 +6,8 @@ import {
   SessionScope,
 } from '../repositories/reporte.repository.js';
 import type { PaginatedFichas } from '../repositories/reporte.repository.js';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 import { PdfGeneratorService } from './pdf-generator.service.js';
 
@@ -72,6 +74,26 @@ export class ReporteService {
         { nombre: 'Evalúa los aprendizajes', nivel: 3, observaciones: 'Buen desempeño' },
         { nombre: 'Promueve el razonamiento', nivel: 4, observaciones: 'Excelente' },
       ],
+      firmas: await Promise.all(
+        (f.firmas || []).map(async (firma) => {
+          let base64 = null;
+          if (firma.imagenUrl.startsWith('/uploads/')) {
+            try {
+              const filePath = path.join(process.cwd(), firma.imagenUrl);
+              const buffer = await fs.readFile(filePath);
+              base64 = `data:image/png;base64,${buffer.toString('base64')}`;
+            } catch (e) {
+              console.error('Error al leer firma local:', e);
+            }
+          }
+          return {
+            rolFirmante: firma.rolFirmante,
+            firmanteNombre: firma.firmanteNombre,
+            fechaFirma: new Date(firma.fechaFirma).toLocaleDateString('es-PE'),
+            imagenB64: base64 || firma.imagenUrl,
+          };
+        }),
+      ),
     };
 
     return this.pdfGenerator.generatePdfFromTemplate('ficha-report', data);

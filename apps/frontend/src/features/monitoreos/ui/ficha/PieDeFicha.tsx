@@ -41,7 +41,7 @@ export const PieDeFicha = ({
               }`}
             >
               <PenTool className="h-4.5 w-4.5" />
-              {yaFirmo ? 'Plantilla Firmada' : 'Firmar Plantilla'}
+              {yaFirmo ? 'Ficha Firmada' : 'Firmar Ficha'}
             </Button>
           )}
           <Button

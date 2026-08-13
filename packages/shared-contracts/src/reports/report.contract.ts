@@ -20,6 +20,12 @@ export interface IReporteFicha {
   fechaEjecucion: string;
   modalidad: string;
   nivel: string;
+  firmas?: {
+    rolFirmante: string;
+    firmanteNombre: string;
+    imagenUrl: string;
+    fechaFirma: string;
+  }[];
 }
 
 export interface IReporteResumenIE {

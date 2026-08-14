@@ -22,6 +22,8 @@ import { toast } from 'sonner';
  * devolvía una evaluación inventada cuando la ficha no llegaba.
  */
 
+import type { FiltroPeriodoTipo } from '@/features/reportes/lib/filtro-temporal';
+
 export interface BackendReportVisit extends Cronograma {
   nivelLogro?: string;
   promedio?: number;
@@ -42,6 +44,9 @@ interface ReportesGridProps {
   setFilterNivel: (n: string) => void;
   filterAnio: string;
   setFilterAnio: (a: string) => void;
+  filtroPeriodo: FiltroPeriodoTipo;
+  setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
+  conteosPeriodo?: Record<FiltroPeriodoTipo, number>;
   nivelesDisponibles: string[];
   añosDisponibles: string[];
   isAnyFilterActive: boolean;

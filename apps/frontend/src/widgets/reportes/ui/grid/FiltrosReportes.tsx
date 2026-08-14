@@ -1,7 +1,11 @@
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Calendar } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SelectField } from '@/shared/ui/form-controls';
+import {
+  FILTROS_PERIODO,
+  type FiltroPeriodoTipo,
+} from '@/features/reportes/lib/filtro-temporal';
 
 /**
  * Barra de filtros del listado de reportes.
@@ -49,6 +53,9 @@ interface FiltrosReportesProps {
   setFilterNivel: (n: string) => void;
   filterAnio: string;
   setFilterAnio: (a: string) => void;
+  filtroPeriodo: FiltroPeriodoTipo;
+  setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
+  conteosPeriodo?: Record<FiltroPeriodoTipo, number>;
   nivelesDisponibles: string[];
   añosDisponibles: string[];
   isAnyFilterActive: boolean;
@@ -66,6 +73,9 @@ export const FiltrosReportes = ({
   setFilterNivel,
   filterAnio,
   setFilterAnio,
+  filtroPeriodo,
+  setFiltroPeriodo,
+  conteosPeriodo,
   nivelesDisponibles,
   añosDisponibles,
   isAnyFilterActive,
@@ -102,6 +112,42 @@ export const FiltrosReportes = ({
             Limpiar Filtros
           </Button>
         )}
+      </div>
+
+      {/* Píldoras de Filtro Rápido por Período */}
+      <div className="flex flex-wrap items-center gap-2 pt-0.5">
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
+          <Calendar className="w-3.5 h-3.5 text-primary" /> Período:
+        </span>
+        {FILTROS_PERIODO.map((item) => {
+          const activo = filtroPeriodo === item.id;
+          const conteo = conteosPeriodo ? conteosPeriodo[item.id] : undefined;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setFiltroPeriodo(item.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
+                activo
+                  ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <span>{item.label}</span>
+              {conteo !== undefined && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activo
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {conteo}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {isEvaluatedView ? (

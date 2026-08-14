@@ -5,7 +5,7 @@ import { AvisoDeError } from '@shared/ui/AvisoDeError';
 import { useHidratacionDeFicha } from '../hooks/use-hidratacion-de-ficha';
 import { useAccionesDeFicha } from '../hooks/use-acciones-de-ficha';
 import { HistorialChart } from './HistorialChart';
-import type { Cronograma } from '@/entities/model-cronogramas';
+import { puedeEvaluarVisita, type Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
@@ -178,6 +178,8 @@ export const LlenarFichaForm = ({
     (!!user?.docenteId && !!visit?.evaluadoId && user.docenteId === visit.evaluadoId) ||
     user?.id === visit?.evaluadoId ||
     user?.role === 'docente';
+  const esEvaluador = puedeEvaluarVisita(user, visit);
+  const puedeFirmar = isCompleted && (esEvaluado || esEvaluador);
   const rolEsperado = esEvaluado ? 'EVALUADO' : 'EVALUADOR';
   const yaFirmo = firmasData?.firmas?.some((f) => f.rolFirmante === rolEsperado);
 
@@ -323,7 +325,7 @@ export const LlenarFichaForm = ({
           onCerrar={onClose}
           onGuardarBorrador={guardarBorrador}
           onFinalizar={finalizar}
-          onFirmar={isCompleted ? handleFirmar : undefined}
+          onFirmar={puedeFirmar ? handleFirmar : undefined}
           yaFirmo={yaFirmo}
         />
       </Card>

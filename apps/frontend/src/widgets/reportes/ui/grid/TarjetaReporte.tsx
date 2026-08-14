@@ -1,8 +1,9 @@
-import { GraduationCap, User, Download, Eye, Mail, Loader2, Check, Clock } from 'lucide-react';
+import { GraduationCap, User, Download, Eye, Mail, Loader2, Check, Clock, Calendar } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
 import { medirVisita } from '@/features/reportes/lib/medicion-visita';
+import { formatearFechaCorta, formatearHora } from '@/shared/lib/fecha/fecha';
 import { useUser } from '@entities/model-user';
 import { puedeEvaluarVisita } from '@/entities/model-cronogramas';
 import type { BackendReportVisit } from '../ReportesGrid';
@@ -26,6 +27,18 @@ interface TarjetaReporteProps {
   isEnviandoCorreo?: boolean;
 }
 
+const obtenerHorario = (v: BackendReportVisit): string | null => {
+  const inicio = v.horaInicio ? v.horaInicio.slice(0, 5) : null;
+  const fin = v.horaFin
+    ? (v.horaFin.includes('T') ? formatearHora(v.horaFin) : v.horaFin.slice(0, 5))
+    : null;
+
+  if (inicio && fin) return `${inicio} - ${fin}`;
+  if (inicio) return `${inicio}`;
+  if (fin) return `${fin}`;
+  return null;
+};
+
 export const TarjetaReporte = ({
   visita,
   isEvaluatedView,
@@ -38,6 +51,7 @@ export const TarjetaReporte = ({
   const esEvaluadorDeVisita = puedeEvaluarVisita(user, visita);
   const medicion = medirVisita(visita);
   const esDocente = visita.tipo === 'DOCENTE';
+  const horario = obtenerHorario(visita);
 
   return (
     <Card
@@ -102,6 +116,19 @@ export const TarjetaReporte = ({
               {isEvaluatedView ? 'Evaluado por: ' : 'Esp: '}
               {visita.especialista}
             </span>
+          </div>
+
+          <div className="flex items-center gap-3 pt-1 text-[10.5px] text-slate-500 font-medium">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <span>{formatearFechaCorta(visita.fechaHora)}</span>
+            </div>
+            {horario && (
+              <div className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <span>{horario}</span>
+              </div>
+            )}
           </div>
         </div>
 

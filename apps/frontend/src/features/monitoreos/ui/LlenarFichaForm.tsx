@@ -174,13 +174,17 @@ export const LlenarFichaForm = ({
   const currentFichaState = aDatosFicha(estado, visit.tipo);
 
 
-  const rolEsperado = user?.id === visit.evaluadoId ? 'EVALUADO' : 'EVALUADOR';
-  const yaFirmo = firmasData?.firmas?.some(f => f.rolFirmante === rolEsperado);
+  const esEvaluado =
+    (!!user?.docenteId && !!visit?.evaluadoId && user.docenteId === visit.evaluadoId) ||
+    user?.id === visit?.evaluadoId ||
+    user?.role === 'docente';
+  const rolEsperado = esEvaluado ? 'EVALUADO' : 'EVALUADOR';
+  const yaFirmo = firmasData?.firmas?.some((f) => f.rolFirmante === rolEsperado);
 
   const handleFirmar = async () => {
     try {
       await firmasApi.signFicha(visit.id, {
-        rolFirmante: user?.id === visit.evaluadoId ? 'EVALUADO' : 'EVALUADOR',
+        rolFirmante: rolEsperado,
         consentimiento: true,
       });
       toast.success('Ficha firmada con éxito');

@@ -303,3 +303,13 @@ describe('LlenarFichaForm — carga inicial', () => {
     expect(screen.getByRole('button', { name: /Finalizar/i })).toBeInTheDocument();
   });
 });
+
+describe('LlenarFichaForm — flujo de firmas en ficha completada', () => {
+  it('muestra botón para firmar cuando el usuario no ha firmado', async () => {
+    montar({ visit: { estado: 'COMPLETADO', evaluadoId: 'doc-1' }, initialState: FICHA_COMPLETA });
+
+    const btn = await screen.findByRole('button', { name: /Firmar Ficha/i });
+    expect(btn).toBeInTheDocument();
+    expect(btn).not.toBeDisabled();
+  });
+});

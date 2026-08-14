@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { useUser } from '@entities/model-user';
 import { Card } from '@/shared/ui/card';
 import { AvisoDeError } from '@shared/ui/AvisoDeError';
@@ -177,7 +178,7 @@ export const LlenarFichaForm = ({
   const esEvaluado =
     (!!user?.docenteId && !!visit?.evaluadoId && user.docenteId === visit.evaluadoId) ||
     user?.id === visit?.evaluadoId ||
-    user?.role === 'docente';
+    user?.role === RoleCode.DOCENTE;
   const esEvaluador = puedeEvaluarVisita(user, visit);
   const puedeFirmar = isCompleted && (esEvaluado || esEvaluador);
   const rolEsperado = esEvaluado ? 'EVALUADO' : 'EVALUADOR';

@@ -34,6 +34,11 @@ export const FocosAtencionPage = () => {
   const [nivelFiltrado, setNivelFiltrado] = useState<string>('Todos');
 
 
+  const handleSelectDistrito = (nuevoDistrito: string | null) => {
+    setDistrito(nuevoDistrito);
+    setInstitucionSel(null);
+  };
+
   const sel = distrito ? normDistrito(distrito) : null;
   const atencionDocente = sel
     ? (data?.requierenAtencion ?? []).filter((ie) => normDistrito(ie.distrito) === sel)
@@ -73,7 +78,7 @@ export const FocosAtencionPage = () => {
               coberturaPorDistrito={data?.coberturaPorDistrito ?? []}
               instituciones={data?.institucionesMapa ?? []}
               selected={distrito}
-              onSelectDistrito={setDistrito}
+              onSelectDistrito={handleSelectDistrito}
               onSelectInstitucion={setInstitucionSel}
               selectedInstitucionId={institucionSel}
               onNivelChange={setNivelFiltrado}
@@ -88,7 +93,11 @@ export const FocosAtencionPage = () => {
             ) : isDirectorUgel ? (
               <RequierenAtencionCard items={atencionDistrito} />
             ) : (
-              <RequierenAtencionInstitucionalCard items={atencionVisible} />
+              <RequierenAtencionInstitucionalCard
+                items={atencionVisible}
+                distritoFiltrado={distrito}
+                onLimpiarDistrito={() => handleSelectDistrito(null)}
+              />
             )}
           </div>
         </div>

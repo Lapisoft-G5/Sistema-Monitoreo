@@ -3,6 +3,8 @@ import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
 import { medirVisita } from '@/features/reportes/lib/medicion-visita';
+import { useUser } from '@entities/model-user';
+import { puedeEvaluarVisita } from '@/entities/model-cronogramas';
 import type { BackendReportVisit } from '../ReportesGrid';
 
 /**
@@ -32,6 +34,8 @@ export const TarjetaReporte = ({
   onEnviarCorreo,
   isEnviandoCorreo,
 }: TarjetaReporteProps) => {
+  const { user } = useUser();
+  const esEvaluadorDeVisita = puedeEvaluarVisita(user, visita);
   const medicion = medirVisita(visita);
   const esDocente = visita.tipo === 'DOCENTE';
 
@@ -124,7 +128,7 @@ export const TarjetaReporte = ({
         </Badge>
 
         <div className="flex items-center gap-1.5">
-          {!isEvaluatedView && onEnviarCorreo && (
+          {!isEvaluatedView && esEvaluadorDeVisita && onEnviarCorreo && (
             <button
               onClick={onEnviarCorreo}
               disabled={isEnviandoCorreo}

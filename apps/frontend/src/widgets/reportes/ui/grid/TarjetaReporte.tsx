@@ -23,6 +23,7 @@ interface TarjetaReporteProps {
   isEvaluatedView: boolean;
   onAbrir: () => void;
   onDescargar: (e: React.MouseEvent) => void;
+  isDescargando?: boolean;
   onEnviarCorreo?: (e: React.MouseEvent) => void;
   isEnviandoCorreo?: boolean;
 }
@@ -44,6 +45,7 @@ export const TarjetaReporte = ({
   isEvaluatedView,
   onAbrir,
   onDescargar,
+  isDescargando,
   onEnviarCorreo,
   isEnviandoCorreo,
 }: TarjetaReporteProps) => {
@@ -171,10 +173,15 @@ export const TarjetaReporte = ({
           )}
           <button
             onClick={onDescargar}
+            disabled={isDescargando}
             className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
             title="Descargar PDF"
           >
-            <Download className="h-3.5 w-3.5" />
+            {isDescargando ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
           </button>
           <Button
             variant="outline"

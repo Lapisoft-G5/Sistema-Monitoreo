@@ -111,10 +111,37 @@ export const ReportesGrid = ({
 
   const cerrarFicha = () => setVisitaAbierta(null);
 
-  // El PDF se genera desde el modal, que es donde se carga la ficha completa.
-  const abrirParaDescargar = (visita: BackendReportVisit, e: React.MouseEvent) => {
+  const [descargandoId, setDescargandoId] = useState<string | null>(null);
+
+  const handleDescargarPdf = async (visita: BackendReportVisit, e: React.MouseEvent) => {
     e.stopPropagation();
-    setVisitaAbierta(visita);
+    setDescargandoId(visita.id);
+    try {
+      let fichaId = visita.id;
+      if (!('nivelLogro' in visita)) {
+        const f = await fichasApi.findByVisita(visita.id);
+        if (f?.id) {
+          fichaId = f.id;
+        }
+      }
+
+      const blob = await fichasApi.descargarPdf(fichaId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanIe = (visita.institucion || 'IE').replace(/[/\\?%*:|"<>]/g, '_');
+      const fechaStr = visita.fechaHora ? visita.fechaHora.split('T')[0] : 'reporte';
+      a.download = `Ficha_Monitoreo_${cleanIe}_${fechaStr}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Ficha PDF descargada exitosamente.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Error al descargar el PDF de la ficha.');
+    } finally {
+      setDescargandoId(null);
+    }
   };
 
   const [enviandoCorreoId, setEnviandoCorreoId] = useState<string | null>(null);
@@ -148,7 +175,8 @@ export const ReportesGrid = ({
               visita={visita}
               isEvaluatedView={isEvaluatedView}
               onAbrir={() => setVisitaAbierta(visita)}
-              onDescargar={(e) => abrirParaDescargar(visita, e)}
+              onDescargar={(e) => handleDescargarPdf(visita, e)}
+              isDescargando={descargandoId === visita.id}
               onEnviarCorreo={(e) => handleEnviarCorreo(visita, e)}
               isEnviandoCorreo={enviandoCorreoId === visita.id}
             />
@@ -158,7 +186,8 @@ export const ReportesGrid = ({
         <TablaReportes
           visitas={filteredVisits}
           onAbrir={setVisitaAbierta}
-          onDescargar={abrirParaDescargar}
+          onDescargar={(visita, e) => handleDescargarPdf(visita, e)}
+          descargandoId={descargandoId}
         />
       )}
 

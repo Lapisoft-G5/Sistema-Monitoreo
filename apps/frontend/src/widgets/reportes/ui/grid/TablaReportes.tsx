@@ -1,4 +1,4 @@
-import { Download, Eye } from 'lucide-react';
+import { Download, Eye, Loader2 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
@@ -27,9 +27,15 @@ interface TablaReportesProps {
   visitas: BackendReportVisit[];
   onAbrir: (visita: BackendReportVisit) => void;
   onDescargar: (visita: BackendReportVisit, e: React.MouseEvent) => void;
+  descargandoId?: string | null;
 }
 
-export const TablaReportes = ({ visitas, onAbrir, onDescargar }: TablaReportesProps) => (
+export const TablaReportes = ({
+  visitas,
+  onAbrir,
+  onDescargar,
+  descargandoId,
+}: TablaReportesProps) => (
   <Card className="border border-border bg-surface shadow-sm overflow-hidden rounded-xl">
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs border-collapse">
@@ -46,6 +52,7 @@ export const TablaReportes = ({ visitas, onAbrir, onDescargar }: TablaReportesPr
         <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
           {visitas.map((visita) => {
             const medicion = medirVisita(visita);
+            const isDescargando = descargandoId === visita.id;
 
             return (
               <tr
@@ -99,10 +106,15 @@ export const TablaReportes = ({ visitas, onAbrir, onDescargar }: TablaReportesPr
                     </Button>
                     <button
                       onClick={(e) => onDescargar(visita, e)}
+                      disabled={isDescargando}
                       className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                       title="Descargar PDF"
                     >
-                      <Download className="h-3.5 w-3.5" />
+                      {isDescargando ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
                     </button>
                   </div>
                 </td>

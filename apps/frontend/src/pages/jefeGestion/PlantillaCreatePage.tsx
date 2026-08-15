@@ -106,13 +106,21 @@ export const PlantillaCreatePage = () => {
               d.rubrica && d.rubrica.length > 0
                 ? d.rubrica.map((r) => ({
                     nivelRomano: r.nivel,
-                    descripcion: r.descripcion,
+                    descripcion:
+                      r.descripcion?.trim() ||
+                      (data.tipoMonitoreo === 'Monitoreo Docente EIB'
+                        ? r.nivel === 'I'
+                          ? 'No'
+                          : r.nivel === 'II'
+                            ? 'Parcialmente'
+                            : 'Sí'
+                        : `Nivel ${r.nivel}`),
                   }))
                 : [
-                    { nivelRomano: 'I' as const, descripcion: 'No se evidencia' },
-                    { nivelRomano: 'II' as const, descripcion: 'Parcialmente evidenciado' },
-                    { nivelRomano: 'III' as const, descripcion: 'Totalmente evidenciado' },
-                    { nivelRomano: 'IV' as const, descripcion: 'Destacado' },
+                    { nivelRomano: 'I' as const, descripcion: 'No' },
+                    { nivelRomano: 'II' as const, descripcion: 'Parcialmente' },
+                    { nivelRomano: 'III' as const, descripcion: 'Sí' },
+                    { nivelRomano: 'IV' as const, descripcion: 'Sí' },
                   ],
           })),
         ejeItems: (data.ejeItems ?? []).map((item) => ({

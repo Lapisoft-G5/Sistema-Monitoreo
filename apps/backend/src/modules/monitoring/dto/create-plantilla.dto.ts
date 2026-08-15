@@ -45,7 +45,6 @@ export class RubricaNivelInput {
   nivelRomano!: 'I' | 'II' | 'III' | 'IV';
 
   @IsString()
-  @IsNotEmpty()
   descripcion!: string;
 }
 
@@ -69,7 +68,6 @@ export class DesempenoInput {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(255)
   nombre!: string;
 
   @IsOptional()

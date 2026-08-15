@@ -617,7 +617,7 @@ model NivelCalificacion {
 model DesempenoPlantilla {
   id               String  @id @default(uuid()) @db.Uuid
   plantillaId      String  @map("plantilla_id") @db.Uuid
-  nombre           String  @db.VarChar(255)
+  nombre           String  @db.Text
   descripcionCorta String? @map("descripcion_corta") @db.Text
   orden            Int
   preguntaExtra    String? @map("pregunta_extra") @db.Text

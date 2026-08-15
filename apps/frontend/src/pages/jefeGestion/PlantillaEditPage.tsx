@@ -7,6 +7,7 @@ import { EditarPlantillaForm } from '@widgets/plantillas';
 import type { PlantillaFormState } from '@widgets/plantillas';
 import { usePlantilla, useActualizarPlantilla } from '@entities/model-plantillas/use-plantillas-api';
 import { NIVELES_ROMANOS } from '@entities/model-plantillas';
+import { nivelesPorDefecto } from '@entities/model-plantillas/escala-por-defecto';
 import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -25,7 +26,10 @@ export const PlantillaEditPage = () => {
       anioAcademico: plantilla.anioAcademico,
       lema: plantilla.lema ?? '',
       baremo: plantilla.baremo,
-      niveles: plantilla.niveles,
+      niveles:
+        plantilla.niveles && plantilla.niveles.length === 4
+          ? plantilla.niveles
+          : nivelesPorDefecto(plantilla.tipoMonitoreo),
       desempenos: plantilla.desempenos.map((d) => ({
         ...d,
         preguntaExtra: d.preguntaExtra ?? '',
@@ -87,13 +91,21 @@ export const PlantillaEditPage = () => {
                 d.rubrica && d.rubrica.length > 0
                   ? d.rubrica.map((r) => ({
                       nivelRomano: r.nivel,
-                      descripcion: r.descripcion,
+                      descripcion:
+                        r.descripcion?.trim() ||
+                        (data.tipoMonitoreo === 'Monitoreo Docente EIB'
+                          ? r.nivel === 'I'
+                            ? 'No'
+                            : r.nivel === 'II'
+                              ? 'Parcialmente'
+                              : 'Sí'
+                          : `Nivel ${r.nivel}`),
                     }))
                   : [
-                      { nivelRomano: 'I' as const, descripcion: 'No se evidencia' },
-                      { nivelRomano: 'II' as const, descripcion: 'Parcialmente evidenciado' },
-                      { nivelRomano: 'III' as const, descripcion: 'Totalmente evidenciado' },
-                      { nivelRomano: 'IV' as const, descripcion: 'Destacado' },
+                      { nivelRomano: 'I' as const, descripcion: 'No' },
+                      { nivelRomano: 'II' as const, descripcion: 'Parcialmente' },
+                      { nivelRomano: 'III' as const, descripcion: 'Sí' },
+                      { nivelRomano: 'IV' as const, descripcion: 'Sí' },
                     ],
             })),
           ejeItems: (data.ejeItems ?? []).map((item) => ({

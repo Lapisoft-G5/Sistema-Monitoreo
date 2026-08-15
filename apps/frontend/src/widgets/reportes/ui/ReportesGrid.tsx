@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useReactToPrint } from 'react-to-print';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
@@ -10,6 +11,7 @@ import { FiltrosReportes } from './grid/FiltrosReportes';
 import { TarjetaReporte } from './grid/TarjetaReporte';
 import { TablaReportes } from './grid/TablaReportes';
 import { FichaNoDisponible, SinReportes } from './grid/EstadosDelListado';
+import { FichaPrintable } from './FichaPrintable';
 import { reportesApi } from '@/shared/api/reportes.api';
 import { toast } from 'sonner';
 
@@ -98,11 +100,6 @@ export const ReportesGrid = ({
 
   /**
    * El estado del formulario sale de la ficha del backend, o no sale.
-   *
-   * Antes, cuando la ficha no llegaba, se caía a `getFichaState`, que devolvía
-   * una evaluación **inventada**: treinta y cinco aspectos marcados, todos los
-   * niveles en III y IV y un párrafo de observaciones escrito a mano. Eso se le
-   * mostraba al usuario como si fuera la ficha real de esa visita.
    */
   const estadoDeLaFicha = useMemo(
     () => (fichaDelBackend ? fichaAEstadoFormulario(fichaDelBackend) : null),
@@ -111,37 +108,76 @@ export const ReportesGrid = ({
 
   const cerrarFicha = () => setVisitaAbierta(null);
 
-  const [descargandoId, setDescargandoId] = useState<string | null>(null);
+  // Impresión directa del formato oficial (FichaPrintable)
+  const [visitaParaImprimir, setVisitaParaImprimir] = useState<BackendReportVisit | null>(null);
+  const printDirectRef = useRef<HTMLDivElement>(null);
+  const handlePrintDirect = useReactToPrint({ contentRef: printDirectRef });
 
-  const handleDescargarPdf = async (visita: BackendReportVisit, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDescargandoId(visita.id);
-    try {
-      let fichaId = visita.id;
-      if (!('nivelLogro' in visita)) {
-        const f = await fichasApi.findByVisita(visita.id);
-        if (f?.id) {
-          fichaId = f.id;
-        }
-      }
+  const {
+    data: fichaParaImprimir,
+    isError: errorFichaImprimir,
+  } = useQuery({
+    queryKey: ['ficha-imprimir-directa', visitaParaImprimir?.id],
+    queryFn: () => {
+      if (!visitaParaImprimir) return null;
+      return 'nivelLogro' in visitaParaImprimir
+        ? fichasApi.findById(visitaParaImprimir.id)
+        : fichasApi.findByVisita(visitaParaImprimir.id);
+    },
+    enabled: !!visitaParaImprimir,
+  });
 
-      const blob = await fichasApi.descargarPdf(fichaId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const cleanIe = (visita.institucion || 'IE').replace(/[/\\?%*:|"<>]/g, '_');
-      const fechaStr = visita.fechaHora ? visita.fechaHora.split('T')[0] : 'reporte';
-      a.download = `Ficha_Monitoreo_${cleanIe}_${fechaStr}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success('Ficha PDF descargada exitosamente.');
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : 'Error al descargar el PDF de la ficha.');
-    } finally {
-      setDescargandoId(null);
+  const plantillaDeLaFichaImprimir = usePlantilla(fichaParaImprimir?.plantillaId).data;
+
+  const plantillaImprimirActiva = useMemo(() => {
+    if (!visitaParaImprimir) return null;
+    if (plantillaDeLaFichaImprimir) return plantillaDeLaFichaImprimir;
+
+    const tipoBuscado =
+      visitaParaImprimir.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
+    return plantillas.find((p) => p.tipoMonitoreo === tipoBuscado) || plantillas[0] || null;
+  }, [plantillaDeLaFichaImprimir, visitaParaImprimir, plantillas]);
+
+  const estadoFichaImprimir = useMemo(
+    () => (fichaParaImprimir ? fichaAEstadoFormulario(fichaParaImprimir) : null),
+    [fichaParaImprimir],
+  );
+
+  useEffect(() => {
+    if (errorFichaImprimir) {
+      toast.error('No se pudo cargar la información de la ficha para exportar.');
+      const timer = setTimeout(() => {
+        setVisitaParaImprimir(null);
+      }, 0);
+      return () => clearTimeout(timer);
     }
+  }, [errorFichaImprimir]);
+
+  useEffect(() => {
+    if (
+      visitaParaImprimir &&
+      fichaParaImprimir &&
+      plantillaImprimirActiva &&
+      estadoFichaImprimir &&
+      printDirectRef.current
+    ) {
+      const timer = setTimeout(() => {
+        handlePrintDirect();
+        setVisitaParaImprimir(null);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    visitaParaImprimir,
+    fichaParaImprimir,
+    plantillaImprimirActiva,
+    estadoFichaImprimir,
+    handlePrintDirect,
+  ]);
+
+  const handleDescargarPdf = (visita: BackendReportVisit, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setVisitaParaImprimir(visita);
   };
 
   const [enviandoCorreoId, setEnviandoCorreoId] = useState<string | null>(null);
@@ -160,10 +196,23 @@ export const ReportesGrid = ({
   };
 
   const fichaLista = !!visitaAbierta && !!plantillaActiva && !!estadoDeLaFicha;
+  const descargandoId = visitaParaImprimir?.id ?? null;
 
   return (
     <div className="space-y-6">
       <FiltrosReportes {...filtros} isEvaluatedView={isEvaluatedView} />
+
+      {/* Contenedor oculto para renderizar la Ficha Oficial para el diálogo de PDF */}
+      {visitaParaImprimir && plantillaImprimirActiva && estadoFichaImprimir && (
+        <div style={{ display: 'none' }}>
+          <FichaPrintable
+            ref={printDirectRef}
+            visit={visitaParaImprimir}
+            template={plantillaImprimirActiva}
+            fichaState={estadoFichaImprimir}
+          />
+        </div>
+      )}
 
       {filteredVisits.length === 0 ? (
         <SinReportes />

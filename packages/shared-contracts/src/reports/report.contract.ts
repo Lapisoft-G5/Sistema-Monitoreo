@@ -62,3 +62,22 @@ export interface IPaginatedReportesFichas {
   limit: number;
   totalPages: number;
 }
+
+export interface IAnalisisDesempenoCriterio {
+  desempenoId: string;
+  nombre: string;
+  orden: number;
+  descripcionCorta: string | null;
+  totalEvaluados: number;
+  conteoNivelI: number;
+  conteoNivelII: number;
+  conteoNivelIII: number;
+  conteoNivelIV: number;
+  porcentajeNivelI: number;
+  porcentajeNivelII: number;
+  porcentajeNivelIII: number;
+  porcentajeNivelIV: number;
+  promedio: number;
+  tasaLogro: number;
+  tasaRefuerzo: number;
+}

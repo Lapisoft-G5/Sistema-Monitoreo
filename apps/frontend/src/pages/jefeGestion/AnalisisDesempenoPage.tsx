@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useUser } from '@entities/model-user';
-import { useFichasCompletadas } from '@entities/model-reportes';
+import { useFichasCompletadas, useAnalisisDesempenos } from '@entities/model-reportes';
+import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { useCan, Capability } from '@shared/auth';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -9,16 +10,16 @@ import {
   reportesVisibles,
   type ReporteVisible,
 } from '@features/reportes/lib/visibilidad-reportes';
-import { calcularAnalisisDesempeno } from '@features/reportes/lib/analisis-desempeno';
+import { calcularAnalisisPorCriterios } from '@features/reportes/lib/analisis-desempeno';
 import {
   coincideConPeriodo,
   calcularConteosPorPeriodo,
   type FiltroPeriodoTipo,
 } from '@features/reportes/lib/filtro-temporal';
 import { FiltrosReportes } from '@/widgets/reportes/ui/grid/FiltrosReportes';
-import { KpisDesempeno } from '@/widgets/reportes/ui/analisis/KpisDesempeno';
-import { GraficoDistribucionNivel } from '@/widgets/reportes/ui/analisis/GraficoDistribucionNivel';
-import { GraficoNivelEducativo } from '@/widgets/reportes/ui/analisis/GraficoNivelEducativo';
+import { KpisCriterios } from '@/widgets/reportes/ui/analisis/KpisCriterios';
+import { GraficoComparativoCriterios } from '@/widgets/reportes/ui/analisis/GraficoComparativoCriterios';
+import { ListaCriteriosDesempeno } from '@/widgets/reportes/ui/analisis/ListaCriteriosDesempeno';
 import type { BackendReportVisit } from '@/widgets/reportes';
 
 export const AnalisisDesempenoPage = () => {
@@ -33,6 +34,13 @@ export const AnalisisDesempenoPage = () => {
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
   // Datos
+  const anioNumero = filterAnio !== 'Todos' ? parseInt(filterAnio, 10) : undefined;
+  const { data: criteriosBackend } = useAnalisisDesempenos({
+    anioAcademico: anioNumero,
+  });
+
+  const { data: plantillas = [] } = usePlantillasList();
+
   const { data: fichasCompletadasData, isLoading } = useFichasCompletadas({
     limit: 1000,
     tipoMonitoreo: 'DOCENTE',
@@ -170,8 +178,8 @@ export const AnalisisDesempenoPage = () => {
   }, [completedVisits, filtroPeriodo, searchQuery, filterModalidad, filterNivel, filterAnio]);
 
   const analisis = useMemo(
-    () => calcularAnalisisDesempeno(visitasFiltradas),
-    [visitasFiltradas],
+    () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas),
+    [criteriosBackend, visitasFiltradas, plantillas],
   );
 
   const cargando = isLoading && cargandoCronogramas;
@@ -181,7 +189,7 @@ export const AnalisisDesempenoPage = () => {
       {/* Encabezado */}
       <PageHeader
         title="Análisis de Desempeño"
-        description="Diagnóstico y distribución estadística de los niveles de logro obtenidos en el monitoreo pedagógico."
+        description="Diagnóstico y distribución estadística de los niveles de logro obtenidos en cada uno de los criterios y desempeños pedagógicos."
       />
 
       {/* ── Filtros de Reporte (Estándar) ── */}
@@ -212,19 +220,19 @@ export const AnalisisDesempenoPage = () => {
         <div className="p-12 text-center bg-surface border border-border rounded-2xl shadow-xs">
           <h3 className="text-base font-bold text-slate-800">Sin datos de monitoreo disponibles</h3>
           <p className="text-xs text-text-muted mt-1">
-            Aún no se han completado fichas de monitoreo docente para generar las estadísticas.
+            Aún no se han completado fichas de monitoreo docente para generar las estadísticas por criterio.
           </p>
         </div>
       ) : (
         <>
-          {/* Bloque 1: KPIs Principales */}
-          <KpisDesempeno analisis={analisis} />
+          {/* Bloque 1: KPIs Principales por Criterio */}
+          <KpisCriterios analisis={analisis} />
 
-          {/* Bloque 2: Gráficos de Distribución */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <GraficoDistribucionNivel analisis={analisis} />
-            <GraficoNivelEducativo analisis={analisis} />
-          </div>
+          {/* Bloque 2: Gráfico Comparativo de Niveles por Desempeño */}
+          <GraficoComparativoCriterios criterios={analisis.criterios} />
+
+          {/* Bloque 3: Detalle en Tarjetas por cada Desempeño / Criterio */}
+          <ListaCriteriosDesempeno criterios={analisis.criterios} />
         </>
       )}
     </div>

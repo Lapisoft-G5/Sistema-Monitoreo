@@ -33,6 +33,10 @@ export class ReporteService {
     return this.repository.findResumenPorIE(anioAcademico, session);
   }
 
+  async analisisDesempenos(filters: QueryFichasCompletadas, session: SessionScope) {
+    return this.repository.findAnalisisDesempenos(filters, session);
+  }
+
   async exportarFichaHTML(id: string, session: SessionScope): Promise<string> {
     const ficha = await this.repository.findFichaByIdParaExport(id, session);
     if (!ficha) throw new NotFoundException(`Ficha ${id} no encontrada o sin acceso.`);

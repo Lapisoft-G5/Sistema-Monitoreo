@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   normalizarNivelLogro,
-  calcularAnalisisDesempeno,
+  calcularAnalisisPorCriterios,
 } from './analisis-desempeno';
 import type { BackendReportVisit } from '@/widgets/reportes';
 
@@ -45,18 +45,15 @@ const crearVisita = (overrides: Partial<BackendReportVisit>): BackendReportVisit
   ...overrides,
 });
 
-describe('calcularAnalisisDesempeno', () => {
+describe('calcularAnalisisPorCriterios', () => {
   it('maneja listas vacías correctamente', () => {
-    const res = calcularAnalisisDesempeno([]);
+    const res = calcularAnalisisPorCriterios([], [], []);
     expect(res.totalEvaluaciones).toBe(0);
-    expect(res.totalDocentes).toBe(0);
     expect(res.promedioGeneral).toBe(0);
-    expect(res.tasaSatisfactoria).toBe(0);
-    expect(res.tasaRefuerzo).toBe(0);
-    expect(res.docentesRefuerzo).toEqual([]);
+    expect(res.criterios.length).toBe(3); // 3 criterios base
   });
 
-  it('calcula métricas agregadas y clasifica docentes para refuerzo', () => {
+  it('calcula métricas agregadas por criterio / desempeño', () => {
     const mockVisitas: BackendReportVisit[] = [
       crearVisita({
         id: 'v-1',
@@ -68,7 +65,6 @@ describe('calcularAnalisisDesempeno', () => {
         nivelLogro: 'NIVEL_I',
         promedio: 1.8,
         puntajeTotal: 7,
-        nivel: 'Primaria',
       }),
       crearVisita({
         id: 'v-2',
@@ -80,7 +76,6 @@ describe('calcularAnalisisDesempeno', () => {
         nivelLogro: 'NIVEL_II',
         promedio: 2.6,
         puntajeTotal: 10,
-        nivel: 'Inicial',
       }),
       crearVisita({
         id: 'v-3',
@@ -92,7 +87,6 @@ describe('calcularAnalisisDesempeno', () => {
         nivelLogro: 'NIVEL_III',
         promedio: 3.4,
         puntajeTotal: 14,
-        nivel: 'Secundaria',
       }),
       crearVisita({
         id: 'v-4',
@@ -104,38 +98,17 @@ describe('calcularAnalisisDesempeno', () => {
         nivelLogro: 'NIVEL_IV',
         promedio: 3.9,
         puntajeTotal: 16,
-        nivel: 'Secundaria',
-      }),
-      crearVisita({
-        id: 'v-5',
-        tipo: 'DIRECTIVO', // debe ignorar directivos en análisis docente
-        docenteDirectivo: 'Director IE 100',
-        institucion: 'IE 100',
-        especialista: 'Esp 1',
-        fechaHora: '2026-08-13T10:00:00Z',
-        nivelLogro: 'NIVEL_III',
-        promedio: 3.5,
-        puntajeTotal: 14,
-        nivel: 'Primaria',
       }),
     ];
 
-    const res = calcularAnalisisDesempeno(mockVisitas);
+    const res = calcularAnalisisPorCriterios([], mockVisitas, []);
 
     expect(res.totalEvaluaciones).toBe(4);
-    expect(res.totalDocentes).toBe(4);
-    expect(res.distribucionNiveles.I.conteo).toBe(1);
-    expect(res.distribucionNiveles.II.conteo).toBe(1);
-    expect(res.distribucionNiveles.III.conteo).toBe(1);
-    expect(res.distribucionNiveles.IV.conteo).toBe(1);
-
-    expect(res.tasaSatisfactoria).toBe(50); // (1+1)/4 = 50%
-    expect(res.tasaRefuerzo).toBe(50); // (1+1)/4 = 50%
-
-    expect(res.docentesRefuerzo.length).toBe(2);
-    expect(res.docentesRefuerzo[0].docenteNombre).toBe('Juan Perez'); // menor promedio primero
-    expect(res.docentesRefuerzo[1].docenteNombre).toBe('Maria Gomez');
-
-    expect(res.porNivelEducativo.length).toBe(3);
+    expect(res.criterios.length).toBe(3);
+    expect(res.criterios[0].nombre).toContain('Involucra activamente');
+    expect(res.criterios[1].nombre).toContain('Maximiza el tiempo');
+    expect(res.criterios[2].nombre).toContain('Fomenta el razonamiento');
+    expect(res.criterioMayorDominio).not.toBeNull();
+    expect(res.criterioMayorRefuerzo).not.toBeNull();
   });
 });

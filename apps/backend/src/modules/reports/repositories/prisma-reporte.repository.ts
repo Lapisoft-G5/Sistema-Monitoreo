@@ -2,7 +2,11 @@ import type { Prisma } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
-import type { IReporteFicha, IReporteResumenIE } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IReporteFicha,
+  IReporteResumenIE,
+  IAnalisisDesempenoCriterio,
+} from '@sistema-monitoreo/shared-contracts';
 import {
   PaginatedFichas,
   QueryFichasCompletadas,
@@ -205,5 +209,118 @@ export class PrismaReporteRepository implements ReporteRepository {
     if (!allowed) return null;
 
     return fromPrismaFichaReporte(f);
+  }
+
+  async findAnalisisDesempenos(
+    filters: QueryFichasCompletadas,
+    session: SessionScope,
+  ): Promise<IAnalisisDesempenoCriterio[]> {
+    const whereFicha: Prisma.FichaMonitoreoWhereInput = {
+      estado: 'FINALIZADO',
+      ...this.scopeFilter.forFicha(this.toScopeContext(session)),
+    };
+    if (filters.anioAcademico !== undefined) whereFicha.anioAcademico = filters.anioAcademico;
+
+    const porCronograma: Prisma.CronogramaWhereInput = {
+      tipoMonitoreo: 'DOCENTE',
+    };
+    if (filters.institucionId) porCronograma.institucionId = filters.institucionId;
+    whereFicha.cronograma = porCronograma;
+
+    if (filters.fechaDesde || filters.fechaHasta) {
+      whereFicha.createdAt = {};
+      if (filters.fechaDesde) whereFicha.createdAt.gte = new Date(filters.fechaDesde);
+      if (filters.fechaHasta) whereFicha.createdAt.lte = new Date(filters.fechaHasta);
+    }
+
+    const respuestas = await this.prisma.fichaRespuestaDesempeno.findMany({
+      where: { ficha: whereFicha },
+      include: {
+        desempeno: {
+          select: {
+            id: true,
+            nombre: true,
+            orden: true,
+            descripcionCorta: true,
+          },
+        },
+      },
+      orderBy: {
+        desempeno: {
+          orden: 'asc',
+        },
+      },
+    });
+
+    const mapa = new Map<
+      string,
+      {
+        desempenoId: string;
+        nombre: string;
+        orden: number;
+        descripcionCorta: string | null;
+        total: number;
+        nivelI: number;
+        nivelII: number;
+        nivelIII: number;
+        nivelIV: number;
+        sumaNiveles: number;
+      }
+    >();
+
+    for (const r of respuestas) {
+      if (!r.desempeno) continue;
+      const dId = r.desempeno.id;
+      if (!mapa.has(dId)) {
+        mapa.set(dId, {
+          desempenoId: dId,
+          nombre: r.desempeno.nombre,
+          orden: r.desempeno.orden,
+          descripcionCorta: r.desempeno.descripcionCorta,
+          total: 0,
+          nivelI: 0,
+          nivelII: 0,
+          nivelIII: 0,
+          nivelIV: 0,
+          sumaNiveles: 0,
+        });
+      }
+      const item = mapa.get(dId)!;
+      item.total += 1;
+      item.sumaNiveles += r.nivel;
+      if (r.nivel === 1) item.nivelI += 1;
+      else if (r.nivel === 2) item.nivelII += 1;
+      else if (r.nivel === 3) item.nivelIII += 1;
+      else if (r.nivel === 4) item.nivelIV += 1;
+    }
+
+    return Array.from(mapa.values())
+      .sort((a, b) => a.orden - b.orden)
+      .map((item) => {
+        const porcentajeI = item.total > 0 ? Math.round((item.nivelI / item.total) * 100) : 0;
+        const porcentajeII = item.total > 0 ? Math.round((item.nivelII / item.total) * 100) : 0;
+        const porcentajeIII = item.total > 0 ? Math.round((item.nivelIII / item.total) * 100) : 0;
+        const porcentajeIV = item.total > 0 ? Math.round((item.nivelIV / item.total) * 100) : 0;
+        const promedio = item.total > 0 ? Number((item.sumaNiveles / item.total).toFixed(2)) : 0;
+
+        return {
+          desempenoId: item.desempenoId,
+          nombre: item.nombre,
+          orden: item.orden,
+          descripcionCorta: item.descripcionCorta,
+          totalEvaluados: item.total,
+          conteoNivelI: item.nivelI,
+          conteoNivelII: item.nivelII,
+          conteoNivelIII: item.nivelIII,
+          conteoNivelIV: item.nivelIV,
+          porcentajeNivelI: porcentajeI,
+          porcentajeNivelII: porcentajeII,
+          porcentajeNivelIII: porcentajeIII,
+          porcentajeNivelIV: porcentajeIV,
+          promedio,
+          tasaLogro: porcentajeIII + porcentajeIV,
+          tasaRefuerzo: porcentajeI + porcentajeII,
+        };
+      });
   }
 }

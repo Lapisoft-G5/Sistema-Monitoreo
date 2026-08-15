@@ -23,3 +23,15 @@ export const useResumenIE = (anio: number) =>
     enabled: !!anio,
     staleTime: 60_000,
   });
+
+export const useAnalisisDesempenos = (filters?: {
+  anioAcademico?: number;
+  institucionId?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+}) =>
+  useQuery({
+    queryKey: ['reportes', 'analisis-desempenos', filters],
+    queryFn: () => reportesApi.analisisDesempenos(filters),
+    staleTime: 60_000,
+  });

@@ -29,7 +29,7 @@ export const NIVELES_SATISFACTORIOS: readonly NivelLogro[] = [
 ];
 
 export interface ReporteMedible {
-  tipo: 'DOCENTE' | 'DIRECTIVO';
+  tipo: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo;
   /**
    * Se declara como `string` porque así llega desde el backend en
    * `BackendReportVisit`. Sólo cuenta como satisfactorio si coincide con
@@ -68,7 +68,7 @@ export function calcularEstadisticas(
 
   return {
     total: reportes.length,
-    docentes: reportes.filter((r) => r.tipo === 'DOCENTE').length,
+    docentes: reportes.filter((r) => r.tipo === 'DOCENTE' || r.tipo === 'DOCENTE_EIB').length,
     directivos: reportes.filter((r) => r.tipo === 'DIRECTIVO').length,
 
     satisfactionPercent:

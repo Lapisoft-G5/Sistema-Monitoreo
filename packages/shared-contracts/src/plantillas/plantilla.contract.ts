@@ -1,4 +1,4 @@
-export type TipoPlantilla = 'DOCENTE' | 'DIRECTIVO';
+export type TipoPlantilla = 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB';
 
 export type EstadoPlantilla = 'Borrador' | 'Vigente' | 'Historico';
 

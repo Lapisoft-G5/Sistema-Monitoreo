@@ -131,14 +131,14 @@ export const tieneContextoCargado = (contexto: ContextoPersistido | undefined | 
  */
 export function aDatosFicha(
   estado: EstadoFormularioFicha,
-  tipoVisita: 'DOCENTE' | 'DIRECTIVO',
+  tipoVisita: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo,
 ): DatosFicha {
   const { contexto, ...respuestas } = estado;
 
   return {
     ...respuestas,
     contexto:
-      tipoVisita === 'DOCENTE'
+      tipoVisita !== 'DIRECTIVO'
         ? {
             areaCurricular: contexto.area,
             grado: contexto.grado,

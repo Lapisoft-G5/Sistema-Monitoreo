@@ -23,8 +23,8 @@ export class CreateVisitaDto {
   evaluadoId!: string;
 
   @IsString()
-  @IsIn(['DOCENTE', 'DIRECTIVO'])
-  tipoMonitoreo!: 'DOCENTE' | 'DIRECTIVO';
+  @IsIn(['DOCENTE', 'DIRECTIVO', 'DOCENTE_EIB'])
+  tipoMonitoreo!: 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB';
 
   @Type(() => Number)
   @IsInt()

@@ -8,15 +8,21 @@ import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 
-const toBackendTipo = (tipo: string): 'DOCENTE' | 'DIRECTIVO' =>
-  tipo.toUpperCase().includes('DIRECTIVO') ? 'DIRECTIVO' : 'DOCENTE';
+import type { TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
+
+const toBackendTipo = (tipo: string): TipoPlantilla => {
+  const t = tipo.toUpperCase();
+  if (t.includes('DIRECTIVO')) return 'DIRECTIVO';
+  if (t.includes('EIB')) return 'DOCENTE_EIB';
+  return 'DOCENTE';
+};
 
 export const PlantillaCreatePage = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [pendingArchive, setPendingArchive] = useState<{ plantillas: { id: string; anioAcademico: number; tipoMonitoreo: string }[]; data: PlantillaFormState; backendTipo: 'DOCENTE' | 'DIRECTIVO' } | null>(null);
+  const [pendingArchive, setPendingArchive] = useState<{ plantillas: { id: string; anioAcademico: number; tipoMonitoreo: string }[]; data: PlantillaFormState; backendTipo: TipoPlantilla } | null>(null);
 
   const handleSubmit = async (data: PlantillaFormState) => {
     setIsSaving(true);
@@ -58,7 +64,7 @@ export const PlantillaCreatePage = () => {
     }
   };
 
-  const executeCreate = async (data: PlantillaFormState, backendTipo: 'DOCENTE' | 'DIRECTIVO', toArchive: { id: string }[]) => {
+  const executeCreate = async (data: PlantillaFormState, backendTipo: TipoPlantilla, toArchive: { id: string }[]) => {
     try {
       // El lema va primero: la plantilla lo devuelve ya resuelto por su año, de
       // modo que crearla antes la dejaría con el encabezado en blanco hasta la

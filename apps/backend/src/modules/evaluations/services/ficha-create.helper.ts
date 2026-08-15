@@ -42,7 +42,7 @@ export async function crear(
     );
   }
 
-  if (cronograma.tipoMonitoreo === 'DOCENTE') {
+  if (cronograma.tipoMonitoreo === 'DOCENTE' || cronograma.tipoMonitoreo === 'DOCENTE_EIB') {
     const missing: string[] = [];
     if (!dto.areaCurricular) missing.push('areaCurricular');
     if (!dto.grado) missing.push('grado');

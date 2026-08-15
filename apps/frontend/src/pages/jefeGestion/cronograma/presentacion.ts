@@ -33,6 +33,8 @@ export const colorDeIniciales = (iniciales: string): string =>
 const ESTILO_POR_TIPO: Record<Cronograma['tipo'], string> = {
   DOCENTE:
     'bg-rose-50 text-rose-600 border border-rose-200/50 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30',
+  DOCENTE_EIB:
+    'bg-emerald-50 text-emerald-600 border border-emerald-200/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30',
   DIRECTIVO:
     'bg-blue-50 text-blue-600 border border-blue-200/50 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30',
 };

@@ -13,7 +13,8 @@ const TODOS = 'Todos';
 
 const FILTROS_TIPO = [
   { id: 'Todos', label: 'Todos' },
-  { id: 'DOCENTE', label: 'Docente' },
+  { id: 'DOCENTE', label: 'Docente (Regular)' },
+  { id: 'DOCENTE_EIB', label: 'Docente EIB' },
   { id: 'DIRECTIVO', label: 'Directivo' },
 ] as const;
 
@@ -53,7 +54,7 @@ interface FiltrosReportesProps {
   setFilterAnio: (a: string) => void;
   filterTipo?: string;
   setFilterTipo?: (tipo: string) => void;
-  conteosTipo?: Record<'Todos' | 'DOCENTE' | 'DIRECTIVO', number>;
+  conteosTipo?: Record<string, number>;
   filtroPeriodo: FiltroPeriodoTipo;
   setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
   conteosPeriodo?: Record<FiltroPeriodoTipo, number>;

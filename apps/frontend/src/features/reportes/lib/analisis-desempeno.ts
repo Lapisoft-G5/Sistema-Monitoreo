@@ -45,6 +45,33 @@ export const DESEMPENOS_DOCENTE_DEFAULT: Array<{
   },
 ];
 
+export const DESEMPENOS_EIB_DEFAULT: Array<{
+  orden: number;
+  nombre: string;
+  descripcionCorta: string;
+}> = [
+  {
+    orden: 1,
+    nombre: 'Condiciones básicas para el aprendizaje EIB',
+    descripcionCorta: 'Ambiente físico, orden, ventilación y aula letrada en lengua originaria y castellano.',
+  },
+  {
+    orden: 2,
+    nombre: 'Interacciones pedagógicas y diálogo de saberes',
+    descripcionCorta: 'Propósito claro, atención a la diversidad y contraste de saberes locales con la ciencia.',
+  },
+  {
+    orden: 3,
+    nombre: 'Desarrollo del bilingüismo y convivencia intercultural',
+    descripcionCorta: 'Uso pertinente de lengua materna y segunda lengua, pensamiento crítico y retroalimentación.',
+  },
+  {
+    orden: 4,
+    nombre: 'Planificación curricular con enfoque EIB',
+    descripcionCorta: 'Caracterización sociocultural y lingüística, situaciones significativas y metodología activa.',
+  },
+];
+
 export const DESEMPENOS_DIRECTIVO_DEFAULT: Array<{
   orden: number;
   nombre: string;
@@ -115,14 +142,15 @@ export const calcularAnalisisPorCriterios = (
   }
 
   const esDirectivo = tipoFiltro === 'DIRECTIVO';
+  const esEib = tipoFiltro === 'DOCENTE_EIB';
 
   // Fallback / Estimación a partir de los desempeños de la plantilla y las fichas de visitas
-  const plantillaObjetivo = plantillas.find(
-    (p) =>
-      esDirectivo
-        ? (p.tipoMonitoreo || '').toUpperCase().includes('DIRECTIVO')
-        : (p.tipoMonitoreo || '').toUpperCase().includes('DOCENTE'),
-  );
+  const plantillaObjetivo = plantillas.find((p) => {
+    const t = (p.tipoMonitoreo || '').toUpperCase();
+    if (esDirectivo) return t.includes('DIRECTIVO');
+    if (esEib) return t.includes('EIB');
+    return t === 'DOCENTE' || t.includes('DOCENTE') && !t.includes('EIB');
+  });
 
   const listaDesempenos =
     plantillaObjetivo && Array.isArray(plantillaObjetivo.desempenos) && plantillaObjetivo.desempenos.length > 0
@@ -139,6 +167,13 @@ export const calcularAnalisisPorCriterios = (
           descripcionCorta: d.descripcionCorta,
           id: `dir-${d.orden}`,
         }))
+      : esEib
+      ? DESEMPENOS_EIB_DEFAULT.map((d) => ({
+          orden: d.orden,
+          nombre: d.nombre,
+          descripcionCorta: d.descripcionCorta,
+          id: `eib-${d.orden}`,
+        }))
       : DESEMPENOS_DOCENTE_DEFAULT.map((d) => ({
           orden: d.orden,
           nombre: d.nombre,
@@ -146,11 +181,13 @@ export const calcularAnalisisPorCriterios = (
           id: `doc-${d.orden}`,
         }));
 
-  const visitasFiltradas = visitas.filter((v) =>
-    esDirectivo
-      ? (v.tipo || '').toUpperCase() === 'DIRECTIVO'
-      : (v.tipo || 'DOCENTE').toUpperCase() === 'DOCENTE',
-  );
+  const visitasFiltradas = visitas.filter((v) => {
+    const t = (v.tipo || 'DOCENTE').toUpperCase();
+    if (esDirectivo) return t === 'DIRECTIVO';
+    if (esEib) return t === 'DOCENTE_EIB';
+    if (tipoFiltro === 'DOCENTE') return t === 'DOCENTE';
+    return true;
+  });
   const totalVisitas = visitasFiltradas.length;
 
   const criterios: IAnalisisDesempenoCriterio[] = listaDesempenos.map((des, index) => {

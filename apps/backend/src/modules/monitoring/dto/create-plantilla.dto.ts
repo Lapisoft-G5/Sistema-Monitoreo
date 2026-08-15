@@ -116,8 +116,8 @@ export class EjeItemInput {
 
 export class CreatePlantillaDto {
   @IsString()
-  @IsIn(['DOCENTE', 'DIRECTIVO'])
-  tipoMonitoreo!: 'DOCENTE' | 'DIRECTIVO';
+  @IsIn(['DOCENTE', 'DIRECTIVO', 'DOCENTE_EIB'])
+  tipoMonitoreo!: 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB';
 
   @Type(() => Number)
   @IsInt()

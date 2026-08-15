@@ -128,14 +128,17 @@ export const AnalisisDesempenoPage = () => {
 
   const conteosTipo = useMemo(() => {
     let docentes = 0;
+    let docentesEib = 0;
     let directivos = 0;
     completedVisits.forEach((v) => {
       if (v.tipo === 'DIRECTIVO') directivos++;
+      else if (v.tipo === 'DOCENTE_EIB') docentesEib++;
       else docentes++;
     });
     return {
       Todos: completedVisits.length,
       DOCENTE: docentes,
+      DOCENTE_EIB: docentesEib,
       DIRECTIVO: directivos,
     };
   }, [completedVisits]);

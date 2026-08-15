@@ -148,7 +148,11 @@ export class PrismaReporteRepository implements ReporteRepository {
       for (const f of grupo) {
         dist[f.nivelLogro] = (dist[f.nivelLogro] ?? 0) + 1;
         sumaPromedios += Number(f.promedio);
-        if (f.cronograma?.tipoMonitoreo === 'DOCENTE') docentesCount++;
+        if (
+          f.cronograma?.tipoMonitoreo === 'DOCENTE' ||
+          f.cronograma?.tipoMonitoreo === 'DOCENTE_EIB'
+        )
+          docentesCount++;
         else if (f.cronograma?.tipoMonitoreo === 'DIRECTIVO') directivosCount++;
       }
       const totalFichas = grupo.length;

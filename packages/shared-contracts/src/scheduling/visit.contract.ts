@@ -1,4 +1,4 @@
-export type TipoMonitoreo = 'DOCENTE' | 'DIRECTIVO';
+export type TipoMonitoreo = 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB';
 
 /**
  * Estados por los que pasa una visita de monitoreo.

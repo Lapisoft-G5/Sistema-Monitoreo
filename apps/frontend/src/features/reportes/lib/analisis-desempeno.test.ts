@@ -46,12 +46,18 @@ const crearVisita = (overrides: Partial<BackendReportVisit>): BackendReportVisit
 });
 
 describe('calcularAnalisisPorCriterios', () => {
-  it('maneja listas vacías correctamente para docente y directivo', () => {
+  it('maneja listas vacías correctamente para docente, eib y directivo', () => {
     const resDoc = calcularAnalisisPorCriterios([], [], [], 'DOCENTE');
     expect(resDoc.totalEvaluaciones).toBe(0);
     expect(resDoc.promedioGeneral).toBe(0);
     expect(resDoc.criterios.length).toBe(3);
     expect(resDoc.criterios[0].nombre).toContain('Involucra activamente');
+
+    const resEib = calcularAnalisisPorCriterios([], [], [], 'DOCENTE_EIB');
+    expect(resEib.totalEvaluaciones).toBe(0);
+    expect(resEib.promedioGeneral).toBe(0);
+    expect(resEib.criterios.length).toBe(4);
+    expect(resEib.criterios[0].nombre).toContain('Condiciones básicas');
 
     const resDir = calcularAnalisisPorCriterios([], [], [], 'DIRECTIVO');
     expect(resDir.totalEvaluaciones).toBe(0);

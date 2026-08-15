@@ -207,7 +207,7 @@ export const LlenarFichaForm = ({
         <CabeceraFicha
           template={template}
           soloLectura={isCompleted}
-          pestana={visit.tipo === 'DOCENTE' ? activeTab : null}
+          pestana={visit.tipo !== 'DIRECTIVO' ? activeTab : null}
           onPestana={setActiveTab}
           onImprimir={() => handlePrint()}
           onCerrar={onClose}
@@ -217,7 +217,7 @@ export const LlenarFichaForm = ({
         <div className="flex-1 overflow-y-auto min-h-0">
           <BannerDatosVisita visit={visit} />
 
-          {visit.tipo === 'DOCENTE' && (
+          {visit.tipo !== 'DIRECTIVO' && (
             <ContextoDeAulaSeccion
               contexto={estado.contexto}
               onCambiar={setContextoCampo}

@@ -6,7 +6,6 @@ import type { Desempeno } from '@entities/model-plantillas';
 interface ItemEib {
   id: string;
   texto: string;
-  foco?: string;
 }
 
 interface BloqueEib {
@@ -29,7 +28,7 @@ function desempanosABloques(criterios: Desempeno[]): BloqueEib[] {
         id: crypto.randomUUID(),
         seccion: 'I. CONDICIONES BÁSICAS PARA EL APRENDIZAJE',
         subcriterio: '',
-        items: [{ id: crypto.randomUUID(), texto: '', foco: '' }],
+        items: [{ id: crypto.randomUUID(), texto: '' }],
       },
     ];
   }
@@ -58,7 +57,6 @@ function desempanosABloques(criterios: Desempeno[]): BloqueEib[] {
     currentBloque.items.push({
       id: c.id,
       texto: c.nombre,
-      foco: c.aspectos?.[0]?.descripcion ?? '',
     });
   }
 
@@ -69,7 +67,7 @@ function desempanosABloques(criterios: Desempeno[]): BloqueEib[] {
           id: crypto.randomUUID(),
           seccion: 'I. CONDICIONES BÁSICAS PARA EL APRENDIZAJE',
           subcriterio: '',
-          items: [{ id: crypto.randomUUID(), texto: '', foco: '' }],
+          items: [{ id: crypto.randomUUID(), texto: '' }],
         },
       ];
 }
@@ -93,9 +91,7 @@ function bloquesADesempenos(bloques: BloqueEib[]): Desempeno[] {
         nombre: item.texto,
         descripcionCorta: etiqueta,
         preguntaExtra: '',
-        aspectos: item.foco?.trim()
-          ? [{ id: crypto.randomUUID(), descripcion: item.foco.trim() }]
-          : [],
+        aspectos: [],
         rubrica: [],
       });
     }
@@ -118,7 +114,7 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
       id: crypto.randomUUID(),
       seccion: '',
       subcriterio: '',
-      items: [{ id: crypto.randomUUID(), texto: '', foco: '' }],
+      items: [{ id: crypto.randomUUID(), texto: '' }],
     };
     sincronizar([...bloques, nuevoBloque]);
   };
@@ -136,7 +132,6 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
     const nuevoItem: ItemEib = {
       id: crypto.randomUUID(),
       texto: '',
-      foco: '',
     };
     sincronizar(
       bloques.map((b) => (b.id === bloqueId ? { ...b, items: [...b.items, nuevoItem] } : b)),
@@ -153,13 +148,13 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
     );
   };
 
-  const actualizarItem = (bloqueId: string, itemId: string, patch: Partial<ItemEib>) => {
+  const actualizarItem = (bloqueId: string, itemId: string, texto: string) => {
     sincronizar(
       bloques.map((b) => {
         if (b.id !== bloqueId) return b;
         return {
           ...b,
-          items: b.items.map((it) => (it.id === itemId ? { ...it, ...patch } : it)),
+          items: b.items.map((it) => (it.id === itemId ? { ...it, texto } : it)),
         };
       }),
     );
@@ -264,50 +259,30 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
                   {bloque.items.map((item, indexItem) => (
                     <div
                       key={item.id}
-                      className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/40 hover:bg-slate-50/80 transition-colors"
+                      className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/40 hover:bg-slate-50/80 transition-colors"
                     >
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200/70 text-[11px] font-black text-slate-700 mt-1">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200/70 text-[11px] font-black text-slate-700">
                         {indexItem + 1}
                       </span>
 
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3">
-                        <div className="md:col-span-8 flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                            Enunciado del Ítem Observable <span className="text-destructive">*</span>
-                          </label>
-                          <textarea
-                            value={item.texto}
-                            onChange={(e) =>
-                              actualizarItem(bloque.id, item.id, { texto: e.target.value })
-                            }
-                            placeholder="Ej. El aula presenta condiciones físicas: está limpia, ordenada y con buena iluminación..."
-                            className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:ring-1 focus:ring-primary focus:outline-none shadow-inner leading-relaxed"
-                            rows={2}
-                            required
-                          />
-                        </div>
-
-                        <div className="md:col-span-4 flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Evidencia / Foco Esperado (Opcional)
-                          </label>
-                          <textarea
-                            value={item.foco ?? ''}
-                            onChange={(e) =>
-                              actualizarItem(bloque.id, item.id, { foco: e.target.value })
-                            }
-                            placeholder="Ej. Revisar la ventilación, letrados bilingües, etc..."
-                            className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 focus:ring-1 focus:ring-primary focus:outline-none shadow-inner leading-relaxed"
-                            rows={2}
-                          />
-                        </div>
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={item.texto}
+                          onChange={(e) =>
+                            actualizarItem(bloque.id, item.id, e.target.value)
+                          }
+                          placeholder="Ej. El aula presenta condiciones físicas: está limpia, ordenada y con buena iluminación y ventilación."
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-800 focus:ring-1 focus:ring-primary focus:outline-none shadow-inner leading-relaxed"
+                          required
+                        />
                       </div>
 
                       {bloque.items.length > 1 && (
                         <button
                           type="button"
                           onClick={() => eliminarItem(bloque.id, item.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer mt-1"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer shrink-0"
                           aria-label="Eliminar ítem"
                           title="Eliminar ítem"
                         >

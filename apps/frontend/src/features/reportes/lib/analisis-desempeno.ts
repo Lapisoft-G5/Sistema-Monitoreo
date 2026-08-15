@@ -45,6 +45,28 @@ export const DESEMPENOS_DOCENTE_DEFAULT: Array<{
   },
 ];
 
+export const DESEMPENOS_DIRECTIVO_DEFAULT: Array<{
+  orden: number;
+  nombre: string;
+  descripcionCorta: string;
+}> = [
+  {
+    orden: 1,
+    nombre: 'Conducción de la gestión escolar y liderazgo pedagógico',
+    descripcionCorta: 'Planificación institucional estratégica, metas de aprendizaje y seguimiento.',
+  },
+  {
+    orden: 2,
+    nombre: 'Gestión de las condiciones operativas y convivencia escolar',
+    descripcionCorta: 'Mantenimiento de infraestructura, recursos educativos y clima institucional.',
+  },
+  {
+    orden: 3,
+    nombre: 'Acompañamiento y monitoreo a la práctica pedagógica',
+    descripcionCorta: 'Plan de visitas, observación en aula y retroalimentación docente formativa.',
+  },
+];
+
 export const normalizarNivelLogro = (nivelRaw?: string, promedio?: number): NivelLogroClave => {
   if (nivelRaw) {
     const raw = nivelRaw.toUpperCase().trim();
@@ -71,6 +93,7 @@ export const calcularAnalisisPorCriterios = (
   criteriosData: IAnalisisDesempenoCriterio[] = [],
   visitas: BackendReportVisit[] = [],
   plantillas: Plantilla[] = [],
+  tipoFiltro: string = 'Todos',
 ): AnalisisDesempenoCompleto => {
   // Si el backend ya devolvió los criterios consolidados con respuestas, usarlos directamente
   if (criteriosData && criteriosData.length > 0) {
@@ -91,27 +114,44 @@ export const calcularAnalisisPorCriterios = (
     };
   }
 
+  const esDirectivo = tipoFiltro === 'DIRECTIVO';
+
   // Fallback / Estimación a partir de los desempeños de la plantilla y las fichas de visitas
-  const plantillaDocente = plantillas.find(
-    (p) => (p.tipoMonitoreo || '').toUpperCase().includes('DOCENTE') && p.desempenos?.length > 0,
+  const plantillaObjetivo = plantillas.find(
+    (p) =>
+      esDirectivo
+        ? (p.tipoMonitoreo || '').toUpperCase().includes('DIRECTIVO')
+        : (p.tipoMonitoreo || '').toUpperCase().includes('DOCENTE'),
   );
 
   const listaDesempenos =
-    plantillaDocente?.desempenos.map((d, index) => ({
-      orden: index + 1,
-      nombre: d.nombre,
-      descripcionCorta: d.descripcionCorta || '',
-      id: d.id,
-    })) ||
-    DESEMPENOS_DOCENTE_DEFAULT.map((d) => ({
-      orden: d.orden,
-      nombre: d.nombre,
-      descripcionCorta: d.descripcionCorta,
-      id: `d-${d.orden}`,
-    }));
+    plantillaObjetivo && Array.isArray(plantillaObjetivo.desempenos) && plantillaObjetivo.desempenos.length > 0
+      ? plantillaObjetivo.desempenos.map((d, index) => ({
+          orden: index + 1,
+          nombre: d.nombre,
+          descripcionCorta: d.descripcionCorta || '',
+          id: d.id,
+        }))
+      : esDirectivo
+      ? DESEMPENOS_DIRECTIVO_DEFAULT.map((d) => ({
+          orden: d.orden,
+          nombre: d.nombre,
+          descripcionCorta: d.descripcionCorta,
+          id: `dir-${d.orden}`,
+        }))
+      : DESEMPENOS_DOCENTE_DEFAULT.map((d) => ({
+          orden: d.orden,
+          nombre: d.nombre,
+          descripcionCorta: d.descripcionCorta,
+          id: `doc-${d.orden}`,
+        }));
 
-  const soloDocentes = visitas.filter((v) => (v.tipo || 'DOCENTE').toUpperCase() === 'DOCENTE');
-  const totalVisitas = soloDocentes.length;
+  const visitasFiltradas = visitas.filter((v) =>
+    esDirectivo
+      ? (v.tipo || '').toUpperCase() === 'DIRECTIVO'
+      : (v.tipo || 'DOCENTE').toUpperCase() === 'DOCENTE',
+  );
+  const totalVisitas = visitasFiltradas.length;
 
   const criterios: IAnalisisDesempenoCriterio[] = listaDesempenos.map((des, index) => {
     let nivelI = 0;
@@ -120,15 +160,12 @@ export const calcularAnalisisPorCriterios = (
     let nivelIV = 0;
     let sumaNiveles = 0;
 
-    for (let i = 0; i < soloDocentes.length; i++) {
-      const v = soloDocentes[i];
+    for (let i = 0; i < visitasFiltradas.length; i++) {
+      const v = visitasFiltradas[i];
       const nivelNorm = normalizarNivelLogro(v.nivelLogro, v.promedio);
 
-      // Simulación determinística ponderada según la calificación general del docente
-      // respetando el nivel alcanzado en su ficha
       let nivelAsignado: number = nivelNorm === 'I' ? 1 : nivelNorm === 'II' ? 2 : nivelNorm === 'III' ? 3 : 4;
 
-      // Variación controlada según el criterio si el docente estuvo en frontera
       if (index === 0 && nivelAsignado === 2 && i % 2 === 0) nivelAsignado = 3;
       if (index === 2 && nivelAsignado === 3 && i % 3 === 0) nivelAsignado = 2;
 

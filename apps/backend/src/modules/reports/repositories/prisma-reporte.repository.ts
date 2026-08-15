@@ -221,11 +221,16 @@ export class PrismaReporteRepository implements ReporteRepository {
     };
     if (filters.anioAcademico !== undefined) whereFicha.anioAcademico = filters.anioAcademico;
 
-    const porCronograma: Prisma.CronogramaWhereInput = {
-      tipoMonitoreo: 'DOCENTE',
-    };
-    if (filters.institucionId) porCronograma.institucionId = filters.institucionId;
-    whereFicha.cronograma = porCronograma;
+    const porCronograma: Prisma.CronogramaWhereInput = {};
+    if (filters.tipoMonitoreo) {
+      porCronograma.tipoMonitoreo = filters.tipoMonitoreo;
+    }
+    if (filters.institucionId) {
+      porCronograma.institucionId = filters.institucionId;
+    }
+    if (Object.keys(porCronograma).length > 0) {
+      whereFicha.cronograma = porCronograma;
+    }
 
     if (filters.fechaDesde || filters.fechaHasta) {
       whereFicha.createdAt = {};

@@ -46,11 +46,18 @@ const crearVisita = (overrides: Partial<BackendReportVisit>): BackendReportVisit
 });
 
 describe('calcularAnalisisPorCriterios', () => {
-  it('maneja listas vacías correctamente', () => {
-    const res = calcularAnalisisPorCriterios([], [], []);
-    expect(res.totalEvaluaciones).toBe(0);
-    expect(res.promedioGeneral).toBe(0);
-    expect(res.criterios.length).toBe(3); // 3 criterios base
+  it('maneja listas vacías correctamente para docente y directivo', () => {
+    const resDoc = calcularAnalisisPorCriterios([], [], [], 'DOCENTE');
+    expect(resDoc.totalEvaluaciones).toBe(0);
+    expect(resDoc.promedioGeneral).toBe(0);
+    expect(resDoc.criterios.length).toBe(3);
+    expect(resDoc.criterios[0].nombre).toContain('Involucra activamente');
+
+    const resDir = calcularAnalisisPorCriterios([], [], [], 'DIRECTIVO');
+    expect(resDir.totalEvaluaciones).toBe(0);
+    expect(resDir.promedioGeneral).toBe(0);
+    expect(resDir.criterios.length).toBe(3);
+    expect(resDir.criterios[0].nombre).toContain('liderazgo pedagógico');
   });
 
   it('calcula métricas agregadas por criterio / desempeño', () => {
@@ -101,7 +108,7 @@ describe('calcularAnalisisPorCriterios', () => {
       }),
     ];
 
-    const res = calcularAnalisisPorCriterios([], mockVisitas, []);
+    const res = calcularAnalisisPorCriterios([], mockVisitas, [], 'DOCENTE');
 
     expect(res.totalEvaluaciones).toBe(4);
     expect(res.criterios.length).toBe(3);

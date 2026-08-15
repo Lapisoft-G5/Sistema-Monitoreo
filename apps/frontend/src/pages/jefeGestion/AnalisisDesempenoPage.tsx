@@ -31,19 +31,22 @@ export const AnalisisDesempenoPage = () => {
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterAnio, setFilterAnio] = useState('Todos');
+  const [filterTipo, setFilterTipo] = useState('DOCENTE');
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
   // Datos
   const anioNumero = filterAnio !== 'Todos' ? parseInt(filterAnio, 10) : undefined;
+  const tipoMonitoreoParam = filterTipo !== 'Todos' ? (filterTipo as 'DOCENTE' | 'DIRECTIVO') : undefined;
+
   const { data: criteriosBackend } = useAnalisisDesempenos({
     anioAcademico: anioNumero,
+    tipoMonitoreo: tipoMonitoreoParam,
   });
 
   const { data: plantillas = [] } = usePlantillasList();
 
   const { data: fichasCompletadasData, isLoading } = useFichasCompletadas({
     limit: 1000,
-    tipoMonitoreo: 'DOCENTE',
   });
 
   const { cronogramas, isLoading: cargandoCronogramas } = useCronogramasData(
@@ -83,7 +86,7 @@ export const AnalisisDesempenoPage = () => {
       return reportesVisibles(list as ReporteVisible[], user) as BackendReportVisit[];
     }
 
-    const completadas = cronogramas.filter((c) => c.estado === 'COMPLETADO' && c.tipo === 'DOCENTE');
+    const completadas = cronogramas.filter((c) => c.estado === 'COMPLETADO');
     return reportesVisibles(completadas as ReporteVisible[], user) as BackendReportVisit[];
   }, [fichasCompletadasData, cronogramas, user]);
 
@@ -123,11 +126,26 @@ export const AnalisisDesempenoPage = () => {
     [completedVisits],
   );
 
+  const conteosTipo = useMemo(() => {
+    let docentes = 0;
+    let directivos = 0;
+    completedVisits.forEach((v) => {
+      if (v.tipo === 'DIRECTIVO') directivos++;
+      else docentes++;
+    });
+    return {
+      Todos: completedVisits.length,
+      DOCENTE: docentes,
+      DIRECTIVO: directivos,
+    };
+  }, [completedVisits]);
+
   const isAnyFilterActive =
     searchQuery.trim() !== '' ||
     filterModalidad !== 'Todos' ||
     filterNivel !== 'Todos' ||
     filterAnio !== 'Todos' ||
+    filterTipo !== 'DOCENTE' ||
     filtroPeriodo !== 'TODOS';
 
   const handleClearFilters = () => {
@@ -135,6 +153,7 @@ export const AnalisisDesempenoPage = () => {
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
     setFilterAnio('Todos');
+    setFilterTipo('DOCENTE');
     setFiltroPeriodo('TODOS');
   };
 
@@ -142,6 +161,9 @@ export const AnalisisDesempenoPage = () => {
     return completedVisits.filter((visit) => {
       // Filtro de período temporal (Hoy, Esta semana, Este mes, Todos)
       if (!coincideConPeriodo(visit.fechaHora, filtroPeriodo)) return false;
+
+      // Filtro por tipo de monitoreo (Docente vs Directivo)
+      if (filterTipo !== 'Todos' && visit.tipo !== filterTipo) return false;
 
       // Búsqueda por texto
       if (searchQuery) {
@@ -175,24 +197,27 @@ export const AnalisisDesempenoPage = () => {
 
       return true;
     });
-  }, [completedVisits, filtroPeriodo, searchQuery, filterModalidad, filterNivel, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterTipo, searchQuery, filterModalidad, filterNivel, filterAnio]);
 
   const analisis = useMemo(
-    () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas),
-    [criteriosBackend, visitasFiltradas, plantillas],
+    () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas, filterTipo),
+    [criteriosBackend, visitasFiltradas, plantillas, filterTipo],
   );
 
   const cargando = isLoading && cargandoCronogramas;
+  const esDirectivo = filterTipo === 'DIRECTIVO';
 
   return (
     <div className="space-y-6 pb-12">
       {/* Encabezado */}
       <PageHeader
-        title="Análisis de Desempeño"
-        description="Diagnóstico y distribución estadística de los niveles de logro obtenidos en cada uno de los criterios y desempeños pedagógicos."
+        title={`Análisis de Desempeño ${esDirectivo ? '(Directivo)' : '(Docente)'}`}
+        description={`Diagnóstico y distribución estadística de los niveles de logro obtenidos en los criterios y desempeños de ${
+          esDirectivo ? 'gestión directiva institucional' : 'observación de práctica docente'
+        }.`}
       />
 
-      {/* ── Filtros de Reporte (Estándar) ── */}
+      {/* ── Filtros de Reporte (Estándar con Tipo de Monitoreo) ── */}
       <FiltrosReportes
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -202,6 +227,9 @@ export const AnalisisDesempenoPage = () => {
         setFilterNivel={setFilterNivel}
         filterAnio={filterAnio}
         setFilterAnio={setFilterAnio}
+        filterTipo={filterTipo}
+        setFilterTipo={setFilterTipo}
+        conteosTipo={conteosTipo}
         filtroPeriodo={filtroPeriodo}
         setFiltroPeriodo={setFiltroPeriodo}
         conteosPeriodo={conteosPeriodo}
@@ -220,7 +248,7 @@ export const AnalisisDesempenoPage = () => {
         <div className="p-12 text-center bg-surface border border-border rounded-2xl shadow-xs">
           <h3 className="text-base font-bold text-slate-800">Sin datos de monitoreo disponibles</h3>
           <p className="text-xs text-text-muted mt-1">
-            Aún no se han completado fichas de monitoreo docente para generar las estadísticas por criterio.
+            Aún no se han completado fichas de monitoreo para generar las estadísticas por criterio.
           </p>
         </div>
       ) : (

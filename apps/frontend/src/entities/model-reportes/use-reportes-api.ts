@@ -27,6 +27,7 @@ export const useResumenIE = (anio: number) =>
 export const useAnalisisDesempenos = (filters?: {
   anioAcademico?: number;
   institucionId?: string;
+  tipoMonitoreo?: 'DOCENTE' | 'DIRECTIVO';
   fechaDesde?: string;
   fechaHasta?: string;
 }) =>

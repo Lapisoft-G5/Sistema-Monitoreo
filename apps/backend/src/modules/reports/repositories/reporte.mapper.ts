@@ -9,11 +9,29 @@ import type { Prisma } from '../../../generated/prisma/client.js';
 type FichaReportePayload = Prisma.FichaMonitoreoGetPayload<{
   include: {
     plantilla: { select: { id: true; tipoMonitoreo: true; descripcion: true } };
+    respuestasDesempeno: {
+      include: {
+        desempeno: { select: { id: true; nombre: true; orden: true; descripcionCorta: true } };
+      };
+    };
+    respuestasEjeItem: {
+      include: {
+        ejeItem: { select: { id: true; descripcion: true; orden: true } };
+      };
+    };
     cronograma: {
       include: {
         institucion: { select: { id: true; codigoModular: true; nombre: true } };
-        evaluado: { include: { persona: { select: { nombres: true; apellidos: true } } } };
-        monitor: { include: { persona: { select: { nombres: true; apellidos: true } } } };
+        evaluado: {
+          include: {
+            persona: { select: { nombres: true; apellidos: true; dni: true; telefono: true } };
+          };
+        };
+        monitor: {
+          include: {
+            persona: { select: { nombres: true; apellidos: true; dni: true; telefono: true } };
+          };
+        };
       };
     };
     firmas: {
@@ -27,6 +45,39 @@ type FichaReportePayload = Prisma.FichaMonitoreoGetPayload<{
 export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
   const tipo = (f.plantilla?.tipoMonitoreo || f.cronograma.tipoMonitoreo) as TipoMonitoreo;
 
+  const respuestas: {
+    nombre: string;
+    orden?: number;
+    nivel: number;
+    observaciones?: string | null;
+  }[] = [];
+
+  if (f.respuestasDesempeno && f.respuestasDesempeno.length > 0) {
+    const ordenados = [...f.respuestasDesempeno].sort(
+      (a, b) => (a.desempeno?.orden ?? 0) - (b.desempeno?.orden ?? 0),
+    );
+    for (const rd of ordenados) {
+      respuestas.push({
+        nombre: rd.desempeno?.nombre || 'Desempeño',
+        orden: rd.desempeno?.orden,
+        nivel: rd.nivel,
+        observaciones: rd.observaciones,
+      });
+    }
+  } else if (f.respuestasEjeItem && f.respuestasEjeItem.length > 0) {
+    const ordenados = [...f.respuestasEjeItem].sort(
+      (a, b) => (a.ejeItem?.orden ?? 0) - (b.ejeItem?.orden ?? 0),
+    );
+    for (const re of ordenados) {
+      respuestas.push({
+        nombre: re.ejeItem?.descripcion || 'Ítem',
+        orden: re.ejeItem?.orden,
+        nivel: re.nivel,
+        observaciones: re.observacion,
+      });
+    }
+  }
+
   return {
     id: f.id,
     cronogramaId: f.cronogramaId,
@@ -37,6 +88,8 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     institucionCodigoModular: f.cronograma.institucion.codigoModular,
     evaluadoId: f.cronograma.evaluadoId,
     evaluadoNombre: `${f.cronograma.evaluado.persona.nombres} ${f.cronograma.evaluado.persona.apellidos}`,
+    evaluadoDni: f.cronograma.evaluado.persona.dni,
+    evaluadoTelefono: f.cronograma.evaluado.persona.telefono ?? undefined,
     especialistaId: f.cronograma.monitorId,
     especialistaNombre: `${f.cronograma.monitor.persona.nombres} ${f.cronograma.monitor.persona.apellidos}`,
     tipoMonitoreo: tipo,
@@ -45,6 +98,10 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     promedio: Number(f.promedio),
     puntajeTotal: f.puntajeTotal,
     estado: f.estado as EstadoFicha,
+    observaciones: f.observaciones,
+    compromisos: f.compromisos,
+    sugerencias: f.sugerencias,
+    respuestas: respuestas.length > 0 ? respuestas : undefined,
     correoEnviado: f.correoEnviado,
     fechaEjecucion: f.createdAt.toISOString(),
     fechaProgramada: f.cronograma.fechaProgramada

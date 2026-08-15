@@ -11,6 +11,8 @@ export interface IReporteFicha {
   institucionCodigoModular: string;
   evaluadoId: string;
   evaluadoNombre: string;
+  evaluadoDni?: string;
+  evaluadoTelefono?: string;
   especialistaId: string;
   especialistaNombre: string;
   tipoMonitoreo: TipoMonitoreo;
@@ -19,6 +21,9 @@ export interface IReporteFicha {
   promedio: number;
   puntajeTotal: number;
   estado: EstadoFicha;
+  observaciones?: string | null;
+  compromisos?: string | null;
+  sugerencias?: string | null;
   correoEnviado?: boolean;
   fechaEjecucion: string;
   fechaProgramada?: string;
@@ -26,6 +31,12 @@ export interface IReporteFicha {
   horaFin?: string;
   modalidad: string;
   nivel: string;
+  respuestas?: {
+    nombre: string;
+    orden?: number;
+    nivel: number;
+    observaciones?: string | null;
+  }[];
   firmas?: {
     rolFirmante: string;
     firmanteNombre: string;

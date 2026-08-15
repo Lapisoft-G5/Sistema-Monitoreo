@@ -66,14 +66,36 @@ export class PrismaReporteRepository implements ReporteRepository {
           plantilla: {
             select: { id: true, tipoMonitoreo: true, descripcion: true },
           },
+          respuestasDesempeno: {
+            include: {
+              desempeno: {
+                select: { id: true, nombre: true, orden: true, descripcionCorta: true },
+              },
+            },
+            orderBy: { desempeno: { orden: 'asc' } },
+          },
+          respuestasEjeItem: {
+            include: {
+              ejeItem: { select: { id: true, descripcion: true, orden: true } },
+            },
+            orderBy: { ejeItem: { orden: 'asc' } },
+          },
           cronograma: {
             include: {
               institucion: { select: { id: true, nombre: true, codigoModular: true } },
               evaluado: {
-                include: { persona: { select: { nombres: true, apellidos: true } } },
+                include: {
+                  persona: {
+                    select: { nombres: true, apellidos: true, dni: true, telefono: true },
+                  },
+                },
               },
               monitor: {
-                include: { persona: { select: { nombres: true, apellidos: true } } },
+                include: {
+                  persona: {
+                    select: { nombres: true, apellidos: true, dni: true, telefono: true },
+                  },
+                },
               },
             },
           },
@@ -109,19 +131,21 @@ export class PrismaReporteRepository implements ReporteRepository {
   ): Promise<IReporteResumenIE[]> {
     const whereBase: Prisma.FichaMonitoreoWhereInput = {
       estado: 'FINALIZADO',
-      anioAcademico,
+      ...this.scopeFilter.forFicha(this.toScopeContext(session)),
     };
-    const scopeFilter = this.scopeFilter.forFicha(this.toScopeContext(session));
-    if (Object.keys(scopeFilter).length > 0) {
-      Object.assign(whereBase, scopeFilter);
-    }
+    if (anioAcademico) whereBase.anioAcademico = anioAcademico;
 
     const fichas = await this.prisma.fichaMonitoreo.findMany({
       where: whereBase,
-      include: {
+      select: {
+        nivelLogro: true,
+        promedio: true,
         cronograma: {
-          include: {
-            institucion: { select: { id: true, nombre: true, codigoModular: true } },
+          select: {
+            tipoMonitoreo: true,
+            institucion: {
+              select: { id: true, codigoModular: true, nombre: true },
+            },
           },
         },
       },
@@ -188,14 +212,30 @@ export class PrismaReporteRepository implements ReporteRepository {
         plantilla: {
           select: { id: true, tipoMonitoreo: true, descripcion: true },
         },
+        respuestasDesempeno: {
+          include: {
+            desempeno: { select: { id: true, nombre: true, orden: true, descripcionCorta: true } },
+          },
+          orderBy: { desempeno: { orden: 'asc' } },
+        },
+        respuestasEjeItem: {
+          include: {
+            ejeItem: { select: { id: true, descripcion: true, orden: true } },
+          },
+          orderBy: { ejeItem: { orden: 'asc' } },
+        },
         cronograma: {
           include: {
             institucion: { select: { id: true, nombre: true, codigoModular: true } },
             evaluado: {
-              include: { persona: { select: { nombres: true, apellidos: true } } },
+              include: {
+                persona: { select: { nombres: true, apellidos: true, dni: true, telefono: true } },
+              },
             },
             monitor: {
-              include: { persona: { select: { nombres: true, apellidos: true } } },
+              include: {
+                persona: { select: { nombres: true, apellidos: true, dni: true, telefono: true } },
+              },
             },
           },
         },

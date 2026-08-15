@@ -98,9 +98,9 @@ export class ReporteService {
         puntajeTotal: f.puntajeTotal,
         promedio: f.promedio.toFixed(2),
         estado: f.estado,
-        observaciones: null, // Si IReporteFicha no lo tiene, podría agregarse o dejar en null
-        compromisos: null,
-        sugerencias: null,
+        observaciones: f.observaciones || null,
+        compromisos: f.compromisos || null,
+        sugerencias: f.sugerencias || null,
       },
       institucion: {
         nombre: f.institucionNombre,
@@ -110,8 +110,8 @@ export class ReporteService {
         nombres: f.evaluadoNombre,
         apellidoPaterno: '',
         apellidoMaterno: '',
-        dni: 'N/A',
-        telefono: 'N/A',
+        dni: f.evaluadoDni || 'N/A',
+        telefono: f.evaluadoTelefono || 'N/A',
       },
       monitor: {
         nombres: f.especialistaNombre,
@@ -120,15 +120,18 @@ export class ReporteService {
         dni: 'N/A',
       },
       fechaFormat: new Date(f.fechaEjecucion).toLocaleDateString('es-PE'),
-      respuestas: [
-        // Dummy data for now, ideally fetched from repository if needed in detail
-        { nombre: 'Evalúa los aprendizajes', nivel: 3, observaciones: 'Buen desempeño' },
-        { nombre: 'Promueve el razonamiento', nivel: 4, observaciones: 'Excelente' },
-      ],
+      respuestas:
+        f.respuestas && f.respuestas.length > 0
+          ? f.respuestas.map((r) => ({
+              nombre: r.nombre,
+              nivel: r.nivel,
+              observaciones: r.observaciones || '—',
+            }))
+          : [],
       firmas: await Promise.all(
         (f.firmas || []).map(async (firma) => {
           let base64 = null;
-          if (firma.imagenUrl.startsWith('/uploads/')) {
+          if (firma.imagenUrl && firma.imagenUrl.startsWith('/uploads/')) {
             try {
               const filePath = path.join(process.cwd(), firma.imagenUrl);
               const buffer = await fs.readFile(filePath);

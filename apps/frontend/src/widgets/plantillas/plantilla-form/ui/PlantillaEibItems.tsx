@@ -1,7 +1,27 @@
 import { useState } from 'react';
-import { Plus, Trash2, Layers, FolderPlus, PlusCircle } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Layers,
+  FolderPlus,
+  PlusCircle,
+  GraduationCap,
+  FileCheck2,
+  Sliders,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+} from 'lucide-react';
 import { SectionCard } from '@shared/ui/form-controls';
 import type { Desempeno } from '@entities/model-plantillas';
+
+type TipoEscalaEib = 'AULA' | 'DOCUMENTAL' | 'PERSONALIZADA';
+
+interface DescriptoresEscalaEib {
+  si: string;
+  parcialmente: string;
+  no: string;
+}
 
 interface ItemEib {
   id: string;
@@ -17,12 +37,87 @@ interface SubcriterioEib {
 interface SeccionEib {
   id: string;
   seccion: string; // Ej. "II. DESARROLLO DE LA PLANIFICACIÓN A CORTO PLAZO"
+  tipoEscala: TipoEscalaEib;
+  descriptores: DescriptoresEscalaEib;
   subcriterios: SubcriterioEib[];
 }
 
 interface Props {
   criterios: Desempeno[];
   onChange: (criterios: Desempeno[]) => void;
+}
+
+const ESCALAS_PRESET: Record<'AULA' | 'DOCUMENTAL', DescriptoresEscalaEib> = {
+  AULA: {
+    si: 'El criterio se evidencia en el aula de forma clara, consistente y oportuna.',
+    parcialmente: 'El criterio aparece de manera parcial, incipiente o con necesidad de acompañamiento.',
+    no: 'No se observa evidencia de la práctica durante la sesión.',
+  },
+  DOCUMENTAL: {
+    si: 'El criterio se evidencia de forma clara, consistente y alineada con el MSEIB.',
+    parcialmente: 'El criterio aparece parcialmente o con indicios, pero requiere ajustes o fortalecimiento.',
+    no: 'No se evidencia el criterio en el documento analizado.',
+  },
+};
+
+/** Determina el tipo de escala y descriptores a partir de la rúbrica de un desempeño existente */
+function inferirEscala(
+  seccionNombre: string,
+  primerDesempeno?: Desempeno,
+): { tipoEscala: TipoEscalaEib; descriptores: DescriptoresEscalaEib } {
+  const esDocPorNombre =
+    seccionNombre.toUpperCase().includes('PLANIFICACIÓN') ||
+    seccionNombre.toUpperCase().includes('PLANIFICACION') ||
+    seccionNombre.toUpperCase().includes('DOCUMENTO') ||
+    seccionNombre.trim().startsWith('III');
+
+  const presetDefault = esDocPorNombre ? ESCALAS_PRESET.DOCUMENTAL : ESCALAS_PRESET.AULA;
+
+  if (!primerDesempeno || !primerDesempeno.rubrica || primerDesempeno.rubrica.length === 0) {
+    return {
+      tipoEscala: esDocPorNombre ? 'DOCUMENTAL' : 'AULA',
+      descriptores: { ...presetDefault },
+    };
+  }
+
+  const rubNo = primerDesempeno.rubrica.find((r) => r.nivel === 'I')?.descripcion?.trim();
+  const rubParcial = primerDesempeno.rubrica.find((r) => r.nivel === 'II')?.descripcion?.trim();
+  const rubSi = primerDesempeno.rubrica.find((r) => r.nivel === 'III')?.descripcion?.trim();
+
+  // Si no tiene texto real o solo dice "Sí"/"No", usar el preset correspondiente
+  if (!rubNo || rubNo === 'No' || !rubSi || rubSi === 'Sí') {
+    return {
+      tipoEscala: esDocPorNombre ? 'DOCUMENTAL' : 'AULA',
+      descriptores: { ...presetDefault },
+    };
+  }
+
+  // Verificar si coincide con alguno de los presets
+  if (
+    rubSi === ESCALAS_PRESET.AULA.si &&
+    rubParcial === ESCALAS_PRESET.AULA.parcialmente &&
+    rubNo === ESCALAS_PRESET.AULA.no
+  ) {
+    return { tipoEscala: 'AULA', descriptores: { ...ESCALAS_PRESET.AULA } };
+  }
+
+  if (
+    rubSi === ESCALAS_PRESET.DOCUMENTAL.si &&
+    rubParcial === ESCALAS_PRESET.DOCUMENTAL.parcialmente &&
+    rubNo === ESCALAS_PRESET.DOCUMENTAL.no
+  ) {
+    return { tipoEscala: 'DOCUMENTAL', descriptores: { ...ESCALAS_PRESET.DOCUMENTAL } };
+  }
+
+  // Es una descripción personalizada por el usuario
+  return {
+    tipoEscala: 'PERSONALIZADA',
+    descriptores: {
+      si: rubSi || presetDefault.si,
+      parcialmente: rubParcial || presetDefault.parcialmente,
+      no: rubNo || presetDefault.no,
+    },
+  };
 }
 
 /** Transforma la lista plana de desempeños en la estructura jerárquica de Secciones -> Subcriterios -> Ítems */
@@ -32,6 +127,8 @@ function desempanosABloques(criterios: Desempeno[]): SeccionEib[] {
       {
         id: crypto.randomUUID(),
         seccion: 'I. CONDICIONES BÁSICAS PARA EL APRENDIZAJE',
+        tipoEscala: 'AULA',
+        descriptores: { ...ESCALAS_PRESET.AULA },
         subcriterios: [
           {
             id: crypto.randomUUID(),
@@ -55,9 +152,12 @@ function desempanosABloques(criterios: Desempeno[]): SeccionEib[] {
     const subcriterioNombre = partes.length > 1 ? partes.slice(1).join(' — ') : '';
 
     if (!currentSeccion || currentSeccion.seccion !== seccionNombre) {
+      const escala = inferirEscala(seccionNombre, c);
       currentSeccion = {
         id: crypto.randomUUID(),
         seccion: seccionNombre,
+        tipoEscala: escala.tipoEscala,
+        descriptores: escala.descriptores,
         subcriterios: [],
       };
       secciones.push(currentSeccion);
@@ -87,6 +187,8 @@ function desempanosABloques(criterios: Desempeno[]): SeccionEib[] {
         {
           id: crypto.randomUUID(),
           seccion: 'I. CONDICIONES BÁSICAS PARA EL APRENDIZAJE',
+          tipoEscala: 'AULA',
+          descriptores: { ...ESCALAS_PRESET.AULA },
           subcriterios: [
             {
               id: crypto.randomUUID(),
@@ -98,12 +200,16 @@ function desempanosABloques(criterios: Desempeno[]): SeccionEib[] {
       ];
 }
 
-/** Convierte la estructura jerárquica en la lista plana que persiste el backend */
+/** Convierte la estructura jerárquica en la lista plana que persiste el backend, inyectando las rúbricas configuradas */
 function bloquesADesempenos(secciones: SeccionEib[]): Desempeno[] {
   const result: Desempeno[] = [];
 
   for (const sec of secciones) {
     const seccionTxt = sec.seccion.trim();
+    const descActual =
+      sec.tipoEscala === 'PERSONALIZADA'
+        ? sec.descriptores
+        : ESCALAS_PRESET[sec.tipoEscala];
 
     for (const sub of sec.subcriterios) {
       const subTxt = sub.subcriterio.trim();
@@ -120,7 +226,12 @@ function bloquesADesempenos(secciones: SeccionEib[]): Desempeno[] {
           descripcionCorta: etiqueta,
           preguntaExtra: '',
           aspectos: [],
-          rubrica: [],
+          rubrica: [
+            { nivel: 'I', descripcion: descActual.no },
+            { nivel: 'II', descripcion: descActual.parcialmente },
+            { nivel: 'III', descripcion: descActual.si },
+            { nivel: 'IV', descripcion: descActual.si },
+          ],
         });
       }
     }
@@ -140,9 +251,13 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
 
   // --- Manejo de Secciones Principales ---
   const agregarSeccion = () => {
+    const esTercera = secciones.length >= 2;
+    const tipoEscala: TipoEscalaEib = esTercera ? 'DOCUMENTAL' : 'AULA';
     const nueva: SeccionEib = {
       id: crypto.randomUUID(),
       seccion: '',
+      tipoEscala,
+      descriptores: { ...ESCALAS_PRESET[tipoEscala] },
       subcriterios: [
         {
           id: crypto.randomUUID(),
@@ -161,6 +276,44 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
 
   const actualizarSeccionNombre = (seccionId: string, seccion: string) => {
     sincronizar(secciones.map((s) => (s.id === seccionId ? { ...s, seccion } : s)));
+  };
+
+  // --- Manejo de Escala Cualitativa por Sección ---
+  const cambiarTipoEscala = (seccionId: string, tipoEscala: TipoEscalaEib) => {
+    sincronizar(
+      secciones.map((s) => {
+        if (s.id !== seccionId) return s;
+        const descriptores =
+          tipoEscala === 'PERSONALIZADA'
+            ? { ...s.descriptores }
+            : { ...ESCALAS_PRESET[tipoEscala] };
+        return {
+          ...s,
+          tipoEscala,
+          descriptores,
+        };
+      }),
+    );
+  };
+
+  const actualizarDescriptor = (
+    seccionId: string,
+    campo: keyof DescriptoresEscalaEib,
+    valor: string,
+  ) => {
+    sincronizar(
+      secciones.map((s) => {
+        if (s.id !== seccionId) return s;
+        return {
+          ...s,
+          tipoEscala: 'PERSONALIZADA',
+          descriptores: {
+            ...s.descriptores,
+            [campo]: valor,
+          },
+        };
+      }),
+    );
   };
 
   // --- Manejo de Subcriterios ---
@@ -291,7 +444,7 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
     >
       <div className="flex flex-col gap-6">
         <p className="text-xs text-text-muted leading-relaxed">
-          Escribe la <strong>Sección o Dimensión Principal</strong> una sola vez y añade adentro todos los <strong>Subcriterios</strong> (ej. <em>2.1 Interacciones</em>, <em>2.2 Diálogo de saberes</em>) con sus respectivos ítems observables.
+          Define las <strong>Secciones</strong> de la ficha, configura su <strong>Escala de Valoración</strong> y añade adentro todos los <strong>Subcriterios</strong> con sus respectivos ítems observables.
         </p>
 
         {/* Lista de Secciones Principales */}
@@ -302,7 +455,7 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
               className="rounded-2xl border-2 border-slate-200 bg-surface shadow-xs overflow-hidden transition-all hover:border-primary/40"
             >
               {/* Encabezado de la Sección Principal */}
-              <div className="p-4 bg-slate-100/90 border-b border-slate-200 flex flex-col gap-3">
+              <div className="p-4 bg-slate-100/90 border-b border-slate-200 flex flex-col gap-3.5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <span className="flex h-6 px-2.5 items-center justify-center rounded-md bg-primary text-[11px] font-black text-white shadow-xs">
@@ -338,6 +491,126 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
                     className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none shadow-xs"
                     required
                   />
+                </div>
+
+                {/* Configurador de Escala de Calificación de la Sección */}
+                <div className="rounded-xl border border-slate-200 bg-white p-3 flex flex-col gap-2.5 shadow-2xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[10.5px] font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-primary" />
+                      Escala de Calificación de esta Sección:
+                    </span>
+
+                    {/* Selector de Presets / Personalizada */}
+                    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-bold">
+                      <button
+                        type="button"
+                        onClick={() => cambiarTipoEscala(sec.id, 'AULA')}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] ${
+                          sec.tipoEscala === 'AULA'
+                            ? 'bg-white text-primary shadow-xs font-extrabold'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <GraduationCap className="h-3.5 w-3.5" />
+                        <span>Observación en Aula</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => cambiarTipoEscala(sec.id, 'DOCUMENTAL')}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] ${
+                          sec.tipoEscala === 'DOCUMENTAL'
+                            ? 'bg-white text-primary shadow-xs font-extrabold'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <FileCheck2 className="h-3.5 w-3.5" />
+                        <span>Revisión Documental</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => cambiarTipoEscala(sec.id, 'PERSONALIZADA')}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] ${
+                          sec.tipoEscala === 'PERSONALIZADA'
+                            ? 'bg-white text-primary shadow-xs font-extrabold'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <Sliders className="h-3.5 w-3.5" />
+                        <span>Personalizada</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Detalle o Edición de los Descriptores */}
+                  {sec.tipoEscala === 'PERSONALIZADA' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+                      {/* Campo Sí */}
+                      <div className="flex flex-col gap-1 bg-emerald-50/60 border border-emerald-200 rounded-lg p-2.5">
+                        <span className="text-[10px] font-black text-emerald-800 uppercase flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Significado de "Sí":
+                        </span>
+                        <textarea
+                          rows={2}
+                          value={sec.descriptores.si}
+                          onChange={(e) => actualizarDescriptor(sec.id, 'si', e.target.value)}
+                          placeholder="Descripción para Sí..."
+                          className="w-full rounded-md border border-emerald-300 bg-white p-1.5 text-[11px] text-slate-800 leading-tight focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none font-medium"
+                          required
+                        />
+                      </div>
+
+                      {/* Campo Parcialmente */}
+                      <div className="flex flex-col gap-1 bg-amber-50/60 border border-amber-200 rounded-lg p-2.5">
+                        <span className="text-[10px] font-black text-amber-800 uppercase flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                          Significado de "Parcialmente":
+                        </span>
+                        <textarea
+                          rows={2}
+                          value={sec.descriptores.parcialmente}
+                          onChange={(e) => actualizarDescriptor(sec.id, 'parcialmente', e.target.value)}
+                          placeholder="Descripción para Parcialmente..."
+                          className="w-full rounded-md border border-amber-300 bg-white p-1.5 text-[11px] text-slate-800 leading-tight focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none font-medium"
+                          required
+                        />
+                      </div>
+
+                      {/* Campo No */}
+                      <div className="flex flex-col gap-1 bg-rose-50/60 border border-rose-200 rounded-lg p-2.5">
+                        <span className="text-[10px] font-black text-rose-800 uppercase flex items-center gap-1">
+                          <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                          Significado de "No":
+                        </span>
+                        <textarea
+                          rows={2}
+                          value={sec.descriptores.no}
+                          onChange={(e) => actualizarDescriptor(sec.id, 'no', e.target.value)}
+                          placeholder="Descripción para No..."
+                          className="w-full rounded-md border border-rose-300 bg-white p-1.5 text-[11px] text-slate-800 leading-tight focus:outline-none focus:ring-1 focus:ring-rose-500 resize-none font-medium"
+                          required
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-0.5 text-[10.5px]">
+                      <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-lg p-2 flex items-start gap-1.5 text-emerald-900">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span><strong>Sí:</strong> {ESCALAS_PRESET[sec.tipoEscala].si}</span>
+                      </div>
+                      <div className="bg-amber-50/80 border border-amber-200/80 rounded-lg p-2 flex items-start gap-1.5 text-amber-900">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <span><strong>Parcialmente:</strong> {ESCALAS_PRESET[sec.tipoEscala].parcialmente}</span>
+                      </div>
+                      <div className="bg-rose-50/80 border border-rose-200/80 rounded-lg p-2 flex items-start gap-1.5 text-rose-900">
+                        <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                        <span><strong>No:</strong> {ESCALAS_PRESET[sec.tipoEscala].no}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -381,7 +654,7 @@ export const PlantillaEibItems = ({ criterios, onChange }: Props) => {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         <span>Ítems Observables</span>
-                        <span>Escala: Sí | Parcialmente | No</span>
+                        <span>Escala heredada: Sí | Parcialmente | No</span>
                       </div>
 
                       <div className="flex flex-col gap-2">

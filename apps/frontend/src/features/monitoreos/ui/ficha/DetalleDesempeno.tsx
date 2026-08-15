@@ -33,50 +33,38 @@ const EtiquetaSeccion = ({ children }: { children: string }) => (
   </span>
 );
 
-const getOpcionesEib = (descripcionCorta?: string) => {
-  const esPlanificacion =
-    descripcionCorta?.toUpperCase().includes('PLANIFICACIÓN CURRICULAR') ||
-    descripcionCorta?.toUpperCase().includes('PLANIFICACION CURRICULAR') ||
-    descripcionCorta?.toUpperCase().includes('DOCUMENTO') ||
-    descripcionCorta?.trim().startsWith('III');
+const getOpcionesEib = (desempeno: Desempeno) => {
+  const rubNo = desempeno.rubrica?.find((r) => r.nivel === 'I')?.descripcion?.trim();
+  const rubParcial = desempeno.rubrica?.find((r) => r.nivel === 'II')?.descripcion?.trim();
+  const rubSi = desempeno.rubrica?.find((r) => r.nivel === 'III')?.descripcion?.trim();
 
-  if (esPlanificacion) {
-    return [
-      {
-        nivel: 'III',
-        rotulo: 'Sí',
-        descripcion: 'Se evidencia de forma clara, consistente y alineada con el MSEIB',
-        color: '#16a34a',
-        bg: 'bg-emerald-500/10',
-        border: 'border-emerald-500/30',
-        activeBg: 'bg-emerald-600 text-white',
-      },
-      {
-        nivel: 'II',
-        rotulo: 'Parcialmente',
-        descripcion: 'Aparece parcialmente o con indicios, pero requiere ajustes o fortalecimiento',
-        color: '#d97706',
-        bg: 'bg-amber-500/10',
-        border: 'border-amber-500/30',
-        activeBg: 'bg-amber-500 text-white',
-      },
-      {
-        nivel: 'I',
-        rotulo: 'No',
-        descripcion: 'No se evidencia el criterio en el documento',
-        color: '#dc2626',
-        bg: 'bg-rose-500/10',
-        border: 'border-rose-500/30',
-        activeBg: 'bg-rose-600 text-white',
-      },
-    ];
-  }
+  const esPlanificacion =
+    desempeno.descripcionCorta?.toUpperCase().includes('PLANIFICACIÓN') ||
+    desempeno.descripcionCorta?.toUpperCase().includes('PLANIFICACION') ||
+    desempeno.descripcionCorta?.toUpperCase().includes('DOCUMENTO') ||
+    desempeno.descripcionCorta?.trim().startsWith('III');
+
+  const presetDefault = esPlanificacion
+    ? {
+        si: 'Se evidencia de forma clara, consistente y alineada con el MSEIB',
+        parcialmente: 'Aparece parcialmente o con indicios, pero requiere ajustes o fortalecimiento',
+        no: 'No se evidencia el criterio en el documento',
+      }
+    : {
+        si: 'Se evidencia en la sesión de forma clara y consistente',
+        parcialmente: 'Se evidencia de forma incipiente o con necesidad de acompañamiento',
+        no: 'No se observa evidencia de la práctica durante la sesión',
+      };
+
+  const textoSi = rubSi && rubSi !== 'Sí' ? rubSi : presetDefault.si;
+  const textoParcial = rubParcial && rubParcial !== 'Parcialmente' ? rubParcial : presetDefault.parcialmente;
+  const textoNo = rubNo && rubNo !== 'No' ? rubNo : presetDefault.no;
 
   return [
     {
       nivel: 'III',
       rotulo: 'Sí',
-      descripcion: 'Se evidencia en la sesión de forma clara y consistente',
+      descripcion: textoSi,
       color: '#16a34a',
       bg: 'bg-emerald-500/10',
       border: 'border-emerald-500/30',
@@ -85,7 +73,7 @@ const getOpcionesEib = (descripcionCorta?: string) => {
     {
       nivel: 'II',
       rotulo: 'Parcialmente',
-      descripcion: 'Se evidencia de forma incipiente o con necesidad de acompañamiento',
+      descripcion: textoParcial,
       color: '#d97706',
       bg: 'bg-amber-500/10',
       border: 'border-amber-500/30',
@@ -94,7 +82,7 @@ const getOpcionesEib = (descripcionCorta?: string) => {
     {
       nivel: 'I',
       rotulo: 'No',
-      descripcion: 'No se observa evidencia de la práctica durante la sesión',
+      descripcion: textoNo,
       color: '#dc2626',
       bg: 'bg-rose-500/10',
       border: 'border-rose-500/30',
@@ -169,7 +157,7 @@ export const DetalleDesempeno = ({
 
           {esEib ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {getOpcionesEib(desempeno.descripcionCorta).map((opcion) => {
+              {getOpcionesEib(desempeno).map((opcion) => {
                 const elegido = respuesta.nivel === opcion.nivel;
 
                 return (

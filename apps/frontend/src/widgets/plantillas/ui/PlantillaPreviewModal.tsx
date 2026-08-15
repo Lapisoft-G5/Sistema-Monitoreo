@@ -304,13 +304,34 @@ export const PlantillaPreviewModal = ({ plantilla, onClose }: PlantillaPreviewMo
                 </div>
 
                 {isEib ? (
-                  // Vista Especial EIB (Escala Tripartita Cualitativa contextual según sección)
+                  // Vista Especial EIB (Escala Tripartita Cualitativa contextual según rúbrica guardada en BD)
                   (() => {
+                    const rubNo = activeDesempeno.rubrica?.find((r) => r.nivel === 'I')?.descripcion?.trim();
+                    const rubParcial = activeDesempeno.rubrica?.find((r) => r.nivel === 'II')?.descripcion?.trim();
+                    const rubSi = activeDesempeno.rubrica?.find((r) => r.nivel === 'III')?.descripcion?.trim();
+
                     const esPlanificacion =
-                      activeDesempeno.descripcionCorta?.toUpperCase().includes('PLANIFICACIÓN CURRICULAR') ||
-                      activeDesempeno.descripcionCorta?.toUpperCase().includes('PLANIFICACION CURRICULAR') ||
+                      activeDesempeno.descripcionCorta?.toUpperCase().includes('PLANIFICACIÓN') ||
+                      activeDesempeno.descripcionCorta?.toUpperCase().includes('PLANIFICACION') ||
                       activeDesempeno.descripcionCorta?.toUpperCase().includes('DOCUMENTO') ||
                       activeDesempeno.descripcionCorta?.trim().startsWith('III');
+
+                    const presetDefault = esPlanificacion
+                      ? {
+                          si: 'El criterio se evidencia de forma clara, consistente y alineada con el MSEIB.',
+                          parcialmente: 'El criterio aparece parcialmente o con indicios, pero requiere ajustes o fortalecimiento.',
+                          no: 'No se evidencia el criterio en el documento analizado.',
+                        }
+                      : {
+                          si: 'El criterio se evidencia en el aula de forma clara, consistente y oportuna.',
+                          parcialmente: 'El criterio aparece de manera parcial, incipiente o con necesidad de acompañamiento.',
+                          no: 'No se observa evidencia de la práctica durante la sesión.',
+                        };
+
+                    const textoSi = rubSi && rubSi !== 'Sí' ? rubSi : presetDefault.si;
+                    const textoParcial =
+                      rubParcial && rubParcial !== 'Parcialmente' ? rubParcial : presetDefault.parcialmente;
+                    const textoNo = rubNo && rubNo !== 'No' ? rubNo : presetDefault.no;
 
                     return (
                       <div className="space-y-4">
@@ -339,9 +360,7 @@ export const PlantillaPreviewModal = ({ plantilla, onClose }: PlantillaPreviewMo
                               </span>
                             </div>
                             <p className="text-[11px] text-emerald-900 font-medium leading-relaxed">
-                              {esPlanificacion
-                                ? 'El criterio se evidencia de forma clara, consistente y alineada con el MSEIB.'
-                                : 'El criterio se evidencia en el aula de forma clara, consistente y oportuna.'}
+                              {textoSi}
                             </p>
                           </div>
 
@@ -356,9 +375,7 @@ export const PlantillaPreviewModal = ({ plantilla, onClose }: PlantillaPreviewMo
                               </span>
                             </div>
                             <p className="text-[11px] text-amber-900 font-medium leading-relaxed">
-                              {esPlanificacion
-                                ? 'El criterio aparece parcialmente o con indicios, pero requiere ajustes o fortalecimiento.'
-                                : 'El criterio aparece de manera parcial, incipiente o con necesidad de acompañamiento.'}
+                              {textoParcial}
                             </p>
                           </div>
 
@@ -373,9 +390,7 @@ export const PlantillaPreviewModal = ({ plantilla, onClose }: PlantillaPreviewMo
                               </span>
                             </div>
                             <p className="text-[11px] text-rose-900 font-medium leading-relaxed">
-                              {esPlanificacion
-                                ? 'No se evidencia el criterio en el documento analizado.'
-                                : 'No se observa evidencia de la práctica durante la sesión.'}
+                              {textoNo}
                             </p>
                           </div>
                         </div>

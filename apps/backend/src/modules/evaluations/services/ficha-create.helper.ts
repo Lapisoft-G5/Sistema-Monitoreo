@@ -21,22 +21,40 @@ export async function crear(
   let plantilla = await (async () => {
     if (!dto.plantillaId) return null;
     const elegida = await repository.findPlantillaBasicById(dto.plantillaId);
-    if (!elegida || elegida.estado !== 'Vigente' || elegida.anioAcademico !== anio) {
+    if (!elegida) return null;
+
+    if (elegida.estado.toLowerCase() !== 'vigente') {
       return null;
     }
 
-    const esDocenteVisita = cronograma.tipoMonitoreo === 'DOCENTE' || cronograma.tipoMonitoreo === 'DOCENTE_EIB';
-    const esDocentePlantilla = elegida.tipoMonitoreo === 'DOCENTE' || elegida.tipoMonitoreo === 'DOCENTE_EIB';
+    const tipoVisita = cronograma.tipoMonitoreo.toUpperCase();
+    const tipoPlantilla = elegida.tipoMonitoreo.toUpperCase();
+
+    const esDocenteVisita =
+      tipoVisita === 'DOCENTE' ||
+      tipoVisita === 'DOCENTE_EIB' ||
+      tipoVisita.includes('DOCENTE') ||
+      tipoVisita.includes('EIB');
+    const esDocentePlantilla =
+      tipoPlantilla === 'DOCENTE' ||
+      tipoPlantilla === 'DOCENTE_EIB' ||
+      tipoPlantilla.includes('DOCENTE') ||
+      tipoPlantilla.includes('EIB');
+    const esDirectivoVisita = tipoVisita === 'DIRECTIVO' || tipoVisita.includes('DIRECTIVO');
+    const esDirectivoPlantilla =
+      tipoPlantilla === 'DIRECTIVO' || tipoPlantilla.includes('DIRECTIVO');
+
     const tipoCompatible =
-      elegida.tipoMonitoreo === cronograma.tipoMonitoreo ||
-      (esDocenteVisita && esDocentePlantilla);
+      tipoPlantilla === tipoVisita ||
+      (esDocenteVisita && esDocentePlantilla) ||
+      (esDirectivoVisita && esDirectivoPlantilla);
 
     return tipoCompatible ? elegida : null;
   })();
   if (!plantilla) {
     plantilla = await repository.findPlantillaVigente(cronograma.tipoMonitoreo, anio);
   }
-  if (!plantilla && cronograma.tipoMonitoreo === 'DOCENTE_EIB') {
+  if (!plantilla && cronograma.tipoMonitoreo.toUpperCase().includes('EIB')) {
     // Fallback a plantilla docente regular si no hay EIB configurada
     plantilla = await repository.findPlantillaVigente('DOCENTE', anio);
   }
@@ -49,10 +67,18 @@ export async function crear(
   // Comprobar si ya existe una ficha con ESTA plantilla para esta visita
   const existente = await repository.findByVisitaYPlantilla(dto.cronogramaId, plantilla.id);
   if (existente) {
-    throw new ConflictException(`Ya existe una ficha con esta plantilla para esta visita (id=${existente.id}).`);
+    throw new ConflictException(
+      `Ya existe una ficha con esta plantilla para esta visita (id=${existente.id}).`,
+    );
   }
 
-  if (cronograma.tipoMonitoreo === 'DOCENTE' || cronograma.tipoMonitoreo === 'DOCENTE_EIB') {
+  const esDocente =
+    cronograma.tipoMonitoreo === 'DOCENTE' ||
+    cronograma.tipoMonitoreo === 'DOCENTE_EIB' ||
+    cronograma.tipoMonitoreo.toUpperCase().includes('DOCENTE') ||
+    cronograma.tipoMonitoreo.toUpperCase().includes('EIB');
+
+  if (esDocente) {
     const missing: string[] = [];
     if (!dto.areaCurricular) missing.push('areaCurricular');
     if (!dto.grado) missing.push('grado');

@@ -15,7 +15,12 @@ import type {
   SaveRespuestaEjeItemDto,
   FinalizarFichaDto,
 } from '../dto/ficha.dto.js';
-import { findByVisitaId, findByVisitaYPlantilla, findAllByVisitaId, findById } from './ficha-read.helper.js';
+import {
+  findByVisitaId,
+  findByVisitaYPlantilla,
+  findAllByVisitaId,
+  findById,
+} from './ficha-read.helper.js';
 import { crear } from './ficha-create.helper.js';
 import {
   guardarRespuesta,
@@ -50,10 +55,7 @@ export class FichaService {
     return findByVisitaYPlantilla(this.repository, cronogramaId, plantillaId, session);
   }
 
-  async findAllByVisitaId(
-    cronogramaId: string,
-    session: SessionUser,
-  ): Promise<IFichaMonitoreo[]> {
+  async findAllByVisitaId(cronogramaId: string, session: SessionUser): Promise<IFichaMonitoreo[]> {
     return findAllByVisitaId(this.repository, cronogramaId, session);
   }
 

@@ -12,11 +12,6 @@ export async function crear(
   const cronograma = await repository.findCronogramaBasicById(dto.cronogramaId);
   if (!cronograma) throw new NotFoundException(`Visita ${dto.cronogramaId} no encontrada.`);
 
-  const existente = await repository.findByVisitaId(dto.cronogramaId);
-  if (existente) {
-    throw new ConflictException(`Ya existe una ficha para esta visita (id=${existente.id}).`);
-  }
-
   const anio = cronograma.fechaProgramada.getFullYear();
 
   // Si el frontend indica la plantilla que el actor está usando (su propia
@@ -49,6 +44,12 @@ export async function crear(
     throw new BadRequestException(
       `No existe plantilla Vigente para (${cronograma.tipoMonitoreo}, ${anio}).`,
     );
+  }
+
+  // Comprobar si ya existe una ficha con ESTA plantilla para esta visita
+  const existente = await repository.findByVisitaYPlantilla(dto.cronogramaId, plantilla.id);
+  if (existente) {
+    throw new ConflictException(`Ya existe una ficha con esta plantilla para esta visita (id=${existente.id}).`);
   }
 
   if (cronograma.tipoMonitoreo === 'DOCENTE' || cronograma.tipoMonitoreo === 'DOCENTE_EIB') {

@@ -16,6 +16,9 @@ import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm,
 } from '@/features/reprogramaciones';
+import { useQuery } from '@tanstack/react-query';
+import { fichasApi } from '@/features/monitoreos/api/fichas.api';
+import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
 import { SelectorVisitasDelDia } from './sidebar/SelectorVisitasDelDia';
 import { DetalleVisita } from './sidebar/DetalleVisita';
 import { AccionesVisita } from './sidebar/AccionesVisita';
@@ -83,6 +86,16 @@ export const CalendarioSidebar = ({
     () => (selectedVisitId ? (cronogramas.find((v) => v.id === selectedVisitId) ?? null) : null),
     [cronogramas, selectedVisitId],
   );
+
+  // Consulta de todas las fichas levantadas para esta visita (soporte de ficha dual/múltiple)
+  const { data: fichasDeVisita = [], refetch: refetchFichas } = useQuery<IFichaMonitoreo[]>({
+    queryKey: ['fichas', 'visita', selectedVisit?.id],
+    queryFn: async () => {
+      if (!selectedVisit?.id) return [];
+      return fichasApi.findAllByVisita(selectedVisit.id);
+    },
+    enabled: !!selectedVisit?.id,
+  });
 
   const activeRequest = useMemo(
     () => (selectedVisit ? (reprogramaciones[selectedVisit.id] ?? null) : null),
@@ -173,34 +186,15 @@ export const CalendarioSidebar = ({
     }
   };
 
-  const handleSeleccionarInstrumento = (plantillaElegida: Plantilla) => {
-    setSelectedTemplateOverride(plantillaElegida);
-    setShowSeleccionarInstrumentoModal(false);
-    setShowFichaModal(true);
-  };
-
-  // Escritura del resultado del monitoreo. Vive en `use-ficha-persistence`
-  // porque no es maquetación; acá sólo se enlazan sus efectos con los modales.
-  const { guardarBorrador, finalizar, prepararFichaLlena } = useFichaPersistence({
-    plantillaId: activeTemplate?.id,
-    onPersistido: () => {
-      setShowFichaModal(false);
-      setSelectedTemplateOverride(null);
-    },
-    onPlantillaVersionada: (contexto) => {
-      // ILA-0046: la plantilla pasó a Histórico; se ofrece migrar.
-      setMigracionContext(contexto);
-      setShowMigracionModal(true);
-    },
-  });
-
   /**
-   * Abre la ficha ya cerrada, si existe. Antes se abría siempre: cuando no
-   * había respaldo en el backend se sembraba una ficha de demostración y se
-   * mostraba como si fuera el monitoreo levantado.
+   * Abre la ficha ya cerrada, si existe.
    */
-  const abrirFichaLlena = async (visitId: string) => {
-    const resultado = await prepararFichaLlena(visitId);
+  const abrirFichaLlena = async (visitId: string, pId?: string) => {
+    if (pId) {
+      const tpl = plantillas.find((p) => p.id === pId);
+      if (tpl) setSelectedTemplateOverride(tpl);
+    }
+    const resultado = await prepararFichaLlena(visitId, pId);
 
     if (resultado === 'cargada') {
       setShowFichaModal(true);
@@ -214,6 +208,44 @@ export const CalendarioSidebar = ({
       { duration: 10_000 },
     );
   };
+
+  const handleVerFichaLlena = (visitId: string) => {
+    if (plantillasCandidatas.length > 1) {
+      setShowSeleccionarInstrumentoModal(true);
+    } else {
+      abrirFichaLlena(visitId, activeTemplate?.id);
+    }
+  };
+
+  const handleSeleccionarInstrumento = async (
+    plantillaElegida: Plantilla,
+    fichaExistente?: IFichaMonitoreo,
+  ) => {
+    setSelectedTemplateOverride(plantillaElegida);
+    setShowSeleccionarInstrumentoModal(false);
+
+    if (fichaExistente) {
+      await abrirFichaLlena(selectedVisit!.id, plantillaElegida.id);
+    } else {
+      setShowFichaModal(true);
+    }
+  };
+
+  // Escritura del resultado del monitoreo. Vive en `use-ficha-persistence`
+  // porque no es maquetación; acá sólo se enlazan sus efectos con los modales.
+  const { guardarBorrador, finalizar, prepararFichaLlena } = useFichaPersistence({
+    plantillaId: activeTemplate?.id,
+    onPersistido: () => {
+      setShowFichaModal(false);
+      setSelectedTemplateOverride(null);
+      void refetchFichas();
+    },
+    onPlantillaVersionada: (contexto) => {
+      // ILA-0046: la plantilla pasó a Histórico; se ofrece migrar.
+      setMigracionContext(contexto);
+      setShowMigracionModal(true);
+    },
+  });
 
   /** Descarta la migración: vuelve al formulario de ficha sin cerrarlo. */
   const descartarMigracion = () => {
@@ -265,7 +297,7 @@ export const CalendarioSidebar = ({
             }}
             instrumentoNoDisponible={instrumentoNoDisponible}
             onIniciarFicha={handleIniciarFicha}
-            onVerFichaLlena={() => abrirFichaLlena(selectedVisit.id)}
+            onVerFichaLlena={() => handleVerFichaLlena(selectedVisit.id)}
             onSolicitarReprogramacion={() => setShowSolicitarReprogramarModal(true)}
             onVerSolicitud={() => setShowReprogramarModal(true)}
           />
@@ -283,6 +315,7 @@ export const CalendarioSidebar = ({
           onClose={() => setShowSeleccionarInstrumentoModal(false)}
           visita={selectedVisit}
           plantillas={plantillasCandidatas}
+          fichasExistentes={fichasDeVisita}
           onSeleccionar={handleSeleccionarInstrumento}
         />
       )}

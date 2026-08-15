@@ -28,7 +28,8 @@ export type ResultadoFichaLlena = 'cargada' | 'sin-respaldo' | 'error';
  */
 
 /** Estado local de la ficha en curso, para recuperarla al reabrir el modal. */
-const claveEstadoLocal = (visitId: string) => `sistema-monitoreo:ficha-state:${visitId}`;
+const claveEstadoLocal = (visitId: string, pId?: string) =>
+  pId ? `sistema-monitoreo:ficha-state:${visitId}:${pId}` : `sistema-monitoreo:ficha-state:${visitId}`;
 
 /** Datos que trae el 409 cuando la plantilla en uso pasó a histórico. */
 export interface PlantillaVersionada {
@@ -87,7 +88,9 @@ export function useFichaPersistence({
       const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
 
       const ficha =
-        (await fichasApi.findByVisita(visitId)) ??
+        (plantillaId
+          ? await fichasApi.findByVisitaYPlantilla(visitId, plantillaId)
+          : await fichasApi.findByVisita(visitId)) ??
         (await fichasApi.create({
           cronogramaId: visitId,
           // La ficha queda vinculada a la plantilla que realmente se usó, para
@@ -221,19 +224,19 @@ export function useFichaPersistence({
    * está no se inventa.
    */
   const prepararFichaLlena = useCallback(
-    async (visitId: string): Promise<ResultadoFichaLlena> => {
+    async (visitId: string, pId?: string): Promise<ResultadoFichaLlena> => {
       // Lo que ya está en curso localmente manda: no se pisa con lo del servidor.
-      if (localStorage.getItem(claveEstadoLocal(visitId))) return 'cargada';
+      const clave = claveEstadoLocal(visitId, pId);
+      if (localStorage.getItem(clave)) return 'cargada';
 
       try {
         const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
-        const ficha = await fichasApi.findByVisita(visitId);
+        const ficha = pId
+          ? await fichasApi.findByVisitaYPlantilla(visitId, pId)
+          : await fichasApi.findByVisita(visitId);
         if (!ficha) return 'sin-respaldo';
 
-        safeSetLocalStorage(
-          claveEstadoLocal(visitId),
-          JSON.stringify(fichaAEstadoFormulario(ficha)),
-        );
+        safeSetLocalStorage(clave, JSON.stringify(fichaAEstadoFormulario(ficha)));
         return 'cargada';
       } catch (error) {
         console.error(error);

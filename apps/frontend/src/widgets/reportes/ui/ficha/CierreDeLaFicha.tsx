@@ -59,6 +59,65 @@ export const Consolidado = ({
   template: Plantilla;
   estado: EstadoDeCierre;
 }) => {
+  const isQualitative =
+    template.niveles?.some((n) =>
+      ['sí', 'si', 'parcialmente', 'no'].includes(n.denominacion.trim().toLowerCase()),
+    ) || template.desempenos.length > 10;
+
+  if (isQualitative) {
+    const total = template.desempenos.length;
+    let countSi = 0;
+    let countParcial = 0;
+    let countNo = 0;
+
+    for (const des of template.desempenos) {
+      const romano = estado.selectedLevels[des.id];
+      const denom = (romano ? template.niveles?.find((n) => n.nivel === romano)?.denominacion : '')?.toLowerCase() ?? '';
+      if (denom.includes('sí') || denom.includes('si')) countSi++;
+      else if (denom.includes('parcial')) countParcial++;
+      else if (denom.includes('no')) countNo++;
+    }
+
+    const pct = (c: number) => (total > 0 ? Math.round((c / total) * 100) : 0);
+
+    return (
+      <div className="mt-8 break-inside-avoid">
+        <TituloDeSeccion>RESUMEN CUALITATIVO DE OBSERVACIÓN EN AULA:</TituloDeSeccion>
+        <table className="pdf-table" style={{ marginBottom: '20px' }}>
+          <thead>
+            <tr>
+              <th className="bg-gray text-left" style={{ padding: '6px 8px' }}>VALORACIÓN / CRITERIO</th>
+              <th className="bg-gray text-center w-36" style={{ padding: '6px 8px' }}>CANTIDAD DE ÍTEMS</th>
+              <th className="bg-gray text-center w-36" style={{ padding: '6px 8px' }}>DISTRIBUCIÓN (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="font-bold" style={{ color: '#15803d' }}>Cumple / Sí (Práctica observada)</td>
+              <td className="text-center font-bold">{countSi}</td>
+              <td className="text-center font-bold" style={{ color: '#15803d' }}>{pct(countSi)}%</td>
+            </tr>
+            <tr>
+              <td className="font-bold" style={{ color: '#b45309' }}>Parcialmente (En proceso / Incipiente)</td>
+              <td className="text-center font-bold">{countParcial}</td>
+              <td className="text-center font-bold" style={{ color: '#b45309' }}>{pct(countParcial)}%</td>
+            </tr>
+            <tr>
+              <td className="font-bold" style={{ color: '#b91c1c' }}>No Observado / No (Práctica ausente)</td>
+              <td className="text-center font-bold">{countNo}</td>
+              <td className="text-center font-bold" style={{ color: '#b91c1c' }}>{pct(countNo)}%</td>
+            </tr>
+            <tr className="bg-gray font-bold">
+              <td className="uppercase">TOTAL DE ÍTEMS EVALUADOS</td>
+              <td className="text-center text-sm">{total}</td>
+              <td className="text-center text-sm">100%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   const resultado = consolidarFicha(template.desempenos, estado.selectedLevels);
 
   // Planificación y diseño de evaluación existe sólo en el instrumento docente:

@@ -164,7 +164,7 @@ export function useFichaPersistence({
   const guardarBorrador = useCallback(
     async (visitId: string, datos: DatosFicha) => {
       if (!FEATURES.apiOnly) {
-        safeSetLocalStorage(claveEstadoLocal(visitId), JSON.stringify(datos));
+        safeSetLocalStorage(claveEstadoLocal(visitId, plantillaId), JSON.stringify(datos));
       }
       marcarEstadoVisita(visitId, 'EN_PROCESO');
 
@@ -175,12 +175,15 @@ export function useFichaPersistence({
         manejarFallo(error, visitId, 'guardar borrador');
       }
     },
-    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido],
+    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId],
   );
 
   const finalizar = useCallback(
     async (visitId: string, datos: DatosFicha) => {
-      safeSetLocalStorage(claveEstadoLocal(visitId), JSON.stringify(datos));
+      safeSetLocalStorage(
+        claveEstadoLocal(visitId, plantillaId),
+        JSON.stringify({ ...datos, estado: 'FINALIZADO' }),
+      );
       marcarEstadoVisita(visitId, 'COMPLETADO');
 
       try {
@@ -199,7 +202,7 @@ export function useFichaPersistence({
         manejarFallo(error, visitId, 'finalizar la ficha');
       }
     },
-    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido],
+    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId],
   );
 
   /**

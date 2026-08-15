@@ -112,6 +112,7 @@ export const LlenarFichaForm = ({
   useHidratacionDeFicha({
     abierta: isOpen,
     visitaId: visit?.id,
+    templateId: template?.id,
     initialState,
     hidratar,
   });
@@ -132,7 +133,9 @@ export const LlenarFichaForm = ({
     onFinalize,
   });
 
-  const isCompleted = visit?.estado === 'COMPLETADO';
+  const isCompleted =
+    initialState?.estado === 'FINALIZADO' ||
+    estado.estado === 'FINALIZADO';
   const isDirectivo = template?.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
 
   const { data: firmasData, refetch: refetchFirmas } = useQuery({
@@ -291,7 +294,7 @@ export const LlenarFichaForm = ({
             // Se persiste el estado completo: antes se armaba a mano y perdía
             // las observaciones de ejes y el contexto de aula.
             safeSetLocalStorage(
-              claveEstadoLocal(visit.id),
+              claveEstadoLocal(visit.id, template.id),
               JSON.stringify(aDatosFicha({ ...estado, evidenciaUrls: siguientes }, visit.tipo)),
             );
           }}

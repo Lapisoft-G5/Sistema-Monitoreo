@@ -142,14 +142,14 @@ export const calcularAnalisisPorCriterios = (
   }
 
   const esDirectivo = tipoFiltro === 'DIRECTIVO';
-  const esEib = tipoFiltro === 'DOCENTE_EIB';
+  const esEib = tipoFiltro === 'DOCENTE_EIB' || tipoFiltro?.toUpperCase().includes('EIB');
 
   // Fallback / Estimación a partir de los desempeños de la plantilla y las fichas de visitas
   const plantillaObjetivo = plantillas.find((p) => {
     const t = (p.tipoMonitoreo || '').toUpperCase();
     if (esDirectivo) return t.includes('DIRECTIVO');
     if (esEib) return t.includes('EIB');
-    return t === 'DOCENTE' || t.includes('DOCENTE') && !t.includes('EIB');
+    return t === 'DOCENTE' || (t.includes('DOCENTE') && !t.includes('EIB'));
   });
 
   const listaDesempenos =
@@ -184,8 +184,8 @@ export const calcularAnalisisPorCriterios = (
   const visitasFiltradas = visitas.filter((v) => {
     const t = (v.tipo || 'DOCENTE').toUpperCase();
     if (esDirectivo) return t === 'DIRECTIVO';
-    if (esEib) return t === 'DOCENTE_EIB';
-    if (tipoFiltro === 'DOCENTE') return t === 'DOCENTE';
+    if (esEib) return t === 'DOCENTE_EIB' || t.includes('EIB');
+    if (tipoFiltro === 'DOCENTE') return t === 'DOCENTE' && !t.includes('EIB');
     return true;
   });
   const totalVisitas = visitasFiltradas.length;

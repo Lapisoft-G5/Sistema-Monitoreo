@@ -5,7 +5,7 @@ import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { useCan, Capability } from '@shared/auth';
 import { PageHeader } from '@shared/ui/pageHeader';
-import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
+import { MODALIDAD_NIVEL_MAP, type TipoMonitoreo } from '@sistema-monitoreo/shared-contracts';
 import {
   reportesVisibles,
   type ReporteVisible,
@@ -31,12 +31,12 @@ export const AnalisisDesempenoPage = () => {
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterAnio, setFilterAnio] = useState('Todos');
-  const [filterTipo, setFilterTipo] = useState('DOCENTE');
+  const [filterTipo, setFilterTipo] = useState('Todos');
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
   // Datos
   const anioNumero = filterAnio !== 'Todos' ? parseInt(filterAnio, 10) : undefined;
-  const tipoMonitoreoParam = filterTipo !== 'Todos' ? (filterTipo as 'DOCENTE' | 'DIRECTIVO') : undefined;
+  const tipoMonitoreoParam = filterTipo !== 'Todos' ? (filterTipo as TipoMonitoreo) : undefined;
 
   const { data: criteriosBackend } = useAnalisisDesempenos({
     anioAcademico: anioNumero,
@@ -58,8 +58,10 @@ export const AnalisisDesempenoPage = () => {
       const list = fichasCompletadasData.data.map((f) => ({
         id: f.id,
         cronogramaId: f.cronogramaId,
+        plantillaId: f.plantillaId,
+        plantillaNombre: f.plantillaNombre,
         fechaHora: f.fechaEjecucion || f.fechaProgramada,
-        tipo: (f.tipoMonitoreo === 'DOCENTE' ? 'DOCENTE' : 'DIRECTIVO') as 'DOCENTE' | 'DIRECTIVO',
+        tipo: f.tipoMonitoreo as 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB',
         docenteDirectivo: f.evaluadoNombre,
         evaluadoId: f.evaluadoId,
         especialista: f.especialistaNombre,
@@ -132,7 +134,7 @@ export const AnalisisDesempenoPage = () => {
     let directivos = 0;
     completedVisits.forEach((v) => {
       if (v.tipo === 'DIRECTIVO') directivos++;
-      else if (v.tipo === 'DOCENTE_EIB') docentesEib++;
+      else if (v.tipo === 'DOCENTE_EIB' || v.tipo?.toUpperCase().includes('EIB')) docentesEib++;
       else docentes++;
     });
     return {
@@ -148,7 +150,7 @@ export const AnalisisDesempenoPage = () => {
     filterModalidad !== 'Todos' ||
     filterNivel !== 'Todos' ||
     filterAnio !== 'Todos' ||
-    filterTipo !== 'DOCENTE' ||
+    filterTipo !== 'Todos' ||
     filtroPeriodo !== 'TODOS';
 
   const handleClearFilters = () => {
@@ -156,7 +158,7 @@ export const AnalisisDesempenoPage = () => {
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
     setFilterAnio('Todos');
-    setFilterTipo('DOCENTE');
+    setFilterTipo('Todos');
     setFiltroPeriodo('TODOS');
   };
 
@@ -165,8 +167,13 @@ export const AnalisisDesempenoPage = () => {
       // Filtro de período temporal (Hoy, Esta semana, Este mes, Todos)
       if (!coincideConPeriodo(visit.fechaHora, filtroPeriodo)) return false;
 
-      // Filtro por tipo de monitoreo (Docente vs Directivo)
-      if (filterTipo !== 'Todos' && visit.tipo !== filterTipo) return false;
+      // Filtro por tipo de monitoreo (Docente vs Docente EIB vs Directivo)
+      if (filterTipo !== 'Todos') {
+        const isEib = visit.tipo === 'DOCENTE_EIB' || visit.tipo?.toUpperCase().includes('EIB');
+        if (filterTipo === 'DOCENTE_EIB' && !isEib) return false;
+        if (filterTipo === 'DOCENTE' && (isEib || visit.tipo !== 'DOCENTE')) return false;
+        if (filterTipo === 'DIRECTIVO' && visit.tipo !== 'DIRECTIVO') return false;
+      }
 
       // Búsqueda por texto
       if (searchQuery) {
@@ -209,12 +216,15 @@ export const AnalisisDesempenoPage = () => {
 
   const cargando = isLoading && cargandoCronogramas;
   const esDirectivo = filterTipo === 'DIRECTIVO';
+  const esEib = filterTipo === 'DOCENTE_EIB';
 
   return (
     <div className="space-y-6 pb-12">
       {/* Encabezado */}
       <PageHeader
-        title={`Análisis de Desempeño ${esDirectivo ? '(Directivo)' : '(Docente)'}`}
+        title={`Análisis de Desempeño ${
+          esDirectivo ? '(Directivo)' : esEib ? '(Docente EIB)' : '(Docente)'
+        }`}
         description={`Diagnóstico y distribución estadística de los niveles de logro obtenidos en los criterios y desempeños de ${
           esDirectivo ? 'gestión directiva institucional' : 'observación de práctica docente'
         }.`}

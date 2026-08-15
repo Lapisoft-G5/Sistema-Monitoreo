@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { reportesApi } from '@shared/api/reportes.api';
+import type { TipoMonitoreo } from '@sistema-monitoreo/shared-contracts';
 
 export const useFichasCompletadas = (filters?: {
   anioAcademico?: number;
   institucionId?: string;
-  tipoMonitoreo?: 'DOCENTE' | 'DIRECTIVO';
+  tipoMonitoreo?: TipoMonitoreo;
   fechaDesde?: string;
   fechaHasta?: string;
   page?: number;
@@ -27,7 +28,7 @@ export const useResumenIE = (anio: number) =>
 export const useAnalisisDesempenos = (filters?: {
   anioAcademico?: number;
   institucionId?: string;
-  tipoMonitoreo?: 'DOCENTE' | 'DIRECTIVO';
+  tipoMonitoreo?: TipoMonitoreo;
   fechaDesde?: string;
   fechaHasta?: string;
 }) =>

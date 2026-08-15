@@ -4,6 +4,8 @@ import type { TipoMonitoreo } from '../scheduling/visit.contract.js';
 export interface IReporteFicha {
   id: string;
   cronogramaId: string;
+  plantillaId?: string;
+  plantillaNombre?: string;
   institucionId: string;
   institucionNombre: string;
   institucionCodigoModular: string;

@@ -50,8 +50,8 @@ export class PrismaReporteRepository implements ReporteRepository {
     // el objeto declarado como `any` nadie lo advertía. Ver H-29 del plan.
     const porCronograma: Prisma.CronogramaWhereInput = {};
     if (filters.institucionId) porCronograma.institucionId = filters.institucionId;
-    if (filters.tipoMonitoreo) porCronograma.tipoMonitoreo = filters.tipoMonitoreo;
     if (Object.keys(porCronograma).length > 0) where.cronograma = porCronograma;
+    if (filters.tipoMonitoreo) where.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };
     if (filters.nivelLogro) where.nivelLogro = filters.nivelLogro;
     if (filters.fechaDesde || filters.fechaHasta) {
       where.createdAt = {};
@@ -63,6 +63,9 @@ export class PrismaReporteRepository implements ReporteRepository {
       this.prisma.fichaMonitoreo.findMany({
         where,
         include: {
+          plantilla: {
+            select: { id: true, tipoMonitoreo: true, descripcion: true },
+          },
           cronograma: {
             include: {
               institucion: { select: { id: true, nombre: true, codigoModular: true } },
@@ -182,6 +185,9 @@ export class PrismaReporteRepository implements ReporteRepository {
     const f = await this.prisma.fichaMonitoreo.findUnique({
       where: { id },
       include: {
+        plantilla: {
+          select: { id: true, tipoMonitoreo: true, descripcion: true },
+        },
         cronograma: {
           include: {
             institucion: { select: { id: true, nombre: true, codigoModular: true } },

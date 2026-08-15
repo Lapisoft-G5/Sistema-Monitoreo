@@ -53,6 +53,11 @@ export const TablaReportes = ({
           {visitas.map((visita) => {
             const medicion = medirVisita(visita);
             const isDescargando = descargandoId === visita.id;
+            const esEib =
+              visita.tipo === 'DOCENTE_EIB' ||
+              visita.tipo?.toUpperCase().includes('EIB') ||
+              visita.plantillaNombre?.toUpperCase().includes('EIB');
+            const esDirectivo = visita.tipo === 'DIRECTIVO';
 
             return (
               <tr
@@ -66,12 +71,14 @@ export const TablaReportes = ({
                 <td className="py-3.5 px-4">
                   <Badge
                     className={`font-black text-[9px] uppercase tracking-wider ${
-                      visita.tipo === 'DOCENTE'
-                        ? 'bg-blue-50 text-blue-700 border-blue-100'
-                        : 'bg-purple-50 text-purple-700 border-purple-100'
+                      esEib
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : esDirectivo
+                        ? 'bg-purple-50 text-purple-700 border-purple-100'
+                        : 'bg-blue-50 text-blue-700 border-blue-100'
                     }`}
                   >
-                    {visita.tipo}
+                    {esEib ? 'DOCENTE EIB' : esDirectivo ? 'DIRECTIVO' : 'DOCENTE'}
                   </Badge>
                 </td>
                 <td className="py-3.5 px-4 font-bold text-slate-700">{visita.docenteDirectivo}</td>
@@ -80,14 +87,22 @@ export const TablaReportes = ({
                   {formatearFechaEnPalabras(visita.fechaHora)}
                 </td>
                 <td className="py-3.5 px-4 font-bold text-slate-600">
-                  {medicion.calificacionCorta}
+                  {esEib ? 'Cualitativa (32 ítems)' : medicion.calificacionCorta}
                 </td>
                 <td className="py-3.5 px-4">
                   <Badge
                     variant="outline"
-                    className="text-[10px] font-black border-slate-200 bg-slate-50 text-slate-800"
+                    className={`text-[10px] font-black border-slate-200 ${
+                      esEib
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-slate-50 text-slate-800'
+                    }`}
                   >
-                    {medicion.nivelRomano ? `Nivel ${medicion.nivelRomano}` : 'Sin calificar'}
+                    {esEib
+                      ? 'Cualitativo EIB'
+                      : medicion.nivelRomano
+                      ? `Nivel ${medicion.nivelRomano}`
+                      : 'Sin calificar'}
                   </Badge>
                 </td>
                 <td className="py-3.5 px-4 text-center">

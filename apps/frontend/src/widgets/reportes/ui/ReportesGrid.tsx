@@ -27,6 +27,8 @@ import { toast } from 'sonner';
 import type { FiltroPeriodoTipo } from '@/features/reportes/lib/filtro-temporal';
 
 export interface BackendReportVisit extends Cronograma {
+  plantillaId?: string;
+  plantillaNombre?: string;
   nivelLogro?: string;
   promedio?: number;
   puntajeTotal?: number;
@@ -49,7 +51,7 @@ interface ReportesGridProps {
   setFilterAnio: (a: string) => void;
   filterTipo?: string;
   setFilterTipo?: (tipo: string) => void;
-  conteosTipo?: Record<'Todos' | 'DOCENTE' | 'DIRECTIVO', number>;
+  conteosTipo?: Record<string, number>;
   filtroPeriodo: FiltroPeriodoTipo;
   setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
   conteosPeriodo?: Record<FiltroPeriodoTipo, number>;
@@ -98,8 +100,21 @@ export const ReportesGrid = ({
     if (plantillaDeLaFicha) return plantillaDeLaFicha;
 
     const tipoBuscado =
-      visitaAbierta.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    return plantillas.find((p) => p.tipoMonitoreo === tipoBuscado) || plantillas[0] || null;
+      visitaAbierta.tipo === 'DIRECTIVO'
+        ? 'Monitoreo Directivo'
+        : visitaAbierta.tipo === 'DOCENTE_EIB' ||
+          visitaAbierta.tipo?.toUpperCase().includes('EIB')
+        ? 'Monitoreo Docente EIB'
+        : 'Monitoreo Docente';
+    return (
+      plantillas.find(
+        (p) =>
+          p.tipoMonitoreo === tipoBuscado ||
+          p.tipoMonitoreo.toUpperCase().includes(tipoBuscado.toUpperCase()),
+      ) ||
+      plantillas[0] ||
+      null
+    );
   }, [plantillaDeLaFicha, visitaAbierta, plantillas]);
 
   /**
@@ -138,8 +153,21 @@ export const ReportesGrid = ({
     if (plantillaDeLaFichaImprimir) return plantillaDeLaFichaImprimir;
 
     const tipoBuscado =
-      visitaParaImprimir.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    return plantillas.find((p) => p.tipoMonitoreo === tipoBuscado) || plantillas[0] || null;
+      visitaParaImprimir.tipo === 'DIRECTIVO'
+        ? 'Monitoreo Directivo'
+        : visitaParaImprimir.tipo === 'DOCENTE_EIB' ||
+          visitaParaImprimir.tipo?.toUpperCase().includes('EIB')
+        ? 'Monitoreo Docente EIB'
+        : 'Monitoreo Docente';
+    return (
+      plantillas.find(
+        (p) =>
+          p.tipoMonitoreo === tipoBuscado ||
+          p.tipoMonitoreo.toUpperCase().includes(tipoBuscado.toUpperCase()),
+      ) ||
+      plantillas[0] ||
+      null
+    );
   }, [plantillaDeLaFichaImprimir, visitaParaImprimir, plantillas]);
 
   const estadoFichaImprimir = useMemo(

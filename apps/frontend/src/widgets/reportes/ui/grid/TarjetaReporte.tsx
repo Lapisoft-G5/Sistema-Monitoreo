@@ -15,7 +15,11 @@ import type { BackendReportVisit } from '../ReportesGrid';
  * `ReportesGrid`, con el cálculo de la calificación mezclado en el medio.
  */
 
-const COLOR_POR_TIPO = { DOCENTE: '#2563eb', DIRECTIVO: '#8b5cf6' } as const;
+const COLOR_POR_TIPO = {
+  DOCENTE: '#2563eb',
+  DOCENTE_EIB: '#059669',
+  DIRECTIVO: '#8b5cf6',
+} as const;
 
 interface TarjetaReporteProps {
   visita: BackendReportVisit;
@@ -52,7 +56,12 @@ export const TarjetaReporte = ({
   const { user } = useUser();
   const esEvaluadorDeVisita = puedeEvaluarVisita(user, visita);
   const medicion = medirVisita(visita);
-  const esDocente = visita.tipo === 'DOCENTE';
+  const esEib =
+    visita.tipo === 'DOCENTE_EIB' ||
+    visita.tipo?.toUpperCase().includes('EIB') ||
+    visita.plantillaNombre?.toUpperCase().includes('EIB');
+  const esDirectivo = visita.tipo === 'DIRECTIVO';
+  const esDocente = !esEib && !esDirectivo;
   const horario = obtenerHorario(visita);
 
   return (
@@ -62,7 +71,13 @@ export const TarjetaReporte = ({
     >
       <div
         className="absolute left-0 top-0 bottom-0 w-1.5"
-        style={{ backgroundColor: esDocente ? COLOR_POR_TIPO.DOCENTE : COLOR_POR_TIPO.DIRECTIVO }}
+        style={{
+          backgroundColor: esEib
+            ? COLOR_POR_TIPO.DOCENTE_EIB
+            : esDocente
+            ? COLOR_POR_TIPO.DOCENTE
+            : COLOR_POR_TIPO.DIRECTIVO,
+        }}
       />
 
       <div className="space-y-3 pl-2">
@@ -72,12 +87,14 @@ export const TarjetaReporte = ({
           </Badge>
           <Badge
             className={`font-black text-[9px] uppercase tracking-wider ${
-              esDocente
+              esEib
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : esDocente
                 ? 'bg-blue-50 text-blue-700 border-blue-100'
                 : 'bg-purple-50 text-purple-700 border-purple-100'
             }`}
           >
-            {esDocente ? 'DOCENTE' : 'DIRECTIVO'}
+            {esEib ? 'DOCENTE EIB' : esDocente ? 'DOCENTE' : 'DIRECTIVO'}
           </Badge>
           <Badge
             className={`font-bold text-[9px] uppercase tracking-wider ml-auto ${
@@ -134,26 +151,40 @@ export const TarjetaReporte = ({
           </div>
         </div>
 
-        <div className="space-y-1.5 border-t border-slate-100 pt-3">
-          <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
-            <span>Promedio / Puntaje:</span>
-            <span className="text-slate-800">{medicion.calificacion}</span>
+        {esEib ? (
+          <div className="space-y-1.5 border-t border-slate-100 pt-3">
+            <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
+              <span>Instrumento:</span>
+              <span className="text-emerald-800 font-extrabold">Lista de Cotejo EIB (32 ítems)</span>
+            </div>
+            <div className="w-full h-1.5 bg-emerald-100/60 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-600 rounded-full w-full" />
+            </div>
           </div>
-          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-            <div
-              className="h-full bg-emerald-500 rounded-full"
-              style={{ width: `${medicion.porcentaje}%` }}
-            />
+        ) : (
+          <div className="space-y-1.5 border-t border-slate-100 pt-3">
+            <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
+              <span>Promedio / Puntaje:</span>
+              <span className="text-slate-800">{medicion.calificacion}</span>
+            </div>
+            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+              <div
+                className="h-full bg-emerald-500 rounded-full"
+                style={{ width: `${medicion.porcentaje}%` }}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="pl-2 pt-3 border-t border-slate-50 flex items-center justify-between gap-2 mt-1">
         <Badge
           variant="outline"
-          className="text-[9.5px] font-black border-slate-200 bg-slate-50 text-slate-700"
+          className={`text-[9.5px] font-black border-slate-200 ${
+            esEib ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-700'
+          }`}
         >
-          {medicion.nivelRomano ? `Logro: Nivel ${medicion.nivelRomano}` : 'Sin calificar'}
+          {esEib ? 'Cualitativo EIB' : (medicion.nivelRomano ? `Logro: Nivel ${medicion.nivelRomano}` : 'Sin calificar')}
         </Badge>
 
         <div className="flex items-center gap-1.5">

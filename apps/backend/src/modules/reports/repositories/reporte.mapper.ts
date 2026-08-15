@@ -8,6 +8,7 @@ import type { Prisma } from '../../../generated/prisma/client.js';
 
 type FichaReportePayload = Prisma.FichaMonitoreoGetPayload<{
   include: {
+    plantilla: { select: { id: true; tipoMonitoreo: true; descripcion: true } };
     cronograma: {
       include: {
         institucion: { select: { id: true; codigoModular: true; nombre: true } };
@@ -24,9 +25,13 @@ type FichaReportePayload = Prisma.FichaMonitoreoGetPayload<{
 }>;
 
 export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
+  const tipo = (f.plantilla?.tipoMonitoreo || f.cronograma.tipoMonitoreo) as TipoMonitoreo;
+
   return {
     id: f.id,
     cronogramaId: f.cronogramaId,
+    plantillaId: f.plantillaId,
+    plantillaNombre: f.plantilla?.descripcion ?? undefined,
     institucionId: f.cronograma.institucion.id,
     institucionNombre: f.cronograma.institucion.nombre,
     institucionCodigoModular: f.cronograma.institucion.codigoModular,
@@ -34,7 +39,7 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     evaluadoNombre: `${f.cronograma.evaluado.persona.nombres} ${f.cronograma.evaluado.persona.apellidos}`,
     especialistaId: f.cronograma.monitorId,
     especialistaNombre: `${f.cronograma.monitor.persona.nombres} ${f.cronograma.monitor.persona.apellidos}`,
-    tipoMonitoreo: f.cronograma.tipoMonitoreo as TipoMonitoreo,
+    tipoMonitoreo: tipo,
     anioAcademico: f.anioAcademico,
     nivelLogro: f.nivelLogro as NivelLogro,
     promedio: Number(f.promedio),

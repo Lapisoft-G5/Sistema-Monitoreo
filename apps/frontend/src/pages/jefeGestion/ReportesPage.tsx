@@ -72,6 +72,8 @@ export const ReportesPage = () => {
       const list = fichasCompletadasData.data.map((f) => ({
         id: f.id, // Ficha ID
         cronogramaId: f.cronogramaId,
+        plantillaId: f.plantillaId,
+        plantillaNombre: f.plantillaNombre,
         fechaHora: f.fechaEjecucion,
         especialista: f.especialistaNombre,
         especialistaInitials: f.especialistaNombre
@@ -139,7 +141,7 @@ export const ReportesPage = () => {
     let directivos = 0;
     completedVisits.forEach((v) => {
       if (v.tipo === 'DIRECTIVO') directivos++;
-      else if (v.tipo === 'DOCENTE_EIB') docentesEib++;
+      else if (v.tipo === 'DOCENTE_EIB' || v.tipo?.toUpperCase().includes('EIB')) docentesEib++;
       else docentes++;
     });
     return {
@@ -156,8 +158,13 @@ export const ReportesPage = () => {
         // Filtro de período temporal (Hoy, Esta semana, Este mes, Todos)
         if (!coincideConPeriodo(visit.fechaHora, filtroPeriodo)) return false;
 
-        // Filtro por tipo de monitoreo (Docente vs Directivo)
-        if (filterTipo !== 'Todos' && visit.tipo !== filterTipo) return false;
+        // Filtro por tipo de monitoreo (Docente vs Docente EIB vs Directivo)
+        if (filterTipo !== 'Todos') {
+          const isEib = visit.tipo === 'DOCENTE_EIB' || visit.tipo?.toUpperCase().includes('EIB');
+          if (filterTipo === 'DOCENTE_EIB' && !isEib) return false;
+          if (filterTipo === 'DOCENTE' && (isEib || visit.tipo !== 'DOCENTE')) return false;
+          if (filterTipo === 'DIRECTIVO' && visit.tipo !== 'DIRECTIVO') return false;
+        }
 
         // Búsqueda por texto
         if (searchQuery) {

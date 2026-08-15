@@ -26,15 +26,24 @@ export async function crear(
   let plantilla = await (async () => {
     if (!dto.plantillaId) return null;
     const elegida = await repository.findPlantillaBasicById(dto.plantillaId);
-    return elegida &&
-      elegida.estado === 'Vigente' &&
-      elegida.tipoMonitoreo === cronograma.tipoMonitoreo &&
-      elegida.anioAcademico === anio
-      ? elegida
-      : null;
+    if (!elegida || elegida.estado !== 'Vigente' || elegida.anioAcademico !== anio) {
+      return null;
+    }
+
+    const esDocenteVisita = cronograma.tipoMonitoreo === 'DOCENTE' || cronograma.tipoMonitoreo === 'DOCENTE_EIB';
+    const esDocentePlantilla = elegida.tipoMonitoreo === 'DOCENTE' || elegida.tipoMonitoreo === 'DOCENTE_EIB';
+    const tipoCompatible =
+      elegida.tipoMonitoreo === cronograma.tipoMonitoreo ||
+      (esDocenteVisita && esDocentePlantilla);
+
+    return tipoCompatible ? elegida : null;
   })();
   if (!plantilla) {
     plantilla = await repository.findPlantillaVigente(cronograma.tipoMonitoreo, anio);
+  }
+  if (!plantilla && cronograma.tipoMonitoreo === 'DOCENTE_EIB') {
+    // Fallback a plantilla docente regular si no hay EIB configurada
+    plantilla = await repository.findPlantillaVigente('DOCENTE', anio);
   }
   if (!plantilla) {
     throw new BadRequestException(

@@ -21,6 +21,8 @@ import { DetalleVisita } from './sidebar/DetalleVisita';
 import { AccionesVisita } from './sidebar/AccionesVisita';
 import { AvisoSolicitudPendiente } from './sidebar/AvisoSolicitudPendiente';
 import { MigracionPlantillaFicha } from './sidebar/MigracionPlantillaFicha';
+import { ModalSeleccionarInstrumento } from './ModalSeleccionarInstrumento';
+import type { Plantilla } from '@/entities/model-plantillas';
 
 interface CalendarioSidebarProps {
   selectedVisitId: string | null;
@@ -59,6 +61,8 @@ export const CalendarioSidebar = ({
   } = useCronogramasData();
 
   const [showFichaModal, setShowFichaModal] = useState(false);
+  const [showSeleccionarInstrumentoModal, setShowSeleccionarInstrumentoModal] = useState(false);
+  const [selectedTemplateOverride, setSelectedTemplateOverride] = useState<Plantilla | null>(null);
   const [showSolicitarReprogramarModal, setShowSolicitarReprogramarModal] = useState(false);
   const [showReprogramarModal, setShowReprogramarModal] = useState(false);
   const [showMigracionModal, setShowMigracionModal] = useState(false);
@@ -97,19 +101,49 @@ export const CalendarioSidebar = ({
     [filteredVisits, selectedDateStr],
   );
 
-  // Reglas de negocio extraídas a `entities/`, con cobertura propia: qué
-  // instrumento se aplica (`seleccion.test.ts`) y quién puede levantar la ficha
-  // (`evaluador.test.ts`). Acá sólo queda el enlace con el estado del widget.
+  // Todas las plantillas vigentes compatibles con la visita seleccionada
+  const plantillasCandidatas = useMemo(() => {
+    if (!selectedVisit) return [];
+    const esDocente = selectedVisit.tipo === 'DOCENTE' || selectedVisit.tipo === 'DOCENTE_EIB';
+    return plantillas.filter((p) => {
+      if (p.estado !== 'Vigente') return false;
+      if (esDocente) {
+        return (
+          p.tipoMonitoreo === 'Monitoreo Docente' ||
+          p.tipoMonitoreo === 'Monitoreo Docente EIB' ||
+          p.tipoMonitoreo.toUpperCase().includes('DOCENTE') ||
+          p.tipoMonitoreo.toUpperCase().includes('EIB')
+        );
+      }
+      return p.tipoMonitoreo.toUpperCase().includes('DIRECTIV');
+    });
+  }, [selectedVisit, plantillas]);
+
+  // Instrumento activo: si el monitor seleccionó uno explícitamente se honra, si no se calcula por cascada
   const activeTemplate = useMemo(() => {
     if (!selectedVisit || !user) return null;
-    return seleccionarPlantillaActiva(plantillas, {
-      tipoVisita: selectedVisit.tipo,
-      usuarioId: user.id,
-      institucionUsuarioId: user.institucion,
-      esInstitucion: isInstitution,
-      esMonitorCampo: isMonitorCampo,
-    });
-  }, [selectedVisit, plantillas, user, isInstitution, isMonitorCampo]);
+    if (selectedTemplateOverride) return selectedTemplateOverride;
+
+    return (
+      seleccionarPlantillaActiva(plantillas, {
+        tipoVisita: selectedVisit.tipo,
+        usuarioId: user.id,
+        institucionUsuarioId: user.institucion,
+        esInstitucion: isInstitution,
+        esMonitorCampo: isMonitorCampo,
+      }) ||
+      plantillasCandidatas[0] ||
+      null
+    );
+  }, [
+    selectedVisit,
+    plantillas,
+    user,
+    isInstitution,
+    isMonitorCampo,
+    selectedTemplateOverride,
+    plantillasCandidatas,
+  ]);
 
   const instrumentoNoDisponible = motivoSinInstrumento(activeTemplate !== null, {
     cargando: cargandoPlantillas,
@@ -127,11 +161,32 @@ export const CalendarioSidebar = ({
     return claveDeHoy() === selectedVisit.fechaHora.substring(0, 10);
   }, [selectedVisit]);
 
+  // Manejo de inicio de ficha: si hay varias fichas vigentes disponibles, se abre el selector de instrumento
+  const handleIniciarFicha = () => {
+    if (plantillasCandidatas.length > 1) {
+      setShowSeleccionarInstrumentoModal(true);
+    } else if (plantillasCandidatas.length === 1) {
+      setSelectedTemplateOverride(plantillasCandidatas[0]);
+      setShowFichaModal(true);
+    } else if (activeTemplate) {
+      setShowFichaModal(true);
+    }
+  };
+
+  const handleSeleccionarInstrumento = (plantillaElegida: Plantilla) => {
+    setSelectedTemplateOverride(plantillaElegida);
+    setShowSeleccionarInstrumentoModal(false);
+    setShowFichaModal(true);
+  };
+
   // Escritura del resultado del monitoreo. Vive en `use-ficha-persistence`
   // porque no es maquetación; acá sólo se enlazan sus efectos con los modales.
   const { guardarBorrador, finalizar, prepararFichaLlena } = useFichaPersistence({
     plantillaId: activeTemplate?.id,
-    onPersistido: () => setShowFichaModal(false),
+    onPersistido: () => {
+      setShowFichaModal(false);
+      setSelectedTemplateOverride(null);
+    },
     onPlantillaVersionada: (contexto) => {
       // ILA-0046: la plantilla pasó a Histórico; se ofrece migrar.
       setMigracionContext(contexto);
@@ -209,7 +264,7 @@ export const CalendarioSidebar = ({
               esFechaCoincidente: isFechaCoincidente,
             }}
             instrumentoNoDisponible={instrumentoNoDisponible}
-            onIniciarFicha={() => setShowFichaModal(true)}
+            onIniciarFicha={handleIniciarFicha}
             onVerFichaLlena={() => abrirFichaLlena(selectedVisit.id)}
             onSolicitarReprogramacion={() => setShowSolicitarReprogramarModal(true)}
             onVerSolicitud={() => setShowReprogramarModal(true)}
@@ -220,6 +275,16 @@ export const CalendarioSidebar = ({
           <Calendar className="h-10 w-10 mb-2 stroke-1" />
           <span className="text-xs font-semibold">Selecciona un día en el calendario</span>
         </div>
+      )}
+
+      {selectedVisit && (
+        <ModalSeleccionarInstrumento
+          isOpen={showSeleccionarInstrumentoModal}
+          onClose={() => setShowSeleccionarInstrumentoModal(false)}
+          visita={selectedVisit}
+          plantillas={plantillasCandidatas}
+          onSeleccionar={handleSeleccionarInstrumento}
+        />
       )}
 
       {selectedVisit && activeTemplate && (

@@ -52,7 +52,7 @@ export const PanelDesempenos = ({
     template.tipoMonitoreo.toUpperCase().includes('EIB');
 
   return (
-    <div className="flex flex-col md:flex-row min-h-[300px]">
+    <div className="flex flex-col md:flex-row min-h-[300px] items-start border-b border-border bg-white">
       <ListaDesempenos
         desempenos={template.desempenos}
         seleccionadoId={abierto?.id ?? ''}

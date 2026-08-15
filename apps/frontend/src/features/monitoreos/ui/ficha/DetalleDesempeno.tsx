@@ -27,6 +27,24 @@ interface DetalleDesempenoProps {
 const CLASES_TEXTAREA =
   'w-full bg-surface border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner h-24 resize-none leading-relaxed';
 
+function parseSeccionYSubcriterio(raw?: string) {
+  if (!raw) return { seccion: '', subcriterio: null };
+  const trimmed = raw.trim();
+  if (trimmed.includes(' — ')) {
+    const [seccion, ...sub] = trimmed.split(' — ');
+    return { seccion: seccion.trim(), subcriterio: sub.join(' — ').trim() || null };
+  }
+  if (trimmed.includes('\n')) {
+    const [seccion, ...sub] = trimmed.split('\n');
+    return { seccion: seccion.trim(), subcriterio: sub.join(' ').trim() || null };
+  }
+  if (trimmed.includes(' - ')) {
+    const [seccion, ...sub] = trimmed.split(' - ');
+    return { seccion: seccion.trim(), subcriterio: sub.join(' - ').trim() || null };
+  }
+  return { seccion: trimmed, subcriterio: null };
+}
+
 const EtiquetaSeccion = ({ children }: { children: string }) => (
   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
     {children}
@@ -120,11 +138,21 @@ export const DetalleDesempeno = ({
     <div className="flex-1 p-6 overflow-y-auto space-y-6">
       <div className="space-y-6 animate-in fade-in duration-200">
         <div className="space-y-2">
-          {esEib && desempeno.descripcionCorta && (
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-black uppercase tracking-wider">
-              {desempeno.descripcionCorta}
-            </div>
-          )}
+          {esEib && desempeno.descripcionCorta && (() => {
+            const { seccion, subcriterio } = parseSeccionYSubcriterio(desempeno.descripcionCorta);
+            return (
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10.5px] font-black uppercase tracking-wider">
+                  {seccion}
+                </div>
+                {subcriterio && (
+                  <div className="text-xs font-extrabold text-slate-600 uppercase tracking-wide">
+                    {subcriterio}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <h3 className="text-base font-black text-slate-800 tracking-tight leading-snug">
             {desempeno.nombre}
           </h3>

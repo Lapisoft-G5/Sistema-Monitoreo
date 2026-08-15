@@ -147,9 +147,15 @@ function desempanosABloques(criterios: Desempeno[]): SeccionEib[] {
 
   for (const c of criterios) {
     const rawKey = c.descripcionCorta?.trim() || 'I. CONDICIONES BÁSICAS PARA EL APRENDIZAJE';
-    const partes = rawKey.split(' — ');
-    const seccionNombre = partes[0] || rawKey;
-    const subcriterioNombre = partes.length > 1 ? partes.slice(1).join(' — ') : '';
+    const partes = rawKey.includes(' — ')
+      ? rawKey.split(' — ')
+      : rawKey.includes('\n')
+        ? rawKey.split('\n')
+        : rawKey.includes(' - ')
+          ? rawKey.split(' - ')
+          : [rawKey];
+    const seccionNombre = (partes[0] || rawKey).trim();
+    const subcriterioNombre = partes.length > 1 ? partes.slice(1).join(' — ').trim() : '';
 
     if (!currentSeccion || currentSeccion.seccion !== seccionNombre) {
       const escala = inferirEscala(seccionNombre, c);

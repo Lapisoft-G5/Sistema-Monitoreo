@@ -11,6 +11,24 @@ interface ListaDesempenosProps {
   onSeleccionar: (desempenoId: string) => void;
 }
 
+function parseSeccionYSubcriterio(raw?: string) {
+  if (!raw) return { seccion: '', subcriterio: null };
+  const trimmed = raw.trim();
+  if (trimmed.includes(' — ')) {
+    const [seccion, ...sub] = trimmed.split(' — ');
+    return { seccion: seccion.trim(), subcriterio: sub.join(' — ').trim() || null };
+  }
+  if (trimmed.includes('\n')) {
+    const [seccion, ...sub] = trimmed.split('\n');
+    return { seccion: seccion.trim(), subcriterio: sub.join(' ').trim() || null };
+  }
+  if (trimmed.includes(' - ')) {
+    const [seccion, ...sub] = trimmed.split(' - ');
+    return { seccion: seccion.trim(), subcriterio: sub.join(' - ').trim() || null };
+  }
+  return { seccion: trimmed, subcriterio: null };
+}
+
 /**
  * Índice de criterios a evaluar, con su avance.
  *
@@ -31,15 +49,30 @@ export const ListaDesempenos = ({
     {desempenos.map((desempeno, indice) => {
       const seleccionado = seleccionadoId === desempeno.id;
       const nivel = nivelesElegidos[desempeno.id];
-      const seccionPrevia = indice > 0 ? desempenos[indice - 1]?.descripcionCorta : null;
+
+      const actualParsed = parseSeccionYSubcriterio(desempeno.descripcionCorta);
+      const previaParsed =
+        indice > 0 ? parseSeccionYSubcriterio(desempenos[indice - 1]?.descripcionCorta) : null;
+
       const esNuevaSeccion =
-        desempeno.descripcionCorta && desempeno.descripcionCorta !== seccionPrevia;
+        actualParsed.seccion !== '' && (!previaParsed || actualParsed.seccion !== previaParsed.seccion);
+
+      const esNuevoSubcriterio =
+        actualParsed.subcriterio !== null &&
+        (esNuevaSeccion || actualParsed.subcriterio !== previaParsed?.subcriterio);
 
       return (
         <div key={desempeno.id} className="space-y-1">
           {esNuevaSeccion && (
-            <div className="pt-2.5 pb-1 text-[10px] font-black text-primary uppercase tracking-wider line-clamp-2 px-1 border-t border-slate-200/60 first:border-0 first:pt-0">
-              {desempeno.descripcionCorta}
+            <div className="pt-2.5 pb-0.5 text-[10px] font-black text-primary uppercase tracking-wider px-1 border-t border-slate-200/60 first:border-0 first:pt-0">
+              {actualParsed.seccion}
+            </div>
+          )}
+
+          {esNuevoSubcriterio && (
+            <div className="pb-1 text-[9.5px] font-extrabold text-slate-600 uppercase tracking-wide px-1 flex items-center gap-1.5 pl-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary/40 shrink-0"></span>
+              <span>{actualParsed.subcriterio}</span>
             </div>
           )}
 

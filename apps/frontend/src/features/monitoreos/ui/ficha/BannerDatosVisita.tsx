@@ -7,30 +7,29 @@ interface BannerDatosVisitaProps {
 }
 
 export const BannerDatosVisita = ({ visit }: BannerDatosVisitaProps) => (
-  <div className="px-4 sm:px-6 py-2.5 bg-primary-light/60 border-b border-primary/10 text-xs text-slate-600 font-semibold grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-    <div className="flex items-center gap-2 min-w-0">
+  <div className="px-4 sm:px-6 py-1.5 bg-slate-50 border-b border-border/80 text-[11px] text-slate-500 font-medium flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+    <div className="flex items-center gap-1.5 min-w-0">
       <School className="h-3.5 w-3.5 text-primary shrink-0" />
       <span className="truncate">
-        Institución: <strong className="text-slate-800">{visit.institucion}</strong>
+        I.E. <strong className="text-slate-800 font-semibold">{visit.institucion}</strong>
       </span>
     </div>
-    <div className="flex items-center gap-2 min-w-0">
+    <div className="flex items-center gap-1.5 min-w-0">
       <User className="h-3.5 w-3.5 text-primary shrink-0" />
       <span className="truncate">
-        Evaluado: <strong className="text-slate-800">{visit.docenteDirectivo}</strong>
+        Docente: <strong className="text-slate-800 font-semibold">{visit.docenteDirectivo}</strong>
       </span>
     </div>
-    <div className="flex items-center gap-2 min-w-0">
+    <div className="flex items-center gap-1.5 min-w-0">
       <UserCheck className="h-3.5 w-3.5 text-primary shrink-0" />
       <span className="truncate">
-        Especialista: <strong className="text-slate-800">{visit.especialista}</strong>
+        Monitor: <strong className="text-slate-800 font-semibold">{visit.especialista}</strong>
       </span>
     </div>
-    <div className="flex items-center gap-2 min-w-0">
+    <div className="flex items-center gap-1.5 min-w-0">
       <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
       <span className="truncate">
-        Fecha:{' '}
-        <strong className="text-slate-800">
+        <strong className="text-slate-800 font-semibold">
           {formatearFechaCorta(visit.fechaHora)} - {formatearHora(visit.fechaHora)}
         </strong>
       </span>

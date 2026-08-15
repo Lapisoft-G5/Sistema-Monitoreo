@@ -33,35 +33,75 @@ const EtiquetaSeccion = ({ children }: { children: string }) => (
   </span>
 );
 
-const OPCIONES_EIB = [
-  {
-    nivel: 'III',
-    rotulo: 'Sí',
-    descripcion: 'Se evidencia de forma clara y consistente',
-    color: '#16a34a',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/30',
-    activeBg: 'bg-emerald-600 text-white',
-  },
-  {
-    nivel: 'II',
-    rotulo: 'Parcialmente',
-    descripcion: 'Se observan indicios o requiere fortalecimiento',
-    color: '#d97706',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/30',
-    activeBg: 'bg-amber-500 text-white',
-  },
-  {
-    nivel: 'I',
-    rotulo: 'No',
-    descripcion: 'No se evidencia en la observación',
-    color: '#dc2626',
-    bg: 'bg-rose-500/10',
-    border: 'border-rose-500/30',
-    activeBg: 'bg-rose-600 text-white',
-  },
-];
+const getOpcionesEib = (descripcionCorta?: string) => {
+  const esPlanificacion =
+    descripcionCorta?.toUpperCase().includes('PLANIFICACIÓN CURRICULAR') ||
+    descripcionCorta?.toUpperCase().includes('PLANIFICACION CURRICULAR') ||
+    descripcionCorta?.toUpperCase().includes('DOCUMENTO') ||
+    descripcionCorta?.trim().startsWith('III');
+
+  if (esPlanificacion) {
+    return [
+      {
+        nivel: 'III',
+        rotulo: 'Sí',
+        descripcion: 'Se evidencia de forma clara, consistente y alineada con el MSEIB',
+        color: '#16a34a',
+        bg: 'bg-emerald-500/10',
+        border: 'border-emerald-500/30',
+        activeBg: 'bg-emerald-600 text-white',
+      },
+      {
+        nivel: 'II',
+        rotulo: 'Parcialmente',
+        descripcion: 'Aparece parcialmente o con indicios, pero requiere ajustes o fortalecimiento',
+        color: '#d97706',
+        bg: 'bg-amber-500/10',
+        border: 'border-amber-500/30',
+        activeBg: 'bg-amber-500 text-white',
+      },
+      {
+        nivel: 'I',
+        rotulo: 'No',
+        descripcion: 'No se evidencia el criterio en el documento',
+        color: '#dc2626',
+        bg: 'bg-rose-500/10',
+        border: 'border-rose-500/30',
+        activeBg: 'bg-rose-600 text-white',
+      },
+    ];
+  }
+
+  return [
+    {
+      nivel: 'III',
+      rotulo: 'Sí',
+      descripcion: 'Se evidencia en la sesión de forma clara y consistente',
+      color: '#16a34a',
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/30',
+      activeBg: 'bg-emerald-600 text-white',
+    },
+    {
+      nivel: 'II',
+      rotulo: 'Parcialmente',
+      descripcion: 'Se evidencia de forma incipiente o con necesidad de acompañamiento',
+      color: '#d97706',
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/30',
+      activeBg: 'bg-amber-500 text-white',
+    },
+    {
+      nivel: 'I',
+      rotulo: 'No',
+      descripcion: 'No se observa evidencia de la práctica durante la sesión',
+      color: '#dc2626',
+      bg: 'bg-rose-500/10',
+      border: 'border-rose-500/30',
+      activeBg: 'bg-rose-600 text-white',
+    },
+  ];
+};
 
 /** Rúbrica del desempeño seleccionado: niveles, pregunta extra y justificación. */
 export const DetalleDesempeno = ({
@@ -129,7 +169,7 @@ export const DetalleDesempeno = ({
 
           {esEib ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {OPCIONES_EIB.map((opcion) => {
+              {getOpcionesEib(desempeno.descripcionCorta).map((opcion) => {
                 const elegido = respuesta.nivel === opcion.nivel;
 
                 return (

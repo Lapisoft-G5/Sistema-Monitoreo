@@ -304,72 +304,100 @@ export const PlantillaPreviewModal = ({ plantilla, onClose }: PlantillaPreviewMo
                 </div>
 
                 {isEib ? (
-                  // Vista Especial EIB (Escala Tripartita Cualitativa)
-                  <div className="space-y-4">
-                    <div>
-                      <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider block mb-1">
-                        Escala de Valoración Tripartita (MINEDU)
-                      </span>
-                      <p className="text-xs text-text-muted">
-                        Durante la observación en aula, este ítem se califica según la evidencia pedagógica cualitativa:
-                      </p>
-                    </div>
+                  // Vista Especial EIB (Escala Tripartita Cualitativa contextual según sección)
+                  (() => {
+                    const esPlanificacion =
+                      activeDesempeno.descripcionCorta?.toUpperCase().includes('PLANIFICACIÓN CURRICULAR') ||
+                      activeDesempeno.descripcionCorta?.toUpperCase().includes('PLANIFICACION CURRICULAR') ||
+                      activeDesempeno.descripcionCorta?.toUpperCase().includes('DOCUMENTO') ||
+                      activeDesempeno.descripcionCorta?.trim().startsWith('III');
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                      {/* Opción Sí */}
-                      <div className="p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50/50 shadow-xs flex flex-col gap-2 transition-all hover:bg-emerald-50">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
-                            <CheckCircle2 className="h-4 w-4" />
+                    return (
+                      <div className="space-y-4">
+                        <div>
+                          <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider block mb-1">
+                            {esPlanificacion
+                              ? 'Escala para Revisión de Documentos de Planificación Curricular'
+                              : 'Escala para Observación Pedagógica en Aula'}
                           </span>
-                          <span className="text-xs font-black text-emerald-800 uppercase tracking-wider">
-                            Sí
-                          </span>
+                          <p className="text-xs text-text-muted">
+                            {esPlanificacion
+                              ? 'Durante la revisión de los documentos de planificación, este ítem se califica según la evidencia documental:'
+                              : 'Durante la observación en el aula, este ítem se califica según la práctica docente observada:'}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-emerald-900 font-medium leading-relaxed">
-                          Se evidencia el cumplimiento total y continuo de la práctica o condición pedagógica en la sesión.
-                        </p>
-                      </div>
 
-                      {/* Opción Parcialmente */}
-                      <div className="p-4 rounded-xl border-2 border-amber-200 bg-amber-50/50 shadow-xs flex flex-col gap-2 transition-all hover:bg-amber-50">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500 text-white shadow-xs">
-                            <AlertTriangle className="h-4 w-4" />
-                          </span>
-                          <span className="text-xs font-black text-amber-800 uppercase tracking-wider">
-                            Parcialmente
-                          </span>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                          {/* Opción Sí */}
+                          <div className="p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50/50 shadow-xs flex flex-col gap-2 transition-all hover:bg-emerald-50">
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
+                                <CheckCircle2 className="h-4 w-4" />
+                              </span>
+                              <span className="text-xs font-black text-emerald-800 uppercase tracking-wider">
+                                Sí
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-emerald-900 font-medium leading-relaxed">
+                              {esPlanificacion
+                                ? 'El criterio se evidencia de forma clara, consistente y alineada con el MSEIB.'
+                                : 'El criterio se evidencia en el aula de forma clara, consistente y oportuna.'}
+                            </p>
+                          </div>
+
+                          {/* Opción Parcialmente */}
+                          <div className="p-4 rounded-xl border-2 border-amber-200 bg-amber-50/50 shadow-xs flex flex-col gap-2 transition-all hover:bg-amber-50">
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500 text-white shadow-xs">
+                                <AlertTriangle className="h-4 w-4" />
+                              </span>
+                              <span className="text-xs font-black text-amber-800 uppercase tracking-wider">
+                                Parcialmente
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-amber-900 font-medium leading-relaxed">
+                              {esPlanificacion
+                                ? 'El criterio aparece parcialmente o con indicios, pero requiere ajustes o fortalecimiento.'
+                                : 'El criterio aparece de manera parcial, incipiente o con necesidad de acompañamiento.'}
+                            </p>
+                          </div>
+
+                          {/* Opción No */}
+                          <div className="p-4 rounded-xl border-2 border-rose-200 bg-rose-50/50 shadow-xs flex flex-col gap-2 transition-all hover:bg-rose-50">
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-white shadow-xs">
+                                <XCircle className="h-4 w-4" />
+                              </span>
+                              <span className="text-xs font-black text-rose-800 uppercase tracking-wider">
+                                No
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-rose-900 font-medium leading-relaxed">
+                              {esPlanificacion
+                                ? 'No se evidencia el criterio en el documento analizado.'
+                                : 'No se observa evidencia de la práctica durante la sesión.'}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-amber-900 font-medium leading-relaxed">
-                          Se evidencia de forma incipiente, intermitente o con necesidad de retroalimentación pedagógica.
-                        </p>
-                      </div>
 
-                      {/* Opción No */}
-                      <div className="p-4 rounded-xl border-2 border-rose-200 bg-rose-50/50 shadow-xs flex flex-col gap-2 transition-all hover:bg-rose-50">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-white shadow-xs">
-                            <XCircle className="h-4 w-4" />
-                          </span>
-                          <span className="text-xs font-black text-rose-800 uppercase tracking-wider">
-                            No
-                          </span>
+                        {/* Nota de Evidencias */}
+                        <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-3 text-xs text-slate-600">
+                          <MessageSquareQuote className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                          <p className="leading-relaxed">
+                            {esPlanificacion ? (
+                              <span>
+                                <strong>Evidencias Documentales:</strong> En la columna observaciones se registran referencias a páginas o secciones de la planificación y notas de respaldo.
+                              </span>
+                            ) : (
+                              <span>
+                                <strong>Registro de Evidencias:</strong> El monitor registra notas descriptivas y compromisos de mejora pedagógica directamente sobre el ítem.
+                              </span>
+                            )}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-rose-900 font-medium leading-relaxed">
-                          No se observa evidencia de la práctica, o las acciones observadas resultan desfavorables.
-                        </p>
                       </div>
-                    </div>
-
-                    {/* Nota de Evidencias */}
-                    <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-3 text-xs text-slate-600">
-                      <MessageSquareQuote className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                      <p className="leading-relaxed">
-                        <strong>Registro de Evidencias:</strong> El monitor registra notas descriptivas y compromisos de mejora directamente sobre cada ítem en la ficha de monitoreo.
-                      </p>
-                    </div>
-                  </div>
+                    );
+                  })()
                 ) : (
                   // Vista Estándar (Aspectos y Rúbricas por Niveles I a IV)
                   <>

@@ -163,29 +163,28 @@ export function useFichaPersistence({
 
   const guardarBorrador = useCallback(
     async (visitId: string, datos: DatosFicha) => {
-      if (!FEATURES.apiOnly) {
-        safeSetLocalStorage(claveEstadoLocal(visitId, plantillaId), JSON.stringify(datos));
-      }
       marcarEstadoVisita(visitId, 'EN_PROCESO');
 
       try {
         await escribirRespuestas(visitId, datos, false);
+        if (!FEATURES.apiOnly) {
+          safeSetLocalStorage(
+            claveEstadoLocal(visitId, plantillaId),
+            JSON.stringify({ ...datos, estado: 'BORRADOR' }),
+          );
+        }
+        await qc.invalidateQueries({ queryKey: ['fichas'] });
+        await qc.invalidateQueries({ queryKey: ['cronogramas'] });
         onPersistido();
       } catch (error) {
         manejarFallo(error, visitId, 'guardar borrador');
       }
     },
-    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId],
+    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId, qc],
   );
 
   const finalizar = useCallback(
     async (visitId: string, datos: DatosFicha) => {
-      safeSetLocalStorage(
-        claveEstadoLocal(visitId, plantillaId),
-        JSON.stringify({ ...datos, estado: 'FINALIZADO' }),
-      );
-      marcarEstadoVisita(visitId, 'COMPLETADO');
-
       try {
         const { ficha, fichasApi } = await escribirRespuestas(visitId, datos, true);
 
@@ -197,12 +196,19 @@ export function useFichaPersistence({
           datos.compromisos,
           Object.keys(generales).length > 0 ? JSON.stringify(generales) : undefined,
         );
+        safeSetLocalStorage(
+          claveEstadoLocal(visitId, plantillaId),
+          JSON.stringify({ ...datos, estado: 'FINALIZADO' }),
+        );
+        marcarEstadoVisita(visitId, 'COMPLETADO');
+        await qc.invalidateQueries({ queryKey: ['fichas'] });
+        await qc.invalidateQueries({ queryKey: ['cronogramas'] });
         onPersistido();
       } catch (error) {
         manejarFallo(error, visitId, 'finalizar la ficha');
       }
     },
-    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId],
+    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId, qc],
   );
 
   /**

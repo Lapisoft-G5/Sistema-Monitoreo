@@ -134,9 +134,7 @@ export const LlenarFichaForm = ({
     onFinalize,
   });
 
-  const isCompleted =
-    initialState?.estado === 'FINALIZADO' ||
-    estado.estado === 'FINALIZADO';
+  const isCompleted = initialState?.estado === 'FINALIZADO';
   const isDirectivo = template?.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
 
   const { data: firmasData, refetch: refetchFirmas } = useQuery({

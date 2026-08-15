@@ -12,6 +12,7 @@ import { claveDeHoy } from '@/shared/lib/calendario/grid';
 import { motivoSinInstrumento } from '../lib/instrumento';
 import { useFichaPersistence } from '@/features/monitoreos/hooks/use-ficha-persistence';
 import { LlenarFichaForm } from '@/features/monitoreos';
+import { fichaAEstadoFormulario } from '@/features/monitoreos/lib/ficha-estado';
 import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm,
@@ -323,9 +324,18 @@ export const CalendarioSidebar = ({
       {selectedVisit && activeTemplate && (
         <LlenarFichaForm
           isOpen={showFichaModal}
-          onClose={() => setShowFichaModal(false)}
+          onClose={() => {
+            setShowFichaModal(false);
+            setSelectedTemplateOverride(null);
+          }}
           visit={selectedVisit}
           template={activeTemplate}
+          initialState={(() => {
+            const fExistente = fichasDeVisita.find(
+              (f) => f.plantillaId === activeTemplate.id,
+            );
+            return fExistente ? fichaAEstadoFormulario(fExistente) : undefined;
+          })()}
           onSave={guardarBorrador}
           onFinalize={finalizar}
         />

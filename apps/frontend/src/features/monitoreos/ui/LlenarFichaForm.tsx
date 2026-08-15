@@ -120,6 +120,7 @@ export const LlenarFichaForm = ({
   const { docente: evaluadoDocente, areasSugeridas } = useDocenteEvaluado({
     activo: isOpen,
     visitId: visit?.id,
+    templateId: template?.id,
     evaluadoId: visit?.evaluadoId,
     initialState,
     onAutocompletarContexto: aplicarContextoSugerido,

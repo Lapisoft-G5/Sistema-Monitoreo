@@ -34,21 +34,21 @@ export const ContextoDeAulaSeccion = ({
 }: ContextoDeAulaSeccionProps) => {
   if (soloLectura) {
     return (
-      <div className="px-6 py-3 bg-slate-50 border-b border-border text-xs font-bold text-slate-600 grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="px-4 sm:px-6 py-2.5 bg-slate-50/80 border-b border-border text-xs font-semibold text-slate-600 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
         <div>
-          Área: <span className="text-slate-800">{contexto.area || '-'}</span>
+          Área: <strong className="text-slate-800">{contexto.area || '-'}</strong>
         </div>
         <div>
-          Grado: <span className="text-slate-800">{contexto.grado || '-'}</span>
+          Grado: <strong className="text-slate-800">{contexto.grado || '-'}</strong>
         </div>
         <div>
-          Sección: <span className="text-slate-800">{contexto.seccion || '-'}</span>
+          Sección: <strong className="text-slate-800">{contexto.seccion || '-'}</strong>
         </div>
         <div>
-          Estudiantes: <span className="text-slate-800">{contexto.alumnos || '-'}</span>
+          Estudiantes: <strong className="text-slate-800">{contexto.alumnos || '-'}</strong>
         </div>
         <div>
-          Est. NEE: <span className="text-slate-800">{contexto.alumnosNee || '-'}</span>
+          Est. NEE: <strong className="text-slate-800">{contexto.alumnosNee || '-'}</strong>
         </div>
       </div>
     );

@@ -31,6 +31,7 @@ import { ConsolidadoSeccion } from './ficha/ConsolidadoSeccion';
 import { PieDeFicha } from './ficha/PieDeFicha';
 import { VistaPreviaEvidencia } from './ficha/VistaPreviaEvidencia';
 import { CabeceraFicha, type PestanaFicha } from './ficha/CabeceraFicha';
+import { BannerDatosVisita } from './ficha/BannerDatosVisita';
 import { firmasApi } from '@/shared/api/firmas.api';
 import { toast } from 'sonner';
 
@@ -204,7 +205,6 @@ export const LlenarFichaForm = ({
       </div>
       <Card className="bg-surface w-full max-w-[1250px] border border-border rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
         <CabeceraFicha
-          visit={visit}
           template={template}
           soloLectura={isCompleted}
           pestana={visit.tipo === 'DOCENTE' ? activeTab : null}
@@ -213,20 +213,21 @@ export const LlenarFichaForm = ({
           onCerrar={onClose}
         />
 
-        {visit.tipo === 'DOCENTE' && (
-          <ContextoDeAulaSeccion
-            contexto={estado.contexto}
-            onCambiar={setContextoCampo}
-            sugerencias={{
-              areas: areasSugeridas,
-              secciones: evaluadoDocente?.secciones ?? [],
-            }}
-            soloLectura={isCompleted}
-          />
-        )}
-
-        {/* Contenedor con scroll interno — engloba cuerpo + comentarios + calificación */}
+        {/* Contenedor con scroll interno — engloba metadatos + cuerpo + comentarios + calificación */}
         <div className="flex-1 overflow-y-auto min-h-0">
+          <BannerDatosVisita visit={visit} />
+
+          {visit.tipo === 'DOCENTE' && (
+            <ContextoDeAulaSeccion
+              contexto={estado.contexto}
+              onCambiar={setContextoCampo}
+              sugerencias={{
+                areas: areasSugeridas,
+                secciones: evaluadoDocente?.secciones ?? [],
+              }}
+              soloLectura={isCompleted}
+            />
+          )}
         
         {activeTab === 'HISTORIAL' && visit.evaluadoId && (
           <div className="p-6">

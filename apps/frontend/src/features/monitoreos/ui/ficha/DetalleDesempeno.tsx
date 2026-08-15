@@ -91,11 +91,16 @@ export const DetalleDesempeno = ({
   return (
     <div className="flex-1 p-6 overflow-y-auto space-y-6">
       <div className="space-y-6 animate-in fade-in duration-200">
-        <div className="space-y-1">
+        <div className="space-y-2">
+          {esEib && desempeno.descripcionCorta && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-black uppercase tracking-wider">
+              {desempeno.descripcionCorta}
+            </div>
+          )}
           <h3 className="text-base font-black text-slate-800 tracking-tight leading-snug">
             {desempeno.nombre}
           </h3>
-          {desempeno.descripcionCorta && (
+          {!esEib && desempeno.descripcionCorta && (
             <p className="text-xs text-slate-500 font-medium leading-relaxed">
               {desempeno.descripcionCorta}
             </p>

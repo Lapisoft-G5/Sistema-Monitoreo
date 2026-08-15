@@ -31,17 +31,26 @@ export const ListaDesempenos = ({
     {desempenos.map((desempeno, indice) => {
       const seleccionado = seleccionadoId === desempeno.id;
       const nivel = nivelesElegidos[desempeno.id];
+      const seccionPrevia = indice > 0 ? desempenos[indice - 1]?.descripcionCorta : null;
+      const esNuevaSeccion =
+        desempeno.descripcionCorta && desempeno.descripcionCorta !== seccionPrevia;
 
       return (
-        <div
-          key={desempeno.id}
-          onClick={() => onSeleccionar(desempeno.id)}
-          className={`p-3 border rounded-xl cursor-pointer transition-all flex items-start gap-2 shadow-xs leading-snug text-left select-none relative ${
-            seleccionado
-              ? 'border-primary ring-1 ring-primary/40 bg-primary-light/50 font-extrabold text-primary shadow-sm'
-              : 'border-border bg-surface text-slate-600 hover:bg-slate-100'
-          }`}
-        >
+        <div key={desempeno.id} className="space-y-1">
+          {esNuevaSeccion && (
+            <div className="pt-2.5 pb-1 text-[10px] font-black text-primary uppercase tracking-wider line-clamp-2 px-1 border-t border-slate-200/60 first:border-0 first:pt-0">
+              {desempeno.descripcionCorta}
+            </div>
+          )}
+
+          <div
+            onClick={() => onSeleccionar(desempeno.id)}
+            className={`p-3 border rounded-xl cursor-pointer transition-all flex items-start gap-2 shadow-xs leading-snug text-left select-none relative ${
+              seleccionado
+                ? 'border-primary ring-1 ring-primary/40 bg-primary-light/50 font-extrabold text-primary shadow-sm'
+                : 'border-border bg-surface text-slate-600 hover:bg-slate-100'
+            }`}
+          >
           <span
             className={`h-5 w-5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-black ${
               seleccionado ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'
@@ -68,6 +77,7 @@ export const ListaDesempenos = ({
             </span>
           )}
         </div>
+      </div>
       );
     })}
   </div>

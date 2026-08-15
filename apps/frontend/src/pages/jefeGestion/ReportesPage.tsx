@@ -6,7 +6,6 @@ import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api
 import { useFichasCompletadas } from '@entities/model-reportes';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ReportesStats, ReportesGrid, type BackendReportVisit } from '@widgets/reportes';
-import { SubnavReportes } from '@/widgets/reportes/ui/SubnavReportes';
 import { MODALIDAD_NIVEL_MAP, RoleCode, Capability } from '@sistema-monitoreo/shared-contracts';
 import { useUser } from '@entities/model-user';
 import { useScope, useCan } from '@shared/auth';
@@ -262,9 +261,6 @@ export const ReportesPage = () => {
           </button>
         </div>
       </div>
-
-      {/* ── Subnavegación de Sección ── */}
-      {!isEvaluatedView && <SubnavReportes totalFichas={stats.total} />}
 
       {/* ── Módulos de KPIs ── */}
       <ReportesStats stats={stats} isEvaluatedView={isEvaluatedView} />

@@ -3,30 +3,36 @@ import { useUser } from '@entities/model-user';
 import { useFichasCompletadas } from '@entities/model-reportes';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { useCan, Capability } from '@shared/auth';
+import { PageHeader } from '@shared/ui/pageHeader';
+import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 import {
   reportesVisibles,
   type ReporteVisible,
 } from '@features/reportes/lib/visibilidad-reportes';
+import { calcularAnalisisDesempeno } from '@features/reportes/lib/analisis-desempeno';
 import {
-  calcularAnalisisDesempeno,
-  normalizarNivelLogro,
-} from '@features/reportes/lib/analisis-desempeno';
-import { SubnavReportes } from '@/widgets/reportes/ui/SubnavReportes';
+  coincideConPeriodo,
+  calcularConteosPorPeriodo,
+  type FiltroPeriodoTipo,
+} from '@features/reportes/lib/filtro-temporal';
+import { FiltrosReportes } from '@/widgets/reportes/ui/grid/FiltrosReportes';
 import { KpisDesempeno } from '@/widgets/reportes/ui/analisis/KpisDesempeno';
 import { GraficoDistribucionNivel } from '@/widgets/reportes/ui/analisis/GraficoDistribucionNivel';
 import { GraficoNivelEducativo } from '@/widgets/reportes/ui/analisis/GraficoNivelEducativo';
-import { TablaDocentesRefuerzo } from '@/widgets/reportes/ui/analisis/TablaDocentesRefuerzo';
-import { FiltrosAnalisis } from '@/widgets/reportes/ui/analisis/FiltrosAnalisis';
 import type { BackendReportVisit } from '@/widgets/reportes';
 
 export const AnalisisDesempenoPage = () => {
   const { user } = useUser();
   const { can } = useCan();
 
-  const [filtroAnio, setFiltroAnio] = useState('ALL');
-  const [filtroNivel, setFiltroNivel] = useState('ALL');
-  const [filtroLogro, setFiltroLogro] = useState('ALL');
+  // ── Estados de Filtros (Filtros de Reporte estándar) ──
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterModalidad, setFilterModalidad] = useState('Todos');
+  const [filterNivel, setFilterNivel] = useState('Todos');
+  const [filterAnio, setFilterAnio] = useState('Todos');
+  const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
+  // Datos
   const { data: fichasCompletadasData, isLoading } = useFichasCompletadas({
     limit: 1000,
     tipoMonitoreo: 'DOCENTE',
@@ -37,20 +43,26 @@ export const AnalisisDesempenoPage = () => {
   );
 
   const completedVisits = useMemo((): BackendReportVisit[] => {
-    if (fichasCompletadasData?.data) {
+    if (fichasCompletadasData?.data && fichasCompletadasData.data.length > 0) {
       const list = fichasCompletadasData.data.map((f) => ({
         id: f.id,
         cronogramaId: f.cronogramaId,
-        fechaHora: f.fechaProgramada || f.fechaEjecucion,
+        fechaHora: f.fechaEjecucion || f.fechaProgramada,
         tipo: (f.tipoMonitoreo === 'DOCENTE' ? 'DOCENTE' : 'DIRECTIVO') as 'DOCENTE' | 'DIRECTIVO',
         docenteDirectivo: f.evaluadoNombre,
         evaluadoId: f.evaluadoId,
         especialista: f.especialistaNombre,
+        especialistaInitials: f.especialistaNombre
+          .split(' ')
+          .map((n) => n[0] || '')
+          .join('')
+          .toUpperCase(),
         monitorId: f.especialistaId,
         institucion: `${f.institucionNombre} - ${f.institucionCodigoModular}`,
         institucionId: f.institucionId,
         modalidad: f.modalidad || 'EBR',
         nivel: f.nivel || 'Primaria',
+        nroVisita: '1',
         estado: 'COMPLETADO' as const,
         nivelLogro: f.nivelLogro,
         promedio: f.promedio,
@@ -67,87 +79,129 @@ export const AnalisisDesempenoPage = () => {
     return reportesVisibles(completadas as ReporteVisible[], user) as BackendReportVisit[];
   }, [fichasCompletadasData, cronogramas, user]);
 
-  const aniosDisponibles = useMemo(() => {
-    const set = new Set<string>();
+  // Cascading Nivel
+  const nivelesDisponibles = useMemo(() => {
+    if (filterModalidad === 'Todos') return [];
+    return MODALIDAD_NIVEL_MAP[filterModalidad as keyof typeof MODALIDAD_NIVEL_MAP] || [];
+  }, [filterModalidad]);
+
+  const handleModalidadChange = (modalidad: string) => {
+    setFilterModalidad(modalidad);
+    setFilterNivel('Todos');
+  };
+
+  const añosDisponibles = useMemo(() => {
+    const yearsSet = new Set<string>();
     completedVisits.forEach((v) => {
-      if (v.anioAcademico) set.add(String(v.anioAcademico));
-      else if (v.fechaHora) set.add(new Date(v.fechaHora).getFullYear().toString());
+      try {
+        const d = new Date(v.fechaHora);
+        if (!isNaN(d.getTime())) {
+          yearsSet.add(d.getFullYear().toString());
+        } else {
+          const yearPart = v.fechaHora?.split('-')[0];
+          if (yearPart && yearPart.length === 4 && !isNaN(Number(yearPart))) {
+            yearsSet.add(yearPart);
+          }
+        }
+      } catch {
+        // ignore
+      }
     });
-    return Array.from(set).sort().reverse();
+    return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
   }, [completedVisits]);
 
-  const nivelesDisponibles = useMemo(() => {
-    const set = new Set<string>();
-    completedVisits.forEach((v) => {
-      if (v.nivel) set.add(v.nivel);
-    });
-    return Array.from(set).sort();
-  }, [completedVisits]);
+  const conteosPeriodo = useMemo(
+    () => calcularConteosPorPeriodo(completedVisits),
+    [completedVisits],
+  );
+
+  const isAnyFilterActive =
+    searchQuery.trim() !== '' ||
+    filterModalidad !== 'Todos' ||
+    filterNivel !== 'Todos' ||
+    filterAnio !== 'Todos' ||
+    filtroPeriodo !== 'TODOS';
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setFilterModalidad('Todos');
+    setFilterNivel('Todos');
+    setFilterAnio('Todos');
+    setFiltroPeriodo('TODOS');
+  };
 
   const visitasFiltradas = useMemo(() => {
-    return completedVisits.filter((v) => {
-      if (filtroAnio !== 'ALL') {
-        const anio = v.anioAcademico ? String(v.anioAcademico) : v.fechaHora?.split('-')[0];
-        if (anio !== filtroAnio) return false;
+    return completedVisits.filter((visit) => {
+      // Filtro de período temporal (Hoy, Esta semana, Este mes, Todos)
+      if (!coincideConPeriodo(visit.fechaHora, filtroPeriodo)) return false;
+
+      // Búsqueda por texto
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchIE = visit.institucion.toLowerCase().includes(query);
+        const matchDocente = visit.docenteDirectivo.toLowerCase().includes(query);
+        const matchEspecialista = visit.especialista.toLowerCase().includes(query);
+        if (!matchIE && !matchDocente && !matchEspecialista) return false;
       }
 
-      if (filtroNivel !== 'ALL') {
-        if (v.nivel !== filtroNivel) return false;
-      }
+      if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
+      if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
 
-      if (filtroLogro !== 'ALL') {
-        const nivelNorm = normalizarNivelLogro(v.nivelLogro, v.promedio);
-        if (nivelNorm !== filtroLogro) return false;
+      if (filterAnio !== 'Todos') {
+        let visitYear = '';
+        try {
+          const d = new Date(visit.fechaHora);
+          if (!isNaN(d.getTime())) {
+            visitYear = d.getFullYear().toString();
+          } else {
+            const yearPart = visit.fechaHora?.split('-')[0];
+            if (yearPart && yearPart.length === 4 && !isNaN(Number(yearPart))) {
+              visitYear = yearPart;
+            }
+          }
+        } catch {
+          // ignore
+        }
+        if (visitYear !== filterAnio) return false;
       }
 
       return true;
     });
-  }, [completedVisits, filtroAnio, filtroNivel, filtroLogro]);
+  }, [completedVisits, filtroPeriodo, searchQuery, filterModalidad, filterNivel, filterAnio]);
 
   const analisis = useMemo(
     () => calcularAnalisisDesempeno(visitasFiltradas),
     [visitasFiltradas],
   );
 
-  const isFiltered = filtroAnio !== 'ALL' || filtroNivel !== 'ALL' || filtroLogro !== 'ALL';
-
-  const handleLimpiarFiltros = () => {
-    setFiltroAnio('ALL');
-    setFiltroNivel('ALL');
-    setFiltroLogro('ALL');
-  };
-
   const cargando = isLoading && cargandoCronogramas;
 
   return (
     <div className="space-y-6 pb-12">
       {/* Encabezado */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-text">
-            Reportes y Analítica Pedagógica
-          </h1>
-          <p className="text-sm text-text-muted mt-1">
-            Consolidado y diagnóstico de niveles de logro docente en el marco del monitoreo pedagógico.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Análisis de Desempeño"
+        description="Diagnóstico y distribución estadística de los niveles de logro obtenidos en el monitoreo pedagógico."
+      />
 
-      {/* Subnavegación de Sección */}
-      <SubnavReportes totalFichas={completedVisits.length} />
-
-      {/* Filtros */}
-      <FiltrosAnalisis
-        filtroAnio={filtroAnio}
-        setFiltroAnio={setFiltroAnio}
-        filtroNivel={filtroNivel}
-        setFiltroNivel={setFiltroNivel}
-        filtroLogro={filtroLogro}
-        setFiltroLogro={setFiltroLogro}
-        aniosDisponibles={aniosDisponibles}
+      {/* ── Filtros de Reporte (Estándar) ── */}
+      <FiltrosReportes
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        filterModalidad={filterModalidad}
+        setFilterModalidad={handleModalidadChange}
+        filterNivel={filterNivel}
+        setFilterNivel={setFilterNivel}
+        filterAnio={filterAnio}
+        setFilterAnio={setFilterAnio}
+        filtroPeriodo={filtroPeriodo}
+        setFiltroPeriodo={setFiltroPeriodo}
+        conteosPeriodo={conteosPeriodo}
         nivelesDisponibles={nivelesDisponibles}
-        onLimpiarFiltros={handleLimpiarFiltros}
-        isFiltered={isFiltered}
+        añosDisponibles={añosDisponibles}
+        isAnyFilterActive={isAnyFilterActive}
+        handleClearFilters={handleClearFilters}
+        isEvaluatedView={false}
       />
 
       {cargando ? (
@@ -171,9 +225,6 @@ export const AnalisisDesempenoPage = () => {
             <GraficoDistribucionNivel analisis={analisis} />
             <GraficoNivelEducativo analisis={analisis} />
           </div>
-
-          {/* Bloque 3: Tabla de Docentes en Foco de Reforzamiento */}
-          <TablaDocentesRefuerzo docentes={analisis.docentesRefuerzo} />
         </>
       )}
     </div>

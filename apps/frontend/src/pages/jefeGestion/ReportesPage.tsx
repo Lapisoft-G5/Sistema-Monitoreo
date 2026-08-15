@@ -52,6 +52,7 @@ export const ReportesPage = () => {
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterAnio, setFilterAnio] = useState('Todos');
+  const [filterTipo, setFilterTipo] = useState('Todos');
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
   // Cascading Nivel
@@ -132,11 +133,28 @@ export const ReportesPage = () => {
     [completedVisits],
   );
 
+  const conteosTipo = useMemo(() => {
+    let docentes = 0;
+    let directivos = 0;
+    completedVisits.forEach((v) => {
+      if (v.tipo === 'DIRECTIVO') directivos++;
+      else docentes++;
+    });
+    return {
+      Todos: completedVisits.length,
+      DOCENTE: docentes,
+      DIRECTIVO: directivos,
+    };
+  }, [completedVisits]);
+
   const filteredVisits = useMemo(() => {
     return completedVisits
       .filter((visit) => {
         // Filtro de período temporal (Hoy, Esta semana, Este mes, Todos)
         if (!coincideConPeriodo(visit.fechaHora, filtroPeriodo)) return false;
+
+        // Filtro por tipo de monitoreo (Docente vs Directivo)
+        if (filterTipo !== 'Todos' && visit.tipo !== filterTipo) return false;
 
         // Búsqueda por texto
         if (searchQuery) {
@@ -171,13 +189,14 @@ export const ReportesPage = () => {
         return true;
       })
       .sort((a, b) => new Date(b.fechaHora).getTime() - new Date(a.fechaHora).getTime());
-  }, [completedVisits, filtroPeriodo, searchQuery, filterModalidad, filterNivel, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterTipo, searchQuery, filterModalidad, filterNivel, filterAnio]);
 
   const handleClearFilters = () => {
     setSearchQuery('');
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
     setFilterAnio('Todos');
+    setFilterTipo('Todos');
     setFiltroPeriodo('TODOS');
   };
 
@@ -186,6 +205,7 @@ export const ReportesPage = () => {
     filterModalidad !== 'Todos' ||
     filterNivel !== 'Todos' ||
     filterAnio !== 'Todos' ||
+    filterTipo !== 'Todos' ||
     filtroPeriodo !== 'TODOS';
 
   // ── Métricas Estadísticas (KPIs) ──
@@ -277,6 +297,9 @@ export const ReportesPage = () => {
         setFilterNivel={setFilterNivel}
         filterAnio={filterAnio}
         setFilterAnio={setFilterAnio}
+        filterTipo={filterTipo}
+        setFilterTipo={setFilterTipo}
+        conteosTipo={conteosTipo}
         filtroPeriodo={filtroPeriodo}
         setFiltroPeriodo={setFiltroPeriodo}
         conteosPeriodo={conteosPeriodo}

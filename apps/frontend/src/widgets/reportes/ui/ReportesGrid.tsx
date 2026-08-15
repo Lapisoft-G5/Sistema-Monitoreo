@@ -47,6 +47,9 @@ interface ReportesGridProps {
   setFilterNivel: (n: string) => void;
   filterAnio: string;
   setFilterAnio: (a: string) => void;
+  filterTipo?: string;
+  setFilterTipo?: (tipo: string) => void;
+  conteosTipo?: Record<'Todos' | 'DOCENTE' | 'DIRECTIVO', number>;
   filtroPeriodo: FiltroPeriodoTipo;
   setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
   conteosPeriodo?: Record<FiltroPeriodoTipo, number>;

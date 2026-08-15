@@ -33,6 +33,7 @@ export interface BackendReportVisit extends Cronograma {
   correoEnviado?: boolean;
   horaInicio?: string;
   horaFin?: string;
+  anioAcademico?: number;
 }
 
 interface ReportesGridProps {

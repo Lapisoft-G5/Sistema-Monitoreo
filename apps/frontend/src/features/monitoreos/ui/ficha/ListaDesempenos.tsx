@@ -55,9 +55,9 @@ export const ListaDesempenos = ({
               {desempeno.nombre}
             </div>
             <div className="text-[9px] font-semibold text-slate-400 flex items-center gap-1">
-              <span>Nivel:</span>
+              <span>Valoración:</span>
               <strong className={nivel ? 'text-primary' : 'text-slate-400 font-normal italic'}>
-                {nivel ? `Nivel ${nivel}` : 'Sin evaluar'}
+                {nivel === 'III' ? 'Sí' : nivel === 'II' ? 'Parcialmente' : nivel === 'I' ? 'No' : (nivel ? `Nivel ${nivel}` : 'Sin evaluar')}
               </strong>
             </div>
           </div>

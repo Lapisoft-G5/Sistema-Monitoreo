@@ -95,17 +95,25 @@ export const PlantillaCreatePage = () => {
             descripcionCorta: d.descripcionCorta,
             preguntaExtra: d.preguntaExtra || undefined,
             orden: i + 1,
-            aspectos: d.aspectos
-              .filter((a) => a.descripcion.trim() !== '')
+            aspectos: (d.aspectos ?? [])
+              .filter((a) => a && a.descripcion && a.descripcion.trim() !== '')
               .map((a, ai) => ({
                 id: a.id,
                 descripcion: a.descripcion,
                 orden: ai + 1,
               })),
-            rubrica: (d.rubrica ?? []).map((r) => ({
-              nivelRomano: r.nivel,
-              descripcion: r.descripcion,
-            })),
+            rubrica:
+              d.rubrica && d.rubrica.length > 0
+                ? d.rubrica.map((r) => ({
+                    nivelRomano: r.nivel,
+                    descripcion: r.descripcion,
+                  }))
+                : [
+                    { nivelRomano: 'I' as const, descripcion: 'No se evidencia' },
+                    { nivelRomano: 'II' as const, descripcion: 'Parcialmente evidenciado' },
+                    { nivelRomano: 'III' as const, descripcion: 'Totalmente evidenciado' },
+                    { nivelRomano: 'IV' as const, descripcion: 'Destacado' },
+                  ],
           })),
         ejeItems: (data.ejeItems ?? []).map((item) => ({
           numero: item.numero,

@@ -47,6 +47,10 @@ export const PanelDesempenos = ({
     [template, elegidoId],
   );
 
+  const esEib =
+    template.tipoMonitoreo === 'DOCENTE_EIB' ||
+    template.tipoMonitoreo.toUpperCase().includes('EIB');
+
   return (
     <div className="flex flex-col md:flex-row min-h-[300px]">
       <ListaDesempenos
@@ -69,6 +73,7 @@ export const PanelDesempenos = ({
         onObservar={(texto) => abierto && onObservar(abierto.id, texto)}
         mostrarAspectos={mostrarAspectos}
         soloLectura={soloLectura}
+        esEib={esEib}
       />
     </div>
   );

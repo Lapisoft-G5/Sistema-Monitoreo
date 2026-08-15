@@ -78,6 +78,13 @@ const ESCALA_DIRECTIVO: readonly NivelCalificacion[] = [
   { nivel: 'IV', denominacion: 'Satisfactorio', rangoMin: 100, color: '#3b82f6' },
 ];
 
+const ESCALA_EIB: readonly NivelCalificacion[] = [
+  { nivel: 'I', denominacion: 'No', rangoMin: 0, color: '#ef4444' },
+  { nivel: 'II', denominacion: 'Parcialmente', rangoMin: 50, color: '#f59e0b' },
+  { nivel: 'III', denominacion: 'Sí', rangoMin: 100, color: '#22c55e' },
+  { nivel: 'IV', denominacion: 'Destacado', rangoMin: 100, color: '#3b82f6' },
+];
+
 /**
  * Escala propuesta para un tipo de monitoreo.
  *
@@ -89,6 +96,9 @@ const ESCALA_DIRECTIVO: readonly NivelCalificacion[] = [
  * volvería a los umbrales fijos sin que nadie lo note.
  */
 export function nivelesPorDefecto(tipoMonitoreo: string): NivelCalificacion[] {
+  if (tipoMonitoreo === 'Monitoreo Docente EIB') {
+    return ESCALA_EIB.map((nivel) => ({ ...nivel }));
+  }
   const escala = esDirectivo(tipoMonitoreo) ? ESCALA_DIRECTIVO : ESCALA_DOCENTE;
 
   return escala.map((nivel) => ({ ...nivel }));
@@ -103,5 +113,8 @@ export function nivelesPorDefecto(tipoMonitoreo: string): NivelCalificacion[] {
  * 25·50·75·100.
  */
 export function baremoPorDefecto(tipoMonitoreo: string): Baremo {
+  if (tipoMonitoreo === 'Monitoreo Docente EIB') {
+    return 'Porcentual';
+  }
   return esDirectivo(tipoMonitoreo) ? 'Porcentual' : 'Vigente';
 }

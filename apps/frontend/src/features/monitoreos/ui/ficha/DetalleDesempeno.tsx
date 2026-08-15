@@ -21,6 +21,7 @@ interface DetalleDesempenoProps {
   /** Los aspectos son del monitoreo a docente; el directivo no los lleva. */
   mostrarAspectos: boolean;
   soloLectura: boolean;
+  esEib?: boolean;
 }
 
 const CLASES_TEXTAREA =
@@ -32,6 +33,36 @@ const EtiquetaSeccion = ({ children }: { children: string }) => (
   </span>
 );
 
+const OPCIONES_EIB = [
+  {
+    nivel: 'III',
+    rotulo: 'Sí',
+    descripcion: 'Se evidencia de forma clara y consistente',
+    color: '#16a34a',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/30',
+    activeBg: 'bg-emerald-600 text-white',
+  },
+  {
+    nivel: 'II',
+    rotulo: 'Parcialmente',
+    descripcion: 'Se observan indicios o requiere fortalecimiento',
+    color: '#d97706',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/30',
+    activeBg: 'bg-amber-500 text-white',
+  },
+  {
+    nivel: 'I',
+    rotulo: 'No',
+    descripcion: 'No se evidencia en la observación',
+    color: '#dc2626',
+    bg: 'bg-rose-500/10',
+    border: 'border-rose-500/30',
+    activeBg: 'bg-rose-600 text-white',
+  },
+];
+
 /** Rúbrica del desempeño seleccionado: niveles, pregunta extra y justificación. */
 export const DetalleDesempeno = ({
   desempeno,
@@ -42,6 +73,7 @@ export const DetalleDesempeno = ({
   onObservar,
   mostrarAspectos,
   soloLectura,
+  esEib = false,
 }: DetalleDesempenoProps) => {
   if (!desempeno) {
     return (
@@ -63,9 +95,11 @@ export const DetalleDesempeno = ({
           <h3 className="text-base font-black text-slate-800 tracking-tight leading-snug">
             {desempeno.nombre}
           </h3>
-          <p className="text-xs text-slate-500 font-medium leading-relaxed">
-            {desempeno.descripcionCorta}
-          </p>
+          {desempeno.descripcionCorta && (
+            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+              {desempeno.descripcionCorta}
+            </p>
+          )}
         </div>
 
         {hayAspectos && (
@@ -83,54 +117,94 @@ export const DetalleDesempeno = ({
 
         <div className="space-y-3.5 pt-1">
           <EtiquetaSeccion>
-            Descripción de Niveles (Haz clic en un nivel para seleccionar)
+            {esEib
+              ? 'Valoración del Criterio / Ítem (Haz clic para seleccionar)'
+              : 'Descripción de Niveles (Haz clic en un nivel para seleccionar)'}
           </EtiquetaSeccion>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {niveles.map((nivel) => {
-              const detalle = desempeno.rubrica?.find((r) => r.nivel === nivel.nivel);
-              const elegido = respuesta.nivel === nivel.nivel;
+          {esEib ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {OPCIONES_EIB.map((opcion) => {
+                const elegido = respuesta.nivel === opcion.nivel;
 
-              return (
-                <div
-                  key={nivel.nivel}
-                  onClick={() => {
-                    if (!soloLectura) onElegirNivel(nivel.nivel);
-                  }}
-                  className={`border rounded-xl p-4 flex flex-col gap-2 shadow-sm relative overflow-hidden transition-all duration-200 ${
-                    soloLectura ? 'cursor-default' : 'cursor-pointer hover:shadow font-semibold'
-                  } ${
-                    elegido ? 'ring-2 bg-slate-50' : 'border-slate-200 hover:border-slate-300 bg-surface'
-                  }`}
-                  style={{
-                    borderColor: elegido ? nivel.color : '#e2e8f0',
-                    backgroundColor: elegido ? `${nivel.color}07` : 'transparent',
-                  }}
-                >
-                  <div
-                    className="absolute left-0 top-0 bottom-0 w-1.5"
-                    style={{ backgroundColor: nivel.color }}
-                  />
-
-                  <div className="pl-2 flex flex-col gap-1">
+                return (
+                  <button
+                    key={opcion.nivel}
+                    type="button"
+                    disabled={soloLectura}
+                    onClick={() => onElegirNivel(opcion.nivel)}
+                    className={`p-4 rounded-xl border text-left transition-all duration-200 flex flex-col gap-1.5 ${
+                      soloLectura ? 'cursor-default' : 'cursor-pointer hover:shadow-xs'
+                    } ${
+                      elegido
+                        ? `${opcion.activeBg} shadow-md border-transparent`
+                        : `${opcion.bg} ${opcion.border}`
+                    }`}
+                  >
                     <span
-                      className="text-xs font-black uppercase tracking-wider"
-                      style={{ color: nivel.color }}
+                      className={`text-sm font-black ${elegido ? 'text-white' : ''}`}
+                      style={{ color: elegido ? '#ffffff' : opcion.color }}
                     >
-                      Nivel {nivel.nivel}
+                      {opcion.rotulo}
                     </span>
-                    <span className="text-[10px] font-bold" style={{ color: nivel.color }}>
-                      {nivel.denominacion}
+                    <span
+                      className={`text-[11px] leading-tight ${
+                        elegido ? 'text-white/90' : 'text-slate-600'
+                      }`}
+                    >
+                      {opcion.descripcion}
                     </span>
-                  </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {niveles.map((nivel) => {
+                const detalle = desempeno.rubrica?.find((r) => r.nivel === nivel.nivel);
+                const elegido = respuesta.nivel === nivel.nivel;
 
-                  <p className="pl-2 text-[11px] text-slate-700 font-medium leading-relaxed">
-                    {detalle?.descripcion || 'Sin descripción registrada.'}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+                return (
+                  <div
+                    key={nivel.nivel}
+                    onClick={() => {
+                      if (!soloLectura) onElegirNivel(nivel.nivel);
+                    }}
+                    className={`border rounded-xl p-4 flex flex-col gap-2 shadow-sm relative overflow-hidden transition-all duration-200 ${
+                      soloLectura ? 'cursor-default' : 'cursor-pointer hover:shadow font-semibold'
+                    } ${
+                      elegido ? 'ring-2 bg-slate-50' : 'border-slate-200 hover:border-slate-300 bg-surface'
+                    }`}
+                    style={{
+                      borderColor: elegido ? nivel.color : '#e2e8f0',
+                      backgroundColor: elegido ? `${nivel.color}07` : 'transparent',
+                    }}
+                  >
+                    <div
+                      className="absolute left-0 top-0 bottom-0 w-1.5"
+                      style={{ backgroundColor: nivel.color }}
+                    />
+
+                    <div className="pl-2 flex flex-col gap-1">
+                      <span
+                        className="text-xs font-black uppercase tracking-wider"
+                        style={{ color: nivel.color }}
+                      >
+                        Nivel {nivel.nivel}
+                      </span>
+                      <span className="text-[10px] font-bold" style={{ color: nivel.color }}>
+                        {nivel.denominacion}
+                      </span>
+                    </div>
+
+                    <p className="pl-2 text-[11px] text-slate-700 font-medium leading-relaxed">
+                      {detalle?.descripcion || 'Sin descripción registrada.'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {desempeno.preguntaExtra && (

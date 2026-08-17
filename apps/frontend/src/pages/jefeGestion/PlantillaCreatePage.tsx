@@ -4,6 +4,10 @@ import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { PlantillaForm, type PlantillaFormState } from '@widgets/plantillas';
 import { plantillasApi } from '@entities/model-plantillas/api/plantillas.api';
+import {
+  descriptorPorDefecto,
+  romanosDeInstrumento,
+} from '@entities/model-plantillas/escala-por-defecto';
 import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -102,26 +106,19 @@ export const PlantillaCreatePage = () => {
                 descripcion: a.descripcion,
                 orden: ai + 1,
               })),
-            rubrica:
-              d.rubrica && d.rubrica.length > 0
-                ? d.rubrica.map((r) => ({
-                    nivelRomano: r.nivel,
-                    descripcion:
-                      r.descripcion?.trim() ||
-                      (data.tipoMonitoreo === 'Monitoreo Docente EIB'
-                        ? r.nivel === 'I'
-                          ? 'No'
-                          : r.nivel === 'II'
-                            ? 'Parcialmente'
-                            : 'Sí'
-                        : `Nivel ${r.nivel}`),
-                  }))
-                : [
-                    { nivelRomano: 'I' as const, descripcion: 'No' },
-                    { nivelRomano: 'II' as const, descripcion: 'Parcialmente' },
-                    { nivelRomano: 'III' as const, descripcion: 'Sí' },
-                    { nivelRomano: 'IV' as const, descripcion: 'Sí' },
-                  ],
+            /**
+             * La rúbrica lleva una entrada por nivel que el instrumento otorga.
+             * Para la EIB son tres: antes se enviaba una cuarta que duplicaba
+             * «Sí» porque `validarReglas` exigía cuatro para todos.
+             */
+            rubrica: romanosDeInstrumento(data.tipoMonitoreo).map((nivel) => {
+              const declarada = d.rubrica?.find((r) => r.nivel === nivel);
+              return {
+                nivelRomano: nivel,
+                descripcion:
+                  declarada?.descripcion?.trim() || descriptorPorDefecto(data.tipoMonitoreo, nivel),
+              };
+            }),
           })),
         ejeItems: (data.ejeItems ?? []).map((item) => ({
           numero: item.numero,

@@ -130,8 +130,13 @@ export class CreatePlantillaDto {
   @IsString()
   descripcion?: string;
 
+  /**
+   * Piso de tres: la Ficha Docente EIB es una lista de cotejo de tres valores.
+   * La cantidad exacta que corresponde a cada instrumento la verifica
+   * `validarReglas`, que la consulta al contrato compartido.
+   */
   @IsArray()
-  @ArrayMinSize(4)
+  @ArrayMinSize(3)
   @ValidateNested({ each: true })
   @Type(() => NivelCalificacionInput)
   niveles!: NivelCalificacionInput[];

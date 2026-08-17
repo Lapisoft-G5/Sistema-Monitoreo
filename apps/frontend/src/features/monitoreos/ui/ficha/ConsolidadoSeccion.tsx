@@ -1,7 +1,8 @@
 import { useMemo, useCallback } from 'react';
-import { Trophy, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
+import { Trophy, CheckCircle2 } from 'lucide-react';
 import { romanoANivel } from '@sistema-monitoreo/shared-contracts';
 import type { Plantilla } from '@/entities/model-plantillas';
+import { esEscalaCualitativa, resumirPorNivel } from '@/entities/model-plantillas';
 import { aNivelRomano } from '../../lib/ficha-estado';
 
 type NivelPlantilla = Plantilla['niveles'][number];
@@ -57,13 +58,7 @@ export const ConsolidadoSeccion = ({
   respuestasEjeItem,
   calificacion,
 }: ConsolidadoSeccionProps) => {
-  const isQualitative = useMemo(() => {
-    return (
-      niveles.some((n) =>
-        ['sí', 'si', 'parcialmente', 'no'].includes(n.denominacion.trim().toLowerCase()),
-      ) || desempenos.length > 10
-    );
-  }, [niveles, desempenos.length]);
+  const esCualitativo = useMemo(() => esEscalaCualitativa(niveles), [niveles]);
 
   const colorDeNivel = useCallback(
     (romano: string | null) =>
@@ -105,38 +100,19 @@ export const ConsolidadoSeccion = ({
     }),
   ];
 
-  // Conteo de frecuencias para instrumentos cualitativos
-  const resumenFrecuencias = useMemo(() => {
-    if (!isQualitative) return null;
+  const resumen = useMemo(
+    () =>
+      esCualitativo
+        ? resumirPorNivel(
+            desempenos.map((des) => des.id),
+            niveles,
+            nivelesElegidos,
+          )
+        : null,
+    [esCualitativo, desempenos, niveles, nivelesElegidos],
+  );
 
-    const total = desempenos.length;
-    let countSi = 0;
-    let countParcial = 0;
-    let countNo = 0;
-
-    for (const des of desempenos) {
-      const romano = nivelesElegidos[des.id];
-      const denom = (romano ? denominacionDeNivel(romano) : '')?.toLowerCase() ?? '';
-      if (denom.includes('sí') || denom.includes('si')) {
-        countSi++;
-      } else if (denom.includes('parcial')) {
-        countParcial++;
-      } else if (denom.includes('no')) {
-        countNo++;
-      }
-    }
-
-    const pct = (c: number) => (total > 0 ? Math.round((c / total) * 100) : 0);
-
-    return {
-      total,
-      si: { cantidad: countSi, porcentaje: pct(countSi) },
-      parcial: { cantidad: countParcial, porcentaje: pct(countParcial) },
-      no: { cantidad: countNo, porcentaje: pct(countNo) },
-    };
-  }, [isQualitative, desempenos, nivelesElegidos, denominacionDeNivel]);
-
-  if (isQualitative && resumenFrecuencias) {
+  if (resumen) {
     return (
       <div className="p-5 border-t border-border bg-slate-50/80">
         <div className="flex items-center gap-2 mb-4">
@@ -146,46 +122,52 @@ export const ConsolidadoSeccion = ({
           </span>
         </div>
 
-        {/* Tarjetas de Frecuencia Cualitativa */}
+        {/* Una tarjeta por nivel que declara la escala, con su propio color. */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-          <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/60 shadow-2xs flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wide flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                Cumple (Sí)
+          {resumen.porNivel.map((conteo) => (
+            <div
+              key={conteo.nivel}
+              className="p-3.5 rounded-xl border bg-white shadow-2xs flex items-center justify-between"
+              style={{ borderColor: `${conteo.color}40` }}
+            >
+              <div className="space-y-0.5">
+                <span
+                  className="text-[11px] font-bold uppercase tracking-wide"
+                  style={{ color: conteo.color }}
+                >
+                  {conteo.denominacion}
+                </span>
+                <p className="text-xl font-black text-slate-800">
+                  {conteo.cantidad}{' '}
+                  <span className="text-xs font-bold text-slate-500">/ {resumen.total}</span>
+                </p>
+              </div>
+              <span
+                className="text-xs font-extrabold px-2.5 py-1 rounded-lg"
+                style={{ backgroundColor: `${conteo.color}20`, color: conteo.color }}
+              >
+                {conteo.porcentaje}%
               </span>
-              <p className="text-xl font-black text-emerald-900">{resumenFrecuencias.si.cantidad} <span className="text-xs font-bold text-emerald-700">/ {resumenFrecuencias.total}</span></p>
             </div>
-            <span className="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-emerald-200/80 text-emerald-800">
-              {resumenFrecuencias.si.porcentaje}%
-            </span>
-          </div>
+          ))}
 
-          <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/60 shadow-2xs flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wide flex items-center gap-1.5">
-                <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
-                Parcialmente
+          {/* Lo no marcado se declara: antes se perdía del conteo en silencio. */}
+          {resumen.sinValorar.cantidad > 0 && (
+            <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 shadow-2xs flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                  Sin valorar
+                </span>
+                <p className="text-xl font-black text-slate-700">
+                  {resumen.sinValorar.cantidad}{' '}
+                  <span className="text-xs font-bold text-slate-500">/ {resumen.total}</span>
+                </p>
+              </div>
+              <span className="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-200 text-slate-600">
+                {resumen.sinValorar.porcentaje}%
               </span>
-              <p className="text-xl font-black text-amber-900">{resumenFrecuencias.parcial.cantidad} <span className="text-xs font-bold text-amber-700">/ {resumenFrecuencias.total}</span></p>
             </div>
-            <span className="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-amber-200/80 text-amber-800">
-              {resumenFrecuencias.parcial.porcentaje}%
-            </span>
-          </div>
-
-          <div className="p-3.5 rounded-xl border border-rose-200 bg-rose-50/60 shadow-2xs flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-[11px] font-bold text-rose-700 uppercase tracking-wide flex items-center gap-1.5">
-                <XCircle className="h-3.5 w-3.5 text-rose-600" />
-                No Observado (No)
-              </span>
-              <p className="text-xl font-black text-rose-900">{resumenFrecuencias.no.cantidad} <span className="text-xs font-bold text-rose-700">/ {resumenFrecuencias.total}</span></p>
-            </div>
-            <span className="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-rose-200/80 text-rose-800">
-              {resumenFrecuencias.no.porcentaje}%
-            </span>
-          </div>
+          )}
         </div>
 
         {/* Tabla Detallada Cualitativa */}

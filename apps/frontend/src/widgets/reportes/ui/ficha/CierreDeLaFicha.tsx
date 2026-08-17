@@ -1,5 +1,6 @@
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { Plantilla } from '@entities/model-plantillas';
+import { esEscalaCualitativa, resumirPorNivel } from '@entities/model-plantillas';
 import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 import { consolidarFicha, puntajeDeDesempeno } from '@features/reportes/lib/consolidado-ficha';
 import { TituloDeSeccion } from './tabla';
@@ -59,26 +60,12 @@ export const Consolidado = ({
   template: Plantilla;
   estado: EstadoDeCierre;
 }) => {
-  const isQualitative =
-    template.niveles?.some((n) =>
-      ['sí', 'si', 'parcialmente', 'no'].includes(n.denominacion.trim().toLowerCase()),
-    ) || template.desempenos.length > 10;
-
-  if (isQualitative) {
-    const total = template.desempenos.length;
-    let countSi = 0;
-    let countParcial = 0;
-    let countNo = 0;
-
-    for (const des of template.desempenos) {
-      const romano = estado.selectedLevels[des.id];
-      const denom = (romano ? template.niveles?.find((n) => n.nivel === romano)?.denominacion : '')?.toLowerCase() ?? '';
-      if (denom.includes('sí') || denom.includes('si')) countSi++;
-      else if (denom.includes('parcial')) countParcial++;
-      else if (denom.includes('no')) countNo++;
-    }
-
-    const pct = (c: number) => (total > 0 ? Math.round((c / total) * 100) : 0);
+  if (esEscalaCualitativa(template.niveles)) {
+    const resumen = resumirPorNivel(
+      template.desempenos.map((des) => des.id),
+      template.niveles,
+      estado.selectedLevels,
+    );
 
     return (
       <div className="mt-8 break-inside-avoid">
@@ -92,25 +79,34 @@ export const Consolidado = ({
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="font-bold" style={{ color: '#15803d' }}>Cumple / Sí (Práctica observada)</td>
-              <td className="text-center font-bold">{countSi}</td>
-              <td className="text-center font-bold" style={{ color: '#15803d' }}>{pct(countSi)}%</td>
-            </tr>
-            <tr>
-              <td className="font-bold" style={{ color: '#b45309' }}>Parcialmente (En proceso / Incipiente)</td>
-              <td className="text-center font-bold">{countParcial}</td>
-              <td className="text-center font-bold" style={{ color: '#b45309' }}>{pct(countParcial)}%</td>
-            </tr>
-            <tr>
-              <td className="font-bold" style={{ color: '#b91c1c' }}>No Observado / No (Práctica ausente)</td>
-              <td className="text-center font-bold">{countNo}</td>
-              <td className="text-center font-bold" style={{ color: '#b91c1c' }}>{pct(countNo)}%</td>
-            </tr>
+            {resumen.porNivel.map((conteo) => (
+              <tr key={conteo.nivel}>
+                <td className="font-bold" style={{ color: conteo.color }}>
+                  {conteo.denominacion}
+                </td>
+                <td className="text-center font-bold">{conteo.cantidad}</td>
+                <td className="text-center font-bold" style={{ color: conteo.color }}>
+                  {conteo.porcentaje}%
+                </td>
+              </tr>
+            ))}
+
+            {/* Un ítem sin marcar se informa como tal: la fila TOTAL escribía
+                100% a mano y cerraba el documento sobre un reparto incompleto. */}
+            {resumen.sinValorar.cantidad > 0 && (
+              <tr>
+                <td className="font-bold text-slate-500">Sin valorar</td>
+                <td className="text-center font-bold">{resumen.sinValorar.cantidad}</td>
+                <td className="text-center font-bold text-slate-500">
+                  {resumen.sinValorar.porcentaje}%
+                </td>
+              </tr>
+            )}
+
             <tr className="bg-gray font-bold">
               <td className="uppercase">TOTAL DE ÍTEMS EVALUADOS</td>
-              <td className="text-center text-sm">{total}</td>
-              <td className="text-center text-sm">100%</td>
+              <td className="text-center text-sm">{resumen.total}</td>
+              <td className="text-center text-sm">{resumen.total > 0 ? '100%' : '—'}</td>
             </tr>
           </tbody>
         </table>

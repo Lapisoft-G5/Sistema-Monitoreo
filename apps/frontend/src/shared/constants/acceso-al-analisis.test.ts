@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { hasPermission, type UserRole } from './roles';
+import { hasPermission } from './roles';
+import type { UserRole } from '@sistema-monitoreo/shared-contracts';
 
 /**
  * Quién alcanza el Análisis de Desempeño.

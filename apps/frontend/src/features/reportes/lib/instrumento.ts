@@ -16,6 +16,14 @@ import type { TipoMonitoreo, TipoPlantilla } from '@sistema-monitoreo/shared-con
  * antes vivían repetidas en ternarios: rótulo y nombre de plantilla.
  */
 
+/**
+ * Instrumento por el que se segmenta un listado o un análisis, o todos juntos.
+ *
+ * Los filtros lo declaraban como `string`, así que nada garantizaba que sus
+ * valores coincidieran con los del contrato y cada uso los interpretaba a mano.
+ */
+export type FiltroDeInstrumento = TipoPlantilla | 'Todos';
+
 /** Si la ficha se llenó con la Ficha Docente EIB. */
 export function esInstrumentoEib(instrumento: TipoPlantilla | undefined): boolean {
   return instrumento === 'DOCENTE_EIB';

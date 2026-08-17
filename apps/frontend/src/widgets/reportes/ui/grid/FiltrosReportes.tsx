@@ -6,6 +6,7 @@ import {
   FILTROS_PERIODO,
   type FiltroPeriodoTipo,
 } from '@/features/reportes/lib/filtro-temporal';
+import type { FiltroDeInstrumento } from '@/features/reportes/lib/instrumento';
 
 const MODALIDADES = ['EBR', 'EBA', 'EBE', 'CEPTRO'];
 
@@ -52,8 +53,8 @@ interface FiltrosReportesProps {
   setFilterNivel: (n: string) => void;
   filterAnio: string;
   setFilterAnio: (a: string) => void;
-  filterTipo?: string;
-  setFilterTipo?: (tipo: string) => void;
+  filterTipo?: FiltroDeInstrumento;
+  setFilterTipo?: (tipo: FiltroDeInstrumento) => void;
   conteosTipo?: Record<string, number>;
   filtroPeriodo: FiltroPeriodoTipo;
   setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;

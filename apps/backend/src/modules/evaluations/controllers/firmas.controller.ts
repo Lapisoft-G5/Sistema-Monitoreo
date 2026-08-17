@@ -34,6 +34,7 @@ import type { ScopeContext } from '../../../shared/auth/scope-filter.js';
 import type { AuthenticatedRequest } from '../../../shared/types/authenticated-request.js';
 import {
   condicionDeFicha,
+  debeFinalizarse,
   resolverFicha,
   rolFirmanteDe,
   rutaDeImagenDeFirma,
@@ -339,12 +340,19 @@ export class FirmasController {
         },
       });
 
-      // 3. Revisar si con esta firma la ficha ya puede pasar a FINALIZADO
-      const firmasCount = await this.prisma.fichaFirma.count({
+      /**
+       * 3. Revisar si con esta firma la ficha ya puede pasar a FINALIZADO.
+       *
+       * Se leen los roles y no la cantidad: la firma del director de la I.E.
+       * llega después, como visto bueno, y contar la haría cerrar la ficha sin la
+       * del docente. La regla vive en `firmas.helper.ts`, con pruebas.
+       */
+      const firmadas = await this.prisma.fichaFirma.findMany({
         where: { fichaId: ficha.id },
+        select: { rolFirmante: true },
       });
 
-      if (firmasCount >= 2) {
+      if (debeFinalizarse(firmadas.map((f) => f.rolFirmante))) {
         await this.prisma.fichaMonitoreo.update({
           where: { id: ficha.id },
           data: { estado: 'FINALIZADO' },

@@ -88,6 +88,29 @@ export function rolFirmanteDe(
 }
 
 /**
+ * Si las firmas reunidas cierran la ficha.
+ *
+ * ── Por qué no se cuenta ──
+ * La regla era `count >= 2`. Funcionaba porque el esquema sólo admitía EVALUADOR
+ * y EVALUADO, uno por ficha —`@@unique([fichaId, rolFirmante])`—, de modo que
+ * contar dos equivalía a «firmaron ambos».
+ *
+ * El director de la I.E. también firma la ficha docente, al final del monitoreo,
+ * como visto bueno sobre una ficha ya finalizada. Con esa tercera firma contar
+ * deja de significar lo mismo: EVALUADOR + DIRECTOR sin el evaluado cerraría la
+ * ficha sin que el docente la haya firmado, y el código no impone ningún orden
+ * de firma.
+ *
+ * Lo que cierra la ficha son las DOS PARTES de la visita. La firma del director
+ * llega después y no participa de esa decisión.
+ */
+export function debeFinalizarse(rolesFirmados: readonly string[]): boolean {
+  const roles = new Set(rolesFirmados.map((rol) => rol.trim().toUpperCase()));
+
+  return roles.has('EVALUADOR') && roles.has('EVALUADO');
+}
+
+/**
  * Ruta autenticada por la que se sirve la imagen de una firma estampada.
  *
  * ── Por qué no se devuelve la ruta del archivo ──

@@ -1,5 +1,6 @@
 import {
   condicionDeFicha,
+  debeFinalizarse,
   esArchivoDeFirma,
   resolverFicha,
   rolFirmanteDe,
@@ -121,6 +122,51 @@ describe('resolverFicha', () => {
     const resolucion = resolverFicha([{ id: 'a' }, { id: 'b' }, { id: 'c' }]);
 
     expect(resolucion).toEqual({ estado: 'ambigua', cantidad: 3 });
+  });
+});
+
+/**
+ * ── Qué cierra una ficha ──
+ * La regla era `count >= 2`: dos firmas cualesquiera la finalizaban. Funcionaba
+ * porque el esquema sólo admitía EVALUADOR y EVALUADO, uno por ficha, así que
+ * contar dos equivalía a «firmaron ambos».
+ *
+ * El director de la I.E. también firma la ficha docente, al final del monitoreo,
+ * como visto bueno sobre una ficha YA finalizada. Con esa tercera firma, contar
+ * dejaría de significar lo mismo: EVALUADOR + DIRECTOR sin el evaluado cerraría
+ * la ficha sin que el docente la haya firmado. El código no impone ningún orden.
+ *
+ * Lo que cierra la ficha son las dos partes de la visita, no una cantidad.
+ */
+describe('debeFinalizarse', () => {
+  it('cierra la ficha cuando firmaron el evaluador y el evaluado', () => {
+    expect(debeFinalizarse(['EVALUADOR', 'EVALUADO'])).toBe(true);
+  });
+
+  it('no depende del orden en que firmaron', () => {
+    expect(debeFinalizarse(['EVALUADO', 'EVALUADOR'])).toBe(true);
+  });
+
+  it('no cierra con una sola de las dos partes', () => {
+    expect(debeFinalizarse(['EVALUADOR'])).toBe(false);
+    expect(debeFinalizarse(['EVALUADO'])).toBe(false);
+  });
+
+  it('no cierra sin ninguna firma', () => {
+    expect(debeFinalizarse([])).toBe(false);
+  });
+
+  /** El caso que la regla por cantidad iba a romper en cuanto exista DIRECTOR. */
+  it('no cierra con el evaluador y el director si falta el evaluado', () => {
+    expect(debeFinalizarse(['EVALUADOR', 'DIRECTOR'])).toBe(false);
+  });
+
+  it('sigue cerrando con las dos partes aunque el director ya haya firmado', () => {
+    expect(debeFinalizarse(['EVALUADOR', 'EVALUADO', 'DIRECTOR'])).toBe(true);
+  });
+
+  it('tolera diferencias de caja en el rol guardado', () => {
+    expect(debeFinalizarse(['evaluador', 'Evaluado'])).toBe(true);
   });
 });
 

@@ -4,6 +4,7 @@ import {
   calcularAnalisisPorCriterios,
 } from './analisis-desempeno';
 import type { BackendReportVisit } from '@/widgets/reportes';
+import type { Plantilla } from '@/entities/model-plantillas';
 
 describe('normalizarNivelLogro', () => {
   it('normaliza strings con nombres estándar y romanos', () => {
@@ -24,6 +25,13 @@ describe('normalizarNivelLogro', () => {
     expect(normalizarNivelLogro(undefined, 2.5)).toBe('II');
     expect(normalizarNivelLogro(undefined, 3.2)).toBe('III');
     expect(normalizarNivelLogro(undefined, 3.8)).toBe('IV');
+  });
+
+  /** Cerraba con `return 'II'`: una ficha sin datos salía «En proceso». */
+  it('devuelve nulo cuando la ficha no declara nivel ni promedio', () => {
+    expect(normalizarNivelLogro()).toBeNull();
+    expect(normalizarNivelLogro(undefined, Number.NaN)).toBeNull();
+    expect(normalizarNivelLogro('ALGO_QUE_NO_MAPEA')).toBeNull();
   });
 });
 
@@ -64,6 +72,164 @@ describe('calcularAnalisisPorCriterios', () => {
     expect(resDir.promedioGeneral).toBe(0);
     expect(resDir.criterios.length).toBe(3);
     expect(resDir.criterios[0].nombre).toContain('liderazgo pedagógico');
+  });
+
+  /**
+   * ── El defecto que motivó estas pruebas ──
+   * El camino de estimación no tiene con qué calcular una distribución por
+   * criterio: de cada ficha sólo conoce su nivel de logro GLOBAL. Aun así
+   * repartía ese único nivel entre todos los criterios y después lo alteraba
+   * según la paridad del índice del arreglo:
+   *
+   *     if (index === 0 && nivelAsignado === 2 && i % 2 === 0) nivelAsignado = 3;
+   *     if (index === 2 && nivelAsignado === 3 && i % 3 === 0) nivelAsignado = 2;
+   *
+   * Eso no es un cálculo degradado: es variación inventada para que el gráfico
+   * del análisis oficial se viera distribuido. Ahora la estimación informa la
+   * estructura de criterios y declara que no tiene el desglose.
+   */
+  describe('sin desglose del backend', () => {
+    const dosFichas = [
+      crearVisita({ id: 'v-1', nivelLogro: 'NIVEL_II', promedio: 2.4 }),
+      crearVisita({ id: 'v-2', nivelLogro: 'NIVEL_II', promedio: 2.4 }),
+    ];
+
+    it('declara que no tiene el desglose por criterio', () => {
+      const res = calcularAnalisisPorCriterios([], dosFichas, [], 'DOCENTE');
+
+      expect(res.sinDesglosePorCriterio).toBe(true);
+    });
+
+    it('no reporta ninguna distribución de niveles', () => {
+      const res = calcularAnalisisPorCriterios([], dosFichas, [], 'DOCENTE');
+
+      for (const criterio of res.criterios) {
+        expect([
+          criterio.conteoNivelI,
+          criterio.conteoNivelII,
+          criterio.conteoNivelIII,
+          criterio.conteoNivelIV,
+        ]).toEqual([0, 0, 0, 0]);
+        expect(criterio.promedio).toBe(0);
+        expect(criterio.tasaLogro).toBe(0);
+        expect(criterio.tasaRefuerzo).toBe(0);
+      }
+    });
+
+    /** Con fichas idénticas, dos criterios no pueden diferir: era el hack de paridad. */
+    it('no inventa diferencias entre criterios a partir del índice', () => {
+      const res = calcularAnalisisPorCriterios([], dosFichas, [], 'DOCENTE');
+      const distribuciones = res.criterios.map((c) =>
+        [c.conteoNivelI, c.conteoNivelII, c.conteoNivelIII, c.conteoNivelIV].join('-'),
+      );
+
+      expect(new Set(distribuciones).size).toBe(1);
+    });
+
+    it('no elige criterio de mayor dominio ni de mayor refuerzo', () => {
+      const res = calcularAnalisisPorCriterios([], dosFichas, [], 'DOCENTE');
+
+      expect(res.criterioMayorDominio).toBeNull();
+      expect(res.criterioMayorRefuerzo).toBeNull();
+      expect(res.promedioGeneral).toBe(0);
+    });
+
+    /** Cuántas fichas hay sí se sabe: es lo único real que tiene este camino. */
+    it('informa cuántas fichas encontró', () => {
+      const res = calcularAnalisisPorCriterios([], dosFichas, [], 'DOCENTE');
+
+      expect(res.totalEvaluaciones).toBe(2);
+    });
+
+    it('sigue mostrando la estructura de criterios del instrumento', () => {
+      const res = calcularAnalisisPorCriterios([], dosFichas, [], 'DOCENTE_EIB');
+
+      expect(res.criterios.length).toBe(4);
+      expect(res.criterios[0].nombre).toContain('Condiciones básicas');
+    });
+  });
+
+  describe('con desglose del backend', () => {
+    const criterioBackend = {
+      desempenoId: 'd-1',
+      nombre: 'Involucra activamente a los estudiantes',
+      orden: 1,
+      descripcionCorta: 'x',
+      totalEvaluados: 4,
+      conteoNivelI: 1,
+      conteoNivelII: 1,
+      conteoNivelIII: 1,
+      conteoNivelIV: 1,
+      porcentajeNivelI: 25,
+      porcentajeNivelII: 25,
+      porcentajeNivelIII: 25,
+      porcentajeNivelIV: 25,
+      promedio: 2.5,
+      tasaLogro: 50,
+      tasaRefuerzo: 50,
+    };
+
+    it('usa los criterios reales y no marca falta de desglose', () => {
+      const res = calcularAnalisisPorCriterios([criterioBackend], [], [], 'DOCENTE');
+
+      expect(res.sinDesglosePorCriterio).toBe(false);
+      expect(res.criterios).toEqual([criterioBackend]);
+      expect(res.totalEvaluaciones).toBe(4);
+      expect(res.criterioMayorDominio).not.toBeNull();
+    });
+  });
+
+  /**
+   * Regresión del bug de precedencia de `a016111`: `t === 'DOCENTE' ||
+   * t.includes('DOCENTE') && !t.includes('EIB')` sin paréntesis hacía que toda
+   * plantilla docente —EIB incluida— entrara por la primera rama.
+   */
+  describe('elección de la plantilla del instrumento', () => {
+    const plantilla = (tipoMonitoreo: string, nombreDesempeno: string): Plantilla => ({
+      id: `p-${tipoMonitoreo}`,
+      tipoMonitoreo,
+      anioAcademico: 2026,
+      lema: null,
+      baremo: 'Vigente',
+      niveles: [],
+      desempenos: [
+        {
+          id: `d-${tipoMonitoreo}`,
+          nombre: nombreDesempeno,
+          descripcionCorta: '',
+          aspectos: [],
+          rubrica: [],
+        },
+      ],
+      fechaCreacion: '2026-01-01',
+      fechaActualizacion: '2026-01-01',
+      version: 1,
+      estado: 'Vigente',
+      descripcion: '',
+    });
+
+    const catalogo = [
+      plantilla('DOCENTE_EIB', 'Criterio EIB'),
+      plantilla('DOCENTE', 'Criterio regular'),
+    ];
+
+    it('el filtro docente no toma la plantilla EIB', () => {
+      const res = calcularAnalisisPorCriterios([], [], catalogo, 'DOCENTE');
+
+      expect(res.criterios.map((c) => c.nombre)).toEqual(['Criterio regular']);
+    });
+
+    it('el filtro EIB toma la plantilla EIB', () => {
+      const res = calcularAnalisisPorCriterios([], [], catalogo, 'DOCENTE_EIB');
+
+      expect(res.criterios.map((c) => c.nombre)).toEqual(['Criterio EIB']);
+    });
+
+    it('no se confunde aunque la EIB esté primera en el catálogo', () => {
+      const res = calcularAnalisisPorCriterios([], [], catalogo, 'DOCENTE');
+
+      expect(res.criterios.some((c) => c.nombre.includes('EIB'))).toBe(false);
+    });
   });
 
   it('calcula métricas agregadas por criterio / desempeño', () => {
@@ -121,7 +287,11 @@ describe('calcularAnalisisPorCriterios', () => {
     expect(res.criterios[0].nombre).toContain('Involucra activamente');
     expect(res.criterios[1].nombre).toContain('Maximiza el tiempo');
     expect(res.criterios[2].nombre).toContain('Fomenta el razonamiento');
-    expect(res.criterioMayorDominio).not.toBeNull();
-    expect(res.criterioMayorRefuerzo).not.toBeNull();
+
+    // Cuatro fichas con cuatro niveles distintos, pero sin desglose por
+    // criterio: la estructura se informa y la distribución no se inventa.
+    expect(res.sinDesglosePorCriterio).toBe(true);
+    expect(res.criterioMayorDominio).toBeNull();
+    expect(res.criterioMayorRefuerzo).toBeNull();
   });
 });

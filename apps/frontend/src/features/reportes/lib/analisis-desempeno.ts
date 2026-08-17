@@ -21,6 +21,15 @@ export interface AnalisisDesempenoCompleto {
   criterioMayorDominio: IAnalisisDesempenoCriterio | null;
   criterioMayorRefuerzo: IAnalisisDesempenoCriterio | null;
   criterios: IAnalisisDesempenoCriterio[];
+  /**
+   * El backend no devolvió el desglose por criterio.
+   *
+   * `criterios` trae la estructura del instrumento con la distribución en cero:
+   * los nombres de los criterios se conocen, cuántas fichas cayeron en cada
+   * nivel de cada criterio no. Quien muestre esto tiene que decirlo, no
+   * dibujar un gráfico de ceros como si fuera un resultado.
+   */
+  sinDesglosePorCriterio: boolean;
 }
 
 export const DESEMPENOS_DOCENTE_DEFAULT: Array<{
@@ -94,7 +103,18 @@ export const DESEMPENOS_DIRECTIVO_DEFAULT: Array<{
   },
 ];
 
-export const normalizarNivelLogro = (nivelRaw?: string, promedio?: number): NivelLogroClave => {
+/**
+ * El nivel de logro que declara una ficha, o nulo si no lo declara.
+ *
+ * Cerraba con `return 'II'`: una ficha sin nivel ni promedio salía «En proceso»
+ * sin que nada lo dijera. Es el mismo vicio que el de la estimación por
+ * criterio — completar un hueco con un valor plausible—, así que ahora la falta
+ * de dato se devuelve como tal y la decide quien llame.
+ */
+export const normalizarNivelLogro = (
+  nivelRaw?: string,
+  promedio?: number,
+): NivelLogroClave | null => {
   if (nivelRaw) {
     const raw = nivelRaw.toUpperCase().trim();
     if (raw.endsWith('IV') || raw.includes('DESTACADO')) return 'IV';
@@ -110,7 +130,7 @@ export const normalizarNivelLogro = (nivelRaw?: string, promedio?: number): Nive
     return 'IV';
   }
 
-  return 'II';
+  return null;
 };
 
 /**
@@ -138,6 +158,7 @@ export const calcularAnalisisPorCriterios = (
       criterioMayorDominio: ordenadosPorDominio[0] ?? null,
       criterioMayorRefuerzo: ordenadosPorRefuerzo[0] ?? null,
       criterios: criteriosData,
+      sinDesglosePorCriterio: false,
     };
   }
 
@@ -190,68 +211,55 @@ export const calcularAnalisisPorCriterios = (
   });
   const totalVisitas = visitasFiltradas.length;
 
-  const criterios: IAnalisisDesempenoCriterio[] = listaDesempenos.map((des, index) => {
-    let nivelI = 0;
-    let nivelII = 0;
-    let nivelIII = 0;
-    let nivelIV = 0;
-    let sumaNiveles = 0;
-
-    for (let i = 0; i < visitasFiltradas.length; i++) {
-      const v = visitasFiltradas[i];
-      const nivelNorm = normalizarNivelLogro(v.nivelLogro, v.promedio);
-
-      let nivelAsignado: number = nivelNorm === 'I' ? 1 : nivelNorm === 'II' ? 2 : nivelNorm === 'III' ? 3 : 4;
-
-      if (index === 0 && nivelAsignado === 2 && i % 2 === 0) nivelAsignado = 3;
-      if (index === 2 && nivelAsignado === 3 && i % 3 === 0) nivelAsignado = 2;
-
-      sumaNiveles += nivelAsignado;
-      if (nivelAsignado === 1) nivelI++;
-      else if (nivelAsignado === 2) nivelII++;
-      else if (nivelAsignado === 3) nivelIII++;
-      else if (nivelAsignado === 4) nivelIV++;
-    }
-
-    const total = totalVisitas;
-    const porcentajeI = total > 0 ? Math.round((nivelI / total) * 100) : 0;
-    const porcentajeII = total > 0 ? Math.round((nivelII / total) * 100) : 0;
-    const porcentajeIII = total > 0 ? Math.round((nivelIII / total) * 100) : 0;
-    const porcentajeIV = total > 0 ? Math.round((nivelIV / total) * 100) : 0;
-    const promedio = total > 0 ? Number((sumaNiveles / total).toFixed(2)) : 0;
-
-    return {
-      desempenoId: des.id,
-      nombre: des.nombre,
-      orden: des.orden,
-      descripcionCorta: des.descripcionCorta,
-      totalEvaluados: total,
-      conteoNivelI: nivelI,
-      conteoNivelII: nivelII,
-      conteoNivelIII: nivelIII,
-      conteoNivelIV: nivelIV,
-      porcentajeNivelI: porcentajeI,
-      porcentajeNivelII: porcentajeII,
-      porcentajeNivelIII: porcentajeIII,
-      porcentajeNivelIV: porcentajeIV,
-      promedio,
-      tasaLogro: porcentajeIII + porcentajeIV,
-      tasaRefuerzo: porcentajeI + porcentajeII,
-    };
-  });
-
-  const sumaPromedios = criterios.reduce((acc, c) => acc + c.promedio, 0);
-  const promedioGeneral =
-    criterios.length > 0 ? Number((sumaPromedios / criterios.length).toFixed(2)) : 0;
-
-  const ordenadosPorDominio = [...criterios].sort((a, b) => b.tasaLogro - a.tasaLogro);
-  const ordenadosPorRefuerzo = [...criterios].sort((a, b) => b.tasaRefuerzo - a.tasaRefuerzo);
+  /**
+   * ── Por qué acá no hay distribución ──
+   * De cada ficha este camino conoce sólo su nivel de logro GLOBAL. El desglose
+   * por criterio —cuántas fichas cayeron en el nivel II del criterio 3— vive en
+   * `fichaRespuestaDesempeno`, y eso lo consulta el backend. Sin esa respuesta
+   * el dato no existe, y no hay cálculo que lo produzca.
+   *
+   * Antes se repartía el nivel global de cada ficha entre todos los criterios y
+   * después se lo alteraba según la paridad del índice del arreglo:
+   *
+   *     if (index === 0 && nivelAsignado === 2 && i % 2 === 0) nivelAsignado = 3;
+   *     if (index === 2 && nivelAsignado === 3 && i % 3 === 0) nivelAsignado = 2;
+   *
+   * El gráfico salía distribuido y creíble sobre números inventados, en el
+   * análisis estadístico oficial de la UGEL. Y se disparaba justo cuando más
+   * importaba: un instrumento recién agregado, todavía sin fichas finalizadas,
+   * no caía en el estado vacío de la página —que mira el total sin filtrar— sino
+   * acá.
+   *
+   * Se informa la estructura de criterios, que sí se conoce, con la distribución
+   * en cero y `sinDesglosePorCriterio` en alto para que la pantalla lo diga.
+   */
+  const criterios: IAnalisisDesempenoCriterio[] = listaDesempenos.map((des) => ({
+    desempenoId: des.id,
+    nombre: des.nombre,
+    orden: des.orden,
+    descripcionCorta: des.descripcionCorta,
+    totalEvaluados: totalVisitas,
+    conteoNivelI: 0,
+    conteoNivelII: 0,
+    conteoNivelIII: 0,
+    conteoNivelIV: 0,
+    porcentajeNivelI: 0,
+    porcentajeNivelII: 0,
+    porcentajeNivelIII: 0,
+    porcentajeNivelIV: 0,
+    promedio: 0,
+    tasaLogro: 0,
+    tasaRefuerzo: 0,
+  }));
 
   return {
     totalEvaluaciones: totalVisitas,
-    promedioGeneral,
-    criterioMayorDominio: ordenadosPorDominio[0] ?? null,
-    criterioMayorRefuerzo: ordenadosPorRefuerzo[0] ?? null,
+    promedioGeneral: 0,
+    // Sin distribución no hay criterio que destaque ni que necesite refuerzo:
+    // ordenar ceros habría devuelto siempre el primero del arreglo.
+    criterioMayorDominio: null,
+    criterioMayorRefuerzo: null,
     criterios,
+    sinDesglosePorCriterio: true,
   };
 };

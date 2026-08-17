@@ -264,6 +264,45 @@ export const AnalisisDesempenoPage = () => {
             Aún no se han completado fichas de monitoreo para generar las estadísticas por criterio.
           </p>
         </div>
+      ) : /**
+         * El desglose por criterio lo resuelve el backend leyendo las respuestas
+         * de cada desempeño. Cuando no llega, este análisis no se puede calcular:
+         * el nivel de logro global de una ficha no dice en qué criterio le fue
+         * bien. Antes se dibujaba una distribución inventada; ahora se declara.
+         *
+         * El estado vacío de arriba no alcanza porque mira el total SIN filtrar:
+         * con el filtro puesto en un instrumento que todavía no tiene fichas
+         * finalizadas, había fichas en el sistema y se caía igual acá.
+         */
+      analisis.sinDesglosePorCriterio ? (
+        <div className="p-12 text-center bg-surface border border-border rounded-2xl shadow-xs">
+          <h3 className="text-base font-bold text-slate-800">
+            Análisis por criterio no disponible
+          </h3>
+          <p className="text-xs text-text-muted mt-1 max-w-lg mx-auto">
+            {analisis.totalEvaluaciones === 0
+              ? 'No hay fichas finalizadas que coincidan con los filtros seleccionados.'
+              : `Se encontraron ${analisis.totalEvaluaciones} fichas con estos filtros, pero todavía no hay respuestas por criterio registradas para consolidar la distribución de niveles.`}
+          </p>
+          {analisis.criterios.length > 0 && (
+            <div className="mt-6 text-left max-w-lg mx-auto">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
+                Criterios del instrumento
+              </span>
+              <ul className="mt-2 space-y-1.5">
+                {analisis.criterios.map((criterio) => (
+                  <li
+                    key={criterio.desempenoId}
+                    className="text-xs text-slate-600 flex items-start gap-2"
+                  >
+                    <span className="font-bold text-slate-400 shrink-0">{criterio.orden}.</span>
+                    <span>{criterio.nombre}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       ) : (
         <>
           {/* Bloque 1: KPIs Principales por Criterio */}

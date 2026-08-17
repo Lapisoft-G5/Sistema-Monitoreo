@@ -27,6 +27,13 @@ import { toast } from 'sonner';
 import type { FiltroPeriodoTipo } from '@/features/reportes/lib/filtro-temporal';
 
 export interface BackendReportVisit extends Cronograma {
+  /**
+   * La visita de la que salió la ficha. `id` es el de la FICHA.
+   *
+   * Una visita docente puede llevar la ficha regular y la EIB, así que dos filas
+   * pueden compartir cronograma. Ya viajaba en el objeto sin estar declarado.
+   */
+  cronogramaId?: string;
   plantillaId?: string;
   plantillaNombre?: string;
   nivelLogro?: string;

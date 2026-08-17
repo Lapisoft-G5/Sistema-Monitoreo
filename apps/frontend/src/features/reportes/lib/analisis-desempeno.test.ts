@@ -5,6 +5,7 @@ import {
 } from './analisis-desempeno';
 import type { BackendReportVisit } from '@/widgets/reportes';
 import type { Plantilla } from '@/entities/model-plantillas';
+import { instrumentoDeRotulo } from '@/entities/model-plantillas';
 
 describe('normalizarNivelLogro', () => {
   it('normaliza strings con nombres estándar y romanos', () => {
@@ -231,6 +232,7 @@ describe('calcularAnalisisPorCriterios', () => {
     const plantilla = (tipoMonitoreo: string, nombreDesempeno: string): Plantilla => ({
       id: `p-${tipoMonitoreo}`,
       tipoMonitoreo,
+      instrumento: instrumentoDeRotulo(tipoMonitoreo),
       anioAcademico: 2026,
       lema: null,
       baremo: 'Vigente',

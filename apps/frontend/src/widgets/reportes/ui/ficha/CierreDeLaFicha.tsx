@@ -245,15 +245,24 @@ const FirmaImagen = ({ url }: { url: string | null | undefined }) => {
 export const Firmas = ({
   visita,
   directorNombre,
+  plantillaId,
 }: {
   visita: Cronograma;
   directorNombre: string;
+  /**
+   * Instrumento de la ficha que se imprime.
+   *
+   * `visita.id` es el de la FICHA cuando el listado viene del backend, y el del
+   * CRONOGRAMA cuando se armó desde los cronogramas. En ese segundo caso una
+   * visita docente puede tener dos fichas —la regular y la EIB— y sin la
+   * plantilla el servidor no sabe de cuál traer las firmas.
+   */
+  plantillaId?: string;
 }) => {
-  // El ID que se usa puede ser el de la ficha (BackendReportVisit.id) o el cronogramaId
   const fichaId = visita.id;
   const { data } = useQuery({
-    queryKey: ['ficha-firmas', fichaId],
-    queryFn: () => firmasApi.getFirmasDeFicha(fichaId),
+    queryKey: ['ficha-firmas', fichaId, plantillaId],
+    queryFn: () => firmasApi.getFirmasDeFicha(fichaId, plantillaId),
     enabled: !!fichaId,
     staleTime: 30_000,
   });

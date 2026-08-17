@@ -9,7 +9,57 @@
  * decisión de autorización del módulo.
  */
 
+import type { Prisma } from '../../../generated/prisma/client.js';
+
 export type RolFirmante = 'EVALUADO' | 'EVALUADOR';
+
+/**
+ * Cómo se ubica la ficha a partir del identificador que llega por la ruta.
+ *
+ * Los endpoints aceptan el id de la ficha o el del cronograma, y eso alcanzaba
+ * mientras cada visita tenía una sola ficha. Desde que una visita docente puede
+ * llevar la ficha regular y la EIB, un `cronogramaId` corresponde a DOS fichas y
+ * la consulta resolvía con `findFirst` sin orden: elegía una arbitraria. Firmar
+ * es un acto sobre el contenido de un instrumento concreto, así que una firma
+ * podía terminar estampada en el instrumento equivocado.
+ *
+ * `plantillaId` desambigua: `(cronogramaId, plantillaId)` es único en el esquema
+ * —`uq_ficha_visita_plantilla`— de modo que la pareja identifica exactamente una
+ * ficha. Es opcional porque quien pasa el id de la ficha ya es inequívoco.
+ */
+export function condicionDeFicha(
+  idFichaOCronograma: string,
+  plantillaId?: string,
+): Prisma.FichaMonitoreoWhereInput {
+  return {
+    OR: [
+      { id: idFichaOCronograma },
+      plantillaId
+        ? { cronogramaId: idFichaOCronograma, plantillaId }
+        : { cronogramaId: idFichaOCronograma },
+    ],
+  };
+}
+
+/** Resultado de ubicar la ficha, con la ambigüedad como caso explícito. */
+export type ResolucionDeFicha<T> =
+  | { estado: 'unica'; ficha: T }
+  | { estado: 'ninguna' }
+  | { estado: 'ambigua'; cantidad: number };
+
+/**
+ * La única ficha que corresponde, o la constancia de que no se puede decidir.
+ *
+ * Se separa de la consulta para que la ambigüedad sea un caso que el llamador
+ * tiene que atender. `findFirst` la ocultaba: devolvía una fila y el código
+ * seguía como si fuera la correcta.
+ */
+export function resolverFicha<T>(fichas: readonly T[]): ResolucionDeFicha<T> {
+  if (fichas.length === 0) return { estado: 'ninguna' };
+  if (fichas.length > 1) return { estado: 'ambigua', cantidad: fichas.length };
+
+  return { estado: 'unica', ficha: fichas[0] };
+}
 
 /** Las dos partes de una visita, tal como llegan del cronograma. */
 export interface PartesDeLaVisita {

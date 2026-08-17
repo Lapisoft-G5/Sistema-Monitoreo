@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseUUIDPipe,
+  Query,
   BadRequestException,
   ForbiddenException,
   NotFoundException,
@@ -32,9 +33,12 @@ import { ScopeFilter } from '../../../shared/auth/scope-filter.js';
 import type { ScopeContext } from '../../../shared/auth/scope-filter.js';
 import type { AuthenticatedRequest } from '../../../shared/types/authenticated-request.js';
 import {
+  condicionDeFicha,
+  resolverFicha,
   rolFirmanteDe,
   rutaDeImagenDeFirma,
   RUTA_DE_MI_FIRMA,
+  type PartesDeLaVisita,
   type RolFirmante,
 } from '../services/firmas.helper.js';
 
@@ -79,24 +83,51 @@ export class FirmasController {
   }
 
   /**
-   * La ficha, sólo si quien pregunta puede verla.
+   * La ficha, sólo si quien pregunta puede verla, y sólo si es UNA.
    *
    * Acepta el id de la ficha o el del cronograma, como venía haciendo. El filtro
    * de alcance se suma con `AND` para que ningún id ajeno se resuelva.
+   *
+   * ── Por qué `findMany` y no `findFirst` ──
+   * Un `cronogramaId` puede corresponder a dos fichas desde que una visita
+   * docente lleva la ficha regular y la EIB. `findFirst` devolvía una arbitraria
+   * y el código seguía como si fuera la correcta. Ahora se traen todas las que el
+   * alcance permite y la ambigüedad se responde, no se resuelve a la suerte:
+   * quien llama tiene que indicar `plantillaId`.
    */
   private async fichaVisible(
     idFichaOCronograma: string,
+    plantillaId: string | undefined,
     req: AuthenticatedRequest,
-  ): Promise<{ id: string } | null> {
-    return this.prisma.fichaMonitoreo.findFirst({
+  ): Promise<{ id: string; cronograma: PartesDeLaVisita } | null> {
+    const fichas = await this.prisma.fichaMonitoreo.findMany({
       where: {
         AND: [
-          { OR: [{ id: idFichaOCronograma }, { cronogramaId: idFichaOCronograma }] },
+          condicionDeFicha(idFichaOCronograma, plantillaId),
           this.scopeFilter.forFicha(this.contextoDeAlcance(req)),
         ],
       },
-      select: { id: true },
+      select: {
+        id: true,
+        cronograma: {
+          select: {
+            evaluado: { select: { personaId: true } },
+            monitor: { select: { personaId: true } },
+          },
+        },
+      },
     });
+
+    const resolucion = resolverFicha(fichas);
+
+    if (resolucion.estado === 'ninguna') return null;
+    if (resolucion.estado === 'ambigua') {
+      throw new BadRequestException(
+        `Esta visita tiene ${resolucion.cantidad} fichas: indique la plantilla del instrumento para identificarla.`,
+      );
+    }
+
+    return resolucion.ficha;
   }
 
   /**
@@ -171,8 +202,9 @@ export class FirmasController {
   async getFirmasDeFicha(
     @Param('id', ParseUUIDPipe) fichaOrCronogramaId: string,
     @Req() req: AuthenticatedRequest,
+    @Query('plantillaId', new ParseUUIDPipe({ optional: true })) plantillaId?: string,
   ) {
-    const ficha = await this.fichaVisible(fichaOrCronogramaId, req);
+    const ficha = await this.fichaVisible(fichaOrCronogramaId, plantillaId, req);
 
     if (!ficha) {
       return { firmas: [] };
@@ -207,8 +239,9 @@ export class FirmasController {
     @Param('id', ParseUUIDPipe) fichaOrCronogramaId: string,
     @Param('rol') rol: string,
     @Req() req: AuthenticatedRequest,
+    @Query('plantillaId', new ParseUUIDPipe({ optional: true })) plantillaId?: string,
   ): Promise<StreamableFile> {
-    const ficha = await this.fichaVisible(fichaOrCronogramaId, req);
+    const ficha = await this.fichaVisible(fichaOrCronogramaId, plantillaId, req);
     if (!ficha) throw new NotFoundException('Firma no encontrada.');
 
     const firma = await this.prisma.fichaFirma.findFirst({
@@ -270,23 +303,12 @@ export class FirmasController {
       );
     }
 
-    const ficha = await this.prisma.fichaMonitoreo.findFirst({
-      where: {
-        AND: [
-          { OR: [{ cronogramaId: fichaOrCronogramaId }, { id: fichaOrCronogramaId }] },
-          this.scopeFilter.forFicha(this.contextoDeAlcance(req)),
-        ],
-      },
-      select: {
-        id: true,
-        cronograma: {
-          select: {
-            evaluado: { select: { personaId: true } },
-            monitor: { select: { personaId: true } },
-          },
-        },
-      },
-    });
+    /**
+     * Se resuelve con el mismo criterio que las lecturas: una sola ficha o un
+     * error. Firmar la ficha equivocada es peor que no firmar, porque la firma
+     * atesta el contenido de un instrumento concreto.
+     */
+    const ficha = await this.fichaVisible(fichaOrCronogramaId, dto.plantillaId, req);
 
     if (!ficha) {
       throw new BadRequestException('No se encontró la ficha de monitoreo para esta visita.');

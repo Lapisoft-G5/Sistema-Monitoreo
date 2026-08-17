@@ -1,5 +1,7 @@
 import {
+  condicionDeFicha,
   esArchivoDeFirma,
+  resolverFicha,
   rolFirmanteDe,
   rutaDeImagenDeFirma,
   RUTA_DE_MI_FIRMA,
@@ -59,6 +61,66 @@ describe('rolFirmanteDe', () => {
     const misma = { evaluado: { personaId: 'p' }, monitor: { personaId: 'p' } };
 
     expect(rolFirmanteDe('p', misma)).toBe('EVALUADO');
+  });
+});
+
+/**
+ * ── El defecto que estas pruebas fijan ──
+ * Los endpoints aceptan el id de la ficha o el del cronograma, y la consulta
+ * resolvía con `findFirst` sin orden. Mientras cada visita tenía una sola ficha
+ * eso era inequívoco; desde que una visita docente puede llevar la ficha regular
+ * Y la EIB, un `cronogramaId` corresponde a dos fichas y `findFirst` elegía una
+ * arbitraria. Firmar es un acto sobre el contenido de un instrumento concreto.
+ */
+describe('condicionDeFicha', () => {
+  it('acepta el id de la ficha o el del cronograma', () => {
+    expect(condicionDeFicha('abc')).toEqual({
+      OR: [{ id: 'abc' }, { cronogramaId: 'abc' }],
+    });
+  });
+
+  /** `(cronogramaId, plantillaId)` es único en el esquema: identifica una sola. */
+  it('fija el instrumento cuando se indica la plantilla', () => {
+    expect(condicionDeFicha('crono-1', 'plantilla-eib')).toEqual({
+      OR: [{ id: 'crono-1' }, { cronogramaId: 'crono-1', plantillaId: 'plantilla-eib' }],
+    });
+  });
+
+  it('sigue resolviendo por id de ficha aunque se indique la plantilla', () => {
+    const condicion = condicionDeFicha('ficha-1', 'plantilla-eib');
+
+    expect(condicion.OR?.[0]).toEqual({ id: 'ficha-1' });
+  });
+});
+
+describe('resolverFicha', () => {
+  it('devuelve la ficha cuando hay exactamente una', () => {
+    expect(resolverFicha([{ id: 'f-1' }])).toEqual({
+      estado: 'unica',
+      ficha: { id: 'f-1' },
+    });
+  });
+
+  it('distingue que no hay ninguna', () => {
+    expect(resolverFicha([])).toEqual({ estado: 'ninguna' });
+  });
+
+  /**
+   * El caso que `findFirst` ocultaba: con dos fichas devolvía una fila y el
+   * código seguía como si fuera la correcta. Ahora la ambigüedad es un estado
+   * que el llamador tiene que atender.
+   */
+  it('declara la ambiguedad en vez de elegir una', () => {
+    expect(resolverFicha([{ id: 'f-regular' }, { id: 'f-eib' }])).toEqual({
+      estado: 'ambigua',
+      cantidad: 2,
+    });
+  });
+
+  it('informa cuantas encontro cuando es ambigua', () => {
+    const resolucion = resolverFicha([{ id: 'a' }, { id: 'b' }, { id: 'c' }]);
+
+    expect(resolucion).toEqual({ estado: 'ambigua', cantidad: 3 });
   });
 });
 

@@ -137,10 +137,16 @@ export const LlenarFichaForm = ({
   const isCompleted = initialState?.estado === 'FINALIZADO';
   const isDirectivo = template?.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
 
+  /**
+   * `visit.id` es el id del CRONOGRAMA, y una visita docente puede llevar la
+   * ficha regular y la EIB. Se manda la plantilla del formulario abierto para
+   * que el servidor sepa de qué instrumento se piden las firmas: sin ella
+   * resolvía a una ficha arbitraria de las dos.
+   */
   const { data: firmasData, refetch: refetchFirmas } = useQuery({
-    queryKey: ['ficha-firmas', visit?.id],
-    queryFn: () => firmasApi.getFirmasDeFicha(visit.id),
-    enabled: !!visit?.id && isCompleted,
+    queryKey: ['ficha-firmas', visit?.id, template?.id],
+    queryFn: () => firmasApi.getFirmasDeFicha(visit.id, template.id),
+    enabled: !!visit?.id && !!template?.id && isCompleted,
     staleTime: 30_000,
   });
 
@@ -189,9 +195,12 @@ export const LlenarFichaForm = ({
 
   const handleFirmar = async () => {
     try {
+      // La plantilla identifica el instrumento que se está firmando: la firma
+      // atesta el contenido de una ficha concreta, no de la visita.
       await firmasApi.signFicha(visit.id, {
         rolFirmante: rolEsperado,
         consentimiento: true,
+        plantillaId: template.id,
       });
       toast.success('Ficha firmada con éxito');
       refetchFirmas();

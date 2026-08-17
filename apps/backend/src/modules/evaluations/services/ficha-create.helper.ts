@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
+import type { IFichaMonitoreo, TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
+import { tipoDeVisitaDe } from '@sistema-monitoreo/shared-contracts';
 import type { FichaRepository } from '../repositories/ficha.repository.js';
 import type { CreateFichaDto } from '../dto/ficha.dto.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
@@ -27,36 +28,21 @@ export async function crear(
       return null;
     }
 
-    const tipoVisita = cronograma.tipoMonitoreo.toUpperCase();
-    const tipoPlantilla = elegida.tipoMonitoreo.toUpperCase();
+    /**
+     * La plantilla elegida tiene que servir para esta visita.
+     *
+     * Una visita DOCENTE admite la ficha regular y la EIB —son sus dos
+     * instrumentos— y una DIRECTIVA sólo la directiva. Antes esto eran cuatro
+     * banderas con `includes`, y las comparaciones contra 'DOCENTE_EIB' del lado
+     * de la VISITA no podían cumplirse nunca: un cronograma es DOCENTE o
+     * DIRECTIVO.
+     */
+    const instrumentoDeLaVisita = tipoDeVisitaDe(elegida.tipoMonitoreo as TipoPlantilla);
 
-    const esDocenteVisita =
-      tipoVisita === 'DOCENTE' ||
-      tipoVisita === 'DOCENTE_EIB' ||
-      tipoVisita.includes('DOCENTE') ||
-      tipoVisita.includes('EIB');
-    const esDocentePlantilla =
-      tipoPlantilla === 'DOCENTE' ||
-      tipoPlantilla === 'DOCENTE_EIB' ||
-      tipoPlantilla.includes('DOCENTE') ||
-      tipoPlantilla.includes('EIB');
-    const esDirectivoVisita = tipoVisita === 'DIRECTIVO' || tipoVisita.includes('DIRECTIVO');
-    const esDirectivoPlantilla =
-      tipoPlantilla === 'DIRECTIVO' || tipoPlantilla.includes('DIRECTIVO');
-
-    const tipoCompatible =
-      tipoPlantilla === tipoVisita ||
-      (esDocenteVisita && esDocentePlantilla) ||
-      (esDirectivoVisita && esDirectivoPlantilla);
-
-    return tipoCompatible ? elegida : null;
+    return instrumentoDeLaVisita === cronograma.tipoMonitoreo ? elegida : null;
   })();
   if (!plantilla) {
     plantilla = await repository.findPlantillaVigente(cronograma.tipoMonitoreo, anio);
-  }
-  if (!plantilla && cronograma.tipoMonitoreo.toUpperCase().includes('EIB')) {
-    // Fallback a plantilla docente regular si no hay EIB configurada
-    plantilla = await repository.findPlantillaVigente('DOCENTE', anio);
   }
   if (!plantilla) {
     throw new BadRequestException(
@@ -72,11 +58,7 @@ export async function crear(
     );
   }
 
-  const esDocente =
-    cronograma.tipoMonitoreo === 'DOCENTE' ||
-    cronograma.tipoMonitoreo === 'DOCENTE_EIB' ||
-    cronograma.tipoMonitoreo.toUpperCase().includes('DOCENTE') ||
-    cronograma.tipoMonitoreo.toUpperCase().includes('EIB');
+  const esDocente = cronograma.tipoMonitoreo === 'DOCENTE';
 
   if (esDocente) {
     const missing: string[] = [];

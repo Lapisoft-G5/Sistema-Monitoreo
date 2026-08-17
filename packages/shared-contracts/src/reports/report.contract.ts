@@ -1,5 +1,5 @@
 import type { EstadoFicha, NivelLogro } from '../evaluations/ficha.contract.js';
-import type { TipoMonitoreo } from '../scheduling/visit.contract.js';
+import type { TipoPlantilla } from '../plantillas/plantilla.contract.js';
 
 export interface IReporteFicha {
   id: string;
@@ -15,7 +15,16 @@ export interface IReporteFicha {
   evaluadoTelefono?: string;
   especialistaId: string;
   especialistaNombre: string;
-  tipoMonitoreo: TipoMonitoreo;
+  /**
+   * Instrumento con el que se llenó esta ficha.
+   *
+   * Sale de la plantilla, que es donde vive esa información, y NO del tipo de la
+   * visita. Se llamaba `tipoMonitoreo` y el mapeador lo llenaba con
+   * `f.plantilla?.tipoMonitoreo || f.cronograma.tipoMonitoreo`: el mismo campo
+   * traía el instrumento o el tipo de visita según los datos, así que ningún
+   * consumidor podía confiar en él y todos terminaban olfateando cadenas.
+   */
+  instrumento: TipoPlantilla;
   anioAcademico: number;
   nivelLogro: NivelLogro;
   promedio: number;
@@ -60,7 +69,8 @@ export interface IReporteResumenIE {
 export interface IQueryReportesFichas {
   anioAcademico?: number;
   institucionId?: string;
-  tipoMonitoreo?: TipoMonitoreo;
+  /** Filtra por instrumento: el backend lo aplica sobre `plantilla.tipoMonitoreo`. */
+  instrumento?: TipoPlantilla;
   nivelLogro?: NivelLogro;
   fechaDesde?: string;
   fechaHasta?: string;

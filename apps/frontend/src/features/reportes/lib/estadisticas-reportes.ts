@@ -29,7 +29,14 @@ export const NIVELES_SATISFACTORIOS: readonly NivelLogro[] = [
 ];
 
 export interface ReporteMedible {
-  tipo: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo;
+  /**
+   * Instrumento con el que se llenó la ficha.
+   *
+   * Se llamaba `tipo` y se tipaba con `TipoMonitoreo`, que es el tipo de la
+   * VISITA. Estas estadísticas segmentan por instrumento —de ahí
+   * `porInstrumento`— porque cada escala mide algo distinto.
+   */
+  instrumento: import('@sistema-monitoreo/shared-contracts').TipoPlantilla;
   /**
    * La visita de la que salió esta ficha.
    *
@@ -51,7 +58,7 @@ export interface ReporteMedible {
 
 /** Resultado de un instrumento, medido sólo contra su propia escala. */
 export interface EstadisticaPorInstrumento {
-  tipo: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo;
+  tipo: import('@sistema-monitoreo/shared-contracts').TipoPlantilla;
   fichas: number;
   satisfactionPercent: number | null;
   promedioGeneral: number | null;
@@ -127,9 +134,9 @@ export function calcularEstadisticas(
    * La rúbrica docente llega a 4, la lista de cotejo EIB a 3 y la directiva se
    * resuelve por porcentaje: un promedio entre ellas no significa nada.
    */
-  const tipos = [...new Set(reportes.map((r) => r.tipo))].sort();
+  const tipos = [...new Set(reportes.map((r) => r.instrumento))].sort();
   const porInstrumento: EstadisticaPorInstrumento[] = tipos.map((tipo) => {
-    const delTipo = reportes.filter((r) => r.tipo === tipo);
+    const delTipo = reportes.filter((r) => r.instrumento === tipo);
     return { tipo, fichas: delTipo.length, ...medir(delTipo) };
   });
 
@@ -140,8 +147,10 @@ export function calcularEstadisticas(
   return {
     fichas: reportes.length,
     visitasMonitoreadas: visitas.size,
-    fichasDocentes: reportes.filter((r) => r.tipo === 'DOCENTE' || r.tipo === 'DOCENTE_EIB').length,
-    fichasDirectivas: reportes.filter((r) => r.tipo === 'DIRECTIVO').length,
+    fichasDocentes: reportes.filter(
+      (r) => r.instrumento === 'DOCENTE' || r.instrumento === 'DOCENTE_EIB',
+    ).length,
+    fichasDirectivas: reportes.filter((r) => r.instrumento === 'DIRECTIVO').length,
 
     satisfactionPercent: global?.satisfactionPercent ?? null,
     promedioGeneral: global?.promedioGeneral ?? null,

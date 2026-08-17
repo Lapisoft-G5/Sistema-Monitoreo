@@ -118,7 +118,9 @@ export const CalendarioSidebar = ({
   // Todas las plantillas vigentes compatibles con la visita seleccionada
   const plantillasCandidatas = useMemo(() => {
     if (!selectedVisit) return [];
-    const esDocente = selectedVisit.tipo === 'DOCENTE' || selectedVisit.tipo === 'DOCENTE_EIB';
+    // Una visita es DOCENTE o DIRECTIVO. Que lleve la ficha regular, la EIB o
+    // las dos lo decide el instrumento, y por eso el modal ofrece ambas.
+    const esDocente = selectedVisit.tipo === 'DOCENTE';
     return plantillas.filter((p) => {
       if (p.estado !== 'Vigente') return false;
       if (esDocente) {

@@ -5,6 +5,7 @@ import { Badge } from '@/shared/ui/badge';
 import { formatearFechaEnPalabras } from '@shared/lib/fecha/fecha';
 import { medirVisita } from '@/features/reportes/lib/medicion-visita';
 import type { BackendReportVisit } from '../ReportesGrid';
+import { esInstrumentoEib } from '@/features/reportes/lib/instrumento';
 
 /**
  * Las fichas completadas, en vista de tabla.
@@ -53,11 +54,10 @@ export const TablaReportes = ({
           {visitas.map((visita) => {
             const medicion = medirVisita(visita);
             const isDescargando = descargandoId === visita.id;
-            const esEib =
-              visita.tipo === 'DOCENTE_EIB' ||
-              visita.tipo?.toUpperCase().includes('EIB') ||
-              visita.plantillaNombre?.toUpperCase().includes('EIB');
-            const esDirectivo = visita.tipo === 'DIRECTIVO';
+            // El instrumento llega tipado desde la plantilla de la ficha. Antes se
+            // deducia olfateando el tipo y hasta el NOMBRE de la plantilla.
+            const esEib = esInstrumentoEib(visita.instrumento);
+            const esDirectivo = visita.instrumento === 'DIRECTIVO';
 
             return (
               <tr

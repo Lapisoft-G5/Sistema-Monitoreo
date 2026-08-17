@@ -11,6 +11,7 @@ import {
   type ReporteVisible,
 } from '@features/reportes/lib/visibilidad-reportes';
 import { calcularAnalisisPorCriterios } from '@features/reportes/lib/analisis-desempeno';
+import { esInstrumentoEib, tipoDeVisitaDe } from '@features/reportes/lib/instrumento';
 import {
   coincideConPeriodo,
   calcularConteosPorPeriodo,
@@ -61,7 +62,9 @@ export const AnalisisDesempenoPage = () => {
         plantillaId: f.plantillaId,
         plantillaNombre: f.plantillaNombre,
         fechaHora: f.fechaEjecucion || f.fechaProgramada,
-        tipo: f.tipoMonitoreo as 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB',
+        // `tipo` es a quien se monitorea; `instrumento`, con que ficha.
+        instrumento: f.instrumento,
+        tipo: tipoDeVisitaDe(f.instrumento),
         docenteDirectivo: f.evaluadoNombre,
         evaluadoId: f.evaluadoId,
         especialista: f.especialistaNombre,
@@ -133,8 +136,8 @@ export const AnalisisDesempenoPage = () => {
     let docentesEib = 0;
     let directivos = 0;
     completedVisits.forEach((v) => {
-      if (v.tipo === 'DIRECTIVO') directivos++;
-      else if (v.tipo === 'DOCENTE_EIB' || v.tipo?.toUpperCase().includes('EIB')) docentesEib++;
+      if (v.instrumento === 'DIRECTIVO') directivos++;
+      else if (esInstrumentoEib(v.instrumento)) docentesEib++;
       else docentes++;
     });
     return {
@@ -167,12 +170,9 @@ export const AnalisisDesempenoPage = () => {
       // Filtro de período temporal (Hoy, Esta semana, Este mes, Todos)
       if (!coincideConPeriodo(visit.fechaHora, filtroPeriodo)) return false;
 
-      // Filtro por tipo de monitoreo (Docente vs Docente EIB vs Directivo)
-      if (filterTipo !== 'Todos') {
-        const isEib = visit.tipo === 'DOCENTE_EIB' || visit.tipo?.toUpperCase().includes('EIB');
-        if (filterTipo === 'DOCENTE_EIB' && !isEib) return false;
-        if (filterTipo === 'DOCENTE' && (isEib || visit.tipo !== 'DOCENTE')) return false;
-        if (filterTipo === 'DIRECTIVO' && visit.tipo !== 'DIRECTIVO') return false;
+      // El filtro es por instrumento, que es lo que el analisis segmenta.
+      if (filterTipo !== 'Todos' && (visit.instrumento ?? 'DOCENTE') !== filterTipo) {
+        return false;
       }
 
       // Búsqueda por texto

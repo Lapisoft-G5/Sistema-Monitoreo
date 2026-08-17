@@ -7,6 +7,7 @@ import { formatearFechaCorta, formatearHora } from '@/shared/lib/fecha/fecha';
 import { useUser } from '@entities/model-user';
 import { puedeEvaluarVisita } from '@/entities/model-cronogramas';
 import type { BackendReportVisit } from '../ReportesGrid';
+import { esInstrumentoEib } from '@/features/reportes/lib/instrumento';
 
 /**
  * Una ficha completada, en la vista de cuadrícula.
@@ -56,11 +57,10 @@ export const TarjetaReporte = ({
   const { user } = useUser();
   const esEvaluadorDeVisita = puedeEvaluarVisita(user, visita);
   const medicion = medirVisita(visita);
-  const esEib =
-    visita.tipo === 'DOCENTE_EIB' ||
-    visita.tipo?.toUpperCase().includes('EIB') ||
-    visita.plantillaNombre?.toUpperCase().includes('EIB');
-  const esDirectivo = visita.tipo === 'DIRECTIVO';
+  // El instrumento llega tipado desde la plantilla de la ficha. Antes se
+  // deducia olfateando el tipo y hasta el NOMBRE de la plantilla.
+  const esEib = esInstrumentoEib(visita.instrumento);
+  const esDirectivo = visita.instrumento === 'DIRECTIVO';
   const esDocente = !esEib && !esDirectivo;
   const horario = obtenerHorario(visita);
 

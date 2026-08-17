@@ -15,6 +15,11 @@ import {
 } from '@features/reportes/lib/visibilidad-reportes';
 import { calcularEstadisticas } from '@features/reportes/lib/estadisticas-reportes';
 import {
+  esInstrumentoEib,
+  instrumentoDe,
+  tipoDeVisitaDe,
+} from '@features/reportes/lib/instrumento';
+import {
   coincideConPeriodo,
   calcularConteosPorPeriodo,
   type FiltroPeriodoTipo,
@@ -83,7 +88,10 @@ export const ReportesPage = () => {
           .toUpperCase(),
         institucion: `${f.institucionNombre} - ${f.institucionCodigoModular}`,
         docenteDirectivo: f.evaluadoNombre,
-        tipo: f.tipoMonitoreo,
+        // `tipo` es a quién se monitorea y `instrumento` con qué ficha. Antes los
+        // dos salían del mismo campo del backend, que traía uno o el otro.
+        instrumento: f.instrumento,
+        tipo: tipoDeVisitaDe(f.instrumento),
         nroVisita: '1',
         estado: 'COMPLETADO' as const,
         modalidad: f.modalidad,
@@ -140,8 +148,8 @@ export const ReportesPage = () => {
     let docentesEib = 0;
     let directivos = 0;
     completedVisits.forEach((v) => {
-      if (v.tipo === 'DIRECTIVO') directivos++;
-      else if (v.tipo === 'DOCENTE_EIB' || v.tipo?.toUpperCase().includes('EIB')) docentesEib++;
+      if (v.instrumento === 'DIRECTIVO') directivos++;
+      else if (esInstrumentoEib(v.instrumento)) docentesEib++;
       else docentes++;
     });
     return {
@@ -159,11 +167,9 @@ export const ReportesPage = () => {
         if (!coincideConPeriodo(visit.fechaHora, filtroPeriodo)) return false;
 
         // Filtro por tipo de monitoreo (Docente vs Docente EIB vs Directivo)
-        if (filterTipo !== 'Todos') {
-          const isEib = visit.tipo === 'DOCENTE_EIB' || visit.tipo?.toUpperCase().includes('EIB');
-          if (filterTipo === 'DOCENTE_EIB' && !isEib) return false;
-          if (filterTipo === 'DOCENTE' && (isEib || visit.tipo !== 'DOCENTE')) return false;
-          if (filterTipo === 'DIRECTIVO' && visit.tipo !== 'DIRECTIVO') return false;
+        // El filtro es por instrumento, que es lo que la tarjeta muestra.
+        if (filterTipo !== 'Todos' && (visit.instrumento ?? 'DOCENTE') !== filterTipo) {
+          return false;
         }
 
         // Búsqueda por texto
@@ -225,7 +231,11 @@ export const ReportesPage = () => {
     // `localStorage` y, cuando faltaba —lo normal, porque el borrador vive en
     // el navegador de quien llenó la ficha— caía a un relleno inventado con
     // todos los niveles en III y IV, que empujaba la métrica al 100 %.
-    const base = calcularEstadisticas(completedVisits);
+    // El instrumento decide el segmento; las filas del camino de respaldo lo
+    // derivan del tipo de la visita, que no puede ser EIB.
+    const base = calcularEstadisticas(
+      completedVisits.map((v) => ({ ...v, instrumento: instrumentoDe(v) })),
+    );
 
     // Nivel de logro más reciente (último por fechaHora)
     const masReciente = [...completedVisits].sort(

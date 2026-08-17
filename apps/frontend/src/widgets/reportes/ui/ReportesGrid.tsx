@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useReactToPrint } from 'react-to-print';
+import type { TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
@@ -25,6 +26,7 @@ import { toast } from 'sonner';
  */
 
 import type { FiltroPeriodoTipo } from '@/features/reportes/lib/filtro-temporal';
+import { PLANTILLA_DE_INSTRUMENTO } from '@/features/reportes/lib/instrumento';
 
 export interface BackendReportVisit extends Cronograma {
   /**
@@ -34,6 +36,14 @@ export interface BackendReportVisit extends Cronograma {
    * pueden compartir cronograma. Ya viajaba en el objeto sin estar declarado.
    */
   cronogramaId?: string;
+  /**
+   * Instrumento con el que se llenó la ficha, tal como lo declara su plantilla.
+   *
+   * `tipo` dice a quién se monitorea (DOCENTE | DIRECTIVO) y nunca puede valer
+   * `DOCENTE_EIB`: EIB es un instrumento, no una clase de visita. Antes los dos
+   * significados compartían campo y había que olfatear cadenas para separarlos.
+   */
+  instrumento?: TipoPlantilla;
   plantillaId?: string;
   plantillaNombre?: string;
   nivelLogro?: string;
@@ -106,13 +116,9 @@ export const ReportesGrid = ({
     if (!visitaAbierta) return null;
     if (plantillaDeLaFicha) return plantillaDeLaFicha;
 
-    const tipoBuscado =
-      visitaAbierta.tipo === 'DIRECTIVO'
-        ? 'Monitoreo Directivo'
-        : visitaAbierta.tipo === 'DOCENTE_EIB' ||
-          visitaAbierta.tipo?.toUpperCase().includes('EIB')
-        ? 'Monitoreo Docente EIB'
-        : 'Monitoreo Docente';
+    // El instrumento de la ficha nombra su plantilla. Antes se deducía con una
+    // cadena de ternarios sobre `tipo`, que no distingue la EIB de la regular.
+    const tipoBuscado = PLANTILLA_DE_INSTRUMENTO[visitaAbierta.instrumento ?? 'DOCENTE'];
     return (
       plantillas.find(
         (p) =>
@@ -159,13 +165,7 @@ export const ReportesGrid = ({
     if (!visitaParaImprimir) return null;
     if (plantillaDeLaFichaImprimir) return plantillaDeLaFichaImprimir;
 
-    const tipoBuscado =
-      visitaParaImprimir.tipo === 'DIRECTIVO'
-        ? 'Monitoreo Directivo'
-        : visitaParaImprimir.tipo === 'DOCENTE_EIB' ||
-          visitaParaImprimir.tipo?.toUpperCase().includes('EIB')
-        ? 'Monitoreo Docente EIB'
-        : 'Monitoreo Docente';
+    const tipoBuscado = PLANTILLA_DE_INSTRUMENTO[visitaParaImprimir.instrumento ?? 'DOCENTE'];
     return (
       plantillas.find(
         (p) =>

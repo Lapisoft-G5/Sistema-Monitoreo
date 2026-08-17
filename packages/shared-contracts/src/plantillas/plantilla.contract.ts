@@ -39,6 +39,19 @@ export const VALORACIONES_POR_TIPO: Record<TipoPlantilla, number> = {
 /** Los cuatro niveles romanos, en orden. El frontend tiene su propia copia. */
 const ROMANOS: readonly NivelRomano[] = ['I', 'II', 'III', 'IV'] as const;
 
+/**
+ * A quién se monitorea con este instrumento.
+ *
+ * El instrumento determina el tipo de visita sin ambigüedad: la ficha docente
+ * regular y la EIB son las dos de un monitoreo docente. Vive en el contrato
+ * porque la relación entre `TipoPlantilla` y `TipoMonitoreo` es del dominio, y
+ * la consultan los dos lados —el backend al validar qué plantilla sirve para una
+ * visita, el frontend al presentar las filas de reportes—.
+ */
+export function tipoDeVisitaDe(instrumento: TipoPlantilla | undefined): 'DOCENTE' | 'DIRECTIVO' {
+  return instrumento === 'DIRECTIVO' ? 'DIRECTIVO' : 'DOCENTE';
+}
+
 /** Cuántas valoraciones declara la escala de este instrumento. */
 export function valoracionesDe(tipo: TipoPlantilla): number {
   return VALORACIONES_POR_TIPO[tipo] ?? ROMANOS.length;

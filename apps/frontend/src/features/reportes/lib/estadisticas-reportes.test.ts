@@ -20,7 +20,7 @@ import {
  */
 
 const reporte = (over: Partial<ReporteMedible> = {}): ReporteMedible => ({
-  tipo: 'DOCENTE',
+  instrumento: 'DOCENTE',
   ...over,
 });
 
@@ -37,9 +37,9 @@ describe('NIVELES_SATISFACTORIOS', () => {
 describe('calcularEstadisticas — conteos', () => {
   it('cuenta las fichas y las separa por tipo de monitoreo', () => {
     const stats = calcularEstadisticas([
-      reporte({ tipo: 'DOCENTE' }),
-      reporte({ tipo: 'DOCENTE' }),
-      reporte({ tipo: 'DIRECTIVO' }),
+      reporte({ instrumento: 'DOCENTE' }),
+      reporte({ instrumento: 'DOCENTE' }),
+      reporte({ instrumento: 'DIRECTIVO' }),
     ]);
 
     expect(stats.fichas).toBe(3);
@@ -58,8 +58,8 @@ describe('calcularEstadisticas — conteos', () => {
 
   it('cuenta la ficha EIB como ficha docente', () => {
     const stats = calcularEstadisticas([
-      reporte({ tipo: 'DOCENTE' }),
-      reporte({ tipo: 'DOCENTE_EIB' }),
+      reporte({ instrumento: 'DOCENTE' }),
+      reporte({ instrumento: 'DOCENTE_EIB' }),
     ]);
 
     expect(stats.fichasDocentes).toBe(2);
@@ -80,8 +80,8 @@ describe('calcularEstadisticas — conteos', () => {
 describe('calcularEstadisticas — visitas frente a fichas', () => {
   it('una visita con dos instrumentos son dos fichas y un solo monitoreo', () => {
     const stats = calcularEstadisticas([
-      reporte({ tipo: 'DOCENTE', cronogramaId: 'visita-1' }),
-      reporte({ tipo: 'DOCENTE_EIB', cronogramaId: 'visita-1' }),
+      reporte({ instrumento: 'DOCENTE', cronogramaId: 'visita-1' }),
+      reporte({ instrumento: 'DOCENTE_EIB', cronogramaId: 'visita-1' }),
     ]);
 
     expect(stats.fichas).toBe(2);
@@ -126,8 +126,8 @@ describe('calcularEstadisticas — visitas frente a fichas', () => {
 describe('calcularEstadisticas — escalas no comparables', () => {
   it('no promedia entre instrumentos distintos', () => {
     const stats = calcularEstadisticas([
-      reporte({ tipo: 'DOCENTE', promedio: 3.5, nivelLogro: 'LOGRO_ESPERADO' }),
-      reporte({ tipo: 'DOCENTE_EIB', promedio: 2.8, nivelLogro: 'LOGRO_ESPERADO' }),
+      reporte({ instrumento: 'DOCENTE', promedio: 3.5, nivelLogro: 'LOGRO_ESPERADO' }),
+      reporte({ instrumento: 'DOCENTE_EIB', promedio: 2.8, nivelLogro: 'LOGRO_ESPERADO' }),
     ]);
 
     expect(stats.promedioGeneral).toBeNull();
@@ -136,8 +136,8 @@ describe('calcularEstadisticas — escalas no comparables', () => {
 
   it('sí promedia cuando todas las fichas son del mismo instrumento', () => {
     const stats = calcularEstadisticas([
-      reporte({ tipo: 'DOCENTE', promedio: 3.0 }),
-      reporte({ tipo: 'DOCENTE', promedio: 4.0 }),
+      reporte({ instrumento: 'DOCENTE', promedio: 3.0 }),
+      reporte({ instrumento: 'DOCENTE', promedio: 4.0 }),
     ]);
 
     expect(stats.promedioGeneral).toBe(3.5);
@@ -145,9 +145,9 @@ describe('calcularEstadisticas — escalas no comparables', () => {
 
   it('desglosa cada instrumento por separado', () => {
     const stats = calcularEstadisticas([
-      reporte({ tipo: 'DOCENTE', promedio: 3.0, nivelLogro: 'LOGRO_ESPERADO' }),
-      reporte({ tipo: 'DOCENTE', promedio: 4.0, nivelLogro: 'INICIO' }),
-      reporte({ tipo: 'DOCENTE_EIB', promedio: 2.0, nivelLogro: 'LOGRO_ESPERADO' }),
+      reporte({ instrumento: 'DOCENTE', promedio: 3.0, nivelLogro: 'LOGRO_ESPERADO' }),
+      reporte({ instrumento: 'DOCENTE', promedio: 4.0, nivelLogro: 'INICIO' }),
+      reporte({ instrumento: 'DOCENTE_EIB', promedio: 2.0, nivelLogro: 'LOGRO_ESPERADO' }),
     ]);
 
     expect(stats.porInstrumento).toEqual([
@@ -157,15 +157,15 @@ describe('calcularEstadisticas — escalas no comparables', () => {
   });
 
   it('no lista un instrumento sin fichas', () => {
-    const stats = calcularEstadisticas([reporte({ tipo: 'DIRECTIVO' })]);
+    const stats = calcularEstadisticas([reporte({ instrumento: 'DIRECTIVO' })]);
 
     expect(stats.porInstrumento.map((i) => i.tipo)).toEqual(['DIRECTIVO']);
   });
 
   it('con un solo instrumento el desglose coincide con el total', () => {
     const stats = calcularEstadisticas([
-      reporte({ tipo: 'DOCENTE', promedio: 3.0 }),
-      reporte({ tipo: 'DOCENTE', promedio: 4.0 }),
+      reporte({ instrumento: 'DOCENTE', promedio: 3.0 }),
+      reporte({ instrumento: 'DOCENTE', promedio: 4.0 }),
     ]);
 
     expect(stats.porInstrumento[0].promedioGeneral).toBe(stats.promedioGeneral);

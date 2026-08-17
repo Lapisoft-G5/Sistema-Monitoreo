@@ -198,7 +198,7 @@ export class ReporteService {
   <div class="field"><div class="label">Codigo Modular</div><div class="value">${this.escape(f.institucionCodigoModular)}</div></div>
   <div class="field"><div class="label">Evaluado</div><div class="value">${this.escape(f.evaluadoNombre)}</div></div>
   <div class="field"><div class="label">Especialista</div><div class="value">${this.escape(f.especialistaNombre)}</div></div>
-  <div class="field"><div class="label">Tipo de Monitoreo</div><div class="value">${f.tipoMonitoreo}</div></div>
+  <div class="field"><div class="label">Instrumento</div><div class="value">${this.escape(f.instrumento)}</div></div>
   <div class="field"><div class="label">Ano Academico</div><div class="value">${f.anioAcademico}</div></div>
 </div>
 <div class="result">

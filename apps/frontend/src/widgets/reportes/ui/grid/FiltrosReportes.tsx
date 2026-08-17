@@ -63,6 +63,13 @@ interface FiltrosReportesProps {
   añosDisponibles: string[];
   isAnyFilterActive: boolean;
   handleClearFilters: () => void;
+  /**
+   * Si el filtro de año admite «Todos los años».
+   *
+   * El Análisis de Desempeño exige elegir uno: sus criterios cambian de un año
+   * a otro, de modo que agregarlos pone criterios distintos en el mismo eje.
+   */
+  permitirTodosLosAnios?: boolean;
   /** El docente evaluado ve una versión reducida: sólo búsqueda y año. */
   isEvaluatedView: boolean;
 }
@@ -87,15 +94,16 @@ export const FiltrosReportes = ({
   isAnyFilterActive,
   handleClearFilters,
   isEvaluatedView,
+  permitirTodosLosAnios = true,
 }: FiltrosReportesProps) => {
   const selectorDeAnio = (
     <SelectField
       label="Año"
       value={filterAnio}
       onChange={setFilterAnio}
-      placeholder="Todos los años"
+      placeholder={permitirTodosLosAnios ? 'Todos los años' : 'Seleccione un año'}
       options={[
-        { value: TODOS, label: 'Todos los años' },
+        ...(permitirTodosLosAnios ? [{ value: TODOS, label: 'Todos los años' }] : []),
         ...añosDisponibles.map((a) => ({ value: a, label: a })),
       ]}
     />

@@ -57,6 +57,9 @@ describe('MonitoringPlanService', () => {
       findById: jest.fn<any>(),
       create: jest.fn<any>(),
       softDelete: jest.fn<any>(),
+      contarDependencias: jest
+        .fn<any>()
+        .mockResolvedValue({ plantillasVigentes: 0, cronogramas: 0 }),
       restore: jest.fn<any>(),
       findCobertura: jest.fn<any>(),
       addCobertura: jest.fn<any>(),
@@ -279,6 +282,55 @@ describe('MonitoringPlanService', () => {
       repo.softDelete.mockResolvedValue({ ...planBase, estado: 'Activo' });
       const p = await service.toggleEstado('plan-1', sesionJefe);
       expect(p.estado).toBe('Activo');
+    });
+
+    /**
+     * No se inactiva un plan activo que sostiene monitoreo en curso: sus
+     * plantillas vigentes y cronogramas quedarían sin plan activo, y la regla
+     * del prerrequisito volvería a bloquear al personal de la I.E.
+     */
+    const planActivoIE = {
+      ...planBase,
+      estado: 'Activo',
+      tipoEntidad: 'IE',
+      institucionId: 'ie-1',
+    };
+
+    it('no inactiva un plan con plantillas vigentes o cronogramas', async () => {
+      repo.findById.mockResolvedValue(planActivoIE);
+      repo.contarDependencias.mockResolvedValue({ plantillasVigentes: 2, cronogramas: 0 });
+
+      await expect(service.toggleEstado('plan-1', sesionDirector)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repo.softDelete).not.toHaveBeenCalled();
+    });
+
+    it('bloquea la inactivacion tambien cuando lo que cuelga son cronogramas', async () => {
+      repo.findById.mockResolvedValue(planActivoIE);
+      repo.contarDependencias.mockResolvedValue({ plantillasVigentes: 0, cronogramas: 3 });
+
+      await expect(service.toggleEstado('plan-1', sesionDirector)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('inactiva el plan cuando nada depende de el', async () => {
+      repo.findById.mockResolvedValue(planActivoIE);
+      repo.contarDependencias.mockResolvedValue({ plantillasVigentes: 0, cronogramas: 0 });
+      repo.softDelete.mockResolvedValue({ ...planActivoIE, estado: 'Inactivo' });
+
+      const p = await service.toggleEstado('plan-1', sesionDirector);
+      expect(p.estado).toBe('Inactivo');
+    });
+
+    /** Reactivar no consulta dependencias: esa via la gobierna el duplicado. */
+    it('reactivar no verifica dependencias', async () => {
+      repo.findById.mockResolvedValue({ ...planBase, estado: 'Inactivo' });
+      repo.softDelete.mockResolvedValue({ ...planBase, estado: 'Activo' });
+
+      await service.toggleEstado('plan-1', sesionJefe);
+      expect(repo.contarDependencias).not.toHaveBeenCalled();
     });
   });
 

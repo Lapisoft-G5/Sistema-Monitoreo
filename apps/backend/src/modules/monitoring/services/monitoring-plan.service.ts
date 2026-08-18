@@ -13,6 +13,10 @@ import { CreatePlanDto } from '../dto/create-plan.dto.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
 import { PrerrequisitosDirectorService } from './prerrequisitos-director.service.js';
+import {
+  motivoInactivacionBloqueada,
+  tieneDependenciasActivas,
+} from './inactivacion-plan.helper.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 
@@ -125,6 +129,16 @@ export class MonitoringPlanService {
         throw new ConflictException(
           `Ya existe un plan de monitoreo activo tuyo para el año ${existing.anioAcademico}. Desactívalo primero antes de reactivar este.`,
         );
+      }
+    } else {
+      // Activo → Inactivo: no se retira un plan que sostiene monitoreo en curso.
+      const dependencias = await this.repository.contarDependencias(
+        existing.id,
+        existing.institucionId,
+        existing.anioAcademico,
+      );
+      if (tieneDependenciasActivas(dependencias)) {
+        throw new ConflictException(motivoInactivacionBloqueada(dependencias));
       }
     }
 

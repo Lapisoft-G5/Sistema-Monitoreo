@@ -12,12 +12,16 @@ import { MonitoringPlanRepository } from '../repositories/monitoring-plan.reposi
 import { CreatePlanDto } from '../dto/create-plan.dto.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
+import { PrerrequisitosDirectorService } from './prerrequisitos-director.service.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 
 @Injectable()
 export class MonitoringPlanService {
-  constructor(private readonly repository: MonitoringPlanRepository) {}
+  constructor(
+    private readonly repository: MonitoringPlanRepository,
+    private readonly prerrequisitos: PrerrequisitosDirectorService,
+  ) {}
 
   async findAll(filters?: QueryPlanDto, session?: SessionUser): Promise<IMonitoringPlanResponse[]> {
     const scopedFilters = { ...filters };
@@ -49,6 +53,10 @@ export class MonitoringPlanService {
   }
 
   async create(dto: CreatePlanDto, session: SessionUser): Promise<IMonitoringPlanResponse> {
+    // El coordinador y el jefe de taller no suben su plan anual hasta que el
+    // director de la I.E. subió el suyo y definió su plantilla. `asegurar` no
+    // hace nada para el director: es quien cumple la regla.
+    await this.prerrequisitos.asegurar(session);
     const { tipoEntidad, institucionId } = this.resolvePlanScope(session, dto);
     const rolAutor = this.toRolAutor(session.role);
 

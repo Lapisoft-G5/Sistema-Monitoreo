@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MonitoringPlanService } from './monitoring-plan.service.js';
+import { PrerrequisitosDirectorService } from './prerrequisitos-director.service.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import { MonitoringPlanRepository } from '../repositories/monitoring-plan.repository.js';
 import type { IMonitoringPlanResponse } from '@sistema-monitoreo/shared-contracts';
@@ -62,7 +63,14 @@ describe('MonitoringPlanService', () => {
       removeCobertura: jest.fn<any>(),
     };
     const moduleRef = await Test.createTestingModule({
-      providers: [MonitoringPlanService, { provide: MonitoringPlanRepository, useValue: mockRepo }],
+      providers: [
+        MonitoringPlanService,
+        { provide: MonitoringPlanRepository, useValue: mockRepo },
+        {
+          provide: PrerrequisitosDirectorService,
+          useValue: { asegurar: jest.fn<any>().mockResolvedValue(undefined) },
+        },
+      ],
     }).compile();
     service = moduleRef.get(MonitoringPlanService);
     repo = moduleRef.get(MonitoringPlanRepository);

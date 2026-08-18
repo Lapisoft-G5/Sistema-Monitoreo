@@ -22,7 +22,11 @@ export class MonitoringPlanService {
   async findAll(filters?: QueryPlanDto, session?: SessionUser): Promise<IMonitoringPlanResponse[]> {
     const scopedFilters = { ...filters };
     if (session) {
-      if (this.isDirector(session) && session.institucionId) {
+      if (this.isSchoolStaff(session) && session.institucionId) {
+        // Todo el personal de I.E. —Director, Coordinador Pedagógico y Jefe de
+        // Taller— ve sólo los planes de SU institución (mas los de la UGEL, que
+        // el repositorio agrega). Antes se acotaba únicamente al Director, y el
+        // Coordinador y el Jefe de Taller veían los planes de cualquier I.E.
         scopedFilters.institucionId = session.institucionId;
       } else if (session.role === RoleCode.JEFE_AREA) {
         // Jefe de Area solo ve planes UGEL
@@ -38,13 +42,8 @@ export class MonitoringPlanService {
     if (!plan) {
       throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
     }
-    if (session) {
-      if (this.isDirector(session) && plan.tipoEntidad !== 'IE') {
-        throw new ForbiddenException('No cuenta con permisos para ver este plan.');
-      }
-      if (session.role === RoleCode.JEFE_AREA && plan.tipoEntidad === 'IE') {
-        throw new ForbiddenException('El Jefe de Area no tiene acceso a los planes de las II.EE.');
-      }
+    if (session && !this.puedeVerPlan(session, plan)) {
+      throw new ForbiddenException('No cuenta con permisos para ver este plan.');
     }
     return plan;
   }
@@ -98,13 +97,8 @@ export class MonitoringPlanService {
     if (!existing) {
       throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
     }
-    if (session) {
-      if (this.isDirector(session) && existing.tipoEntidad !== 'IE') {
-        throw new ForbiddenException('No cuenta con permisos para modificar este plan.');
-      }
-      if (session.role === RoleCode.JEFE_GESTION && existing.tipoEntidad === 'IE') {
-        throw new ForbiddenException('Los Jefes de Gestion no pueden modificar planes de II.EE.');
-      }
+    if (session && !this.puedeGestionarPlan(session, existing)) {
+      throw new ForbiddenException('No cuenta con permisos para modificar este plan.');
     }
     if (existing.estado === 'Inactivo') {
       const existingActivos = await this.repository.findAll({
@@ -137,13 +131,8 @@ export class MonitoringPlanService {
     if (!existing) {
       throw new NotFoundException(`Plan de monitoreo con ID ${id} no encontrado.`);
     }
-    if (session) {
-      if (this.isDirector(session) && existing.tipoEntidad !== 'IE') {
-        throw new ForbiddenException('No cuenta con permisos para eliminar este plan.');
-      }
-      if (session.role === RoleCode.JEFE_GESTION && existing.tipoEntidad === 'IE') {
-        throw new ForbiddenException('Los Jefes de Gestion no pueden eliminar planes de II.EE.');
-      }
+    if (session && !this.puedeGestionarPlan(session, existing)) {
+      throw new ForbiddenException('No cuenta con permisos para eliminar este plan.');
     }
 
     // Si tiene plantillas o cronogramas amarrados, prisma lanzará error de foreign key.
@@ -200,6 +189,48 @@ export class MonitoringPlanService {
 
   private isDirector(session: SessionUser): boolean {
     return session.role === RoleCode.DIRECTOR_INSTITUCION;
+  }
+
+  /**
+   * Si esta sesión puede abrir este plan concreto.
+   *
+   * Es la puerta que `findById` debe cerrar además del listado: el PDF se
+   * descarga por id (`GET /planes/:id/archivo`), así que conocer el id de un
+   * plan ajeno no debe alcanzar.
+   *
+   * - Personal de I.E.: los planes de la UGEL y los de SU propia institución.
+   *   El del plan de otra I.E. queda fuera.
+   * - Jefe de Área: sólo los de la UGEL.
+   * - Jefe de Gestión y demás: sin restricción acá.
+   */
+  private puedeVerPlan(session: SessionUser, plan: IMonitoringPlanResponse): boolean {
+    if (this.isSchoolStaff(session)) {
+      if (plan.tipoEntidad === 'UGEL') return true;
+      return plan.institucionId === session.institucionId;
+    }
+    if (session.role === RoleCode.JEFE_AREA) {
+      return plan.tipoEntidad === 'UGEL';
+    }
+    return true;
+  }
+
+  /**
+   * Si esta sesión puede MODIFICAR o eliminar este plan.
+   *
+   * Más estricto que ver: el personal de I.E. gestiona los planes de SU
+   * institución y NO los de la UGEL. El listado y `findById` ya se controlaban
+   * por tipo de entidad, pero no por institución: un Coordinador podía cambiar
+   * el estado o borrar el plan de OTRA I.E. conociendo su id, porque caía en la
+   * rama que no comprobaba nada.
+   */
+  private puedeGestionarPlan(session: SessionUser, plan: IMonitoringPlanResponse): boolean {
+    if (this.isSchoolStaff(session)) {
+      return plan.tipoEntidad === 'IE' && plan.institucionId === session.institucionId;
+    }
+    if (session.role === RoleCode.JEFE_GESTION) {
+      return plan.tipoEntidad !== 'IE';
+    }
+    return true;
   }
 
   /** Personal de IE: Director, Coordinador Pedagógico y Jefe de Taller. */

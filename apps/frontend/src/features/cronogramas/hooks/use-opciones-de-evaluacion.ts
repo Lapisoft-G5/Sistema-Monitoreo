@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { Docente } from '@entities/model-docentes';
 import { opcionesDeEvaluadorInterno, type Opcion } from '../lib/opciones-de-asignacion';
+import { docenteEvaluablePorEspecialista } from '../lib/asignacion';
 
 /**
  * A quién se puede evaluar y quién puede evaluarlo, dentro de una institución.
@@ -48,6 +49,8 @@ interface OpcionesDeEvaluacionParams {
   tipoDeVisita: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo;
   evaluadorElegidoId: string;
   evaluadoElegidoId: string;
+  /** Especialidades del especialista elegido; en Secundaria acotan a los docentes. */
+  especialidadesDelEvaluador?: readonly string[];
 }
 
 const nombreCompleto = (docente: Docente) => `${docente.nombres} ${docente.apellidos}`;
@@ -88,6 +91,7 @@ export function useOpcionesDeEvaluacion({
   tipoDeVisita,
   evaluadorElegidoId,
   evaluadoElegidoId,
+  especialidadesDelEvaluador,
 }: OpcionesDeEvaluacionParams) {
   /** Institución sobre la que se está programando. */
   const institucion = useMemo(() => {
@@ -112,7 +116,7 @@ export function useOpcionesDeEvaluacion({
     );
   }, [docentes, institucion]);
 
-  const evaluados = useMemo(() => {
+  const evaluadosBase = useMemo(() => {
     if (esDirector) {
       if (!institucionDelUsuarioId) return [];
 
@@ -157,6 +161,23 @@ export function useOpcionesDeEvaluacion({
     tipoDeVisita,
     evaluadorElegidoId,
   ]);
+
+  // En Secundaria sólo se ofrece a los docentes cuya área maneja el especialista
+  // elegido; en los demás niveles pasan todos. Antes de elegir especialista no se
+  // filtra, para no mostrar una lista vacía sin explicación.
+  const evaluados = useMemo(
+    () =>
+      evaluadosBase.filter(
+        (d) =>
+          !evaluadorElegidoId ||
+          docenteEvaluablePorEspecialista(
+            d.especialidad,
+            especialidadesDelEvaluador ?? [],
+            esSecundaria,
+          ),
+      ),
+    [evaluadosBase, evaluadorElegidoId, especialidadesDelEvaluador, esSecundaria],
+  );
 
   const opcionesDeEvaluado = useMemo(
     () => conValorActual(evaluados.map(aOpcion), evaluadoElegidoId, docentes),

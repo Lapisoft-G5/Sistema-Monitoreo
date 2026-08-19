@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Button } from '@shared/ui/button';
 import { HelpCircle, LogOut, ChevronDown, Menu, ChevronRight } from 'lucide-react';
 import { NotificationsBell } from '@features/notifications';
+import { BotonPrepararOffline } from '@features/offline/BotonPrepararOffline';
 import { getPageTitle, ROOT_CRUMB } from '../config/breadcrumbs';
 
 interface TopbarProps {
@@ -57,6 +58,8 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
 
       {/* ── Derecha: acciones + usuario ── */}
       <div className="flex items-center gap-1 sm:gap-2">
+        {/* Descargar datos para trabajar sin conexión */}
+        <BotonPrepararOffline />
         {/* Notificaciones */}
         <NotificationsBell />
 

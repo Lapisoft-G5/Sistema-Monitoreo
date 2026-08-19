@@ -76,10 +76,15 @@ const conValorActual = (
   return [{ value: elegidoId, label }, ...opciones];
 };
 
-const aOpcion = (docente: Docente): Opcion => ({
-  value: docente.id,
-  label: `${nombreCompleto(docente)} (${docente.cargo})`,
-});
+const aOpcion = (docente: Docente): Opcion => {
+  // Se muestra el área además del cargo: en Secundaria es lo que permite ver de
+  // un vistazo que el docente corresponde al especialista elegido.
+  const area = docente.especialidad ? ` · ${docente.especialidad}` : '';
+  return {
+    value: docente.id,
+    label: `${nombreCompleto(docente)} (${docente.cargo})${area}`,
+  };
+};
 
 export function useOpcionesDeEvaluacion({
   docentes,

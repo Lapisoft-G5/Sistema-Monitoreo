@@ -13,12 +13,24 @@ import type { OperacionOffline } from './outbox-tipos';
  */
 
 /** Traduce el fallo de un envío al resultado que entiende la cola. */
-function clasificar(e: unknown): { resultado: ResultadoEnvio; error?: string } {
+export interface Clasificacion {
+  resultado: ResultadoEnvio;
+  error?: string;
+  /** Fallo de autenticación: se corta el drenado sin penalizar la entrada. */
+  auth?: boolean;
+}
+
+export function clasificar(e: unknown): Clasificacion {
   if (e instanceof ErrorDeApi) {
     const msg = String(e.message ?? '');
     // "La ficha ya esta FINALIZADO/COMPLETADO": la operación ya surtió efecto en
     // un intento anterior. Es éxito idempotente, no un error.
     if (e.estado === 400 && /ya est[aá]/i.test(msg)) return { resultado: 'ok' };
+    // 401: el token venció trabajando offline. El interceptor intenta refrescarlo
+    // solo; si el refresco también caducó, la sesión se cierra. Nunca se descarta
+    // la ficha: la cola vive en IndexedDB y se reintenta tras re-loguear, sin que
+    // el fallo de sesión consuma el presupuesto de reintentos de la entrada.
+    if (e.estado === 401) return { resultado: 'reintentar', error: 'sesión expirada', auth: true };
     if (e.estado >= 400 && e.estado < 500) return { resultado: 'permanente', error: msg };
     return { resultado: 'reintentar', error: msg }; // 5xx: transitorio
   }
@@ -26,7 +38,7 @@ function clasificar(e: unknown): { resultado: ResultadoEnvio; error?: string } {
   return { resultado: 'reintentar', error: 'sin conexión' };
 }
 
-async function ejecutar(op: OperacionOffline): Promise<{ resultado: ResultadoEnvio; error?: string }> {
+async function ejecutar(op: OperacionOffline): Promise<Clasificacion> {
   try {
     if (op.tipo === 'finalizar-ficha') {
       await finalizarFichaCompleta(op.payload as PayloadFinalizarFicha);
@@ -54,7 +66,10 @@ export async function sincronizarCola(): Promise<number> {
   try {
     let op = siguientePendiente(await listarOperaciones());
     while (op) {
-      const { resultado, error } = await ejecutar(op);
+      const { resultado, error, auth } = await ejecutar(op);
+      // Un fallo de sesión no es culpa de la ficha: se corta el drenado dejando la
+      // entrada intacta (sin sumar intento), para reintentarla tras re-loguear.
+      if (auth) break;
       await actualizarOperacion(aplicarResultado(op, resultado, error));
       if (resultado === 'ok') enviadas++;
       if (resultado === 'reintentar') break;

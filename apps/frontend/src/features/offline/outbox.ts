@@ -15,7 +15,11 @@ function cronogramaDe(op: OperacionOffline): string | undefined {
  * reglas (qué enviar, cómo reintentar) viven en `outbox-logica.ts`, con pruebas.
  */
 
-const store = createStore('sistema-monitoreo-offline', 'outbox');
+// Base PROPIA, separada del caché de queries. `idb-keyval` crea el store sólo al
+// nacer la base, así que dos stores no pueden convivir bajo un mismo nombre de
+// base: si compartieran nombre, el que abre primero gana y el otro store nunca
+// existe (y la cola no persistiría). Por eso la cola vive en su propia base.
+const store = createStore('sistema-monitoreo-outbox', 'outbox');
 const CLAVE = 'operaciones';
 
 /** Evento que avisa que la cola cambió, para que la UI se refresque. */

@@ -288,6 +288,7 @@ export class PrismaFichaRepository implements FichaRepository {
         tipoMonitoreo: true,
         fechaProgramada: true,
         evaluadoId: true,
+        monitorId: true,
       },
     });
     return c;

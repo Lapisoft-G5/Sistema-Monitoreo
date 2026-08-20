@@ -4,6 +4,18 @@ import type { FichaRepository } from '../repositories/ficha.repository.js';
 import type { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
 import type { FinalizarFichaDto } from '../dto/ficha.dto.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
+import { assertEsMonitorAsignado } from './evaluador-guard.js';
+
+/** Verifica que la sesión sea el monitor asignado a la visita de la ficha. */
+async function assertMonitorDeFicha(
+  repository: FichaRepository,
+  cronogramaId: string,
+  session: SessionUser,
+): Promise<void> {
+  const cronograma = await repository.findCronogramaBasicById(cronogramaId);
+  if (!cronograma) throw new NotFoundException(`Visita ${cronogramaId} no encontrada.`);
+  assertEsMonitorAsignado(session, cronograma.monitorId);
+}
 
 export async function finalizar(
   repository: FichaRepository,
@@ -14,6 +26,10 @@ export async function finalizar(
 ): Promise<IFichaMonitoreo> {
   const ficha = await repository.findById(fichaId);
   if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
+
+  // Sólo el monitor asignado a la visita puede finalizar su ficha.
+  await assertMonitorDeFicha(repository, ficha.cronogramaId, session);
+
   if (ficha.estado !== 'BORRADOR') {
     throw new BadRequestException(`La ficha ya esta ${ficha.estado}.`);
   }
@@ -60,11 +76,14 @@ export async function migrarPlantilla(
   repository: FichaRepository,
   fichaId: string,
   nuevaPlantillaId: string,
-  _session: SessionUser,
+  session: SessionUser,
 ): Promise<IFichaMonitoreo> {
-  void _session;
   const ficha = await repository.findById(fichaId);
   if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
+
+  // Sólo el monitor asignado a la visita puede migrar la plantilla de su ficha.
+  await assertMonitorDeFicha(repository, ficha.cronogramaId, session);
+
   if (ficha.estado !== 'BORRADOR') {
     throw new BadRequestException(
       `Solo se pueden migrar fichas en BORRADOR. Estado actual: ${ficha.estado}.`,

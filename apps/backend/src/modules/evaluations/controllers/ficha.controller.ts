@@ -168,6 +168,7 @@ export class FichaController {
       id: req.user.sub,
       role: req.user.role,
       institucionId: req.user.institucion_id ?? null,
+      especialistaId: req.user.especialista_id ?? null,
       especialistaNivel: req.user.especialista_nivel ?? null,
     };
   }

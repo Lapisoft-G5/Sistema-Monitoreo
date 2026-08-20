@@ -54,6 +54,9 @@ export interface CronogramaBasic {
   tipoMonitoreo: string;
   fechaProgramada: Date;
   evaluadoId: string;
+  /** Especialista asignado como monitor de la visita. Decide quién puede
+   * registrar o modificar su ficha (se compara con `session.especialistaId`). */
+  monitorId: string;
 }
 
 /** Los cortes de una plantilla y cómo se leen. */

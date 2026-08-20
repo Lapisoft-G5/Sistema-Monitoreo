@@ -8,32 +8,29 @@ import { chromium } from 'playwright-core';
 import { chromiumPath, OUT, WEB, loginWeb, prepararUsuario, sql } from '../lib.mjs';
 
 export async function run() {
-  const buscar = () => sql(
-    `SELECT c.id||'|'||pe.dni||'|'||pd.nombres FROM cronogramas c
-     JOIN especialistas e ON e.id=c.monitor_id JOIN personas pe ON pe.id=e.persona_id
-     JOIN docentes d ON d.id=c.evaluado_id JOIN personas pd ON pd.id=d.persona_id
-     WHERE c.estado='EN_PROCESO' LIMIT 1`,
+  // El monitor tiene que ser un MONITOR DE CAMPO real (rol especialista): sólo
+  // ellos ven el botón "Preparar offline" y montan el motor de sincronización.
+  // Un jefe de gestión o el director de UGEL tienen la capacidad pero trabajan en
+  // línea, así que no sirven para esta prueba.
+  const monitor = sql(
+    `SELECT e.id||'|'||p.dni FROM especialistas e
+     JOIN personas p ON p.id=e.persona_id
+     JOIN usuarios u ON u.persona_id=p.id
+     JOIN roles r ON r.id=u.rol_id
+     WHERE r.codigo='especialista' LIMIT 1`,
   );
-  let fila = buscar();
-  // La suite comparte visitas: J3 puede haber consumido la única EN_PROCESO. Si no
-  // queda ninguna, se promueve una PROGRAMADA a EN_PROCESO y se le asigna como
-  // monitor a un especialista con acceso real al calendario (el director de UGEL
-  // ya no monitorea, así que no sirve). El especialista 40000002 de la seed sí lo
-  // tiene; con eso se puede abrir "Continuar Monitoreo" (la ficha nace al finalizar).
-  if (!fila) {
-    const monitorId = sql(
-      `SELECT e.id FROM especialistas e JOIN personas p ON p.id=e.persona_id WHERE p.dni='40000002'`,
-    );
-    if (monitorId) {
-      sql(
-        `UPDATE cronogramas SET estado='EN_PROCESO', monitor_id='${monitorId}' WHERE id=(
-           SELECT id FROM cronogramas WHERE estado='PROGRAMADO' AND evaluado_id IS NOT NULL LIMIT 1)`,
-      );
-      fila = buscar();
-    }
-  }
-  if (!fila) { console.log('RESULT J7-offline SKIP sin visita monitoreable en la base'); return true; }
-  const [visitaId, monitorDni, docenteNombre] = fila.split('|');
+  if (!monitor) { console.log('RESULT J7-offline SKIP sin especialista de campo en la base'); return true; }
+  const [monitorId, monitorDni] = monitor.split('|');
+
+  // Se asigna a ese especialista una visita monitoreable: se reutiliza una
+  // EN_PROCESO o se promueve una PROGRAMADA, siempre reasignándole el monitor.
+  const visitaId = sql(
+    `SELECT id FROM cronogramas
+     WHERE estado IN ('EN_PROCESO','PROGRAMADO') AND evaluado_id IS NOT NULL
+     ORDER BY (estado='EN_PROCESO') DESC LIMIT 1`,
+  );
+  if (!visitaId) { console.log('RESULT J7-offline SKIP sin visita monitoreable en la base'); return true; }
+  sql(`UPDATE cronogramas SET estado='EN_PROCESO', monitor_id='${monitorId}' WHERE id='${visitaId}'`);
   const fichasAntes = Number(sql('SELECT count(*) FROM fichas_monitoreo'));
 
   const browser = await chromium.launch({ headless: true, executablePath: chromiumPath() });

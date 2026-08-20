@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useEstadoConexion } from './conexion';
-import { listarOperaciones, limpiarEnviadas } from './outbox';
+import { listarOperaciones, limpiarEnviadas, EVENTO_CAMBIO } from './outbox';
 import { contarPendientes } from './outbox-logica';
 import { sincronizarCola } from './sync';
+import { solicitarPersistencia } from './almacenamiento';
 
 /**
  * Mantiene la cola de envío drenándose sola: sincroniza al abrir la app y cada
@@ -32,10 +33,16 @@ export function useSyncOffline() {
   }, [refrescar]);
 
   useEffect(() => {
+    // Pide storage persistente para que no desalojen la cola.
+    void solicitarPersistencia();
     // El setState ocurre async, tras leer IndexedDB: sincroniza con un sistema
     // externo (la cola), no es un render en cascada síncrono.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refrescar();
+    // La cola puede cambiar desde otra pantalla (al encolar una ficha): mantener
+    // el contador al día.
+    window.addEventListener(EVENTO_CAMBIO, refrescar);
+    return () => window.removeEventListener(EVENTO_CAMBIO, refrescar);
   }, [refrescar]);
 
   // Cada vez que hay conexión, se intenta vaciar la cola.

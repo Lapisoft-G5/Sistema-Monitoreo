@@ -3,7 +3,6 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Cronograma } from '@entities/model-cronogramas';
 import { FEATURES } from '@shared/config/features';
-import { ErrorDeApi } from '@shared/config/api';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
 import { fichaAEstadoFormulario, type DatosFicha } from '../lib/ficha-estado';
 import {
@@ -12,9 +11,7 @@ import {
   type PayloadFinalizarFicha,
 } from '../lib/ficha-envio';
 import { encolar } from '@features/offline/outbox';
-
-/** Sin conexión, el envío falla sin respuesta HTTP (no es un `ErrorDeApi`). */
-const esErrorDeRed = (error: unknown): boolean => !(error instanceof ErrorDeApi);
+import { esErrorDeRed } from '@features/offline/errores';
 
 /** Qué se consiguió al recuperar la ficha cerrada de una visita. */
 export type ResultadoFichaLlena = 'cargada' | 'sin-respaldo' | 'error';

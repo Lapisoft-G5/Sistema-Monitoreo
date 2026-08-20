@@ -1,4 +1,5 @@
 import { fichasApi } from '../api/fichas.api';
+import { firmasApi } from '@/shared/api/firmas.api';
 import { aNivelNumerico, extraerEvidenciasGenerales, type DatosFicha } from './ficha-estado';
 
 /**
@@ -94,4 +95,25 @@ export async function guardarBorradorFicha({
   datos,
 }: PayloadFinalizarFicha): Promise<void> {
   await escribirRespuestasFicha(visitId, plantillaId, datos, false);
+}
+
+/** Cuerpo que viaja en la cola para una firma hecha offline. */
+export interface PayloadFirmarFicha {
+  /** Se firma por el cronograma (el backend resuelve la ficha) + su plantilla. */
+  cronogramaId: string;
+  plantillaId?: string;
+}
+
+/**
+ * Firma la ficha. El rol del firmante lo deriva el backend de la persona
+ * autenticada, y la imagen sale de la firma que ya tiene registrada, así que el
+ * cuerpo sólo lleva el consentimiento. Firmar dos veces con el mismo rol es un
+ * conflicto en el backend (unique ficha+rol): el motor de sync lo trata como
+ * éxito idempotente.
+ */
+export async function firmarFichaCompleta({
+  cronogramaId,
+  plantillaId,
+}: PayloadFirmarFicha): Promise<void> {
+  await firmasApi.signFicha(cronogramaId, { consentimiento: true, plantillaId });
 }

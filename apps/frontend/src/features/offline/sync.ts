@@ -1,5 +1,10 @@
 import { ErrorDeApi } from '@shared/config/api';
-import { finalizarFichaCompleta, type PayloadFinalizarFicha } from '@features/monitoreos/lib/ficha-envio';
+import {
+  finalizarFichaCompleta,
+  firmarFichaCompleta,
+  type PayloadFinalizarFicha,
+  type PayloadFirmarFicha,
+} from '@features/monitoreos/lib/ficha-envio';
 import { listarOperaciones, actualizarOperacion } from './outbox';
 import { siguientePendiente, aplicarResultado, type ResultadoEnvio } from './outbox-logica';
 import type { OperacionOffline } from './outbox-tipos';
@@ -23,9 +28,11 @@ export interface Clasificacion {
 export function clasificar(e: unknown): Clasificacion {
   if (e instanceof ErrorDeApi) {
     const msg = String(e.message ?? '');
-    // "La ficha ya esta FINALIZADO/COMPLETADO": la operación ya surtió efecto en
-    // un intento anterior. Es éxito idempotente, no un error.
-    if (e.estado === 400 && /ya est[aá]/i.test(msg)) return { resultado: 'ok' };
+    // Ya surtió efecto en un intento anterior: "la ficha ya esta FINALIZADO" o
+    // "ya firmó esta ficha con este rol". Es éxito idempotente, no un error.
+    if (e.estado === 400 && /ya (est[aá]|firm[oó])/i.test(msg)) return { resultado: 'ok' };
+    // La firma llegó antes de que su finalización subiera: se espera, no se descarta.
+    if (e.estado === 400 && /no se encontr/i.test(msg)) return { resultado: 'reintentar', error: msg };
     // 401: el token venció trabajando offline. El interceptor intenta refrescarlo
     // solo; si el refresco también caducó, la sesión se cierra. Nunca se descarta
     // la ficha: la cola vive en IndexedDB y se reintenta tras re-loguear, sin que
@@ -42,6 +49,10 @@ async function ejecutar(op: OperacionOffline): Promise<Clasificacion> {
   try {
     if (op.tipo === 'finalizar-ficha') {
       await finalizarFichaCompleta(op.payload as PayloadFinalizarFicha);
+      return { resultado: 'ok' };
+    }
+    if (op.tipo === 'firmar-ficha') {
+      await firmarFichaCompleta(op.payload as PayloadFirmarFicha);
       return { resultado: 'ok' };
     }
     // Tipo aún no soportado por el motor: no se reintenta en vano.

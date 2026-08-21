@@ -488,9 +488,10 @@ model Especialidad {
 }
 
 model DocenteEspecialidad {
-  id             String @id @default(uuid()) @db.Uuid
-  docenteId      String @map("docente_id") @db.Uuid
-  especialidadId String @map("especialidad_id") @db.Uuid
+  id             String  @id @default(uuid()) @db.Uuid
+  docenteId      String  @map("docente_id") @db.Uuid
+  especialidadId String  @map("especialidad_id") @db.Uuid
+  esPrincipal    Boolean @default(false) @map("es_principal")
 
   docente      Docente      @relation(fields: [docenteId], references: [id], onDelete: Cascade)
   especialidad Especialidad @relation(fields: [especialidadId], references: [id], onDelete: Cascade)

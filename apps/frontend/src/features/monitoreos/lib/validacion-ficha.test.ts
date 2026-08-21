@@ -29,6 +29,7 @@ const respuestas = (over: Partial<RespuestasAValidar> = {}): RespuestasAValidar 
   observacionesEjeItem: {},
   sugerencias: 'Continuar con las jornadas de reflexión.',
   compromisos: 'Seguimiento mensual.',
+  contexto: { area: 'CTA', grado: '2', seccion: 'A', alumnos: 20, alumnosNee: 1 },
   ...over,
 });
 
@@ -39,6 +40,43 @@ describe('validarCierreDeFicha — ficha completa', () => {
 
   it('acepta una plantilla sin ejes ni ítems', () => {
     expect(validarCierreDeFicha(plantilla({ ejesItems: undefined }), respuestas())).toBeNull();
+  });
+});
+
+describe('validarCierreDeFicha — contexto de aula (DOCENTE)', () => {
+  it('exige el área curricular (el backend la rechaza sin ella, y offline no se autocompleta)', () => {
+    const mensaje = validarCierreDeFicha(
+      plantilla(),
+      respuestas({ contexto: { area: '', grado: '2', seccion: 'A', alumnos: 20, alumnosNee: 1 } }),
+    );
+    expect(mensaje).toContain('área curricular');
+  });
+
+  it('exige grado, sección y cantidades de estudiantes', () => {
+    const mensaje = validarCierreDeFicha(
+      plantilla(),
+      respuestas({ contexto: { area: 'CTA', grado: '', seccion: '', alumnos: '', alumnosNee: '' } }),
+    );
+    expect(mensaje).toContain('grado');
+    expect(mensaje).toContain('sección');
+    expect(mensaje).toContain('cantidad de estudiantes');
+  });
+
+  it('acepta cero estudiantes con NEE (0 es un valor válido, no ausencia)', () => {
+    expect(
+      validarCierreDeFicha(
+        plantilla(),
+        respuestas({ contexto: { area: 'CTA', grado: '2', seccion: 'A', alumnos: 20, alumnosNee: 0 } }),
+      ),
+    ).toBeNull();
+  });
+
+  it('no exige contexto a una ficha directiva (va sin aula)', () => {
+    const directiva = plantilla({ tipoMonitoreo: 'Monitoreo Directivo' });
+    const sinContexto = respuestas({
+      contexto: { area: '', grado: '', seccion: '', alumnos: '', alumnosNee: '' },
+    });
+    expect(validarCierreDeFicha(directiva, sinContexto)).toBeNull();
   });
 });
 

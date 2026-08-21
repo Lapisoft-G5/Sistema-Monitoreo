@@ -112,6 +112,13 @@ const FICHA_COMPLETA: DatosFicha = {
   respuestasEjeItem: {},
   evidenciaUrls: {},
   observacionesEjeItem: {},
+  contexto: {
+    areaCurricular: 'Comunicación',
+    grado: '2',
+    seccion: 'A',
+    cantidadEstudiantes: 20,
+    cantidadEstudiantesNee: 1,
+  },
 } as DatosFicha;
 
 const Wrapper = ({ children }: { children: ReactNode }) => {

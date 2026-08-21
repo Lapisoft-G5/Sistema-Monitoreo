@@ -30,8 +30,16 @@ export async function apiAlcanzable(timeoutMs = 4000): Promise<boolean> {
 }
 
 /**
+ * Cada cuánto se re-sondea la conexión real. Un HEAD cada 15 s es despreciable en
+ * datos —y offline falla al instante— pero alcanza para que el estado no quede
+ * pegado en "en línea" cuando la señal se cae sin avisar.
+ */
+const INTERVALO_SONDEO_MS = 15_000;
+
+/**
  * Estado de conexión reactivo. Parte de `navigator.onLine` y lo confirma con un
- * ping al recuperar la red, para no anunciar "en línea" sin salida real.
+ * ping real, tanto al recuperar/perder la red como cada cierto intervalo, para no
+ * anunciar "en línea" sin salida real ni quedarse ciego ante una caída silenciosa.
  */
 export function useEstadoConexion() {
   const [enLinea, setEnLinea] = useState<boolean>(() =>
@@ -46,15 +54,31 @@ export function useEstadoConexion() {
     };
     const alConectar = () => void confirmar();
     const alDesconectar = () => setEnLinea(false);
+    const alCambiarVisibilidad = () => {
+      if (!document.hidden) void confirmar();
+    };
 
     window.addEventListener('online', alConectar);
     window.addEventListener('offline', alDesconectar);
-    if (navigator.onLine) void confirmar();
+    document.addEventListener('visibilitychange', alCambiarVisibilidad);
+
+    // Se confirma con un PING real, no sólo con `navigator.onLine`: éste sólo dice
+    // si hay una red conectada, y se queda en «en línea» cuando la red no tiene
+    // salida —portal cautivo, backend caído, señal sin datos— o cuando se corta de
+    // un modo que no dispara el evento `offline` (p. ej. el throttle "Offline" de
+    // DevTools). Por eso, además de reaccionar a los eventos, se re-sondea cada
+    // tanto: así «Sin conexión» aparece aunque el navegador se crea conectado.
+    void confirmar();
+    const idSondeo = window.setInterval(() => {
+      if (!document.hidden) void confirmar();
+    }, INTERVALO_SONDEO_MS);
 
     return () => {
       vivo = false;
       window.removeEventListener('online', alConectar);
       window.removeEventListener('offline', alDesconectar);
+      document.removeEventListener('visibilitychange', alCambiarVisibilidad);
+      window.clearInterval(idSondeo);
     };
   }, []);
 

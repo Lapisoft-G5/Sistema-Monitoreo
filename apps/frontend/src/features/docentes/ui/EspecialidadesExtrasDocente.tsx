@@ -1,6 +1,9 @@
 import { X } from 'lucide-react';
 import { SelectField } from '@shared/ui/form-controls';
-import { especialidadesDelNivel } from '../lib/grados-y-secciones';
+import {
+  areaYaUsada,
+  especialidadesExtrasDisponibles,
+} from '../lib/especialidades-extras';
 
 /**
  * Áreas adicionales que un docente de Secundaria también dicta.
@@ -18,8 +21,6 @@ interface Props {
   disabled?: boolean;
 }
 
-const norm = (s: string) => s.trim().toLowerCase();
-
 export const EspecialidadesExtrasDocente = ({
   nivel,
   principal,
@@ -27,13 +28,10 @@ export const EspecialidadesExtrasDocente = ({
   onCambiar,
   disabled,
 }: Props) => {
-  const usadas = new Set(
-    [principal, ...extras].filter((s): s is string => Boolean(s)).map(norm),
-  );
-  const disponibles = especialidadesDelNivel(nivel).filter((e) => !usadas.has(norm(e)));
+  const disponibles = especialidadesExtrasDisponibles(nivel, principal, extras);
 
   const agregar = (valor: string) => {
-    if (!valor || usadas.has(norm(valor))) return;
+    if (!valor || areaYaUsada(valor, principal, extras)) return;
     onCambiar([...extras, valor]);
   };
   const quitar = (valor: string) => onCambiar(extras.filter((e) => e !== valor));

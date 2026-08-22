@@ -209,7 +209,7 @@ export const ListaDesempenos = ({
         </span>
         <ItemCierre
           etiqueta="Observaciones Generales"
-          estado={cierre.observaciones ? 'ok' : 'opcional'}
+          estado={cierre.observaciones ? 'ok' : 'pendiente'}
           activo={pasoCierreActivo === 'obs'}
           onClick={() => onSeleccionarCierre?.('obs')}
         />

@@ -27,6 +27,7 @@ const respuestas = (over: Partial<RespuestasAValidar> = {}): RespuestasAValidar 
   selectedLevels: { d1: 'III' },
   rubricComments: { d1: 'Se observa dominio del aula.' },
   observacionesEjeItem: {},
+  generalComments: 'La visita se desarrolló con normalidad.',
   sugerencias: 'Continuar con las jornadas de reflexión.',
   compromisos: 'Seguimiento mensual.',
   contexto: { area: 'CTA', grado: '2', seccion: 'A', alumnos: 20, alumnosNee: 1 },
@@ -153,6 +154,18 @@ describe('validarCierreDeFicha — observaciones de ejes e ítems', () => {
 });
 
 describe('validarCierreDeFicha — cierre narrativo', () => {
+  it('exige observaciones generales', () => {
+    expect(validarCierreDeFicha(plantilla(), respuestas({ generalComments: '' }))).toBe(
+      'Las observaciones generales son obligatorias para finalizar la ficha.',
+    );
+  });
+
+  it('rechaza observaciones generales en blanco', () => {
+    expect(validarCierreDeFicha(plantilla(), respuestas({ generalComments: '   ' }))).toContain(
+      'observaciones generales son obligatorias',
+    );
+  });
+
   it('exige sugerencias', () => {
     expect(validarCierreDeFicha(plantilla(), respuestas({ sugerencias: '' }))).toBe(
       'Las sugerencias son obligatorias para finalizar la ficha.',

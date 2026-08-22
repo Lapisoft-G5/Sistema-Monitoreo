@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { NavegacionPasos } from './NavegacionPasos';
 import { EvidenciaGeneralSeccion } from './EvidenciaGeneralSeccion';
 
 /** Los campos de cierre, usados por el índice como checklist y como foco. */
@@ -18,8 +17,6 @@ interface PasoCierreProps {
   soloLectura: boolean;
   /** Campo al que saltar/resaltar al entrar a la sección desde el índice. */
   foco?: PasoCierreTipo;
-  onAnterior?: () => void;
-  onSiguiente?: () => void;
 }
 
 const CLASES_TEXTAREA =
@@ -62,8 +59,6 @@ export const PasoCierre = ({
   onVerImagen,
   soloLectura,
   foco,
-  onAnterior,
-  onSiguiente,
 }: PasoCierreProps) => {
   // Al entrar a la sección desde un ítem del índice, se lleva la vista a ese
   // campo. El efecto corre tras montar, cuando el elemento ya existe.
@@ -74,15 +69,13 @@ export const PasoCierre = ({
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [foco]);
 
-  const completo = !!sugerencias.trim() && !!compromisos.trim();
-
   return (
     <div className="flex-1 p-6 overflow-y-auto space-y-6 md:sticky md:top-0 self-start max-h-[560px] bg-white">
       <div className="space-y-6 animate-in fade-in duration-200">
         <div id="cierre-obs" className="space-y-2 scroll-mt-4">
           <EtiquetaCampo
             titulo="Observaciones Generales"
-            obligatorio={false}
+            obligatorio
             ayuda="Describa cómo se desarrolló la visita en conjunto, más allá de cada rúbrica."
           />
           <textarea
@@ -134,13 +127,6 @@ export const PasoCierre = ({
             soloLectura={soloLectura}
           />
         </div>
-
-        <NavegacionPasos
-          etiqueta="Cierre de la Evaluación"
-          estado={completo ? 'completado' : 'pendiente'}
-          onAnterior={onAnterior}
-          onSiguiente={onSiguiente}
-        />
       </div>
     </div>
   );

@@ -34,6 +34,7 @@ export interface RespuestasAValidar {
   selectedLevels: Record<string, string>;
   rubricComments: Record<string, string>;
   observacionesEjeItem: Record<string, string>;
+  generalComments: string;
   sugerencias: string;
   compromisos: string;
   contexto: ContextoAValidar;
@@ -89,6 +90,10 @@ export function validarCierreDeFicha(
     return `Faltan observaciones. Por favor ingrese la observación para los ejes/ítems: \n${listar(
       sinObservar.map((item) => `${item.numero}. ${recortar(item.descripcion)}`),
     )}`;
+  }
+
+  if (estaVacio(respuestas.generalComments)) {
+    return 'Las observaciones generales son obligatorias para finalizar la ficha.';
   }
 
   if (estaVacio(respuestas.sugerencias)) {

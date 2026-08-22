@@ -144,8 +144,6 @@ export const PanelDesempenos = ({
           onVerImagen={cierre.onVerImagen}
           soloLectura={soloLectura}
           foco={focoCierre}
-          onAnterior={onAnterior}
-          onSiguiente={onSiguiente}
         />
       ) : (
         <DetalleDesempeno

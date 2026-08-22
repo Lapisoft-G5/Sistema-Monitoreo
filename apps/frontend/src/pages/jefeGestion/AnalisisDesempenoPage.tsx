@@ -5,7 +5,7 @@ import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { useCan, Capability } from '@shared/auth';
 import { PageHeader } from '@shared/ui/pageHeader';
-import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
+import { MODALIDAD_NIVEL_MAP, RoleCode } from '@sistema-monitoreo/shared-contracts';
 import {
   reportesVisibles,
   type ReporteVisible,
@@ -35,6 +35,11 @@ const ANIO_ACTUAL = new Date().getFullYear();
 export const AnalisisDesempenoPage = () => {
   const { user } = useUser();
   const { can } = useCan();
+
+  // El director de institución mira siempre su propio colegio: Modalidad, Nivel e
+  // Institución no varían para él, así que se precargan y se bloquean, y sólo
+  // mueve el docente (y período/tipo/año). El backend ya acota a su IE.
+  const esDirectorIE = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   // ── Estados de Filtros (Filtros de Reporte estándar) ──
   const [filterModalidad, setFilterModalidad] = useState('Todos');
@@ -154,11 +159,32 @@ export const AnalisisDesempenoPage = () => {
     return reportesVisibles(completadas as ReporteVisible[], user) as BackendReportVisit[];
   }, [fichasCompletadasData, cronogramas, user]);
 
+  // Ámbito único del director: como todas sus fichas son de su IE, la modalidad,
+  // el nivel y la institución salen de los propios datos. Sólo se fija lo que es
+  // único (una IE integrada puede tener más de un nivel: ahí se deja «Todos»).
+  const ambitoDelDirector = useMemo(() => {
+    if (!esDirectorIE) return null;
+    const modalidades = new Set(completedVisits.map((v) => v.modalidad).filter(Boolean));
+    const niveles = new Set(completedVisits.map((v) => v.nivel).filter(Boolean));
+    const instituciones = new Set(completedVisits.map((v) => v.institucionId).filter(Boolean));
+    return {
+      modalidad: modalidades.size === 1 ? [...modalidades][0] : null,
+      nivel: niveles.size === 1 ? [...niveles][0] : null,
+      institucionId: instituciones.size === 1 ? [...instituciones][0] : null,
+    };
+  }, [esDirectorIE, completedVisits]);
+
+  // Valores efectivos del ámbito: para el director mandan los de su IE (no un
+  // estado que haya que sincronizar por efecto); para el resto, el filtro elegido.
+  const filterModalidadEf = ambitoDelDirector?.modalidad ?? filterModalidad;
+  const filterNivelEf = ambitoDelDirector?.nivel ?? filterNivel;
+  const filterInstitucionEf = ambitoDelDirector?.institucionId ?? filterInstitucion;
+
   // Cascading Nivel
   const nivelesDisponibles = useMemo(() => {
-    if (filterModalidad === 'Todos') return [];
-    return MODALIDAD_NIVEL_MAP[filterModalidad as keyof typeof MODALIDAD_NIVEL_MAP] || [];
-  }, [filterModalidad]);
+    if (filterModalidadEf === 'Todos') return [];
+    return MODALIDAD_NIVEL_MAP[filterModalidadEf as keyof typeof MODALIDAD_NIVEL_MAP] || [];
+  }, [filterModalidadEf]);
 
   const handleModalidadChange = (modalidad: string) => {
     setFilterModalidad(modalidad);
@@ -186,44 +212,44 @@ export const AnalisisDesempenoPage = () => {
   const institucionesDisponibles = useMemo(() => {
     const porId = new Map<string, string>();
     completedVisits.forEach((v) => {
-      if (filterModalidad !== 'Todos' && v.modalidad !== filterModalidad) return;
-      if (filterNivel !== 'Todos' && v.nivel !== filterNivel) return;
+      if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
+      if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
       if (v.institucionId) porId.set(v.institucionId, v.institucion);
     });
     return [...porId.entries()]
       .map(([id, nombre]) => ({ id, nombre }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
-  }, [completedVisits, filterModalidad, filterNivel]);
+  }, [completedVisits, filterModalidadEf, filterNivelEf]);
 
   // Docentes que aparecen en los datos, acotados por modalidad/nivel/institución:
   // cada institución tiene sus propios docentes, así el selector cascada.
   const docentesDisponibles = useMemo(() => {
     const porId = new Map<string, string>();
     completedVisits.forEach((v) => {
-      if (filterModalidad !== 'Todos' && v.modalidad !== filterModalidad) return;
-      if (filterNivel !== 'Todos' && v.nivel !== filterNivel) return;
-      if (filterInstitucion !== 'Todos' && v.institucionId !== filterInstitucion) return;
+      if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
+      if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
+      if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return;
       if (v.evaluadoId) porId.set(v.evaluadoId, v.docenteDirectivo);
     });
     return [...porId.entries()]
       .map(([id, nombre]) => ({ id, nombre }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
-  }, [completedVisits, filterModalidad, filterNivel, filterInstitucion]);
+  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
 
   // Números de visita presentes en los datos (1er monitoreo, 2do, …), acotados
   // por el resto de los filtros.
   const numerosDeVisitaDisponibles = useMemo(() => {
     const nums = new Set<number>();
     completedVisits.forEach((v) => {
-      if (filterModalidad !== 'Todos' && v.modalidad !== filterModalidad) return;
-      if (filterNivel !== 'Todos' && v.nivel !== filterNivel) return;
-      if (filterInstitucion !== 'Todos' && v.institucionId !== filterInstitucion) return;
+      if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
+      if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
+      if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return;
       if (filterDocente !== 'Todos' && v.evaluadoId !== filterDocente) return;
       const n = Number(v.nroVisita);
       if (Number.isFinite(n) && n > 0) nums.add(n);
     });
     return [...nums].sort((a, b) => a - b);
-  }, [completedVisits, filterModalidad, filterNivel, filterInstitucion, filterDocente]);
+  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterDocente]);
 
   const añosDisponibles = useMemo(() => {
     const yearsSet = new Set<string>();
@@ -299,9 +325,9 @@ export const AnalisisDesempenoPage = () => {
         return false;
       }
 
-      if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
-      if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
-      if (filterInstitucion !== 'Todos' && visit.institucionId !== filterInstitucion) return false;
+      if (filterModalidadEf !== 'Todos' && visit.modalidad !== filterModalidadEf) return false;
+      if (filterNivelEf !== 'Todos' && visit.nivel !== filterNivelEf) return false;
+      if (filterInstitucionEf !== 'Todos' && visit.institucionId !== filterInstitucionEf) return false;
       if (filterDocente !== 'Todos' && visit.evaluadoId !== filterDocente) return false;
       if (filterNumeroVisita !== 'Todos' && String(visit.nroVisita) !== filterNumeroVisita) return false;
 
@@ -325,7 +351,7 @@ export const AnalisisDesempenoPage = () => {
 
       return true;
     });
-  }, [completedVisits, filtroPeriodo, filterTipo, filterModalidad, filterNivel, filterInstitucion, filterDocente, filterNumeroVisita, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterTipo, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterDocente, filterNumeroVisita, filterAnio]);
 
   const analisis = useMemo(
     () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas, filterTipo),
@@ -350,11 +376,11 @@ export const AnalisisDesempenoPage = () => {
 
       {/* ── Filtros de Reporte (Estándar con Tipo de Monitoreo) ── */}
       <FiltrosReportes
-        filterModalidad={filterModalidad}
+        filterModalidad={filterModalidadEf}
         setFilterModalidad={handleModalidadChange}
-        filterNivel={filterNivel}
+        filterNivel={filterNivelEf}
         setFilterNivel={handleNivelChange}
-        filterInstitucion={filterInstitucion}
+        filterInstitucion={filterInstitucionEf}
         setFilterInstitucion={handleInstitucionChange}
         institucionesDisponibles={institucionesDisponibles}
         filterDocente={filterDocente}
@@ -367,6 +393,7 @@ export const AnalisisDesempenoPage = () => {
         setFilterAnio={setFilterAnio}
         permitirTodosLosAnios={false}
         permitirTipoTodos={false}
+        bloquearAmbito={esDirectorIE}
         filterTipo={filterTipo}
         setFilterTipo={setFilterTipo}
         conteosTipo={conteosTipo}

@@ -93,6 +93,12 @@ interface FiltrosReportesProps {
    * mismo eje. Los reportes que son listas sí lo permiten (default).
    */
   permitirTipoTodos?: boolean;
+  /**
+   * Fija el ámbito Modalidad/Nivel/Institución. El director de institución mira
+   * siempre su propio colegio: esos tres no varían para él, así que llegan
+   * precargados y bloqueados y sólo mueve el docente (y período/tipo/año).
+   */
+  bloquearAmbito?: boolean;
   /** El docente evaluado ve una versión reducida: sólo búsqueda y año. */
   isEvaluatedView: boolean;
 }
@@ -128,6 +134,7 @@ export const FiltrosReportes = ({
   isEvaluatedView,
   permitirTodosLosAnios = true,
   permitirTipoTodos = true,
+  bloquearAmbito = false,
 }: FiltrosReportesProps) => {
   const opcionesDeTipo = permitirTipoTodos
     ? FILTROS_TIPO
@@ -267,6 +274,7 @@ export const FiltrosReportes = ({
             label="Modalidad"
             value={filterModalidad}
             onChange={setFilterModalidad}
+            disabled={bloquearAmbito}
             placeholder="Todas las modalidades"
             options={[
               { value: TODOS, label: 'Todas las modalidades' },
@@ -278,7 +286,7 @@ export const FiltrosReportes = ({
             label="Nivel Educativo"
             value={filterNivel}
             onChange={setFilterNivel}
-            disabled={filterModalidad === TODOS}
+            disabled={bloquearAmbito || filterModalidad === TODOS}
             placeholder="Todos los niveles"
             options={[
               { value: TODOS, label: 'Todos los niveles' },
@@ -291,7 +299,7 @@ export const FiltrosReportes = ({
               label="Institución Educativa"
               value={filterInstitucion ?? TODOS}
               onChange={setFilterInstitucion}
-              disabled={institucionesDisponibles.length === 0}
+              disabled={bloquearAmbito || institucionesDisponibles.length === 0}
               placeholder="Todas las instituciones"
               options={[
                 { value: TODOS, label: 'Todas las instituciones' },

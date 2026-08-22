@@ -33,6 +33,8 @@ export const reportesApi = {
   analisisDesempenos: (query?: {
     anioAcademico?: number;
     institucionId?: string;
+    modalidad?: string;
+    nivelEducativo?: string;
     tipoMonitoreo?: TipoPlantilla;
     fechaDesde?: string;
     fechaHasta?: string;

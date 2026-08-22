@@ -50,6 +50,8 @@ export class PrismaReporteRepository implements ReporteRepository {
     // el objeto declarado como `any` nadie lo advertía. Ver H-29 del plan.
     const porCronograma: Prisma.CronogramaWhereInput = {};
     if (filters.institucionId) porCronograma.institucionId = filters.institucionId;
+    if (filters.modalidad) porCronograma.modalidad = filters.modalidad;
+    if (filters.nivelEducativo) porCronograma.nivelEducativo = filters.nivelEducativo;
     if (Object.keys(porCronograma).length > 0) where.cronograma = porCronograma;
     if (filters.tipoMonitoreo) where.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };
     if (filters.nivelLogro) where.nivelLogro = filters.nivelLogro;
@@ -274,6 +276,12 @@ export class PrismaReporteRepository implements ReporteRepository {
     const porCronograma: Prisma.CronogramaWhereInput = {};
     if (filters.institucionId) {
       porCronograma.institucionId = filters.institucionId;
+    }
+    if (filters.modalidad) {
+      porCronograma.modalidad = filters.modalidad;
+    }
+    if (filters.nivelEducativo) {
+      porCronograma.nivelEducativo = filters.nivelEducativo;
     }
     if (Object.keys(porCronograma).length > 0) {
       whereFicha.cronograma = porCronograma;

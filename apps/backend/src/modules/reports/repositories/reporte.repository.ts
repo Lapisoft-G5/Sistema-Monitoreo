@@ -10,6 +10,10 @@ import type { SessionUser } from '../../../shared/types/session-user.js';
 export interface QueryFichasCompletadas {
   anioAcademico?: number;
   institucionId?: string;
+  /** Modalidad de la visita (EBR, EBA, …); se aplica sobre `cronograma.modalidad`. */
+  modalidad?: string;
+  /** Nivel educativo de la visita; se aplica sobre `cronograma.nivelEducativo`. */
+  nivelEducativo?: string;
   /** Instrumento: el repositorio lo aplica sobre `plantilla.tipoMonitoreo`. */
   tipoMonitoreo?: TipoPlantilla;
   nivelLogro?: NivelLogro;

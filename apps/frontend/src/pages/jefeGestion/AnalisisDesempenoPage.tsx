@@ -59,9 +59,15 @@ export const AnalisisDesempenoPage = () => {
   // que decía `TipoMonitoreo` y por lo tanto excluía DOCENTE_EIB.
   const tipoMonitoreoParam = filterTipo !== 'Todos' ? filterTipo : undefined;
 
+  // Los filtros se aplican en el backend, que es quien arma la distribución por
+  // criterio: de nada sirve filtrarlos sólo en el cliente porque el análisis no
+  // se recalcula de las fichas, viene consolidado del servidor.
   const { data: criteriosBackend } = useAnalisisDesempenos({
     anioAcademico: anioNumero,
     tipoMonitoreo: tipoMonitoreoParam,
+    modalidad: filterModalidad !== 'Todos' ? filterModalidad : undefined,
+    nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
+    institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
   });
 
   // El catálogo de plantillas y el cronograma salen de endpoints de gestión que

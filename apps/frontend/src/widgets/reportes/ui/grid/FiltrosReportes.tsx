@@ -1,7 +1,8 @@
-import { Search, Filter, Calendar, Users } from 'lucide-react';
+import { Search, Filter, Calendar, Users, FileText } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SelectField } from '@/shared/ui/form-controls';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import {
   FILTROS_PERIODO,
   type FiltroPeriodoTipo,
@@ -258,6 +259,32 @@ export const FiltrosReportes = ({
             })}
           </div>
         )}
+
+        {/* Plantilla: hermana de Tipo (ambas eligen la rúbrica). Va inline acá y
+            no en la grilla para no dejar «Año» solo en una segunda fila. */}
+        {setFilterPlantilla && plantillasDisponibles.length > 0 && (
+          <div className="flex items-center gap-2 border-l border-slate-200 pl-4 sm:pl-6">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1 shrink-0">
+              <FileText className="w-3.5 h-3.5 text-primary" /> Plantilla:
+            </span>
+            <Select
+              value={filterPlantilla ?? ''}
+              onValueChange={setFilterPlantilla}
+              disabled={plantillasDisponibles.length <= 1}
+            >
+              <SelectTrigger className="h-8 rounded-full text-xs font-semibold border border-slate-200 bg-slate-50 px-3 max-w-[260px] disabled:opacity-80 disabled:cursor-not-allowed">
+                <SelectValue placeholder="Seleccione una plantilla" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px] z-50">
+                {plantillasDisponibles.map((p) => (
+                  <SelectItem key={p.id} value={p.id} className="text-sm">
+                    {p.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {isEvaluatedView ? (
@@ -316,17 +343,6 @@ export const FiltrosReportes = ({
                 { value: TODOS, label: 'Todas las instituciones' },
                 ...institucionesDisponibles.map((i) => ({ value: i.id, label: i.nombre })),
               ]}
-            />
-          )}
-
-          {setFilterPlantilla && (
-            <SelectField
-              label="Plantilla"
-              value={filterPlantilla ?? ''}
-              onChange={setFilterPlantilla}
-              disabled={plantillasDisponibles.length <= 1}
-              placeholder="Seleccione una plantilla"
-              options={plantillasDisponibles.map((p) => ({ value: p.id, label: p.nombre }))}
             />
           )}
 

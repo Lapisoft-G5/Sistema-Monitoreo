@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useUser } from '@entities/model-user';
 import { useFichasCompletadas, useAnalisisDesempenos } from '@entities/model-reportes';
 import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api';
@@ -35,7 +35,6 @@ export const AnalisisDesempenoPage = () => {
   const { can } = useCan();
 
   // ── Estados de Filtros (Filtros de Reporte estándar) ──
-  const [searchQuery, setSearchQuery] = useState('');
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterInstitucion, setFilterInstitucion] = useState('Todos');
@@ -60,14 +59,6 @@ export const AnalisisDesempenoPage = () => {
   // que decía `TipoMonitoreo` y por lo tanto excluía DOCENTE_EIB.
   const tipoMonitoreoParam = filterTipo !== 'Todos' ? filterTipo : undefined;
 
-  // La búsqueda por texto se aplica en el backend (nombre de IE, docente o
-  // especialista); se difiere para no consultar en cada tecla.
-  const [busquedaAplicada, setBusquedaAplicada] = useState('');
-  useEffect(() => {
-    const t = setTimeout(() => setBusquedaAplicada(searchQuery.trim()), 350);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
-
   // Los filtros se aplican en el backend, que es quien arma la distribución por
   // criterio: de nada sirve filtrarlos sólo en el cliente porque el análisis no
   // se recalcula de las fichas, viene consolidado del servidor.
@@ -78,7 +69,6 @@ export const AnalisisDesempenoPage = () => {
     nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
     institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
     docenteId: filterDocente !== 'Todos' ? filterDocente : undefined,
-    busqueda: busquedaAplicada || undefined,
   });
 
   // El catálogo de plantillas y el cronograma salen de endpoints de gestión que
@@ -237,7 +227,6 @@ export const AnalisisDesempenoPage = () => {
   }, [completedVisits]);
 
   const isAnyFilterActive =
-    searchQuery.trim() !== '' ||
     filterModalidad !== 'Todos' ||
     filterNivel !== 'Todos' ||
     filterInstitucion !== 'Todos' ||
@@ -247,7 +236,6 @@ export const AnalisisDesempenoPage = () => {
     filtroPeriodo !== 'TODOS';
 
   const handleClearFilters = () => {
-    setSearchQuery('');
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
     setFilterInstitucion('Todos');
@@ -265,15 +253,6 @@ export const AnalisisDesempenoPage = () => {
       // El filtro es por instrumento, que es lo que el analisis segmenta.
       if (filterTipo !== 'Todos' && (visit.instrumento ?? 'DOCENTE') !== filterTipo) {
         return false;
-      }
-
-      // Búsqueda por texto
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchIE = visit.institucion.toLowerCase().includes(query);
-        const matchDocente = visit.docenteDirectivo.toLowerCase().includes(query);
-        const matchEspecialista = visit.especialista.toLowerCase().includes(query);
-        if (!matchIE && !matchDocente && !matchEspecialista) return false;
       }
 
       if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
@@ -301,7 +280,7 @@ export const AnalisisDesempenoPage = () => {
 
       return true;
     });
-  }, [completedVisits, filtroPeriodo, filterTipo, searchQuery, filterModalidad, filterNivel, filterInstitucion, filterDocente, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterTipo, filterModalidad, filterNivel, filterInstitucion, filterDocente, filterAnio]);
 
   const analisis = useMemo(
     () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas, filterTipo),
@@ -326,8 +305,6 @@ export const AnalisisDesempenoPage = () => {
 
       {/* ── Filtros de Reporte (Estándar con Tipo de Monitoreo) ── */}
       <FiltrosReportes
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
         filterModalidad={filterModalidad}
         setFilterModalidad={handleModalidadChange}
         filterNivel={filterNivel}

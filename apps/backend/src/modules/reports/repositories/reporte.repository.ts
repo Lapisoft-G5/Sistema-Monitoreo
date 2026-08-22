@@ -16,8 +16,6 @@ export interface QueryFichasCompletadas {
   nivelEducativo?: string;
   /** Docente evaluado; se aplica sobre `cronograma.evaluadoId`. */
   docenteId?: string;
-  /** Texto libre: nombre de la IE (o código modular), del docente o del especialista. */
-  busqueda?: string;
   /** Instrumento: el repositorio lo aplica sobre `plantilla.tipoMonitoreo`. */
   tipoMonitoreo?: TipoPlantilla;
   nivelLogro?: NivelLogro;

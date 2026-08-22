@@ -45,8 +45,9 @@ const Buscador = ({ etiqueta, marcador, valor, onCambiar }: BuscadorProps) => (
 );
 
 interface FiltrosReportesProps {
-  searchQuery: string;
-  setSearchQuery: (q: string) => void;
+  /** Búsqueda por texto (opcional). Si no se pasa `setSearchQuery`, no se muestra. */
+  searchQuery?: string;
+  setSearchQuery?: (q: string) => void;
   filterModalidad: string;
   setFilterModalidad: (m: string) => void;
   filterNivel: string;
@@ -228,19 +229,21 @@ export const FiltrosReportes = ({
           <Buscador
             etiqueta="Buscar por IE o Especialista"
             marcador="Nombre de la IE o del especialista..."
-            valor={searchQuery}
-            onCambiar={setSearchQuery}
+            valor={searchQuery ?? ''}
+            onCambiar={setSearchQuery ?? (() => {})}
           />
           {selectorDeAnio}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <Buscador
-            etiqueta="Búsqueda Rápida"
-            marcador="IE, especialista o docente..."
-            valor={searchQuery}
-            onCambiar={setSearchQuery}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {setSearchQuery && (
+            <Buscador
+              etiqueta="Búsqueda Rápida"
+              marcador="IE, especialista o docente..."
+              valor={searchQuery ?? ''}
+              onCambiar={setSearchQuery}
+            />
+          )}
 
           <SelectField
             label="Modalidad"

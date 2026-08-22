@@ -287,6 +287,25 @@ export class PrismaReporteRepository implements ReporteRepository {
     if (filters.docenteId) {
       porCronograma.evaluadoId = filters.docenteId;
     }
+    if (filters.busqueda?.trim()) {
+      const q = filters.busqueda.trim();
+      const enPersona = (rel: 'evaluado' | 'monitor') => ({
+        [rel]: {
+          persona: {
+            OR: [
+              { nombres: { contains: q, mode: 'insensitive' as const } },
+              { apellidos: { contains: q, mode: 'insensitive' as const } },
+            ],
+          },
+        },
+      });
+      porCronograma.OR = [
+        { institucion: { nombre: { contains: q, mode: 'insensitive' } } },
+        { institucion: { codigoModular: { contains: q, mode: 'insensitive' } } },
+        enPersona('evaluado'),
+        enPersona('monitor'),
+      ];
+    }
     if (Object.keys(porCronograma).length > 0) {
       whereFicha.cronograma = porCronograma;
     }

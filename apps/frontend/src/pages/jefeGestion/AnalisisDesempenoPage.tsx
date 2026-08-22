@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useUser } from '@entities/model-user';
 import { useFichasCompletadas, useAnalisisDesempenos } from '@entities/model-reportes';
 import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api';
@@ -60,6 +60,14 @@ export const AnalisisDesempenoPage = () => {
   // que decía `TipoMonitoreo` y por lo tanto excluía DOCENTE_EIB.
   const tipoMonitoreoParam = filterTipo !== 'Todos' ? filterTipo : undefined;
 
+  // La búsqueda por texto se aplica en el backend (nombre de IE, docente o
+  // especialista); se difiere para no consultar en cada tecla.
+  const [busquedaAplicada, setBusquedaAplicada] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setBusquedaAplicada(searchQuery.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
   // Los filtros se aplican en el backend, que es quien arma la distribución por
   // criterio: de nada sirve filtrarlos sólo en el cliente porque el análisis no
   // se recalcula de las fichas, viene consolidado del servidor.
@@ -70,6 +78,7 @@ export const AnalisisDesempenoPage = () => {
     nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
     institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
     docenteId: filterDocente !== 'Todos' ? filterDocente : undefined,
+    busqueda: busquedaAplicada || undefined,
   });
 
   // El catálogo de plantillas y el cronograma salen de endpoints de gestión que

@@ -31,6 +31,7 @@ export const useAnalisisDesempenos = (filters?: {
   modalidad?: string;
   nivelEducativo?: string;
   docenteId?: string;
+  busqueda?: string;
   tipoMonitoreo?: TipoPlantilla;
   fechaDesde?: string;
   fechaHasta?: string;

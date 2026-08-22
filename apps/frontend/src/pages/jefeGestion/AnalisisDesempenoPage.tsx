@@ -3,9 +3,9 @@ import { useUser } from '@entities/model-user';
 import { useFichasCompletadas, useAnalisisDesempenos } from '@entities/model-reportes';
 import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
-import { useCan, Capability } from '@shared/auth';
+import { useCan, useScope, Capability } from '@shared/auth';
 import { PageHeader } from '@shared/ui/pageHeader';
-import { MODALIDAD_NIVEL_MAP, RoleCode } from '@sistema-monitoreo/shared-contracts';
+import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 import {
   reportesVisibles,
   type ReporteVisible,
@@ -35,11 +35,15 @@ const ANIO_ACTUAL = new Date().getFullYear();
 export const AnalisisDesempenoPage = () => {
   const { user } = useUser();
   const { can } = useCan();
+  const { isInstitution } = useScope();
 
-  // El director de institución mira siempre su propio colegio: Modalidad, Nivel e
-  // Institución no varían para él, así que se precargan y se bloquean, y sólo
-  // mueve el docente (y período/tipo/año). El backend ya acota a su IE.
-  const esDirectorIE = user?.role === RoleCode.DIRECTOR_INSTITUCION;
+  // El personal de una institución (director, coordinador pedagógico, jefe de
+  // taller) mira siempre su propio colegio: Modalidad, Nivel e Institución no
+  // varían, así que se precargan y se bloquean, y sólo mueve Docente (y
+  // período/tipo/año). Además, cada uno ya trae sólo lo que le corresponde: el
+  // director ve todo su colegio y el coordinador/jefe de taller sólo lo que él
+  // mismo monitoreó (lo resuelve `reportesVisibles`).
+  const esAmbitoDeUnaIE = isInstitution;
 
   // ── Estados de Filtros (Filtros de Reporte estándar) ──
   const [filterModalidad, setFilterModalidad] = useState('Todos');
@@ -159,11 +163,12 @@ export const AnalisisDesempenoPage = () => {
     return reportesVisibles(completadas as ReporteVisible[], user) as BackendReportVisit[];
   }, [fichasCompletadasData, cronogramas, user]);
 
-  // Ámbito único del director: como todas sus fichas son de su IE, la modalidad,
-  // el nivel y la institución salen de los propios datos. Sólo se fija lo que es
-  // único (una IE integrada puede tener más de un nivel: ahí se deja «Todos»).
-  const ambitoDelDirector = useMemo(() => {
-    if (!esDirectorIE) return null;
+  // Ámbito único del usuario de institución: como sus fichas visibles son de su
+  // IE, la modalidad, el nivel y la institución salen de los propios datos. Sólo
+  // se fija lo que es único (una IE integrada puede tener más de un nivel, o un
+  // monitor puede haber visitado varios: ahí se deja «Todos»).
+  const ambitoDeLaIE = useMemo(() => {
+    if (!esAmbitoDeUnaIE) return null;
     const modalidades = new Set(completedVisits.map((v) => v.modalidad).filter(Boolean));
     const niveles = new Set(completedVisits.map((v) => v.nivel).filter(Boolean));
     const instituciones = new Set(completedVisits.map((v) => v.institucionId).filter(Boolean));
@@ -172,13 +177,14 @@ export const AnalisisDesempenoPage = () => {
       nivel: niveles.size === 1 ? [...niveles][0] : null,
       institucionId: instituciones.size === 1 ? [...instituciones][0] : null,
     };
-  }, [esDirectorIE, completedVisits]);
+  }, [esAmbitoDeUnaIE, completedVisits]);
 
-  // Valores efectivos del ámbito: para el director mandan los de su IE (no un
-  // estado que haya que sincronizar por efecto); para el resto, el filtro elegido.
-  const filterModalidadEf = ambitoDelDirector?.modalidad ?? filterModalidad;
-  const filterNivelEf = ambitoDelDirector?.nivel ?? filterNivel;
-  const filterInstitucionEf = ambitoDelDirector?.institucionId ?? filterInstitucion;
+  // Valores efectivos del ámbito: para el personal de institución mandan los de
+  // su IE (no un estado que haya que sincronizar por efecto); para el resto, el
+  // filtro elegido.
+  const filterModalidadEf = ambitoDeLaIE?.modalidad ?? filterModalidad;
+  const filterNivelEf = ambitoDeLaIE?.nivel ?? filterNivel;
+  const filterInstitucionEf = ambitoDeLaIE?.institucionId ?? filterInstitucion;
 
   // Cascading Nivel
   const nivelesDisponibles = useMemo(() => {
@@ -393,7 +399,7 @@ export const AnalisisDesempenoPage = () => {
         setFilterAnio={setFilterAnio}
         permitirTodosLosAnios={false}
         permitirTipoTodos={false}
-        bloquearAmbito={esDirectorIE}
+        bloquearAmbito={esAmbitoDeUnaIE}
         filterTipo={filterTipo}
         setFilterTipo={setFilterTipo}
         conteosTipo={conteosTipo}

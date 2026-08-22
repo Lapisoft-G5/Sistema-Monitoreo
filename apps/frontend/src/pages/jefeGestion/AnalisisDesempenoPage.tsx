@@ -19,6 +19,7 @@ import { aniosDeFiltro } from '@features/reportes/lib/anios-de-filtro';
 import {
   coincideConPeriodo,
   calcularConteosPorPeriodo,
+  rangoDePeriodo,
   type FiltroPeriodoTipo,
 } from '@features/reportes/lib/filtro-temporal';
 import { FiltrosReportes } from '@/widgets/reportes/ui/grid/FiltrosReportes';
@@ -64,6 +65,10 @@ export const AnalisisDesempenoPage = () => {
   // que decía `TipoMonitoreo` y por lo tanto excluía DOCENTE_EIB.
   const tipoMonitoreoParam = filterTipo !== 'Todos' ? filterTipo : undefined;
 
+  // El período (Hoy/Semana/Mes) se traduce a un rango de fechas para el backend,
+  // con los mismos límites que las píldoras, así el conteo del análisis coincide.
+  const rangoPeriodo = useMemo(() => rangoDePeriodo(filtroPeriodo), [filtroPeriodo]);
+
   // Los filtros se aplican en el backend, que es quien arma la distribución por
   // criterio: de nada sirve filtrarlos sólo en el cliente porque el análisis no
   // se recalcula de las fichas, viene consolidado del servidor.
@@ -75,6 +80,8 @@ export const AnalisisDesempenoPage = () => {
     institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
     docenteId: filterDocente !== 'Todos' ? filterDocente : undefined,
     numeroVisita: filterNumeroVisita !== 'Todos' ? Number(filterNumeroVisita) : undefined,
+    fechaDesde: rangoPeriodo.fechaDesde,
+    fechaHasta: rangoPeriodo.fechaHasta,
   });
 
   // El catálogo de plantillas y el cronograma salen de endpoints de gestión que

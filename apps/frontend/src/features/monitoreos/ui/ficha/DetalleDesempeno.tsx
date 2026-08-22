@@ -316,9 +316,12 @@ export const DetalleDesempeno = ({
           />
         </div>
 
-        {/* Barra de Navegación Rápida y Avance */}
+        {/* Barra de navegación: pegada al fondo del panel (sticky) para que
+            «Anterior/Siguiente» se vea siempre, sin tener que scrollear. Bordea
+            los lados (-mx-6) y el fondo (-mb-6) para tapar el contenido que pasa
+            por detrás. */}
         {totalDesempenos > 1 && (
-          <div className="pt-4 mt-6 border-t border-slate-200/80 flex items-center justify-between gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200/60 shadow-2xs">
+          <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-6 border-t border-slate-200 flex items-center justify-between gap-3 bg-slate-50 px-6 py-3 shadow-[0_-6px_16px_-10px_rgba(0,0,0,0.3)]">
             <button
               type="button"
               disabled={!onAnterior}

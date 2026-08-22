@@ -18,6 +18,8 @@ interface PanelDesempenosProps {
   onObservar: (desempenoId: string, texto: string) => void;
   /** Los aspectos son del monitoreo a docente; el directivo no los lleva. */
   mostrarAspectos: boolean;
+  /** Estado del cierre obligatorio, para sumarlo al checklist del índice. */
+  cierre?: { sugerencias: boolean; compromisos: boolean };
   soloLectura: boolean;
 }
 
@@ -34,6 +36,7 @@ export const PanelDesempenos = ({
   onResponderExtra,
   onObservar,
   mostrarAspectos,
+  cierre,
   soloLectura,
 }: PanelDesempenosProps) => {
   const [elegidoId, setElegidoId] = useState('');
@@ -77,6 +80,7 @@ export const PanelDesempenos = ({
         seleccionadoId={abierto?.id ?? ''}
         nivelesElegidos={respuestas.niveles}
         esEib={esEib}
+        cierre={cierre}
         onSeleccionar={setElegidoId}
       />
 

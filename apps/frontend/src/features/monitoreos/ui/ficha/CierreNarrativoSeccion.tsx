@@ -32,7 +32,7 @@ export const CierreNarrativoSeccion = ({
   soloLectura,
 }: CierreNarrativoSeccionProps) => (
   <div className="p-5 border-t border-border bg-slate-50/50 space-y-4">
-    <div className="space-y-2">
+    <div id="cierre-observaciones" className="space-y-2 scroll-mt-24">
       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
         Observaciones Generales (opcional)
       </span>
@@ -46,7 +46,7 @@ export const CierreNarrativoSeccion = ({
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div className="space-y-2">
+    <div id="cierre-sugerencias" className="space-y-2 scroll-mt-24">
       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
         Sugerencias
       </span>
@@ -59,7 +59,7 @@ export const CierreNarrativoSeccion = ({
       />
     </div>
 
-    <div className="space-y-2">
+    <div id="cierre-compromisos" className="space-y-2 scroll-mt-24">
       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
         Compromisos
       </span>

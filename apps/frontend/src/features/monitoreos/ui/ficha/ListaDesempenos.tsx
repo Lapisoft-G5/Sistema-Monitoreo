@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check, Clock } from 'lucide-react';
 import type { Plantilla } from '@/entities/model-plantillas';
 
 type Desempeno = Plantilla['desempenos'][number];
@@ -10,7 +10,41 @@ interface ListaDesempenosProps {
   nivelesElegidos: Record<string, string>;
   /** El instrumento EIB usa escala cualitativa (Sí/Parcialmente/No), no niveles. */
   esEib?: boolean;
+  /** Estado del cierre obligatorio, para sumarlo al checklist y no olvidarlo. */
+  cierre?: { sugerencias: boolean; compromisos: boolean };
   onSeleccionar: (desempenoId: string) => void;
+}
+
+/** Ítem de cierre (Sugerencias/Compromisos) en el checklist: hecho/pendiente + salto. */
+function ItemCierre({ etiqueta, hecho, anchor }: { etiqueta: string; hecho: boolean; anchor: string }) {
+  return (
+    <div
+      onClick={() =>
+        document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      className="p-3 border border-border rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-xs bg-surface hover:bg-slate-100 select-none"
+    >
+      <span
+        className={`h-5 w-5 rounded-full shrink-0 flex items-center justify-center ${
+          hecho
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+            : 'bg-amber-50 border border-amber-200 text-amber-600'
+        }`}
+      >
+        {hecho ? (
+          <Check className="h-2.5 w-2.5" strokeWidth={3} />
+        ) : (
+          <Clock className="h-2.5 w-2.5" strokeWidth={3} />
+        )}
+      </span>
+      <div className="min-w-0">
+        <div className="text-[11px] font-bold text-slate-700">{etiqueta}</div>
+        <div className={`text-[9px] font-semibold ${hecho ? 'text-emerald-600' : 'text-amber-600'}`}>
+          {hecho ? 'Completado' : 'Pendiente · obligatorio'}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -58,6 +92,7 @@ export const ListaDesempenos = ({
   seleccionadoId,
   nivelesElegidos,
   esEib = false,
+  cierre,
   onSeleccionar,
 }: ListaDesempenosProps) => (
   <div className="w-full md:w-80 border-r border-border p-3.5 overflow-y-auto space-y-2 bg-slate-50/70 max-h-[500px] md:max-h-[560px] shrink-0">
@@ -132,5 +167,15 @@ export const ListaDesempenos = ({
       </div>
       );
     })}
+
+    {cierre && (
+      <div className="space-y-2">
+        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1 px-1 pt-3 mt-1 border-t border-slate-200/70">
+          Cierre de la Evaluación
+        </span>
+        <ItemCierre etiqueta="Sugerencias" hecho={cierre.sugerencias} anchor="cierre-sugerencias" />
+        <ItemCierre etiqueta="Compromisos" hecho={cierre.compromisos} anchor="cierre-compromisos" />
+      </div>
+    )}
   </div>
 );

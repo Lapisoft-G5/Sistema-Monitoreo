@@ -289,6 +289,10 @@ export const LlenarFichaForm = ({
               }
               onObservar={(id, texto) => setRubricComments((prev) => ({ ...prev, [id]: texto }))}
               mostrarAspectos={!isDirectivo}
+              cierre={{
+                sugerencias: !!sugerencias.trim(),
+                compromisos: !!compromisos.trim(),
+              }}
               soloLectura={isCompleted}
             />
 

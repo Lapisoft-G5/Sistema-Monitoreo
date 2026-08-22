@@ -32,22 +32,20 @@ interface PanelDesempenosProps {
   onObservar: (desempenoId: string, texto: string) => void;
   /** Los aspectos son del monitoreo a docente; el directivo no los lleva. */
   mostrarAspectos: boolean;
-  /** El cierre vive dentro del panel como pasos posteriores a los criterios. */
+  /** El cierre vive dentro del panel como un paso posterior a los criterios. */
   cierre: CierreDeFicha;
   soloLectura: boolean;
 }
 
-const PASOS_CIERRE: PasoCierreTipo[] = ['obs', 'sugerencias', 'compromisos', 'evidencia'];
-
-const esClaveCierre = (clave: string): clave is PasoCierreTipo =>
-  (PASOS_CIERRE as string[]).includes(clave);
+/** Clave del único paso de cierre en la secuencia del wizard. */
+const CLAVE_CIERRE = 'cierre';
 
 /**
  * Escenario de llenado de la ficha: índice a la izquierda, contenido a la
  * derecha. El índice ya no navega sólo los criterios: encadena también el
- * cierre (observaciones, sugerencias, compromisos y evidencia), de modo que
- * «Siguiente» lleva del último criterio al cierre sin que el evaluador tenga
- * que bajar a buscarlo —antes vivía al pie del formulario y se olvidaba—.
+ * cierre, de modo que «Siguiente» lleva del último criterio a una única
+ * sección con observaciones, sugerencias, compromisos y evidencia —antes
+ * vivían al pie del formulario y se olvidaban—.
  *
  * Qué paso está abierto es asunto de este panel y no del formulario: no viaja
  * al guardar ni afecta a ninguna otra sección.
@@ -63,14 +61,16 @@ export const PanelDesempenos = ({
   soloLectura,
 }: PanelDesempenosProps) => {
   const [activo, setActivo] = useState('');
+  // Campo del cierre a resaltar/saltar al entrar desde el índice.
+  const [focoCierre, setFocoCierre] = useState<PasoCierreTipo>('obs');
 
   const esEib =
     template.tipoMonitoreo === 'DOCENTE_EIB' ||
     template.instrumento === 'DOCENTE_EIB';
 
-  // La secuencia completa del wizard: un paso por criterio y luego el cierre.
+  // La secuencia del wizard: un paso por criterio y luego el cierre (uno solo).
   const claves = useMemo(
-    () => [...template.desempenos.map((d) => `criterio:${d.id}`), ...PASOS_CIERRE],
+    () => [...template.desempenos.map((d) => `criterio:${d.id}`), CLAVE_CIERRE],
     [template.desempenos],
   );
 
@@ -78,11 +78,12 @@ export const PanelDesempenos = ({
   // ya no existe, se cae al primero sin un efecto que corrija tras renderizar.
   const activoResuelto = claves.includes(activo) ? activo : (claves[0] ?? '');
   const indice = Math.max(0, claves.indexOf(activoResuelto));
+  const enCierre = activoResuelto === CLAVE_CIERRE;
 
-  const criterioActivoId = activoResuelto.startsWith('criterio:')
-    ? activoResuelto.slice('criterio:'.length)
-    : null;
-  const pasoCierreActivo = esClaveCierre(activoResuelto) ? activoResuelto : null;
+  const criterioActivoId =
+    !enCierre && activoResuelto.startsWith('criterio:')
+      ? activoResuelto.slice('criterio:'.length)
+      : null;
 
   const abierto = template.desempenos.find((d) => d.id === criterioActivoId) ?? null;
   const indiceCriterio = abierto
@@ -95,9 +96,20 @@ export const PanelDesempenos = ({
     [template.desempenos, respuestas.niveles],
   );
 
-  const onAnterior = indice > 0 ? () => setActivo(claves[indice - 1]) : undefined;
+  // Al aterrizar en el cierre con «Siguiente», se arranca desde arriba.
+  const irAClave = (clave: string) => {
+    if (clave === CLAVE_CIERRE) setFocoCierre('obs');
+    setActivo(clave);
+  };
+
+  const onAnterior = indice > 0 ? () => irAClave(claves[indice - 1]) : undefined;
   const onSiguiente =
-    indice < claves.length - 1 ? () => setActivo(claves[indice + 1]) : undefined;
+    indice < claves.length - 1 ? () => irAClave(claves[indice + 1]) : undefined;
+
+  const seleccionarCierre = (paso: PasoCierreTipo) => {
+    setFocoCierre(paso);
+    setActivo(CLAVE_CIERRE);
+  };
 
   const cierreEstado = {
     observaciones: !!cierre.observaciones.trim(),
@@ -114,14 +126,13 @@ export const PanelDesempenos = ({
         nivelesElegidos={respuestas.niveles}
         esEib={esEib}
         cierre={cierreEstado}
-        pasoCierreActivo={pasoCierreActivo}
+        pasoCierreActivo={enCierre ? focoCierre : null}
         onSeleccionar={(id) => setActivo(`criterio:${id}`)}
-        onSeleccionarCierre={setActivo}
+        onSeleccionarCierre={seleccionarCierre}
       />
 
-      {pasoCierreActivo ? (
+      {enCierre ? (
         <PasoCierre
-          paso={pasoCierreActivo}
           observaciones={cierre.observaciones}
           sugerencias={cierre.sugerencias}
           compromisos={cierre.compromisos}
@@ -132,6 +143,7 @@ export const PanelDesempenos = ({
           onEvidencias={cierre.onEvidencias}
           onVerImagen={cierre.onVerImagen}
           soloLectura={soloLectura}
+          foco={focoCierre}
           onAnterior={onAnterior}
           onSiguiente={onSiguiente}
         />

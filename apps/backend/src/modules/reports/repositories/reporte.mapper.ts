@@ -123,6 +123,7 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     horaInicio: f.cronograma.horaInicio ?? undefined,
     horaFin: f.finalizadaAt ? f.finalizadaAt.toISOString() : undefined,
     modalidad: f.cronograma.modalidad,
+    numeroVisita: f.cronograma.numeroVisita,
     nivel: f.cronograma.nivelEducativo,
     firmas: f.firmas?.map((firma) => ({
       rolFirmante: firma.rolFirmante,

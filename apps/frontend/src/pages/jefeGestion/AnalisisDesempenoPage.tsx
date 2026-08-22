@@ -40,6 +40,7 @@ export const AnalisisDesempenoPage = () => {
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterInstitucion, setFilterInstitucion] = useState('Todos');
   const [filterDocente, setFilterDocente] = useState('Todos');
+  const [filterNumeroVisita, setFilterNumeroVisita] = useState('Todos');
   /**
    * El análisis siempre mira un año concreto.
    *
@@ -73,6 +74,7 @@ export const AnalisisDesempenoPage = () => {
     nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
     institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
     docenteId: filterDocente !== 'Todos' ? filterDocente : undefined,
+    numeroVisita: filterNumeroVisita !== 'Todos' ? Number(filterNumeroVisita) : undefined,
   });
 
   // El catálogo de plantillas y el cronograma salen de endpoints de gestión que
@@ -114,7 +116,7 @@ export const AnalisisDesempenoPage = () => {
         institucionId: f.institucionId,
         modalidad: f.modalidad || 'EBR',
         nivel: f.nivel || 'Primaria',
-        nroVisita: '1',
+        nroVisita: String(f.numeroVisita ?? 1),
         estado: 'COMPLETADO' as const,
         nivelLogro: f.nivelLogro,
         promedio: f.promedio,
@@ -187,6 +189,21 @@ export const AnalisisDesempenoPage = () => {
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [completedVisits, filterModalidad, filterNivel, filterInstitucion]);
 
+  // Números de visita presentes en los datos (1er monitoreo, 2do, …), acotados
+  // por el resto de los filtros.
+  const numerosDeVisitaDisponibles = useMemo(() => {
+    const nums = new Set<number>();
+    completedVisits.forEach((v) => {
+      if (filterModalidad !== 'Todos' && v.modalidad !== filterModalidad) return;
+      if (filterNivel !== 'Todos' && v.nivel !== filterNivel) return;
+      if (filterInstitucion !== 'Todos' && v.institucionId !== filterInstitucion) return;
+      if (filterDocente !== 'Todos' && v.evaluadoId !== filterDocente) return;
+      const n = Number(v.nroVisita);
+      if (Number.isFinite(n) && n > 0) nums.add(n);
+    });
+    return [...nums].sort((a, b) => a - b);
+  }, [completedVisits, filterModalidad, filterNivel, filterInstitucion, filterDocente]);
+
   const añosDisponibles = useMemo(() => {
     const yearsSet = new Set<string>();
     completedVisits.forEach((v) => {
@@ -235,6 +252,7 @@ export const AnalisisDesempenoPage = () => {
     filterNivel !== 'Todos' ||
     filterInstitucion !== 'Todos' ||
     filterDocente !== 'Todos' ||
+    filterNumeroVisita !== 'Todos' ||
     filterAnio !== String(ANIO_ACTUAL) ||
     filterTipo !== 'DOCENTE' ||
     filtroPeriodo !== 'TODOS';
@@ -244,6 +262,7 @@ export const AnalisisDesempenoPage = () => {
     setFilterNivel('Todos');
     setFilterInstitucion('Todos');
     setFilterDocente('Todos');
+    setFilterNumeroVisita('Todos');
     setFilterAnio(String(ANIO_ACTUAL));
     setFilterTipo('DOCENTE');
     setFiltroPeriodo('TODOS');
@@ -263,6 +282,7 @@ export const AnalisisDesempenoPage = () => {
       if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
       if (filterInstitucion !== 'Todos' && visit.institucionId !== filterInstitucion) return false;
       if (filterDocente !== 'Todos' && visit.evaluadoId !== filterDocente) return false;
+      if (filterNumeroVisita !== 'Todos' && String(visit.nroVisita) !== filterNumeroVisita) return false;
 
       if (filterAnio !== 'Todos') {
         let visitYear = '';
@@ -284,7 +304,7 @@ export const AnalisisDesempenoPage = () => {
 
       return true;
     });
-  }, [completedVisits, filtroPeriodo, filterTipo, filterModalidad, filterNivel, filterInstitucion, filterDocente, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterTipo, filterModalidad, filterNivel, filterInstitucion, filterDocente, filterNumeroVisita, filterAnio]);
 
   const analisis = useMemo(
     () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas, filterTipo),
@@ -319,6 +339,9 @@ export const AnalisisDesempenoPage = () => {
         filterDocente={filterDocente}
         setFilterDocente={setFilterDocente}
         docentesDisponibles={docentesDisponibles}
+        filterNumeroVisita={filterNumeroVisita}
+        setFilterNumeroVisita={setFilterNumeroVisita}
+        numerosDeVisitaDisponibles={numerosDeVisitaDisponibles}
         filterAnio={filterAnio}
         setFilterAnio={setFilterAnio}
         permitirTodosLosAnios={false}

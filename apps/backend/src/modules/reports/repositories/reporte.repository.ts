@@ -16,6 +16,8 @@ export interface QueryFichasCompletadas {
   nivelEducativo?: string;
   /** Docente evaluado; se aplica sobre `cronograma.evaluadoId`. */
   docenteId?: string;
+  /** Número de visita (1er monitoreo, 2do, …); sobre `cronograma.numeroVisita`. */
+  numeroVisita?: number;
   /** Instrumento: el repositorio lo aplica sobre `plantilla.tipoMonitoreo`. */
   tipoMonitoreo?: TipoPlantilla;
   nivelLogro?: NivelLogro;

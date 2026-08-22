@@ -40,6 +40,8 @@ export interface IReporteFicha {
   horaFin?: string;
   modalidad: string;
   nivel: string;
+  /** Número de visita del cronograma (1er monitoreo, 2do, …). */
+  numeroVisita: number;
   respuestas?: {
     nombre: string;
     orden?: number;

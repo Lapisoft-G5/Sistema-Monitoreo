@@ -73,6 +73,10 @@ interface FiltrosReportesProps {
   filterDocente?: string;
   setFilterDocente?: (id: string) => void;
   docentesDisponibles?: { id: string; nombre: string }[];
+  /** Nº de monitoreo (1er, 2do, …) opcional. Se muestra si se pasa el setter. */
+  filterNumeroVisita?: string;
+  setFilterNumeroVisita?: (n: string) => void;
+  numerosDeVisitaDisponibles?: number[];
   añosDisponibles: string[];
   isAnyFilterActive: boolean;
   handleClearFilters: () => void;
@@ -115,6 +119,9 @@ export const FiltrosReportes = ({
   filterDocente,
   setFilterDocente,
   docentesDisponibles = [],
+  filterNumeroVisita,
+  setFilterNumeroVisita,
+  numerosDeVisitaDisponibles = [],
   añosDisponibles,
   isAnyFilterActive,
   handleClearFilters,
@@ -246,7 +253,7 @@ export const FiltrosReportes = ({
           {selectorDeAnio}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {setSearchQuery && (
             <Buscador
               etiqueta="Búsqueda Rápida"
@@ -303,6 +310,23 @@ export const FiltrosReportes = ({
               options={[
                 { value: TODOS, label: 'Todos los docentes' },
                 ...docentesDisponibles.map((d) => ({ value: d.id, label: d.nombre })),
+              ]}
+            />
+          )}
+
+          {setFilterNumeroVisita && (
+            <SelectField
+              label="Nº de Monitoreo"
+              value={filterNumeroVisita ?? TODOS}
+              onChange={setFilterNumeroVisita}
+              disabled={numerosDeVisitaDisponibles.length === 0}
+              placeholder="Todos"
+              options={[
+                { value: TODOS, label: 'Todos' },
+                ...numerosDeVisitaDisponibles.map((n) => ({
+                  value: String(n),
+                  label: `${n}° monitoreo`,
+                })),
               ]}
             />
           )}

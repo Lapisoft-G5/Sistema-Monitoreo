@@ -1,7 +1,10 @@
-import { Check, Clock } from 'lucide-react';
+import { Check, Clock, Circle } from 'lucide-react';
 import type { Plantilla } from '@/entities/model-plantillas';
 
 type Desempeno = Plantilla['desempenos'][number];
+
+/** Pasos de cierre navegables desde el índice. */
+export type PasoCierreTipo = 'obs' | 'sugerencias' | 'compromisos' | 'evidencia';
 
 interface ListaDesempenosProps {
   desempenos: Desempeno[];
@@ -10,38 +13,67 @@ interface ListaDesempenosProps {
   nivelesElegidos: Record<string, string>;
   /** El instrumento EIB usa escala cualitativa (Sí/Parcialmente/No), no niveles. */
   esEib?: boolean;
-  /** Estado del cierre obligatorio, para sumarlo al checklist y no olvidarlo. */
-  cierre?: { sugerencias: boolean; compromisos: boolean };
+  /** Completitud de cada paso de cierre, para que el índice no deje olvidar ninguno. */
+  cierre?: {
+    observaciones: boolean;
+    sugerencias: boolean;
+    compromisos: boolean;
+    evidencia: boolean;
+  };
+  /** Paso de cierre activo en el panel, si el escenario no muestra un criterio. */
+  pasoCierreActivo?: PasoCierreTipo | null;
   onSeleccionar: (desempenoId: string) => void;
+  onSeleccionarCierre?: (paso: PasoCierreTipo) => void;
 }
 
-/** Ítem de cierre (Sugerencias/Compromisos) en el checklist: hecho/pendiente + salto. */
-function ItemCierre({ etiqueta, hecho, anchor }: { etiqueta: string; hecho: boolean; anchor: string }) {
+type EstadoCierre = 'ok' | 'pendiente' | 'opcional';
+
+const ESTILO_ICONO: Record<EstadoCierre, string> = {
+  ok: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+  pendiente: 'bg-amber-50 border-amber-200 text-amber-600',
+  opcional: 'bg-slate-100 border-slate-200 text-slate-400',
+};
+
+const LEYENDA: Record<EstadoCierre, { texto: string; clase: string }> = {
+  ok: { texto: 'Completado', clase: 'text-emerald-600' },
+  pendiente: { texto: 'Pendiente · obligatorio', clase: 'text-amber-600' },
+  opcional: { texto: 'Opcional', clase: 'text-slate-400' },
+};
+
+/** Ítem de cierre en el índice: navega el panel al paso y muestra su avance. */
+function ItemCierre({
+  etiqueta,
+  estado,
+  activo,
+  onClick,
+}: {
+  etiqueta: string;
+  estado: EstadoCierre;
+  activo: boolean;
+  onClick: () => void;
+}) {
+  const leyenda = LEYENDA[estado];
   return (
     <div
-      onClick={() =>
-        document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
-      className="p-3 border border-border rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-xs bg-surface hover:bg-slate-100 select-none"
+      onClick={onClick}
+      className={`p-3 border rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-xs bg-surface hover:bg-slate-100 select-none ${
+        activo ? 'border-primary ring-2 ring-primary/30' : 'border-border'
+      }`}
     >
       <span
-        className={`h-5 w-5 rounded-full shrink-0 flex items-center justify-center ${
-          hecho
-            ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-            : 'bg-amber-50 border border-amber-200 text-amber-600'
-        }`}
+        className={`h-5 w-5 rounded-full shrink-0 flex items-center justify-center border ${ESTILO_ICONO[estado]}`}
       >
-        {hecho ? (
+        {estado === 'ok' ? (
           <Check className="h-2.5 w-2.5" strokeWidth={3} />
-        ) : (
+        ) : estado === 'pendiente' ? (
           <Clock className="h-2.5 w-2.5" strokeWidth={3} />
+        ) : (
+          <Circle className="h-2 w-2" strokeWidth={3} />
         )}
       </span>
       <div className="min-w-0">
         <div className="text-[11px] font-bold text-slate-700">{etiqueta}</div>
-        <div className={`text-[9px] font-semibold ${hecho ? 'text-emerald-600' : 'text-amber-600'}`}>
-          {hecho ? 'Completado' : 'Pendiente · obligatorio'}
-        </div>
+        <div className={`text-[9px] font-semibold ${leyenda.clase}`}>{leyenda.texto}</div>
       </div>
     </div>
   );
@@ -93,7 +125,9 @@ export const ListaDesempenos = ({
   nivelesElegidos,
   esEib = false,
   cierre,
+  pasoCierreActivo = null,
   onSeleccionar,
+  onSeleccionarCierre,
 }: ListaDesempenosProps) => (
   <div className="w-full md:w-80 border-r border-border p-3.5 overflow-y-auto space-y-2 bg-slate-50/70 max-h-[500px] md:max-h-[560px] shrink-0">
     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2 px-1">
@@ -173,8 +207,30 @@ export const ListaDesempenos = ({
         <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1 px-1 pt-3 mt-1 border-t border-slate-200/70">
           Cierre de la Evaluación
         </span>
-        <ItemCierre etiqueta="Sugerencias" hecho={cierre.sugerencias} anchor="cierre-sugerencias" />
-        <ItemCierre etiqueta="Compromisos" hecho={cierre.compromisos} anchor="cierre-compromisos" />
+        <ItemCierre
+          etiqueta="Observaciones Generales"
+          estado={cierre.observaciones ? 'ok' : 'opcional'}
+          activo={pasoCierreActivo === 'obs'}
+          onClick={() => onSeleccionarCierre?.('obs')}
+        />
+        <ItemCierre
+          etiqueta="Sugerencias"
+          estado={cierre.sugerencias ? 'ok' : 'pendiente'}
+          activo={pasoCierreActivo === 'sugerencias'}
+          onClick={() => onSeleccionarCierre?.('sugerencias')}
+        />
+        <ItemCierre
+          etiqueta="Compromisos"
+          estado={cierre.compromisos ? 'ok' : 'pendiente'}
+          activo={pasoCierreActivo === 'compromisos'}
+          onClick={() => onSeleccionarCierre?.('compromisos')}
+        />
+        <ItemCierre
+          etiqueta="Evidencia"
+          estado={cierre.evidencia ? 'ok' : 'opcional'}
+          activo={pasoCierreActivo === 'evidencia'}
+          onClick={() => onSeleccionarCierre?.('evidencia')}
+        />
       </div>
     )}
   </div>

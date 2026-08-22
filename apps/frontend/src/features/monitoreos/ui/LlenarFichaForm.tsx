@@ -25,10 +25,8 @@ import {
   claveEstadoLocal,
 } from '../lib/estado-formulario';
 import { ContextoDeAulaSeccion } from './ficha/ContextoDeAulaSeccion';
-import { EvidenciaGeneralSeccion } from './ficha/EvidenciaGeneralSeccion';
 import { PanelDesempenos } from './ficha/PanelDesempenos';
 import { EjesItemsSeccion } from './ficha/EjesItemsSeccion';
-import { CierreNarrativoSeccion } from './ficha/CierreNarrativoSeccion';
 import { ConsolidadoSeccion } from './ficha/ConsolidadoSeccion';
 import { PieDeFicha } from './ficha/PieDeFicha';
 import { VistaPreviaEvidencia } from './ficha/VistaPreviaEvidencia';
@@ -290,8 +288,25 @@ export const LlenarFichaForm = ({
               onObservar={(id, texto) => setRubricComments((prev) => ({ ...prev, [id]: texto }))}
               mostrarAspectos={!isDirectivo}
               cierre={{
-                sugerencias: !!sugerencias.trim(),
-                compromisos: !!compromisos.trim(),
+                observaciones: generalComments,
+                sugerencias,
+                compromisos,
+                onObservaciones: setGeneralComments,
+                onSugerencias: setSugerencias,
+                onCompromisos: setCompromisos,
+                evidencias: evidenciaUrls,
+                onEvidencias: (siguientes) => {
+                  setEvidenciaUrls(siguientes);
+                  // Se persiste el estado completo: antes se armaba a mano y
+                  // perdía las observaciones de ejes y el contexto de aula.
+                  safeSetLocalStorage(
+                    claveEstadoLocal(visit.id, template.id),
+                    JSON.stringify(
+                      aDatosFicha({ ...estado, evidenciaUrls: siguientes }, visit.tipo),
+                    ),
+                  );
+                },
+                onVerImagen: setPreviewImageUrl,
               }}
               soloLectura={isCompleted}
             />
@@ -316,31 +331,6 @@ export const LlenarFichaForm = ({
             soloLectura={isCompleted}
           />
         )}
-
-        <CierreNarrativoSeccion
-          observaciones={generalComments}
-          onObservaciones={setGeneralComments}
-          sugerencias={sugerencias}
-          compromisos={compromisos}
-          onSugerencias={setSugerencias}
-          onCompromisos={setCompromisos}
-          soloLectura={isCompleted}
-        />
-
-        <EvidenciaGeneralSeccion
-          evidencias={evidenciaUrls}
-          onCambiar={(siguientes) => {
-            setEvidenciaUrls(siguientes);
-            // Se persiste el estado completo: antes se armaba a mano y perdía
-            // las observaciones de ejes y el contexto de aula.
-            safeSetLocalStorage(
-              claveEstadoLocal(visit.id, template.id),
-              JSON.stringify(aDatosFicha({ ...estado, evidenciaUrls: siguientes }, visit.tipo)),
-            );
-          }}
-          onVerImagen={setPreviewImageUrl}
-          soloLectura={isCompleted}
-        />
 
         {calificacion && (
           <ConsolidadoSeccion

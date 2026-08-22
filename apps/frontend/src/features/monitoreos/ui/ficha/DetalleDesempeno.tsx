@@ -1,5 +1,6 @@
-import { FileText, ChevronLeft, ChevronRight, CheckCircle2, Clock } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import type { Plantilla } from '@/entities/model-plantillas';
+import { NavegacionPasos } from './NavegacionPasos';
 
 type Desempeno = Plantilla['desempenos'][number];
 type NivelPlantilla = Plantilla['niveles'][number];
@@ -316,63 +317,13 @@ export const DetalleDesempeno = ({
           />
         </div>
 
-        {/* Barra de navegación: pegada al fondo del panel (sticky) para que
-            «Anterior/Siguiente» se vea siempre, sin tener que scrollear. Bordea
-            los lados (-mx-6) y el fondo (-mb-6) para tapar el contenido que pasa
-            por detrás. */}
-        {totalDesempenos > 1 && (
-          <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-6 border-t border-slate-200 flex items-center justify-between gap-3 bg-slate-50 px-6 py-3 shadow-[0_-6px_16px_-10px_rgba(0,0,0,0.3)]">
-            <button
-              type="button"
-              disabled={!onAnterior}
-              onClick={onAnterior}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-                onAnterior
-                  ? 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-2xs cursor-pointer active:scale-98'
-                  : 'bg-slate-100/60 text-slate-300 border border-transparent cursor-not-allowed'
-              }`}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span>Anterior</span>
-            </button>
-
-            <div className="flex items-center gap-2.5">
-              <div className="flex flex-col items-center">
-                <span className="text-[11px] font-black text-slate-700 tracking-tight">
-                  Criterio {indiceActual + 1} de {totalDesempenos}
-                </span>
-                <span className="text-[9.5px] font-bold text-slate-400">
-                  {totalEvaluados} de {totalDesempenos} evaluados
-                </span>
-              </div>
-              {respuesta.nivel ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Completado
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black">
-                  <Clock className="h-3 w-3" />
-                  Pendiente
-                </span>
-              )}
-            </div>
-
-            <button
-              type="button"
-              disabled={!onSiguiente}
-              onClick={onSiguiente}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
-                onSiguiente
-                  ? 'bg-primary text-white hover:bg-primary-dark shadow-xs cursor-pointer active:scale-98'
-                  : 'bg-slate-100/60 text-slate-300 border border-transparent cursor-not-allowed'
-              }`}
-            >
-              <span>Siguiente</span>
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
+        <NavegacionPasos
+          etiqueta={`Criterio ${indiceActual + 1} de ${totalDesempenos}`}
+          subEtiqueta={`${totalEvaluados} de ${totalDesempenos} evaluados`}
+          estado={respuesta.nivel ? 'completado' : 'pendiente'}
+          onAnterior={onAnterior}
+          onSiguiente={onSiguiente}
+        />
       </div>
     </div>
   );

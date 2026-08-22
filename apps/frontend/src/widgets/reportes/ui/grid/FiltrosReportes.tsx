@@ -69,6 +69,14 @@ interface FiltrosReportesProps {
   filterInstitucion?: string;
   setFilterInstitucion?: (id: string) => void;
   institucionesDisponibles?: { id: string; nombre: string }[];
+  /**
+   * Plantilla concreta (opcional). El análisis por criterio sólo es coherente
+   * dentro de una misma rúbrica, así que cuando conviven varias (la oficial UGEL
+   * y los clones de IE) se elige una y nunca se mezclan. Sin «Todas», a propósito.
+   */
+  filterPlantilla?: string;
+  setFilterPlantilla?: (id: string) => void;
+  plantillasDisponibles?: { id: string; nombre: string }[];
   /** Docentes para filtrar (opcional). Cascadea con institución/nivel/modalidad. */
   filterDocente?: string;
   setFilterDocente?: (id: string) => void;
@@ -122,6 +130,9 @@ export const FiltrosReportes = ({
   filterInstitucion,
   setFilterInstitucion,
   institucionesDisponibles = [],
+  filterPlantilla,
+  setFilterPlantilla,
+  plantillasDisponibles = [],
   filterDocente,
   setFilterDocente,
   docentesDisponibles = [],
@@ -305,6 +316,17 @@ export const FiltrosReportes = ({
                 { value: TODOS, label: 'Todas las instituciones' },
                 ...institucionesDisponibles.map((i) => ({ value: i.id, label: i.nombre })),
               ]}
+            />
+          )}
+
+          {setFilterPlantilla && (
+            <SelectField
+              label="Plantilla"
+              value={filterPlantilla ?? ''}
+              onChange={setFilterPlantilla}
+              disabled={plantillasDisponibles.length <= 1}
+              placeholder="Seleccione una plantilla"
+              options={plantillasDisponibles.map((p) => ({ value: p.id, label: p.nombre }))}
             />
           )}
 

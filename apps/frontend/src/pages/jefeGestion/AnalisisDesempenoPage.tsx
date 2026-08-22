@@ -51,6 +51,9 @@ export const AnalisisDesempenoPage = () => {
   const [filterInstitucion, setFilterInstitucion] = useState('Todos');
   const [filterDocente, setFilterDocente] = useState('Todos');
   const [filterNumeroVisita, setFilterNumeroVisita] = useState('Todos');
+  // Plantilla concreta: el análisis por criterio sólo consolida dentro de una
+  // misma rúbrica. '' = usar la dominante (la más presente en los datos).
+  const [filterPlantilla, setFilterPlantilla] = useState('');
   // Criterio al que se llegó desde un KPI (para resaltarlo en el detalle de abajo).
   const [criterioResaltado, setCriterioResaltado] = useState<string | null>(null);
 
@@ -91,21 +94,6 @@ export const AnalisisDesempenoPage = () => {
   // El período (Hoy/Semana/Mes) se traduce a un rango de fechas para el backend,
   // con los mismos límites que las píldoras, así el conteo del análisis coincide.
   const rangoPeriodo = useMemo(() => rangoDePeriodo(filtroPeriodo), [filtroPeriodo]);
-
-  // Los filtros se aplican en el backend, que es quien arma la distribución por
-  // criterio: de nada sirve filtrarlos sólo en el cliente porque el análisis no
-  // se recalcula de las fichas, viene consolidado del servidor.
-  const { data: criteriosBackend } = useAnalisisDesempenos({
-    anioAcademico: anioNumero,
-    tipoMonitoreo: tipoMonitoreoParam,
-    modalidad: filterModalidad !== 'Todos' ? filterModalidad : undefined,
-    nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
-    institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
-    docenteId: filterDocente !== 'Todos' ? filterDocente : undefined,
-    numeroVisita: filterNumeroVisita !== 'Todos' ? Number(filterNumeroVisita) : undefined,
-    fechaDesde: rangoPeriodo.fechaDesde,
-    fechaHasta: rangoPeriodo.fechaHasta,
-  });
 
   // El catálogo de plantillas y el cronograma salen de endpoints de gestión que
   // exigen `monitoreo:execute` (no `:read`). Un actor con sólo lectura —p. ej. un
@@ -185,6 +173,52 @@ export const AnalisisDesempenoPage = () => {
   const filterModalidadEf = ambitoDeLaIE?.modalidad ?? filterModalidad;
   const filterNivelEf = ambitoDeLaIE?.nivel ?? filterNivel;
   const filterInstitucionEf = ambitoDeLaIE?.institucionId ?? filterInstitucion;
+
+  // Plantillas presentes en los datos (por instrumento/ámbito): cada una es una
+  // rúbrica distinta. El análisis por criterio sólo consolida dentro de una, así
+  // que se ofrece elegir en vez de mezclarlas.
+  const plantillasDisponibles = useMemo(() => {
+    const porId = new Map<string, { nombre: string; conteo: number }>();
+    completedVisits.forEach((v) => {
+      if (filterTipo !== 'Todos' && (v.instrumento ?? 'DOCENTE') !== filterTipo) return;
+      if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
+      if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
+      if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return;
+      if (!v.plantillaId) return;
+      const prev = porId.get(v.plantillaId);
+      porId.set(v.plantillaId, {
+        nombre: v.plantillaNombre ?? 'Plantilla',
+        conteo: (prev?.conteo ?? 0) + 1,
+      });
+    });
+    return [...porId.entries()]
+      .map(([id, { nombre, conteo }]) => ({ id, nombre, conteo }))
+      .sort((a, b) => b.conteo - a.conteo);
+  }, [completedVisits, filterTipo, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
+
+  // Por defecto, la plantilla más presente (normalmente la oficial UGEL). Si la
+  // elegida ya no cae en el alcance vigente, se vuelve a la dominante.
+  const plantillaDominante = plantillasDisponibles[0]?.id ?? '';
+  const filterPlantillaEf =
+    filterPlantilla && plantillasDisponibles.some((p) => p.id === filterPlantilla)
+      ? filterPlantilla
+      : plantillaDominante;
+
+  // Los filtros se aplican en el backend, que es quien arma la distribución por
+  // criterio: de nada sirve filtrarlos sólo en el cliente porque el análisis no
+  // se recalcula de las fichas, viene consolidado del servidor.
+  const { data: criteriosBackend } = useAnalisisDesempenos({
+    anioAcademico: anioNumero,
+    tipoMonitoreo: tipoMonitoreoParam,
+    modalidad: filterModalidad !== 'Todos' ? filterModalidad : undefined,
+    nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
+    institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
+    docenteId: filterDocente !== 'Todos' ? filterDocente : undefined,
+    numeroVisita: filterNumeroVisita !== 'Todos' ? Number(filterNumeroVisita) : undefined,
+    plantillaId: filterPlantillaEf || undefined,
+    fechaDesde: rangoPeriodo.fechaDesde,
+    fechaHasta: rangoPeriodo.fechaHasta,
+  });
 
   // Cascading Nivel
   const nivelesDisponibles = useMemo(() => {
@@ -304,6 +338,7 @@ export const AnalisisDesempenoPage = () => {
     filterModalidad !== 'Todos' ||
     filterNivel !== 'Todos' ||
     filterInstitucion !== 'Todos' ||
+    filterPlantilla !== '' ||
     filterDocente !== 'Todos' ||
     filterNumeroVisita !== 'Todos' ||
     filterAnio !== String(ANIO_ACTUAL) ||
@@ -314,6 +349,7 @@ export const AnalisisDesempenoPage = () => {
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
     setFilterInstitucion('Todos');
+    setFilterPlantilla('');
     setFilterDocente('Todos');
     setFilterNumeroVisita('Todos');
     setFilterAnio(String(ANIO_ACTUAL));
@@ -334,6 +370,7 @@ export const AnalisisDesempenoPage = () => {
       if (filterModalidadEf !== 'Todos' && visit.modalidad !== filterModalidadEf) return false;
       if (filterNivelEf !== 'Todos' && visit.nivel !== filterNivelEf) return false;
       if (filterInstitucionEf !== 'Todos' && visit.institucionId !== filterInstitucionEf) return false;
+      if (filterPlantillaEf && visit.plantillaId !== filterPlantillaEf) return false;
       if (filterDocente !== 'Todos' && visit.evaluadoId !== filterDocente) return false;
       if (filterNumeroVisita !== 'Todos' && String(visit.nroVisita) !== filterNumeroVisita) return false;
 
@@ -357,7 +394,7 @@ export const AnalisisDesempenoPage = () => {
 
       return true;
     });
-  }, [completedVisits, filtroPeriodo, filterTipo, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterDocente, filterNumeroVisita, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterTipo, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf, filterDocente, filterNumeroVisita, filterAnio]);
 
   const analisis = useMemo(
     () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas, filterTipo),
@@ -389,6 +426,9 @@ export const AnalisisDesempenoPage = () => {
         filterInstitucion={filterInstitucionEf}
         setFilterInstitucion={handleInstitucionChange}
         institucionesDisponibles={institucionesDisponibles}
+        filterPlantilla={filterPlantillaEf}
+        setFilterPlantilla={setFilterPlantilla}
+        plantillasDisponibles={plantillasDisponibles}
         filterDocente={filterDocente}
         setFilterDocente={setFilterDocente}
         docentesDisponibles={docentesDisponibles}

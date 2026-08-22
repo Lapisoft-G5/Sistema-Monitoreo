@@ -298,6 +298,12 @@ export class PrismaReporteRepository implements ReporteRepository {
       whereFicha.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };
     }
 
+    // Acota el análisis a una sola plantilla: sus criterios sólo son comparables
+    // dentro de la misma rúbrica (la oficial UGEL y los clones de IE difieren).
+    if (filters.plantillaId) {
+      whereFicha.plantillaId = filters.plantillaId;
+    }
+
     if (filters.fechaDesde || filters.fechaHasta) {
       whereFicha.createdAt = {};
       if (filters.fechaDesde) whereFicha.createdAt.gte = new Date(filters.fechaDesde);

@@ -20,6 +20,12 @@ export interface QueryFichasCompletadas {
   numeroVisita?: number;
   /** Instrumento: el repositorio lo aplica sobre `plantilla.tipoMonitoreo`. */
   tipoMonitoreo?: TipoPlantilla;
+  /**
+   * Plantilla concreta. El análisis por criterio sólo es coherente dentro de una
+   * misma rúbrica: al mezclar plantillas (la oficial UGEL con los clones que las
+   * IE editan) los criterios se fragmentan. Acotar a una plantilla lo evita.
+   */
+  plantillaId?: string;
   nivelLogro?: NivelLogro;
   fechaDesde?: string;
   fechaHasta?: string;

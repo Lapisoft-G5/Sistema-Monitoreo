@@ -38,6 +38,7 @@ export const reportesApi = {
     docenteId?: string;
     numeroVisita?: number;
     tipoMonitoreo?: TipoPlantilla;
+    plantillaId?: string;
     fechaDesde?: string;
     fechaHasta?: string;
   }) => {

@@ -33,6 +33,7 @@ export const useAnalisisDesempenos = (filters?: {
   docenteId?: string;
   numeroVisita?: number;
   tipoMonitoreo?: TipoPlantilla;
+  plantillaId?: string;
   fechaDesde?: string;
   fechaHasta?: string;
 }) =>

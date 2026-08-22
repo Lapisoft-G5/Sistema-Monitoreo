@@ -48,7 +48,10 @@ export const AnalisisDesempenoPage = () => {
    */
   const [filterAnio, setFilterAnio] = useState(String(ANIO_ACTUAL));
   // Tipado: el analisis segmenta por instrumento, no por una cadena libre.
-  const [filterTipo, setFilterTipo] = useState<FiltroDeInstrumento>('Todos');
+  // El análisis por criterio es por instrumento: mezclar tipos pone rúbricas con
+  // distinta cantidad de criterios en el mismo eje. Por eso no hay «Todos» acá y
+  // arranca en el docente regular.
+  const [filterTipo, setFilterTipo] = useState<FiltroDeInstrumento>('DOCENTE');
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
   // Datos
@@ -232,7 +235,7 @@ export const AnalisisDesempenoPage = () => {
     filterInstitucion !== 'Todos' ||
     filterDocente !== 'Todos' ||
     filterAnio !== String(ANIO_ACTUAL) ||
-    filterTipo !== 'Todos' ||
+    filterTipo !== 'DOCENTE' ||
     filtroPeriodo !== 'TODOS';
 
   const handleClearFilters = () => {
@@ -241,7 +244,7 @@ export const AnalisisDesempenoPage = () => {
     setFilterInstitucion('Todos');
     setFilterDocente('Todos');
     setFilterAnio(String(ANIO_ACTUAL));
-    setFilterTipo('Todos');
+    setFilterTipo('DOCENTE');
     setFiltroPeriodo('TODOS');
   };
 
@@ -318,6 +321,7 @@ export const AnalisisDesempenoPage = () => {
         filterAnio={filterAnio}
         setFilterAnio={setFilterAnio}
         permitirTodosLosAnios={false}
+        permitirTipoTodos={false}
         filterTipo={filterTipo}
         setFilterTipo={setFilterTipo}
         conteosTipo={conteosTipo}

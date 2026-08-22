@@ -83,6 +83,12 @@ interface FiltrosReportesProps {
    * a otro, de modo que agregarlos pone criterios distintos en el mismo eje.
    */
   permitirTodosLosAnios?: boolean;
+  /**
+   * Si el filtro de Tipo admite «Todos». El Análisis de Desempeño no lo permite:
+   * mezclar instrumentos pone rúbricas con distinta cantidad de criterios en el
+   * mismo eje. Los reportes que son listas sí lo permiten (default).
+   */
+  permitirTipoTodos?: boolean;
   /** El docente evaluado ve una versión reducida: sólo búsqueda y año. */
   isEvaluatedView: boolean;
 }
@@ -114,7 +120,12 @@ export const FiltrosReportes = ({
   handleClearFilters,
   isEvaluatedView,
   permitirTodosLosAnios = true,
+  permitirTipoTodos = true,
 }: FiltrosReportesProps) => {
+  const opcionesDeTipo = permitirTipoTodos
+    ? FILTROS_TIPO
+    : FILTROS_TIPO.filter((t) => t.id !== 'Todos');
+
   const selectorDeAnio = (
     <SelectField
       label="Año"
@@ -191,7 +202,7 @@ export const FiltrosReportes = ({
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
               <Users className="w-3.5 h-3.5 text-primary" /> Tipo:
             </span>
-            {FILTROS_TIPO.map((item) => {
+            {opcionesDeTipo.map((item) => {
               const activo = (filterTipo || 'Todos') === item.id;
               const conteo = conteosTipo ? conteosTipo[item.id] : undefined;
               return (

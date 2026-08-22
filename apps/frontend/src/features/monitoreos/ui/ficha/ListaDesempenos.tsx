@@ -8,7 +8,25 @@ interface ListaDesempenosProps {
   seleccionadoId: string;
   /** Nivel elegido por desempeño; su ausencia es «sin evaluar». */
   nivelesElegidos: Record<string, string>;
+  /** El instrumento EIB usa escala cualitativa (Sí/Parcialmente/No), no niveles. */
+  esEib?: boolean;
   onSeleccionar: (desempenoId: string) => void;
+}
+
+/**
+ * Rótulo de la valoración según la escala del instrumento. La EIB es tripartita
+ * (Sí/Parcialmente/No, mapeada a III/II/I); el resto usa los niveles I–IV. Antes
+ * se aplicaba la escala EIB a toda ficha, así que una ficha regular en nivel III
+ * mostraba «Sí».
+ */
+function rotuloValoracion(nivel: string | undefined, esEib: boolean): string {
+  if (!nivel) return 'Sin evaluar';
+  if (esEib) {
+    if (nivel === 'III') return 'Sí';
+    if (nivel === 'II') return 'Parcialmente';
+    if (nivel === 'I') return 'No';
+  }
+  return `Nivel ${nivel}`;
 }
 
 function parseSeccionYSubcriterio(raw?: string) {
@@ -39,6 +57,7 @@ export const ListaDesempenos = ({
   desempenos,
   seleccionadoId,
   nivelesElegidos,
+  esEib = false,
   onSeleccionar,
 }: ListaDesempenosProps) => (
   <div className="w-full md:w-80 border-r border-border p-3.5 overflow-y-auto space-y-2 bg-slate-50/70 max-h-[500px] md:max-h-[560px] shrink-0">
@@ -99,7 +118,7 @@ export const ListaDesempenos = ({
             <div className="text-[9px] font-semibold text-slate-400 flex items-center gap-1">
               <span>Valoración:</span>
               <strong className={nivel ? 'text-primary' : 'text-slate-400 font-normal italic'}>
-                {nivel === 'III' ? 'Sí' : nivel === 'II' ? 'Parcialmente' : nivel === 'I' ? 'No' : (nivel ? `Nivel ${nivel}` : 'Sin evaluar')}
+                {rotuloValoracion(nivel, esEib)}
               </strong>
             </div>
           </div>

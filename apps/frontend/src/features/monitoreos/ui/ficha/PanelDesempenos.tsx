@@ -76,6 +76,7 @@ export const PanelDesempenos = ({
         desempenos={template.desempenos}
         seleccionadoId={abierto?.id ?? ''}
         nivelesElegidos={respuestas.niveles}
+        esEib={esEib}
         onSeleccionar={setElegidoId}
       />
 

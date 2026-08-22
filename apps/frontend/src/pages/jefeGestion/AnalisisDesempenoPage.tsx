@@ -23,6 +23,7 @@ import {
 } from '@features/reportes/lib/filtro-temporal';
 import { FiltrosReportes } from '@/widgets/reportes/ui/grid/FiltrosReportes';
 import { KpisCriterios } from '@/widgets/reportes/ui/analisis/KpisCriterios';
+import { HistorialChart } from '@/features/monitoreos/ui/HistorialChart';
 import { GraficoComparativoCriterios } from '@/widgets/reportes/ui/analisis/GraficoComparativoCriterios';
 import { ListaCriteriosDesempeno } from '@/widgets/reportes/ui/analisis/ListaCriteriosDesempeno';
 import type { BackendReportVisit } from '@/widgets/reportes';
@@ -334,6 +335,14 @@ export const AnalisisDesempenoPage = () => {
         handleClearFilters={handleClearFilters}
         isEvaluatedView={false}
       />
+
+      {/* Al elegir un docente/directivo, su historial pedagógico: la evolución de
+          su desempeño a lo largo de los monitoreos (el promedio ya está en los KPIs). */}
+      {filterDocente !== 'Todos' && (
+        <div className="p-5 bg-surface border border-border rounded-2xl shadow-xs">
+          <HistorialChart evaluadoId={filterDocente} />
+        </div>
+      )}
 
       {cargando ? (
         <div className="h-64 flex items-center justify-center text-xs text-text-muted">

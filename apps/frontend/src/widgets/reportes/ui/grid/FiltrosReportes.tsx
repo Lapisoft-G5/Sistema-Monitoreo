@@ -60,6 +60,14 @@ interface FiltrosReportesProps {
   setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
   conteosPeriodo?: Record<FiltroPeriodoTipo, number>;
   nivelesDisponibles: string[];
+  /**
+   * Instituciones para filtrar (opcional). Cuando se pasan, se muestra el
+   * selector de Institución, que cascadea con modalidad/nivel: cada nivel y cada
+   * institución tienen sus propios docentes.
+   */
+  filterInstitucion?: string;
+  setFilterInstitucion?: (id: string) => void;
+  institucionesDisponibles?: { id: string; nombre: string }[];
   añosDisponibles: string[];
   isAnyFilterActive: boolean;
   handleClearFilters: () => void;
@@ -90,6 +98,9 @@ export const FiltrosReportes = ({
   setFiltroPeriodo,
   conteosPeriodo,
   nivelesDisponibles,
+  filterInstitucion,
+  setFilterInstitucion,
+  institucionesDisponibles = [],
   añosDisponibles,
   isAnyFilterActive,
   handleClearFilters,
@@ -216,7 +227,7 @@ export const FiltrosReportes = ({
           {selectorDeAnio}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Buscador
             etiqueta="Búsqueda Rápida"
             marcador="IE, especialista o docente..."
@@ -246,6 +257,20 @@ export const FiltrosReportes = ({
               ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
             ]}
           />
+
+          {setFilterInstitucion && (
+            <SelectField
+              label="Institución Educativa"
+              value={filterInstitucion ?? TODOS}
+              onChange={setFilterInstitucion}
+              disabled={institucionesDisponibles.length === 0}
+              placeholder="Todas las instituciones"
+              options={[
+                { value: TODOS, label: 'Todas las instituciones' },
+                ...institucionesDisponibles.map((i) => ({ value: i.id, label: i.nombre })),
+              ]}
+            />
+          )}
 
           {selectorDeAnio}
         </div>

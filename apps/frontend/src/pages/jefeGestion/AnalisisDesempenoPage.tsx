@@ -42,6 +42,20 @@ export const AnalisisDesempenoPage = () => {
   const [filterInstitucion, setFilterInstitucion] = useState('Todos');
   const [filterDocente, setFilterDocente] = useState('Todos');
   const [filterNumeroVisita, setFilterNumeroVisita] = useState('Todos');
+  // Criterio al que se llegó desde un KPI (para resaltarlo en el detalle de abajo).
+  const [criterioResaltado, setCriterioResaltado] = useState<string | null>(null);
+
+  const irACriterio = (desempenoId: string) => {
+    setCriterioResaltado(desempenoId);
+    document
+      .getElementById(`criterio-${desempenoId}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // El resaltado es momentáneo: sólo para guiar la vista, no un estado pegado.
+    window.setTimeout(
+      () => setCriterioResaltado((actual) => (actual === desempenoId ? null : actual)),
+      2500,
+    );
+  };
   /**
    * El análisis siempre mira un año concreto.
    *
@@ -427,13 +441,13 @@ export const AnalisisDesempenoPage = () => {
       ) : (
         <>
           {/* Bloque 1: KPIs Principales por Criterio */}
-          <KpisCriterios analisis={analisis} />
+          <KpisCriterios analisis={analisis} onIrACriterio={irACriterio} />
 
           {/* Bloque 2: Gráfico Comparativo de Niveles por Desempeño */}
           <GraficoComparativoCriterios criterios={analisis.criterios} />
 
           {/* Bloque 3: Detalle en Tarjetas por cada Desempeño / Criterio */}
-          <ListaCriteriosDesempeno criterios={analisis.criterios} />
+          <ListaCriteriosDesempeno criterios={analisis.criterios} resaltadoId={criterioResaltado} />
         </>
       )}
     </div>

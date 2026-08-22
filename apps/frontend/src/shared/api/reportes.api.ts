@@ -35,6 +35,7 @@ export const reportesApi = {
     institucionId?: string;
     modalidad?: string;
     nivelEducativo?: string;
+    docenteId?: string;
     tipoMonitoreo?: TipoPlantilla;
     fechaDesde?: string;
     fechaHasta?: string;

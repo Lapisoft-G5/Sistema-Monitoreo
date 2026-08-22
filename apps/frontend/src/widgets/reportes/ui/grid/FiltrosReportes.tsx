@@ -68,6 +68,10 @@ interface FiltrosReportesProps {
   filterInstitucion?: string;
   setFilterInstitucion?: (id: string) => void;
   institucionesDisponibles?: { id: string; nombre: string }[];
+  /** Docentes para filtrar (opcional). Cascadea con institución/nivel/modalidad. */
+  filterDocente?: string;
+  setFilterDocente?: (id: string) => void;
+  docentesDisponibles?: { id: string; nombre: string }[];
   añosDisponibles: string[];
   isAnyFilterActive: boolean;
   handleClearFilters: () => void;
@@ -101,6 +105,9 @@ export const FiltrosReportes = ({
   filterInstitucion,
   setFilterInstitucion,
   institucionesDisponibles = [],
+  filterDocente,
+  setFilterDocente,
+  docentesDisponibles = [],
   añosDisponibles,
   isAnyFilterActive,
   handleClearFilters,
@@ -227,7 +234,7 @@ export const FiltrosReportes = ({
           {selectorDeAnio}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <Buscador
             etiqueta="Búsqueda Rápida"
             marcador="IE, especialista o docente..."
@@ -268,6 +275,20 @@ export const FiltrosReportes = ({
               options={[
                 { value: TODOS, label: 'Todas las instituciones' },
                 ...institucionesDisponibles.map((i) => ({ value: i.id, label: i.nombre })),
+              ]}
+            />
+          )}
+
+          {setFilterDocente && (
+            <SelectField
+              label="Docente"
+              value={filterDocente ?? TODOS}
+              onChange={setFilterDocente}
+              disabled={docentesDisponibles.length === 0}
+              placeholder="Todos los docentes"
+              options={[
+                { value: TODOS, label: 'Todos los docentes' },
+                ...docentesDisponibles.map((d) => ({ value: d.id, label: d.nombre })),
               ]}
             />
           )}

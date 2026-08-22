@@ -39,6 +39,7 @@ export const AnalisisDesempenoPage = () => {
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterInstitucion, setFilterInstitucion] = useState('Todos');
+  const [filterDocente, setFilterDocente] = useState('Todos');
   /**
    * El análisis siempre mira un año concreto.
    *
@@ -68,6 +69,7 @@ export const AnalisisDesempenoPage = () => {
     modalidad: filterModalidad !== 'Todos' ? filterModalidad : undefined,
     nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
     institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
+    docenteId: filterDocente !== 'Todos' ? filterDocente : undefined,
   });
 
   // El catálogo de plantillas y el cronograma salen de endpoints de gestión que
@@ -134,15 +136,23 @@ export const AnalisisDesempenoPage = () => {
 
   const handleModalidadChange = (modalidad: string) => {
     setFilterModalidad(modalidad);
-    // Cambiar de modalidad reinicia lo que depende de ella: nivel e institución.
+    // Cambiar de modalidad reinicia lo que depende de ella: nivel, institución y docente.
     setFilterNivel('Todos');
     setFilterInstitucion('Todos');
+    setFilterDocente('Todos');
   };
 
   const handleNivelChange = (nivel: string) => {
     setFilterNivel(nivel);
-    // Cada nivel tiene sus propias instituciones: al cambiarlo, se reinicia.
+    // Cada nivel tiene sus propias instituciones y docentes: se reinician.
     setFilterInstitucion('Todos');
+    setFilterDocente('Todos');
+  };
+
+  const handleInstitucionChange = (institucionId: string) => {
+    setFilterInstitucion(institucionId);
+    // Cada institución tiene sus propios docentes: al cambiarla, se reinicia.
+    setFilterDocente('Todos');
   };
 
   // Instituciones que aparecen en los datos, acotadas por modalidad/nivel: cada
@@ -158,6 +168,21 @@ export const AnalisisDesempenoPage = () => {
       .map(([id, nombre]) => ({ id, nombre }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [completedVisits, filterModalidad, filterNivel]);
+
+  // Docentes que aparecen en los datos, acotados por modalidad/nivel/institución:
+  // cada institución tiene sus propios docentes, así el selector cascada.
+  const docentesDisponibles = useMemo(() => {
+    const porId = new Map<string, string>();
+    completedVisits.forEach((v) => {
+      if (filterModalidad !== 'Todos' && v.modalidad !== filterModalidad) return;
+      if (filterNivel !== 'Todos' && v.nivel !== filterNivel) return;
+      if (filterInstitucion !== 'Todos' && v.institucionId !== filterInstitucion) return;
+      if (v.evaluadoId) porId.set(v.evaluadoId, v.docenteDirectivo);
+    });
+    return [...porId.entries()]
+      .map(([id, nombre]) => ({ id, nombre }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [completedVisits, filterModalidad, filterNivel, filterInstitucion]);
 
   const añosDisponibles = useMemo(() => {
     const yearsSet = new Set<string>();
@@ -207,6 +232,7 @@ export const AnalisisDesempenoPage = () => {
     filterModalidad !== 'Todos' ||
     filterNivel !== 'Todos' ||
     filterInstitucion !== 'Todos' ||
+    filterDocente !== 'Todos' ||
     filterAnio !== String(ANIO_ACTUAL) ||
     filterTipo !== 'Todos' ||
     filtroPeriodo !== 'TODOS';
@@ -216,6 +242,7 @@ export const AnalisisDesempenoPage = () => {
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
     setFilterInstitucion('Todos');
+    setFilterDocente('Todos');
     setFilterAnio(String(ANIO_ACTUAL));
     setFilterTipo('Todos');
     setFiltroPeriodo('TODOS');
@@ -243,6 +270,7 @@ export const AnalisisDesempenoPage = () => {
       if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
       if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
       if (filterInstitucion !== 'Todos' && visit.institucionId !== filterInstitucion) return false;
+      if (filterDocente !== 'Todos' && visit.evaluadoId !== filterDocente) return false;
 
       if (filterAnio !== 'Todos') {
         let visitYear = '';
@@ -264,7 +292,7 @@ export const AnalisisDesempenoPage = () => {
 
       return true;
     });
-  }, [completedVisits, filtroPeriodo, filterTipo, searchQuery, filterModalidad, filterNivel, filterInstitucion, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterTipo, searchQuery, filterModalidad, filterNivel, filterInstitucion, filterDocente, filterAnio]);
 
   const analisis = useMemo(
     () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas, filterTipo),
@@ -296,8 +324,11 @@ export const AnalisisDesempenoPage = () => {
         filterNivel={filterNivel}
         setFilterNivel={handleNivelChange}
         filterInstitucion={filterInstitucion}
-        setFilterInstitucion={setFilterInstitucion}
+        setFilterInstitucion={handleInstitucionChange}
         institucionesDisponibles={institucionesDisponibles}
+        filterDocente={filterDocente}
+        setFilterDocente={setFilterDocente}
+        docentesDisponibles={docentesDisponibles}
         filterAnio={filterAnio}
         setFilterAnio={setFilterAnio}
         permitirTodosLosAnios={false}

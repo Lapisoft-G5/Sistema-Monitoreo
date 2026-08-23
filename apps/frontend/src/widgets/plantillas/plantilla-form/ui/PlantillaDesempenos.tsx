@@ -1,5 +1,5 @@
 import { ClipboardList, Plus, Trash2, X } from 'lucide-react';
-import { FieldLabel, SectionCard, TextField } from '@shared/ui/form-controls';
+import { FieldLabel, SectionCard, TextField, TextAreaField } from '@shared/ui/form-controls';
 import { crearAspectoVacio, crearDesempenoVacio } from '@entities/model-plantillas';
 import type { Desempeno, NivelCalificacion, NivelRomano } from '@entities/model-plantillas';
 
@@ -131,11 +131,12 @@ const DesempenoCard = ({
               onChange={(v) => onChange({ nombre: v })}
               placeholder="Ej. Involucra activamente a los estudiantes..."
             />
-            <TextField
-              label="Descripción Corta"
+            <TextAreaField
+              label="Descripción"
               value={desempeno.descripcionCorta}
               onChange={(v) => onChange({ descripcionCorta: v })}
-              placeholder="Breve contexto del desempeño..."
+              placeholder="Contexto del desempeño..."
+              rows={2}
             />
 
             {/* Pregunta Extra Sí/No */}

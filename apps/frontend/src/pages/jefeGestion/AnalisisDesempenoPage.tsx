@@ -353,6 +353,15 @@ export const AnalisisDesempenoPage = () => {
     setFilterDocente('Todos');
   };
 
+  // Cambiar de plantilla reinicia docente y N° de visita: cada rúbrica tiene sus
+  // propios docentes evaluados, y dejar el docente pegado mostraba el análisis
+  // vacío (y el historial de otra rúbrica) para uno que no tiene fichas de esa.
+  const handlePlantillaChange = (plantillaId: string) => {
+    setFilterPlantilla(plantillaId);
+    setFilterDocente('Todos');
+    setFilterNumeroVisita('Todos');
+  };
+
   const handleInstitucionChange = (institucionId: string) => {
     setFilterInstitucion(institucionId);
     // Cada institución tiene sus propios docentes: al cambiarla, se reinicia.
@@ -375,33 +384,39 @@ export const AnalisisDesempenoPage = () => {
 
   // Docentes que aparecen en los datos, acotados por modalidad/nivel/institución:
   // cada institución tiene sus propios docentes, así el selector cascada.
+  // Se acota también por la plantilla elegida: sólo tiene sentido ofrecer
+  // docentes que tienen fichas de esa rúbrica. Antes se listaba a cualquiera del
+  // ámbito, así que aparecía un docente sin fichas de la plantilla activa y el
+  // análisis salía vacío al elegirlo (parecía «tiene monitoreos pero no ficha»).
   const docentesDisponibles = useMemo(() => {
     const porId = new Map<string, string>();
     completedVisits.forEach((v) => {
       if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
       if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
       if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return;
+      if (filterPlantillaEf && v.plantillaId !== filterPlantillaEf) return;
       if (v.evaluadoId) porId.set(v.evaluadoId, v.docenteDirectivo);
     });
     return [...porId.entries()]
       .map(([id, nombre]) => ({ id, nombre }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
-  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
+  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf]);
 
   // Números de visita presentes en los datos (1er monitoreo, 2do, …), acotados
-  // por el resto de los filtros.
+  // por el resto de los filtros (incluida la plantilla).
   const numerosDeVisitaDisponibles = useMemo(() => {
     const nums = new Set<number>();
     completedVisits.forEach((v) => {
       if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
       if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
       if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return;
+      if (filterPlantillaEf && v.plantillaId !== filterPlantillaEf) return;
       if (filterDocente !== 'Todos' && v.evaluadoId !== filterDocente) return;
       const n = Number(v.nroVisita);
       if (Number.isFinite(n) && n > 0) nums.add(n);
     });
     return [...nums].sort((a, b) => a - b);
-  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterDocente]);
+  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf, filterDocente]);
 
   const añosDisponibles = useMemo(() => {
     const yearsSet = new Set<string>();
@@ -516,7 +531,7 @@ export const AnalisisDesempenoPage = () => {
         institucionesDisponibles={institucionesDisponibles}
         gruposDePlantilla={gruposDePlantilla}
         plantillaSeleccionada={filterPlantillaEf}
-        onSeleccionarPlantilla={setFilterPlantilla}
+        onSeleccionarPlantilla={handlePlantillaChange}
         filterDocente={filterDocente}
         setFilterDocente={setFilterDocente}
         docentesDisponibles={docentesDisponibles}

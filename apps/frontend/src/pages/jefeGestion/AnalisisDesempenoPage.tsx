@@ -254,22 +254,36 @@ export const AnalisisDesempenoPage = () => {
     }));
   }, [plantillasUgelPorInstrumento, completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
 
-  // Las 3 institucionales por rol (Dirección / Coordinador / Jefe de Taller),
-  // SIEMPRE, con el mismo criterio que UGEL: si el rol creó su plantilla y tiene
-  // fichas se usa esa (la de más fichas si hay varias); si no, un id de respaldo
-  // para mostrar la píldora en cero. Así el cliente ve también el juego completo.
+  // Las institucionales, por ROL. Un rol puede tener MÁS DE UNA plantilla (el
+  // director suele tener la regular y la EIB): entonces hay una píldora por cada
+  // una, rotulada «Rol · Instrumento» para distinguirlas. Antes se colapsaba a
+  // una sola por rol y la segunda plantilla quedaba sin acceso al análisis.
+  // Un rol sin plantillas propias con fichas se muestra igual, en cero (id de
+  // respaldo), para que el cliente vea el juego completo de los 3 roles.
   const institucionalResuelto = useMemo(() => {
-    return ROLES_INSTITUCIONALES.map((rol) => {
-      const candidatas = plantillas
+    const items: { id: string; rol: string; instrumento: FiltroDeInstrumento; label: string }[] = [];
+    for (const rol of ROLES_INSTITUCIONALES) {
+      const rolLabel = ROL_LABEL[rol] ?? rol;
+      const propias = plantillas
         .filter((p) => p.creadoPorRole === rol && conteoPorPlantilla.has(p.id))
         .sort((a, b) => (conteoPorPlantilla.get(b.id) ?? 0) - (conteoPorPlantilla.get(a.id) ?? 0));
-      const elegida = candidatas[0];
-      return {
-        rol,
-        id: elegida?.id ?? `inst:${rol}`,
-        instrumento: (elegida?.instrumento ?? 'DOCENTE') as FiltroDeInstrumento,
-      };
-    });
+
+      if (propias.length === 0) {
+        // Placeholder en cero: el rol existe aunque todavía no monitoreó.
+        items.push({ id: `inst:${rol}`, rol, instrumento: 'DOCENTE', label: rolLabel });
+        continue;
+      }
+      const varias = propias.length > 1;
+      for (const p of propias) {
+        items.push({
+          id: p.id,
+          rol,
+          instrumento: p.instrumento,
+          label: varias ? `${rolLabel} · ${INSTRUMENTO_LABEL[p.instrumento] ?? p.instrumento}` : rolLabel,
+        });
+      }
+    }
+    return items;
   }, [plantillas, conteoPorPlantilla]);
 
   // Rúbricas elegibles: las 3 UGEL para todos; las institucionales SOLO para el
@@ -283,11 +297,7 @@ export const AnalisisDesempenoPage = () => {
       conteo: conteo(u.id),
     }));
     const institucional: OpcionPlantilla[] = esAmbitoDeUnaIE
-      ? institucionalResuelto.map((r) => ({
-          id: r.id,
-          label: ROL_LABEL[r.rol] ?? r.rol,
-          conteo: conteo(r.id),
-        }))
+      ? institucionalResuelto.map((r) => ({ id: r.id, label: r.label, conteo: conteo(r.id) }))
       : [];
     return { ugel, institucional };
   }, [ugelResuelto, institucionalResuelto, conteoPorPlantilla, esAmbitoDeUnaIE]);

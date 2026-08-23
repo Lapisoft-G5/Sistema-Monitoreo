@@ -22,7 +22,11 @@ import {
   rangoDePeriodo,
   type FiltroPeriodoTipo,
 } from '@features/reportes/lib/filtro-temporal';
-import { FiltrosReportes, type GruposDePlantilla } from '@/widgets/reportes/ui/grid/FiltrosReportes';
+import {
+  FiltrosReportes,
+  type GruposDePlantilla,
+  type OpcionPlantilla,
+} from '@/widgets/reportes/ui/grid/FiltrosReportes';
 import { KpisCriterios } from '@/widgets/reportes/ui/analisis/KpisCriterios';
 import { HistorialChart } from '@/features/monitoreos/ui/HistorialChart';
 import { GraficoComparativoCriterios } from '@/widgets/reportes/ui/analisis/GraficoComparativoCriterios';
@@ -208,49 +212,83 @@ export const AnalisisDesempenoPage = () => {
     return m;
   }, [plantillas]);
 
-  // Las institucionales presentes en el ámbito, con el rol que las creó.
-  const institucionalesPresentes = useMemo(
-    () =>
-      plantillas
-        .filter(
-          (p) => conteoPorPlantilla.has(p.id) && p.creadoPorRole && p.creadoPorRole !== 'jefe_gestion',
-        )
-        .map((p) => ({ id: p.id, instrumento: p.instrumento, rol: p.creadoPorRole as string })),
-    [plantillas, conteoPorPlantilla],
-  );
-
-  // Rúbricas elegibles, partidas en UGEL (las 3 oficiales) e Institucional (por rol).
-  const gruposDePlantilla = useMemo<GruposDePlantilla>(() => {
-    const conteo = (id?: string) => (id ? (conteoPorPlantilla.get(id) ?? 0) : 0);
-    const ugel = INSTRUMENTOS.flatMap(({ id: inst, label }) => {
-      const pid = plantillasUgelPorInstrumento.get(inst);
-      return pid ? [{ id: pid, label, conteo: conteo(pid) }] : [];
+  // El instrumento (y nombre) de cada plantilla, tomado de los propios datos.
+  // Sirve de respaldo cuando `usePlantillasList` no trae la plantilla: al personal
+  // de IE se le limita a docentes, así que la EIB o directiva de su colegio no
+  // vendría clasificada, pero sí aparece en sus fichas.
+  const infoPorPlantilla = useMemo(() => {
+    const m = new Map<string, { instrumento: FiltroDeInstrumento; nombre: string }>();
+    completedVisits.forEach((v) => {
+      if (v.plantillaId && !m.has(v.plantillaId)) {
+        m.set(v.plantillaId, {
+          instrumento: (v.instrumento as FiltroDeInstrumento) ?? 'DOCENTE',
+          nombre: v.plantillaNombre ?? 'Plantilla',
+        });
+      }
     });
-    const institucional = institucionalesPresentes.map((p) => {
+    return m;
+  }, [completedVisits]);
+
+  // Rúbricas elegibles, partidas en UGEL e Institucional. Se arman a partir de
+  // TODO lo que tenga fichas en el alcance (así nada queda sin poder elegirse),
+  // más las 3 oficiales UGEL aunque estén en cero. Se clasifica por el rol autor
+  // cuando se conoce; si no, se asume UGEL y se rotula por instrumento.
+  const gruposDePlantilla = useMemo<GruposDePlantilla>(() => {
+    const conteo = (id: string) => conteoPorPlantilla.get(id) ?? 0;
+    const metaDe = (id: string) => plantillas.find((p) => p.id === id);
+    const instrumentoDe = (id: string): FiltroDeInstrumento =>
+      metaDe(id)?.instrumento ?? infoPorPlantilla.get(id)?.instrumento ?? 'DOCENTE';
+
+    const ugelIds: { id: string; instrumento: FiltroDeInstrumento }[] = [];
+    const instRaw: { id: string; rol: string; instrumento: FiltroDeInstrumento }[] = [];
+    const vistos = new Set<string>();
+
+    const marcarUgel = (id: string, instrumento: FiltroDeInstrumento) => {
+      if (vistos.has(id)) return;
+      vistos.add(id);
+      ugelIds.push({ id, instrumento });
+    };
+
+    // 1) Las 3 oficiales UGEL primero (para que el jefe de gestión las vea siempre).
+    INSTRUMENTOS.forEach(({ id: inst }) => {
+      const pid = plantillasUgelPorInstrumento.get(inst);
+      if (pid) marcarUgel(pid, inst);
+    });
+
+    // 2) Todo lo presente en los datos: institucional por rol; el resto (UGEL sin
+    //    metadatos, p. ej. la EIB de un director) va a UGEL por instrumento.
+    [...conteoPorPlantilla.keys()].forEach((id) => {
+      if (vistos.has(id)) return;
+      const rol = metaDe(id)?.creadoPorRole;
+      if (rol && rol !== 'jefe_gestion') {
+        vistos.add(id);
+        instRaw.push({ id, rol, instrumento: instrumentoDe(id) });
+      } else {
+        marcarUgel(id, instrumentoDe(id));
+      }
+    });
+
+    const ordenInst = (inst: FiltroDeInstrumento) =>
+      INSTRUMENTOS.findIndex((i) => i.id === inst);
+    const ugel: OpcionPlantilla[] = ugelIds
+      .sort((a, b) => ordenInst(a.instrumento) - ordenInst(b.instrumento))
+      .map(({ id, instrumento }) => ({
+        id,
+        label: INSTRUMENTO_LABEL[instrumento] ?? instrumento,
+        conteo: conteo(id),
+      }));
+
+    const institucional: OpcionPlantilla[] = instRaw.map((p) => {
       const rolLabel = ROL_LABEL[p.rol] ?? p.rol;
-      const variosDelRol = institucionalesPresentes.filter((x) => x.rol === p.rol).length > 1;
+      const variosDelRol = instRaw.filter((x) => x.rol === p.rol).length > 1;
       const label = variosDelRol
         ? `${rolLabel} · ${INSTRUMENTO_LABEL[p.instrumento] ?? p.instrumento}`
         : rolLabel;
       return { id: p.id, label, conteo: conteo(p.id) };
     });
 
-    // Sin metadatos de plantilla (rol sin `monitoreo:execute`, o aún cargando) no
-    // se puede clasificar: se cae a listar las presentes por su nombre, para que
-    // igual haya de dónde elegir y el análisis no quede sin rúbrica.
-    if (ugel.length === 0 && institucional.length === 0 && conteoPorPlantilla.size > 0) {
-      const nombres = new Map<string, string>();
-      completedVisits.forEach((v) => {
-        if (v.plantillaId) nombres.set(v.plantillaId, v.plantillaNombre ?? 'Plantilla');
-      });
-      const listadas = [...conteoPorPlantilla.entries()]
-        .map(([id, c]) => ({ id, label: nombres.get(id) ?? 'Plantilla', conteo: c }))
-        .sort((a, b) => b.conteo - a.conteo);
-      return { ugel: listadas, institucional: [] };
-    }
-
     return { ugel, institucional };
-  }, [conteoPorPlantilla, plantillasUgelPorInstrumento, institucionalesPresentes, completedVisits]);
+  }, [conteoPorPlantilla, plantillasUgelPorInstrumento, plantillas, infoPorPlantilla]);
 
   // Selección efectiva: la elegida si sigue siendo válida; si no, la de más fichas
   // (normalmente la oficial UGEL). El instrumento se deriva de la plantilla.

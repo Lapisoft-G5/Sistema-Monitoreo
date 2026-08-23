@@ -50,7 +50,7 @@ const INSTRUMENTO_LABEL: Record<string, string> = {
 /** Rótulo de la plantilla institucional según el rol que la creó. */
 const ROL_LABEL: Record<string, string> = {
   director_ie: 'Dirección',
-  coordinador_pedagogico: 'Coordinador Pedagógico',
+  coordinador_pedagogico: 'Coordinador P.',
   jefe_taller: 'Jefe de Taller',
 };
 /** Los roles de IE que pueden crear su plantilla, en el orden de sus píldoras. */

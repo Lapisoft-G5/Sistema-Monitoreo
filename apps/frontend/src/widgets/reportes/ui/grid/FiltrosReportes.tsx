@@ -2,7 +2,6 @@ import { Search, Filter, Calendar, Users, FileText } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SelectField } from '@/shared/ui/form-controls';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import {
   FILTROS_PERIODO,
   type FiltroPeriodoTipo,
@@ -19,6 +18,19 @@ const FILTROS_TIPO = [
   { id: 'DOCENTE_EIB', label: 'Docente EIB' },
   { id: 'DIRECTIVO', label: 'Directivo' },
 ] as const;
+
+/** Una rúbrica elegible: una plantilla concreta con su rótulo y cuántas fichas tiene. */
+export interface OpcionPlantilla {
+  id: string;
+  label: string;
+  conteo: number;
+}
+
+/** Las rúbricas partidas por origen: la oficial UGEL y las que crean las IE. */
+export interface GruposDePlantilla {
+  ugel: OpcionPlantilla[];
+  institucional: OpcionPlantilla[];
+}
 
 interface BuscadorProps {
   etiqueta: string;
@@ -42,6 +54,51 @@ const Buscador = ({ etiqueta, marcador, valor, onCambiar }: BuscadorProps) => (
       />
       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
     </div>
+  </div>
+);
+
+/** Grupo de píldoras seleccionables (una sola activa), con su rótulo y conteos. */
+const GrupoDePildoras = ({
+  etiqueta,
+  icono,
+  opciones,
+  seleccionada,
+  onSeleccionar,
+}: {
+  etiqueta: string;
+  icono: import('react').ReactNode;
+  opciones: OpcionPlantilla[];
+  seleccionada?: string;
+  onSeleccionar?: (id: string) => void;
+}) => (
+  <div className="flex flex-wrap items-center gap-2 border-l border-slate-200 pl-4 sm:pl-6">
+    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
+      {icono} {etiqueta}:
+    </span>
+    {opciones.map((o) => {
+      const activo = seleccionada === o.id;
+      return (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => onSeleccionar?.(o.id)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
+            activo
+              ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <span>{o.label}</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+              activo ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+            }`}
+          >
+            {o.conteo}
+          </span>
+        </button>
+      );
+    })}
   </div>
 );
 
@@ -71,13 +128,14 @@ interface FiltrosReportesProps {
   setFilterInstitucion?: (id: string) => void;
   institucionesDisponibles?: { id: string; nombre: string }[];
   /**
-   * Plantilla concreta (opcional). El análisis por criterio sólo es coherente
-   * dentro de una misma rúbrica, así que cuando conviven varias (la oficial UGEL
-   * y los clones de IE) se elige una y nunca se mezclan. Sin «Todas», a propósito.
+   * Rúbricas elegibles agrupadas por origen (opcional). Reemplaza a las píldoras
+   * de Tipo: el análisis por criterio sólo es coherente dentro de una misma
+   * plantilla, así que se elige una —oficial UGEL o institucional— y nunca se
+   * mezclan. Sin «Todas», a propósito.
    */
-  filterPlantilla?: string;
-  setFilterPlantilla?: (id: string) => void;
-  plantillasDisponibles?: { id: string; nombre: string }[];
+  gruposDePlantilla?: GruposDePlantilla;
+  plantillaSeleccionada?: string;
+  onSeleccionarPlantilla?: (id: string) => void;
   /** Docentes para filtrar (opcional). Cascadea con institución/nivel/modalidad. */
   filterDocente?: string;
   setFilterDocente?: (id: string) => void;
@@ -131,9 +189,9 @@ export const FiltrosReportes = ({
   filterInstitucion,
   setFilterInstitucion,
   institucionesDisponibles = [],
-  filterPlantilla,
-  setFilterPlantilla,
-  plantillasDisponibles = [],
+  gruposDePlantilla,
+  plantillaSeleccionada,
+  onSeleccionarPlantilla,
   filterDocente,
   setFilterDocente,
   docentesDisponibles = [],
@@ -260,30 +318,26 @@ export const FiltrosReportes = ({
           </div>
         )}
 
-        {/* Plantilla: hermana de Tipo (ambas eligen la rúbrica). Va inline acá y
-            no en la grilla para no dejar «Año» solo en una segunda fila. */}
-        {setFilterPlantilla && plantillasDisponibles.length > 0 && (
-          <div className="flex items-center gap-2 border-l border-slate-200 pl-4 sm:pl-6">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1 shrink-0">
-              <FileText className="w-3.5 h-3.5 text-primary" /> Plantilla:
-            </span>
-            <Select
-              value={filterPlantilla ?? ''}
-              onValueChange={setFilterPlantilla}
-              disabled={plantillasDisponibles.length <= 1}
-            >
-              <SelectTrigger className="h-8 rounded-full text-xs font-semibold border border-slate-200 bg-slate-50 px-3 max-w-[260px] disabled:opacity-80 disabled:cursor-not-allowed">
-                <SelectValue placeholder="Seleccione una plantilla" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px] z-50">
-                {plantillasDisponibles.map((p) => (
-                  <SelectItem key={p.id} value={p.id} className="text-sm">
-                    {p.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Plantilla como píldoras, hermanas de Tipo: UGEL (oficial) e
+            Institucional (los clones que crean las IE). Se elige una y el
+            análisis nunca mezcla rúbricas. */}
+        {gruposDePlantilla && gruposDePlantilla.ugel.length > 0 && (
+          <GrupoDePildoras
+            etiqueta="UGEL"
+            icono={<FileText className="w-3.5 h-3.5 text-primary" />}
+            opciones={gruposDePlantilla.ugel}
+            seleccionada={plantillaSeleccionada}
+            onSeleccionar={onSeleccionarPlantilla}
+          />
+        )}
+        {gruposDePlantilla && gruposDePlantilla.institucional.length > 0 && (
+          <GrupoDePildoras
+            etiqueta="Institucional"
+            icono={<FileText className="w-3.5 h-3.5 text-primary" />}
+            opciones={gruposDePlantilla.institucional}
+            seleccionada={plantillaSeleccionada}
+            onSeleccionar={onSeleccionarPlantilla}
+          />
         )}
       </div>
 

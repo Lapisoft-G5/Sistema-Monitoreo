@@ -14,7 +14,7 @@ import {
   calcularAnalisisPorCriterios,
   type FiltroDeInstrumento,
 } from '@features/reportes/lib/analisis-desempeno';
-import { esInstrumentoEib, tipoDeVisitaDe } from '@features/reportes/lib/instrumento';
+import { tipoDeVisitaDe } from '@features/reportes/lib/instrumento';
 import { aniosDeFiltro } from '@features/reportes/lib/anios-de-filtro';
 import {
   coincideConPeriodo,
@@ -22,7 +22,7 @@ import {
   rangoDePeriodo,
   type FiltroPeriodoTipo,
 } from '@features/reportes/lib/filtro-temporal';
-import { FiltrosReportes } from '@/widgets/reportes/ui/grid/FiltrosReportes';
+import { FiltrosReportes, type GruposDePlantilla } from '@/widgets/reportes/ui/grid/FiltrosReportes';
 import { KpisCriterios } from '@/widgets/reportes/ui/analisis/KpisCriterios';
 import { HistorialChart } from '@/features/monitoreos/ui/HistorialChart';
 import { GraficoComparativoCriterios } from '@/widgets/reportes/ui/analisis/GraficoComparativoCriterios';
@@ -31,6 +31,24 @@ import type { BackendReportVisit } from '@/widgets/reportes';
 
 /** El año en curso, que es donde arranca el análisis. */
 const ANIO_ACTUAL = new Date().getFullYear();
+
+/** Instrumentos oficiales UGEL, en el orden en que se muestran sus píldoras. */
+const INSTRUMENTOS: { id: FiltroDeInstrumento; label: string }[] = [
+  { id: 'DOCENTE', label: 'Docente' },
+  { id: 'DOCENTE_EIB', label: 'Docente EIB' },
+  { id: 'DIRECTIVO', label: 'Directivo' },
+];
+const INSTRUMENTO_LABEL: Record<string, string> = {
+  DOCENTE: 'Docente',
+  DOCENTE_EIB: 'Docente EIB',
+  DIRECTIVO: 'Directivo',
+};
+/** Rótulo de la plantilla institucional según el rol que la creó. */
+const ROL_LABEL: Record<string, string> = {
+  director_ie: 'Dirección',
+  coordinador_pedagogico: 'Coordinador Pedagógico',
+  jefe_taller: 'Jefe de Taller',
+};
 
 export const AnalisisDesempenoPage = () => {
   const { user } = useUser();
@@ -76,20 +94,11 @@ export const AnalisisDesempenoPage = () => {
    * mismo eje, uno al lado del otro, como si fueran comparables.
    */
   const [filterAnio, setFilterAnio] = useState(String(ANIO_ACTUAL));
-  // Tipado: el analisis segmenta por instrumento, no por una cadena libre.
-  // El análisis por criterio es por instrumento: mezclar tipos pone rúbricas con
-  // distinta cantidad de criterios en el mismo eje. Por eso no hay «Todos» acá y
-  // arranca en el docente regular.
-  const [filterTipo, setFilterTipo] = useState<FiltroDeInstrumento>('DOCENTE');
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
   // Datos
   // Esta pantalla siempre tiene un año elegido: no ofrece «Todos los años».
   const anioNumero = parseInt(filterAnio, 10);
-  // El backend filtra por `plantilla.tipoMonitoreo`, o sea el INSTRUMENTO. El
-  // parámetro conserva su nombre en el cable; lo que se corrige es el tipo,
-  // que decía `TipoMonitoreo` y por lo tanto excluía DOCENTE_EIB.
-  const tipoMonitoreoParam = filterTipo !== 'Todos' ? filterTipo : undefined;
 
   // El período (Hoy/Semana/Mes) se traduce a un rango de fechas para el backend,
   // con los mismos límites que las píldoras, así el conteo del análisis coincide.
@@ -174,42 +183,95 @@ export const AnalisisDesempenoPage = () => {
   const filterNivelEf = ambitoDeLaIE?.nivel ?? filterNivel;
   const filterInstitucionEf = ambitoDeLaIE?.institucionId ?? filterInstitucion;
 
-  // Plantillas presentes en los datos (por instrumento/ámbito): cada una es una
-  // rúbrica distinta. El análisis por criterio sólo consolida dentro de una, así
-  // que se ofrece elegir en vez de mezclarlas.
-  const plantillasDisponibles = useMemo(() => {
-    const porId = new Map<string, { nombre: string; conteo: number }>();
+  // Cuántas fichas tiene cada plantilla en el ámbito. No se filtra por
+  // instrumento: el instrumento se DERIVA de la plantilla elegida, no al revés.
+  const conteoPorPlantilla = useMemo(() => {
+    const m = new Map<string, number>();
     completedVisits.forEach((v) => {
-      if (filterTipo !== 'Todos' && (v.instrumento ?? 'DOCENTE') !== filterTipo) return;
       if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
       if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
       if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return;
-      if (!v.plantillaId) return;
-      const prev = porId.get(v.plantillaId);
-      porId.set(v.plantillaId, {
-        nombre: v.plantillaNombre ?? 'Plantilla',
-        conteo: (prev?.conteo ?? 0) + 1,
-      });
+      if (v.plantillaId) m.set(v.plantillaId, (m.get(v.plantillaId) ?? 0) + 1);
     });
-    return [...porId.entries()]
-      .map(([id, { nombre, conteo }]) => ({ id, nombre, conteo }))
-      .sort((a, b) => b.conteo - a.conteo);
-  }, [completedVisits, filterTipo, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
+    return m;
+  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
 
-  // Por defecto, la plantilla más presente (normalmente la oficial UGEL). Si la
-  // elegida ya no cae en el alcance vigente, se vuelve a la dominante.
-  const plantillaDominante = plantillasDisponibles[0]?.id ?? '';
+  // La oficial UGEL vigente por instrumento (autor jefe_gestion o sin sello, sin IE).
+  const plantillasUgelPorInstrumento = useMemo(() => {
+    const m = new Map<FiltroDeInstrumento, string>();
+    plantillas.forEach((p) => {
+      const esUgel = !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion';
+      if (esUgel && p.estado === 'Vigente' && !p.ieId && !m.has(p.instrumento)) {
+        m.set(p.instrumento, p.id);
+      }
+    });
+    return m;
+  }, [plantillas]);
+
+  // Las institucionales presentes en el ámbito, con el rol que las creó.
+  const institucionalesPresentes = useMemo(
+    () =>
+      plantillas
+        .filter(
+          (p) => conteoPorPlantilla.has(p.id) && p.creadoPorRole && p.creadoPorRole !== 'jefe_gestion',
+        )
+        .map((p) => ({ id: p.id, instrumento: p.instrumento, rol: p.creadoPorRole as string })),
+    [plantillas, conteoPorPlantilla],
+  );
+
+  // Rúbricas elegibles, partidas en UGEL (las 3 oficiales) e Institucional (por rol).
+  const gruposDePlantilla = useMemo<GruposDePlantilla>(() => {
+    const conteo = (id?: string) => (id ? (conteoPorPlantilla.get(id) ?? 0) : 0);
+    const ugel = INSTRUMENTOS.flatMap(({ id: inst, label }) => {
+      const pid = plantillasUgelPorInstrumento.get(inst);
+      return pid ? [{ id: pid, label, conteo: conteo(pid) }] : [];
+    });
+    const institucional = institucionalesPresentes.map((p) => {
+      const rolLabel = ROL_LABEL[p.rol] ?? p.rol;
+      const variosDelRol = institucionalesPresentes.filter((x) => x.rol === p.rol).length > 1;
+      const label = variosDelRol
+        ? `${rolLabel} · ${INSTRUMENTO_LABEL[p.instrumento] ?? p.instrumento}`
+        : rolLabel;
+      return { id: p.id, label, conteo: conteo(p.id) };
+    });
+
+    // Sin metadatos de plantilla (rol sin `monitoreo:execute`, o aún cargando) no
+    // se puede clasificar: se cae a listar las presentes por su nombre, para que
+    // igual haya de dónde elegir y el análisis no quede sin rúbrica.
+    if (ugel.length === 0 && institucional.length === 0 && conteoPorPlantilla.size > 0) {
+      const nombres = new Map<string, string>();
+      completedVisits.forEach((v) => {
+        if (v.plantillaId) nombres.set(v.plantillaId, v.plantillaNombre ?? 'Plantilla');
+      });
+      const listadas = [...conteoPorPlantilla.entries()]
+        .map(([id, c]) => ({ id, label: nombres.get(id) ?? 'Plantilla', conteo: c }))
+        .sort((a, b) => b.conteo - a.conteo);
+      return { ugel: listadas, institucional: [] };
+    }
+
+    return { ugel, institucional };
+  }, [conteoPorPlantilla, plantillasUgelPorInstrumento, institucionalesPresentes, completedVisits]);
+
+  // Selección efectiva: la elegida si sigue siendo válida; si no, la de más fichas
+  // (normalmente la oficial UGEL). El instrumento se deriva de la plantilla.
+  const idsElegibles = [...gruposDePlantilla.ugel, ...gruposDePlantilla.institucional].map((o) => o.id);
+  const plantillaDominante =
+    [...conteoPorPlantilla.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+    gruposDePlantilla.ugel[0]?.id ??
+    '';
   const filterPlantillaEf =
-    filterPlantilla && plantillasDisponibles.some((p) => p.id === filterPlantilla)
-      ? filterPlantilla
-      : plantillaDominante;
+    filterPlantilla && idsElegibles.includes(filterPlantilla) ? filterPlantilla : plantillaDominante;
+  const tipoEf: FiltroDeInstrumento =
+    plantillas.find((p) => p.id === filterPlantillaEf)?.instrumento ??
+    completedVisits.find((v) => v.plantillaId === filterPlantillaEf)?.instrumento ??
+    'DOCENTE';
 
   // Los filtros se aplican en el backend, que es quien arma la distribución por
   // criterio: de nada sirve filtrarlos sólo en el cliente porque el análisis no
   // se recalcula de las fichas, viene consolidado del servidor.
   const { data: criteriosBackend } = useAnalisisDesempenos({
     anioAcademico: anioNumero,
-    tipoMonitoreo: tipoMonitoreoParam,
+    tipoMonitoreo: tipoEf,
     modalidad: filterModalidad !== 'Todos' ? filterModalidad : undefined,
     nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
     institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
@@ -317,23 +379,6 @@ export const AnalisisDesempenoPage = () => {
     [completedVisits],
   );
 
-  const conteosTipo = useMemo(() => {
-    let docentes = 0;
-    let docentesEib = 0;
-    let directivos = 0;
-    completedVisits.forEach((v) => {
-      if (v.instrumento === 'DIRECTIVO') directivos++;
-      else if (esInstrumentoEib(v.instrumento)) docentesEib++;
-      else docentes++;
-    });
-    return {
-      Todos: completedVisits.length,
-      DOCENTE: docentes,
-      DOCENTE_EIB: docentesEib,
-      DIRECTIVO: directivos,
-    };
-  }, [completedVisits]);
-
   const isAnyFilterActive =
     filterModalidad !== 'Todos' ||
     filterNivel !== 'Todos' ||
@@ -342,7 +387,6 @@ export const AnalisisDesempenoPage = () => {
     filterDocente !== 'Todos' ||
     filterNumeroVisita !== 'Todos' ||
     filterAnio !== String(ANIO_ACTUAL) ||
-    filterTipo !== 'DOCENTE' ||
     filtroPeriodo !== 'TODOS';
 
   const handleClearFilters = () => {
@@ -353,7 +397,6 @@ export const AnalisisDesempenoPage = () => {
     setFilterDocente('Todos');
     setFilterNumeroVisita('Todos');
     setFilterAnio(String(ANIO_ACTUAL));
-    setFilterTipo('DOCENTE');
     setFiltroPeriodo('TODOS');
   };
 
@@ -361,11 +404,6 @@ export const AnalisisDesempenoPage = () => {
     return completedVisits.filter((visit) => {
       // Filtro de período temporal (Hoy, Esta semana, Este mes, Todos)
       if (!coincideConPeriodo(visit.fechaHora, filtroPeriodo)) return false;
-
-      // El filtro es por instrumento, que es lo que el analisis segmenta.
-      if (filterTipo !== 'Todos' && (visit.instrumento ?? 'DOCENTE') !== filterTipo) {
-        return false;
-      }
 
       if (filterModalidadEf !== 'Todos' && visit.modalidad !== filterModalidadEf) return false;
       if (filterNivelEf !== 'Todos' && visit.nivel !== filterNivelEf) return false;
@@ -394,16 +432,16 @@ export const AnalisisDesempenoPage = () => {
 
       return true;
     });
-  }, [completedVisits, filtroPeriodo, filterTipo, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf, filterDocente, filterNumeroVisita, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf, filterDocente, filterNumeroVisita, filterAnio]);
 
   const analisis = useMemo(
-    () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas, filterTipo),
-    [criteriosBackend, visitasFiltradas, plantillas, filterTipo],
+    () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas, tipoEf),
+    [criteriosBackend, visitasFiltradas, plantillas, tipoEf],
   );
 
   const cargando = isLoading && cargandoCronogramas;
-  const esDirectivo = filterTipo === 'DIRECTIVO';
-  const esEib = filterTipo === 'DOCENTE_EIB';
+  const esDirectivo = tipoEf === 'DIRECTIVO';
+  const esEib = tipoEf === 'DOCENTE_EIB';
 
   return (
     <div className="space-y-6 pb-12">
@@ -426,9 +464,9 @@ export const AnalisisDesempenoPage = () => {
         filterInstitucion={filterInstitucionEf}
         setFilterInstitucion={handleInstitucionChange}
         institucionesDisponibles={institucionesDisponibles}
-        filterPlantilla={filterPlantillaEf}
-        setFilterPlantilla={setFilterPlantilla}
-        plantillasDisponibles={plantillasDisponibles}
+        gruposDePlantilla={gruposDePlantilla}
+        plantillaSeleccionada={filterPlantillaEf}
+        onSeleccionarPlantilla={setFilterPlantilla}
         filterDocente={filterDocente}
         setFilterDocente={setFilterDocente}
         docentesDisponibles={docentesDisponibles}
@@ -440,9 +478,6 @@ export const AnalisisDesempenoPage = () => {
         permitirTodosLosAnios={false}
         permitirTipoTodos={false}
         bloquearAmbito={esAmbitoDeUnaIE}
-        filterTipo={filterTipo}
-        setFilterTipo={setFilterTipo}
-        conteosTipo={conteosTipo}
         filtroPeriodo={filtroPeriodo}
         setFiltroPeriodo={setFiltroPeriodo}
         conteosPeriodo={conteosPeriodo}

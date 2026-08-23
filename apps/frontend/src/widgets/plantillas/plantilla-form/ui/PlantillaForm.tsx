@@ -120,6 +120,7 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
         <PlantillaDesempenos
           desempenos={form.desempenos}
           niveles={form.niveles}
+          esDirectivo={esDirectivo}
           onChange={(desempenos) => patch({ desempenos })}
         />
       )}

@@ -96,6 +96,7 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
         <PlantillaDesempenos
           desempenos={form.desempenos}
           niveles={form.niveles}
+          esDirectivo={form.tipoMonitoreo === 'Monitoreo Directivo'}
           onChange={(desempenos) => patch({ desempenos })}
         />
       )}

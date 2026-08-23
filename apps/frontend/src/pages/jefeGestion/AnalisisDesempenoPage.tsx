@@ -557,7 +557,7 @@ export const AnalisisDesempenoPage = () => {
           su desempeño a lo largo de los monitoreos (el promedio ya está en los KPIs). */}
       {filterDocente !== 'Todos' && (
         <div className="p-5 bg-surface border border-border rounded-2xl shadow-xs">
-          <HistorialChart evaluadoId={filterDocente} />
+          <HistorialChart evaluadoId={filterDocente} tipoMonitoreo={tipoEf} />
         </div>
       )}
 

@@ -128,5 +128,8 @@ export abstract class FichaRepository {
     oldAspectos: Array<{ id: string; marcado: boolean }>,
   ): Promise<IFichaMonitoreo>;
   abstract existsWithScope(id: string, scopeWhere: Record<string, unknown>): Promise<boolean>;
-  abstract getHistorial(evaluadoId: string): Promise<IHistorialPedagogicoResponse>;
+  abstract getHistorial(
+    evaluadoId: string,
+    tipoMonitoreo?: string,
+  ): Promise<IHistorialPedagogicoResponse>;
 }

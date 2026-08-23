@@ -4,10 +4,12 @@ import { formatearFecha } from '@shared/lib/fecha/fecha';
 
 interface HistorialChartProps {
   evaluadoId: string;
+  /** Instrumento a graficar: acota la evolución a esa rúbrica (regular o EIB). */
+  tipoMonitoreo?: string;
 }
 
-export function HistorialChart({ evaluadoId }: HistorialChartProps) {
-  const { data, isLoading, isError } = useGetHistorialPedagogico(evaluadoId);
+export function HistorialChart({ evaluadoId, tipoMonitoreo }: HistorialChartProps) {
+  const { data, isLoading, isError } = useGetHistorialPedagogico(evaluadoId, tipoMonitoreo);
 
   if (isLoading) {
     return <div className="text-sm text-slate-500 animate-pulse p-4">Cargando historial pedagógico...</div>;

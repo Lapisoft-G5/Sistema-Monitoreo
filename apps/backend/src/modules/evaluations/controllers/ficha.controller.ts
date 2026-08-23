@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Query,
   Post,
   Req,
   UseGuards,
@@ -81,8 +82,11 @@ export class FichaController {
   async historial(
     @Param('evaluadoId', new ParseUUIDPipe()) evaluadoId: string,
     @Req() req: AuthenticatedRequest,
+    // El instrumento acota la evolución a una sola rúbrica: un docente evaluado
+    // con la ficha regular y la EIB tiene dos historiales distintos, no uno.
+    @Query('tipoMonitoreo') tipoMonitoreo?: string,
   ): Promise<IHistorialPedagogicoResponse> {
-    return this.service.getHistorial(evaluadoId, this.toSession(req));
+    return this.service.getHistorial(evaluadoId, this.toSession(req), tipoMonitoreo);
   }
 
   @Get(':id')

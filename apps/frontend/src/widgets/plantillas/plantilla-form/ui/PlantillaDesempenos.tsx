@@ -1,4 +1,5 @@
-import { ClipboardList, Plus, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, ClipboardList, Plus, Trash2, X } from 'lucide-react';
 import { FieldLabel, SectionCard, TextField, TextAreaField } from '@shared/ui/form-controls';
 import { crearAspectoVacio, crearDesempenoVacio } from '@entities/model-plantillas';
 import type { Desempeno, NivelCalificacion, NivelRomano } from '@entities/model-plantillas';
@@ -15,12 +16,31 @@ interface Props {
 }
 
 export const PlantillaDesempenos = ({ desempenos, niveles, esDirectivo = false, onChange }: Props) => {
+  // Acordeón: se abre sólo el desempeño que se está editando, para no ver los
+  // enunciados de todos a la vez. Arranca con el primero abierto; el resto,
+  // plegado.
+  const [abiertos, setAbiertos] = useState<Set<string>>(
+    () => new Set(desempenos[0] ? [desempenos[0].id] : []),
+  );
+  const toggle = (id: string) =>
+    setAbiertos((prev) => {
+      const siguiente = new Set(prev);
+      if (siguiente.has(id)) siguiente.delete(id);
+      else siguiente.add(id);
+      return siguiente;
+    });
+
   const updateDesempeno = (id: string, patch: Partial<Desempeno>) =>
     onChange(desempenos.map((d) => (d.id === id ? { ...d, ...patch } : d)));
 
   const removeDesempeno = (id: string) => onChange(desempenos.filter((d) => d.id !== id));
 
-  const addDesempeno = () => onChange([...desempenos, crearDesempenoVacio()]);
+  // El desempeño recién agregado se abre para llenarlo de una.
+  const addDesempeno = () => {
+    const nuevo = crearDesempenoVacio();
+    onChange([...desempenos, nuevo]);
+    setAbiertos((prev) => new Set(prev).add(nuevo.id));
+  };
 
   return (
     <SectionCard icon={<ClipboardList className="w-5 h-5" />} title="2. Gestión de Desempeños">
@@ -32,6 +52,8 @@ export const PlantillaDesempenos = ({ desempenos, niveles, esDirectivo = false, 
             desempeno={desempeno}
             niveles={niveles}
             esDirectivo={esDirectivo}
+            abierto={abiertos.has(desempeno.id)}
+            onToggle={() => toggle(desempeno.id)}
             puedeEliminar={desempenos.length > 1}
             onChange={(patch) => updateDesempeno(desempeno.id, patch)}
             onRemove={() => removeDesempeno(desempeno.id)}
@@ -57,6 +79,8 @@ interface DesempenoCardProps {
   desempeno: Desempeno;
   niveles: NivelCalificacion[];
   esDirectivo: boolean;
+  abierto: boolean;
+  onToggle: () => void;
   puedeEliminar: boolean;
   onChange: (patch: Partial<Desempeno>) => void;
   onRemove: () => void;
@@ -67,6 +91,8 @@ const DesempenoCard = ({
   desempeno,
   niveles,
   esDirectivo,
+  abierto,
+  onToggle,
   puedeEliminar,
   onChange,
   onRemove,
@@ -88,19 +114,39 @@ const DesempenoCard = ({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-      {/* Encabezado del desempeño */}
-      <div className="flex items-center justify-between border-b border-border bg-primary/5 px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+      {/* Encabezado del desempeño: clic para plegar/desplegar. Plegado muestra el
+          nombre como referencia, para no ver todos los enunciados a la vez. */}
+      <div
+        className={`flex items-center justify-between bg-primary/5 px-4 py-3 ${
+          abierto ? 'border-b border-border' : ''
+        }`}
+      >
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex min-w-0 flex-1 items-center gap-2.5 text-left cursor-pointer"
+          aria-expanded={abierto}
+        >
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-text-muted transition-transform ${
+              abierto ? '' : '-rotate-90'
+            }`}
+          />
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
             {index + 1}
           </span>
-          <span className="text-sm font-bold text-text">Desempeño N° {index + 1}</span>
-        </div>
+          <span className="text-sm font-bold text-text shrink-0">Desempeño N° {index + 1}</span>
+          {!abierto && desempeno.nombre.trim() && (
+            <span className="truncate text-xs font-medium text-text-muted">
+              · {desempeno.nombre}
+            </span>
+          )}
+        </button>
         {puedeEliminar && (
           <button
             type="button"
             onClick={onRemove}
-            className="flex items-center gap-1 text-xs font-bold text-destructive transition-colors hover:text-destructive/80 cursor-pointer"
+            className="ml-3 flex shrink-0 items-center gap-1 text-xs font-bold text-destructive transition-colors hover:text-destructive/80 cursor-pointer"
           >
             <Trash2 className="h-3.5 w-3.5" />
             ELIMINAR
@@ -109,6 +155,7 @@ const DesempenoCard = ({
       </div>
 
       {/* Cuerpo */}
+      {abierto && (
       <div className="flex flex-col gap-5 p-4">
         {/* La ficha directiva sólo lleva nombre + rúbrica: ni descripción corta,
             ni pregunta extra, ni aspectos. Para ella el nombre va a ancho completo. */}
@@ -224,6 +271,7 @@ const DesempenoCard = ({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

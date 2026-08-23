@@ -272,7 +272,9 @@ export const AnalisisDesempenoPage = () => {
     });
   }, [plantillas, conteoPorPlantilla]);
 
-  // Rúbricas elegibles: las 3 UGEL + las 3 institucionales, siempre presentes.
+  // Rúbricas elegibles: las 3 UGEL para todos; las institucionales SOLO para el
+  // personal de institución (director, coordinador, jefe de taller), que es de
+  // quien son esas plantillas. Al jefe de gestión / UGEL no le corresponden.
   const gruposDePlantilla = useMemo<GruposDePlantilla>(() => {
     const conteo = (id: string) => conteoPorPlantilla.get(id) ?? 0;
     const ugel: OpcionPlantilla[] = ugelResuelto.map((u) => ({
@@ -280,13 +282,15 @@ export const AnalisisDesempenoPage = () => {
       label: INSTRUMENTO_LABEL[u.instrumento] ?? u.instrumento,
       conteo: conteo(u.id),
     }));
-    const institucional: OpcionPlantilla[] = institucionalResuelto.map((r) => ({
-      id: r.id,
-      label: ROL_LABEL[r.rol] ?? r.rol,
-      conteo: conteo(r.id),
-    }));
+    const institucional: OpcionPlantilla[] = esAmbitoDeUnaIE
+      ? institucionalResuelto.map((r) => ({
+          id: r.id,
+          label: ROL_LABEL[r.rol] ?? r.rol,
+          conteo: conteo(r.id),
+        }))
+      : [];
     return { ugel, institucional };
-  }, [ugelResuelto, institucionalResuelto, conteoPorPlantilla]);
+  }, [ugelResuelto, institucionalResuelto, conteoPorPlantilla, esAmbitoDeUnaIE]);
 
   // Instrumento por id de rúbrica (incluye los ids de respaldo), para derivar el
   // tipo aun cuando la plantilla elegida no tenga fichas ni metadatos.

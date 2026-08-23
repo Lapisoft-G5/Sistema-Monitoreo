@@ -51,8 +51,14 @@ export interface IDirectorDashboardMonitoreoReciente {
   nivelEducativo: string;
   /** Fecha de finalización de la ficha (ISO 8601). */
   fecha: string;
-  nivelLogro: NivelLogro;
-  promedio: number;
+  /**
+   * El monitoreo EIB es informativo: registra la práctica (No/Parcial/Sí) pero
+   * no produce una nota ni un nivel de logro, de modo que no lleva insignia.
+   */
+  esInformativo: boolean;
+  /** Nulos cuando el instrumento es informativo (EIB). */
+  nivelLogro: NivelLogro | null;
+  promedio: number | null;
 }
 
 export interface IDirectorDashboardResponse {

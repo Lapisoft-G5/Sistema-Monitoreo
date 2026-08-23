@@ -31,7 +31,7 @@ export const DashboardDirectorPage = () => {
   const semaforo = data?.semaforo;
 
   const rows: MonitoringRow[] = (data?.monitoreosRecientes ?? []).map((m) => {
-    const ui = nivelLogroUi(m.nivelLogro);
+    const ui = m.nivelLogro ? nivelLogroUi(m.nivelLogro) : null;
     return {
       id: m.fichaId,
       school: m.docenteNombre,
@@ -39,9 +39,10 @@ export const DashboardDirectorPage = () => {
       specialist: m.especialistaNombre,
       specialistInitials: iniciales(m.especialistaNombre),
       date: formatearFechaCorta(m.fecha),
-      status: ui.label,
-      score: Number(m.promedio.toFixed(1)),
-      statusVariant: ui.variant as MonitoringRow['statusVariant'],
+      status: ui?.label ?? '',
+      score: m.promedio != null ? Number(m.promedio.toFixed(1)) : null,
+      statusVariant: ui?.variant as MonitoringRow['statusVariant'],
+      esInformativo: m.esInformativo,
     };
   });
 

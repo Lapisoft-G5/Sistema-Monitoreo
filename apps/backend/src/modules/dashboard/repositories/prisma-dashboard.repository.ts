@@ -85,6 +85,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
         promedio: true,
         finalizadaAt: true,
         createdAt: true,
+        plantilla: { select: { tipoMonitoreo: true } },
         cronograma: {
           select: {
             evaluadoId: true,
@@ -97,32 +98,45 @@ export class PrismaDashboardRepository implements DashboardRepository {
       orderBy: [{ finalizadaAt: 'desc' }, { createdAt: 'desc' }],
     });
 
+    // El monitoreo EIB es informativo: registra la práctica pero no produce nota
+    // ni nivel de logro, así que no entra en el promedio ni en el semáforo.
+    const esInformativa = (f: (typeof fichas)[number]) =>
+      f.plantilla.tipoMonitoreo === 'DOCENTE_EIB';
+
     // Última ficha finalizada por docente (las fichas ya vienen ordenadas desc,
-    // así que la primera que veamos por docente es la más reciente).
+    // así que la primera que veamos por docente es la más reciente). Para la
+    // cobertura cuenta cualquier instrumento; para el semáforo y el promedio,
+    // sólo el de rúbrica (el EIB informativo no aporta nivel).
     const ultimaPorDocente = new Map<string, (typeof fichas)[number]>();
+    const ultimaRubricaPorDocente = new Map<string, (typeof fichas)[number]>();
     for (const ficha of fichas) {
       const docenteId = ficha.cronograma.evaluadoId;
       if (!ultimaPorDocente.has(docenteId)) {
         ultimaPorDocente.set(docenteId, ficha);
       }
+      if (!esInformativa(ficha) && !ultimaRubricaPorDocente.has(docenteId)) {
+        ultimaRubricaPorDocente.set(docenteId, ficha);
+      }
     }
 
-    // 4. Semáforo — distribución de docentes por nivel de logro (última ficha).
+    // 4. Semáforo — distribución de docentes por nivel de logro (última ficha de
+    // rúbrica; el EIB no clasifica).
     let critico = 0;
     let enProceso = 0;
     let logroPrevisto = 0;
     let sumaPromedios = 0;
-    for (const ficha of ultimaPorDocente.values()) {
+    for (const ficha of ultimaRubricaPorDocente.values()) {
       const nivel = ficha.nivelLogro as NivelLogro;
       if (nivel === 'INICIO') critico += 1;
       else if (nivel === 'EN_PROCESO') enProceso += 1;
       else logroPrevisto += 1; // LOGRO_ESPERADO | LOGRO_DESTACADO
       sumaPromedios += Number(ficha.promedio);
     }
+    const conNivel = ultimaRubricaPorDocente.size;
     const monitoreados = ultimaPorDocente.size;
     const pendientes = Math.max(totalDocentes - monitoreados, 0);
     const sinRegistro = pendientes;
-    const nivelPromedio = monitoreados > 0 ? Number((sumaPromedios / monitoreados).toFixed(2)) : 0;
+    const nivelPromedio = conNivel > 0 ? Number((sumaPromedios / conNivel).toFixed(2)) : 0;
     const porcentajeCobertura =
       totalDocentes > 0 ? Math.round((monitoreados / totalDocentes) * 100) : 0;
 
@@ -132,14 +146,16 @@ export class PrismaDashboardRepository implements DashboardRepository {
       .map((ficha) => {
         const evaluado = ficha.cronograma.evaluado.persona;
         const monitor = ficha.cronograma.monitor.persona;
+        const informativa = esInformativa(ficha);
         return {
           fichaId: ficha.id,
           docenteNombre: `${evaluado.nombres} ${evaluado.apellidos}`.trim(),
           especialistaNombre: `${monitor.nombres} ${monitor.apellidos}`.trim(),
           nivelEducativo: ficha.cronograma.nivelEducativo,
           fecha: (ficha.finalizadaAt ?? ficha.createdAt).toISOString(),
-          nivelLogro: ficha.nivelLogro as NivelLogro,
-          promedio: Number(ficha.promedio),
+          esInformativo: informativa,
+          nivelLogro: informativa ? null : (ficha.nivelLogro as NivelLogro),
+          promedio: informativa ? null : Number(ficha.promedio),
         };
       });
 
@@ -240,11 +256,20 @@ export class PrismaDashboardRepository implements DashboardRepository {
       orderBy: [{ finalizadaAt: 'desc' }, { createdAt: 'desc' }],
     });
 
-    // 3. Nivel promedio provincial (media de las fichas finalizadas).
+    // El monitoreo EIB es informativo: no produce nota ni nivel, así que no entra
+    // en promedios, semáforo ni rankings. Sí cuenta como monitoreo hecho
+    // (evolución mensual y recientes lo muestran, sin nota).
+    const esInformativa = (f: (typeof fichas)[number]) =>
+      f.cronograma.tipoMonitoreo === 'DOCENTE_EIB';
+    const fichasConNota = fichas.filter((f) => !esInformativa(f));
+
+    // 3. Nivel promedio provincial (media de las fichas de rúbrica finalizadas).
     const nivelPromedio =
-      fichas.length > 0
+      fichasConNota.length > 0
         ? Number(
-            (fichas.reduce((acc, f) => acc + Number(f.promedio), 0) / fichas.length).toFixed(2),
+            (
+              fichasConNota.reduce((acc, f) => acc + Number(f.promedio), 0) / fichasConNota.length
+            ).toFixed(2),
           )
         : 0;
 
@@ -258,7 +283,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       nivelEducativo: string;
     };
     const promediosPorIe = new Map<string, IeAcc>();
-    for (const ficha of fichas) {
+    for (const ficha of fichasConNota) {
       const ieId = ficha.cronograma.institucionId;
       const ie = ficha.cronograma.institucion;
       const acc =
@@ -289,11 +314,15 @@ export class PrismaDashboardRepository implements DashboardRepository {
     // "Requieren atención" a nivel docente (versión detallada por institución, para
     // el módulo Focos de Atención): docentes/directivos cuya ÚLTIMA ficha está en
     // INICIO, agrupados por su IE.
+    // La última ficha por docente para «focos» es la de rúbrica (el EIB no tiene
+    // nivel). El contador de monitoreos completados sí incluye todos.
     const ultimaPorDocente = new Map<string, (typeof fichas)[number]>();
     const completadosPorDocente = new Map<string, number>();
     for (const ficha of fichas) {
       const docId = ficha.cronograma.evaluadoId;
-      if (!ultimaPorDocente.has(docId)) ultimaPorDocente.set(docId, ficha); // ya vienen desc
+      if (!esInformativa(ficha) && !ultimaPorDocente.has(docId)) {
+        ultimaPorDocente.set(docId, ficha); // ya vienen desc
+      }
       completadosPorDocente.set(docId, (completadosPorDocente.get(docId) ?? 0) + 1);
     }
     const iesAtencion = new Map<string, IUgelDashboardCriticaIe>();
@@ -457,6 +486,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       .map((ficha) => {
         const ie = ficha.cronograma.institucion;
         const monitor = ficha.cronograma.monitor.persona;
+        const informativa = esInformativa(ficha);
         return {
           fichaId: ficha.id,
           institucionNombre: ie.nombre,
@@ -465,8 +495,9 @@ export class PrismaDashboardRepository implements DashboardRepository {
           distrito: ie.distrito,
           especialistaNombre: `${monitor.nombres} ${monitor.apellidos}`.trim(),
           fecha: (ficha.finalizadaAt ?? ficha.createdAt).toISOString(),
-          nivelLogro: ficha.nivelLogro as NivelLogro,
-          promedio: Number(ficha.promedio),
+          esInformativo: informativa,
+          nivelLogro: informativa ? null : (ficha.nivelLogro as NivelLogro),
+          promedio: informativa ? null : Number(ficha.promedio),
         };
       });
 
@@ -484,7 +515,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
     // 7. Ranking de especialistas por número de monitoreos (con su promedio).
     type EspAcc = { nombre: string; n: number; suma: number };
     const espAcc = new Map<string, EspAcc>();
-    for (const ficha of fichas) {
+    for (const ficha of fichasConNota) {
       const m = ficha.cronograma.monitor;
       const acc = espAcc.get(m.id) ?? {
         nombre: `${m.persona.nombres} ${m.persona.apellidos}`.trim(),
@@ -515,13 +546,19 @@ export class PrismaDashboardRepository implements DashboardRepository {
       select: {
         promedio: true,
         cronograma: {
-          select: { institucionId: true, institucion: { select: { distrito: true } } },
+          select: {
+            institucionId: true,
+            tipoMonitoreo: true,
+            institucion: { select: { distrito: true } },
+          },
         },
       },
     });
-    // Promedio previo por distrito (media de promedios institucionales del año anterior).
+    // Promedio previo por distrito (media de promedios institucionales del año
+    // anterior). El EIB informativo no aporta a la comparación interanual.
     const ieePrevia = new Map<string, { distrito: string; suma: number; n: number }>();
     for (const f of fichasPrevias) {
+      if (f.cronograma.tipoMonitoreo === 'DOCENTE_EIB') continue;
       const ieId = f.cronograma.institucionId;
       const acc = ieePrevia.get(ieId) ?? {
         distrito: f.cronograma.institucion.distrito,

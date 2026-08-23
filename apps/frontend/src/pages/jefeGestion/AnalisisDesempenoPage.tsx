@@ -576,8 +576,9 @@ export const AnalisisDesempenoPage = () => {
       />
 
       {/* Al elegir un docente/directivo, su historial pedagógico: la evolución de
-          su desempeño a lo largo de los monitoreos (el promedio ya está en los KPIs). */}
-      {filterDocente !== 'Todos' && (
+          su desempeño a lo largo de los monitoreos (el promedio ya está en los KPIs).
+          El EIB es informativo y no tiene promedio, así que no se grafica. */}
+      {filterDocente !== 'Todos' && !esEib && (
         <div className="p-5 bg-surface border border-border rounded-2xl shadow-xs">
           <HistorialChart evaluadoId={filterDocente} tipoMonitoreo={tipoEf} />
         </div>
@@ -653,7 +654,7 @@ export const AnalisisDesempenoPage = () => {
       ) : (
         <>
           {/* Bloque 1: KPIs Principales por Criterio */}
-          <KpisCriterios analisis={analisis} onIrACriterio={irACriterio} />
+          <KpisCriterios analisis={analisis} onIrACriterio={irACriterio} esInformativo={esEib} />
 
           {/* Bloque 2: Gráfico Comparativo de Niveles por Desempeño */}
           <GraficoComparativoCriterios criterios={analisis.criterios} />

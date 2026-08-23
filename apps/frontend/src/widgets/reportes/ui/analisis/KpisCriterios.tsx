@@ -6,6 +6,11 @@ interface KpisCriteriosProps {
   analisis: AnalisisDesempenoCompleto;
   /** Ir al detalle de un criterio (los KPIs que apuntan a uno son clickeables). */
   onIrACriterio?: (desempenoId: string) => void;
+  /**
+   * El instrumento EIB es informativo: no produce una nota promedio, así que se
+   * omite ese KPI y quedan los de distribución (dominio y foco).
+   */
+  esInformativo?: boolean;
 }
 
 /** Tarjeta de KPI que apunta a un criterio: clickeable si hay a dónde ir. */
@@ -71,7 +76,7 @@ const KpiDeCriterio = ({
   return <div className={`${clases} hover:shadow`}>{contenido}</div>;
 };
 
-export const KpisCriterios = ({ analisis, onIrACriterio }: KpisCriteriosProps) => {
+export const KpisCriterios = ({ analisis, onIrACriterio, esInformativo }: KpisCriteriosProps) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       {/* KPI 1: Monitoreos analizados (no apunta a un criterio, no es navegable) */}
@@ -92,23 +97,26 @@ export const KpisCriterios = ({ analisis, onIrACriterio }: KpisCriteriosProps) =
         </div>
       </div>
 
-      {/* KPI 2: Promedio Rúbricas (no navegable) */}
-      <div className="p-4 rounded-xl border border-border bg-surface flex flex-row items-center gap-4 shadow-xs relative overflow-hidden hover:shadow transition-shadow min-w-0">
-        <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shrink-0">
-          <TrendingUp className="h-5 w-5" />
+      {/* KPI 2: Promedio Rúbricas (no navegable). El EIB es informativo: no tiene
+          nota promedio, así que se omite. */}
+      {!esInformativo && (
+        <div className="p-4 rounded-xl border border-border bg-surface flex flex-row items-center gap-4 shadow-xs relative overflow-hidden hover:shadow transition-shadow min-w-0">
+          <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shrink-0">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block truncate">
+              Promedio Rúbricas
+            </span>
+            <span className="text-xl font-black text-slate-800 block mt-0.5 leading-none">
+              {analisis.promedioGeneral.toFixed(2)}
+            </span>
+            <span className="text-[10px] text-indigo-600 font-semibold block mt-1.5 truncate">
+              escala de rúbrica (1 a 4)
+            </span>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block truncate">
-            Promedio Rúbricas
-          </span>
-          <span className="text-xl font-black text-slate-800 block mt-0.5 leading-none">
-            {analisis.promedioGeneral.toFixed(2)}
-          </span>
-          <span className="text-[10px] text-indigo-600 font-semibold block mt-1.5 truncate">
-            escala de rúbrica (1 a 4)
-          </span>
-        </div>
-      </div>
+      )}
 
       {/* KPI 3: Mayor Dominio (navega a ese criterio) */}
       <KpiDeCriterio

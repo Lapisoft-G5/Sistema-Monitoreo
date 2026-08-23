@@ -17,8 +17,11 @@ export interface MonitoringRow {
   specialistInitials: string;
   date: string;
   status: string;
-  score: number;
+  /** Nulo cuando el instrumento es informativo (EIB): no hay nota que mostrar. */
+  score: number | null;
   statusVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'success' | 'warning';
+  /** El monitoreo EIB es informativo: se muestra sin insignia de nota. */
+  esInformativo?: boolean;
 }
 
 const mockData: MonitoringRow[] = [
@@ -139,9 +142,15 @@ export const RecentMonitoringsTable = ({
                   {row.date}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Badge variant={row.statusVariant ?? 'default'} className="uppercase font-bold tracking-wider text-[10px] px-2 py-1">
-                    {row.score} - {row.status}
-                  </Badge>
+                  {row.esInformativo ? (
+                    <Badge variant="secondary" className="uppercase font-bold tracking-wider text-[10px] px-2 py-1">
+                      Informativo
+                    </Badge>
+                  ) : (
+                    <Badge variant={row.statusVariant ?? 'default'} className="uppercase font-bold tracking-wider text-[10px] px-2 py-1">
+                      {row.score} - {row.status}
+                    </Badge>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

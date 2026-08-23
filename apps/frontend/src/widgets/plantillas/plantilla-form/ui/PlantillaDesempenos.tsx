@@ -157,16 +157,17 @@ const DesempenoCard = ({
               <div className="grid grid-cols-1 gap-2">
                 {desempeno.aspectos.map((aspecto) => (
                   <div key={aspecto.id} className="relative">
-                    <input
+                    <textarea
                       value={aspecto.descripcion}
                       onChange={(e) => setAspecto(aspecto.id, e.target.value)}
                       placeholder="Describe el aspecto a evaluar"
-                      className="w-full rounded-lg border border-input bg-transparent py-2 pl-3 pr-9 text-sm"
+                      rows={2}
+                      className="w-full resize-none [field-sizing:content] rounded-lg border border-input bg-transparent py-2 pl-3 pr-9 text-sm leading-relaxed"
                     />
                     <button
                       type="button"
                       onClick={() => removeAspecto(aspecto.id)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted transition-colors hover:text-destructive cursor-pointer"
+                      className="absolute right-2 top-2 text-text-muted transition-colors hover:text-destructive cursor-pointer"
                       aria-label="Eliminar aspecto"
                     >
                       <X className="h-4 w-4" />
@@ -189,7 +190,7 @@ const DesempenoCard = ({
         {/* Detalle de rúbrica por niveles */}
         <div className="flex flex-col gap-2">
           <FieldLabel label="Descripción de Niveles (Rúbrica)" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {niveles.map((nivel) => {
               const entry = desempeno.rubrica?.find((r) => r.nivel === nivel.nivel);
               return (
@@ -207,7 +208,7 @@ const DesempenoCard = ({
                     value={entry?.descripcion ?? ''}
                     onChange={(e) => setRubrica(nivel.nivel, e.target.value)}
                     placeholder="Describa el comportamiento para este nivel..."
-                    className="min-h-[90px] resize-none bg-transparent px-3 py-2 text-xs focus:outline-none"
+                    className="min-h-[90px] resize-y [field-sizing:content] bg-transparent px-3 py-2 text-xs leading-relaxed focus:outline-none"
                   />
                 </div>
               );

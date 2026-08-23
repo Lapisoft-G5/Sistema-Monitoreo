@@ -189,7 +189,7 @@ export const ListaDesempenos = ({
           </span>
 
           <div className="space-y-0.5 pr-4">
-            <div className="text-[11px] font-bold tracking-tight line-clamp-2">
+            <div className="text-[11px] font-bold tracking-tight leading-snug">
               {desempeno.nombre}
             </div>
             <div className="text-[9px] font-semibold text-slate-400 flex items-center gap-1">

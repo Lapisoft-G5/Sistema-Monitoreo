@@ -326,10 +326,20 @@ export const AnalisisDesempenoPage = () => {
     filterPlantilla && idsElegibles.includes(filterPlantilla) ? filterPlantilla : plantillaDominante;
   const tipoEf: FiltroDeInstrumento = instrumentoPorId.get(filterPlantillaEf) ?? 'DOCENTE';
 
+  // Los ids «ugel:…» / «inst:…» son de respaldo: la píldora existe pero esa
+  // plantilla todavía no tiene fichas. No son UUID, así que no se envían al
+  // backend (rompería con 500); al no mandar plantillaId real, el análisis
+  // queda sin desglose y muestra el estado vacío guiado.
+  const plantillaEsReal =
+    !!filterPlantillaEf &&
+    !filterPlantillaEf.startsWith('ugel:') &&
+    !filterPlantillaEf.startsWith('inst:');
+
   // Los filtros se aplican en el backend, que es quien arma la distribución por
   // criterio: de nada sirve filtrarlos sólo en el cliente porque el análisis no
   // se recalcula de las fichas, viene consolidado del servidor.
-  const { data: criteriosBackend } = useAnalisisDesempenos({
+  const { data: criteriosBackend } = useAnalisisDesempenos(
+    {
     anioAcademico: anioNumero,
     tipoMonitoreo: tipoEf === 'Todos' ? undefined : tipoEf,
     modalidad: filterModalidad !== 'Todos' ? filterModalidad : undefined,
@@ -337,12 +347,14 @@ export const AnalisisDesempenoPage = () => {
     institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
     docenteId: filterDocente !== 'Todos' ? filterDocente : undefined,
     numeroVisita: filterNumeroVisita !== 'Todos' ? Number(filterNumeroVisita) : undefined,
-    plantillaId: filterPlantillaEf || undefined,
+    plantillaId: plantillaEsReal ? filterPlantillaEf : undefined,
     fechaDesde: rangoPeriodo.fechaDesde,
     fechaHasta: rangoPeriodo.fechaHasta,
-  });
-
-  // Cascading Nivel
+    },
+    // Con una plantilla de respaldo (sin fichas) no se consulta: el análisis
+    // queda vacío y muestra el estado guiado, sin traer datos de otra rúbrica.
+    { enabled: plantillaEsReal },
+  );
   const nivelesDisponibles = useMemo(() => {
     if (filterModalidadEf === 'Todos') return [];
     return MODALIDAD_NIVEL_MAP[filterModalidadEf as keyof typeof MODALIDAD_NIVEL_MAP] || [];

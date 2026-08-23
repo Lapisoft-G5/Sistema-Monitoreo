@@ -300,8 +300,14 @@ export class PrismaReporteRepository implements ReporteRepository {
 
     // Acota el análisis a una sola plantilla: sus criterios sólo son comparables
     // dentro de la misma rúbrica (la oficial UGEL y los clones de IE difieren).
+    // Un plantillaId que no es UUID (p. ej. un id de respaldo del front para una
+    // plantilla aún inexistente) no debe reventar Prisma: se resuelve como «sin
+    // resultados», que es lo correcto —esa plantilla no tiene fichas—.
     if (filters.plantillaId) {
-      whereFicha.plantillaId = filters.plantillaId;
+      const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      whereFicha.plantillaId = UUID.test(filters.plantillaId)
+        ? filters.plantillaId
+        : '00000000-0000-0000-0000-000000000000';
     }
 
     if (filters.fechaDesde || filters.fechaHasta) {

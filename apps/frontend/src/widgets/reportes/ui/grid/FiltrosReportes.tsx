@@ -1,4 +1,4 @@
-import { Search, Filter, Calendar, Users, FileText } from 'lucide-react';
+import { Search, Filter, Calendar, Users, FileText, Building2, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SelectField } from '@/shared/ui/form-controls';
@@ -169,6 +169,25 @@ interface FiltrosReportesProps {
   /** El docente evaluado ve una versión reducida: sólo búsqueda y año. */
   isEvaluatedView: boolean;
 }
+
+/**
+ * Ámbito fijo (Modalidad · Nivel · Institución) mostrado como contexto de sólo
+ * lectura, no como selects deshabilitados: el personal de una I.E. siempre mira
+ * su propio colegio, y tres dropdowns grises parecen rotos en vez de fijos.
+ */
+const ContextoDeAmbito = ({ modalidad, nivel, institucion }: { modalidad: string; nivel: string; institucion: string }) => {
+  const partes = [institucion, nivel, modalidad].filter((p) => p && p !== TODOS);
+  if (partes.length === 0) return null;
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3.5 py-2.5">
+      <Building2 className="h-4 w-4 text-primary shrink-0" />
+      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">
+        Ámbito:
+      </span>
+      <span className="text-xs font-bold text-slate-700 truncate">{partes.join('  ·  ')}</span>
+    </div>
+  );
+};
 
 export const FiltrosReportes = ({
   searchQuery,
@@ -352,55 +371,79 @@ export const FiltrosReportes = ({
           {selectorDeAnio}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {setSearchQuery && (
-            <Buscador
-              etiqueta="Búsqueda Rápida"
-              marcador="IE, especialista o docente..."
-              valor={searchQuery ?? ''}
-              onCambiar={setSearchQuery}
+        <div className="space-y-3">
+          {/* Ámbito fijo del personal de I.E.: contexto de sólo lectura. */}
+          {bloquearAmbito && (
+            <ContextoDeAmbito
+              modalidad={filterModalidad}
+              nivel={filterNivel}
+              institucion={
+                institucionesDisponibles.find((i) => i.id === filterInstitucion)?.nombre ?? ''
+              }
             />
           )}
 
-          <SelectField
-            label="Modalidad"
-            value={filterModalidad}
-            onChange={setFilterModalidad}
-            disabled={bloquearAmbito}
-            placeholder="Todas las modalidades"
-            options={[
-              { value: TODOS, label: 'Todas las modalidades' },
-              ...MODALIDADES.map((m) => ({ value: m, label: m })),
-            ]}
-          />
+          {/* Encabezado del bloque de refinamiento: separa «qué rúbrica / período»
+              (arriba) de «afinar el recorte» (abajo). */}
+          <div className="flex items-center gap-1.5 pt-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            <SlidersHorizontal className="h-3 w-3 text-primary" />
+            Afinar resultados
+          </div>
 
-          <SelectField
-            label="Nivel Educativo"
-            value={filterNivel}
-            onChange={setFilterNivel}
-            disabled={bloquearAmbito || filterModalidad === TODOS}
-            placeholder="Todos los niveles"
-            options={[
-              { value: TODOS, label: 'Todos los niveles' },
-              ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
-            ]}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {setSearchQuery && (
+              <Buscador
+                etiqueta="Búsqueda Rápida"
+                marcador="IE, especialista o docente..."
+                valor={searchQuery ?? ''}
+                onCambiar={setSearchQuery}
+              />
+            )}
 
-          {setFilterInstitucion && (
-            <SelectField
-              label="Institución Educativa"
-              value={filterInstitucion ?? TODOS}
-              onChange={setFilterInstitucion}
-              disabled={bloquearAmbito || institucionesDisponibles.length === 0}
-              placeholder="Todas las instituciones"
-              options={[
-                { value: TODOS, label: 'Todas las instituciones' },
-                ...institucionesDisponibles.map((i) => ({ value: i.id, label: i.nombre })),
-              ]}
-            />
-          )}
+            {/* Modalidad/Nivel/Institución sólo se editan cuando el ámbito no está
+                fijo; si lo está, viven en la banda de contexto de arriba. */}
+            {!bloquearAmbito && (
+              <>
+                <SelectField
+                  label="Modalidad"
+                  value={filterModalidad}
+                  onChange={setFilterModalidad}
+                  placeholder="Todas las modalidades"
+                  options={[
+                    { value: TODOS, label: 'Todas las modalidades' },
+                    ...MODALIDADES.map((m) => ({ value: m, label: m })),
+                  ]}
+                />
 
-          {setFilterDocente && (
+                <SelectField
+                  label="Nivel Educativo"
+                  value={filterNivel}
+                  onChange={setFilterNivel}
+                  disabled={filterModalidad === TODOS}
+                  placeholder="Todos los niveles"
+                  options={[
+                    { value: TODOS, label: 'Todos los niveles' },
+                    ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
+                  ]}
+                />
+
+                {setFilterInstitucion && (
+                  <SelectField
+                    label="Institución Educativa"
+                    value={filterInstitucion ?? TODOS}
+                    onChange={setFilterInstitucion}
+                    disabled={institucionesDisponibles.length === 0}
+                    placeholder="Todas las instituciones"
+                    options={[
+                      { value: TODOS, label: 'Todas las instituciones' },
+                      ...institucionesDisponibles.map((i) => ({ value: i.id, label: i.nombre })),
+                    ]}
+                  />
+                )}
+              </>
+            )}
+
+            {setFilterDocente && (
             <SelectField
               label="Docente"
               value={filterDocente ?? TODOS}
@@ -431,7 +474,8 @@ export const FiltrosReportes = ({
             />
           )}
 
-          {selectorDeAnio}
+            {selectorDeAnio}
+          </div>
         </div>
       )}
     </Card>

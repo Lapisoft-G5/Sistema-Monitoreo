@@ -599,9 +599,26 @@ export const AnalisisDesempenoPage = () => {
           </h3>
           <p className="text-xs text-text-muted mt-1 max-w-lg mx-auto">
             {analisis.totalEvaluaciones === 0
-              ? 'No hay fichas finalizadas que coincidan con los filtros seleccionados.'
+              ? 'Esta rúbrica no tiene monitoreos que coincidan con los filtros elegidos.'
               : `Se encontraron ${analisis.totalEvaluaciones} fichas con estos filtros, pero todavía no hay respuestas por criterio registradas para consolidar la distribución de niveles.`}
           </p>
+          {analisis.totalEvaluaciones === 0 && (
+            <div className="mt-4 flex flex-col items-center gap-3">
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Probá con otra rúbrica (las píldoras de arriba), otro docente, o quitá el
+                Nº de monitoreo y el período.
+              </p>
+              {isAnyFilterActive && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition-all cursor-pointer shadow-xs"
+                >
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
+          )}
           {analisis.criterios.length > 0 && (
             <div className="mt-6 text-left max-w-lg mx-auto">
               <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">

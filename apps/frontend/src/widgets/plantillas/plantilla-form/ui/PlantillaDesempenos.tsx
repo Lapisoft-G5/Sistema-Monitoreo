@@ -155,14 +155,17 @@ const DesempenoCard = ({
             <div className="flex flex-col gap-2">
               <FieldLabel label="Aspectos Evaluados" />
               <div className="grid grid-cols-1 gap-2">
-                {desempeno.aspectos.map((aspecto) => (
+                {desempeno.aspectos.map((aspecto, i) => (
                   <div key={aspecto.id} className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs font-bold text-text-muted select-none">
+                      {i + 1}.
+                    </span>
                     <textarea
                       value={aspecto.descripcion}
                       onChange={(e) => setAspecto(aspecto.id, e.target.value)}
                       placeholder="Describe el aspecto a evaluar"
                       rows={2}
-                      className="w-full resize-none [field-sizing:content] rounded-lg border border-input bg-transparent py-2 pl-3 pr-9 text-sm leading-relaxed"
+                      className="w-full resize-none [field-sizing:content] rounded-lg border border-input bg-transparent py-2 pl-8 pr-9 text-sm leading-relaxed"
                     />
                     <button
                       type="button"
@@ -190,7 +193,7 @@ const DesempenoCard = ({
         {/* Detalle de rúbrica por niveles */}
         <div className="flex flex-col gap-2">
           <FieldLabel label="Descripción de Niveles (Rúbrica)" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
             {niveles.map((nivel) => {
               const entry = desempeno.rubrica?.find((r) => r.nivel === nivel.nivel);
               return (
@@ -199,16 +202,21 @@ const DesempenoCard = ({
                   className="flex flex-col overflow-hidden rounded-xl border border-border"
                 >
                   <div
-                    className="px-3 py-1.5 text-xs font-bold text-text"
+                    className="px-3 py-1.5 text-xs font-bold text-text flex items-baseline gap-1.5"
                     style={{ backgroundColor: `${nivel.color}26` }}
                   >
-                    Nivel {nivel.nivel}
+                    <span>Nivel {nivel.nivel}</span>
+                    {nivel.denominacion && (
+                      <span className="font-medium normal-case text-text-muted">
+                        · {nivel.denominacion}
+                      </span>
+                    )}
                   </div>
                   <textarea
                     value={entry?.descripcion ?? ''}
                     onChange={(e) => setRubrica(nivel.nivel, e.target.value)}
                     placeholder="Describa el comportamiento para este nivel..."
-                    className="min-h-[90px] resize-y [field-sizing:content] bg-transparent px-3 py-2 text-xs leading-relaxed focus:outline-none"
+                    className="min-h-[90px] resize-none [field-sizing:content] bg-transparent px-3 py-2 text-xs leading-relaxed focus:outline-none"
                   />
                 </div>
               );

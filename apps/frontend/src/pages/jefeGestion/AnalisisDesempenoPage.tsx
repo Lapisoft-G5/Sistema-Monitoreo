@@ -53,6 +53,8 @@ const ROL_LABEL: Record<string, string> = {
   coordinador_pedagogico: 'Coordinador Pedagógico',
   jefe_taller: 'Jefe de Taller',
 };
+/** Los roles de IE que pueden crear su plantilla, en el orden de sus píldoras. */
+const ROLES_INSTITUCIONALES = ['director_ie', 'coordinador_pedagogico', 'jefe_taller'];
 
 export const AnalisisDesempenoPage = () => {
   const { user } = useUser();
@@ -252,55 +254,52 @@ export const AnalisisDesempenoPage = () => {
     }));
   }, [plantillasUgelPorInstrumento, completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
 
-  // Rúbricas elegibles: las 3 UGEL (arriba) + las institucionales presentes en el
-  // ámbito, rotuladas por el rol que las creó.
+  // Las 3 institucionales por rol (Dirección / Coordinador / Jefe de Taller),
+  // SIEMPRE, con el mismo criterio que UGEL: si el rol creó su plantilla y tiene
+  // fichas se usa esa (la de más fichas si hay varias); si no, un id de respaldo
+  // para mostrar la píldora en cero. Así el cliente ve también el juego completo.
+  const institucionalResuelto = useMemo(() => {
+    return ROLES_INSTITUCIONALES.map((rol) => {
+      const candidatas = plantillas
+        .filter((p) => p.creadoPorRole === rol && conteoPorPlantilla.has(p.id))
+        .sort((a, b) => (conteoPorPlantilla.get(b.id) ?? 0) - (conteoPorPlantilla.get(a.id) ?? 0));
+      const elegida = candidatas[0];
+      return {
+        rol,
+        id: elegida?.id ?? `inst:${rol}`,
+        instrumento: (elegida?.instrumento ?? 'DOCENTE') as FiltroDeInstrumento,
+      };
+    });
+  }, [plantillas, conteoPorPlantilla]);
+
+  // Rúbricas elegibles: las 3 UGEL + las 3 institucionales, siempre presentes.
   const gruposDePlantilla = useMemo<GruposDePlantilla>(() => {
     const conteo = (id: string) => conteoPorPlantilla.get(id) ?? 0;
-    const idsUgel = new Set(ugelResuelto.map((u) => u.id));
-
     const ugel: OpcionPlantilla[] = ugelResuelto.map((u) => ({
       id: u.id,
       label: INSTRUMENTO_LABEL[u.instrumento] ?? u.instrumento,
       conteo: conteo(u.id),
     }));
-
-    const instRaw: { id: string; rol: string; instrumento: FiltroDeInstrumento }[] = [];
-    [...conteoPorPlantilla.keys()].forEach((id) => {
-      if (idsUgel.has(id)) return;
-      const meta = plantillas.find((p) => p.id === id);
-      const rol = meta?.creadoPorRole;
-      if (rol && rol !== 'jefe_gestion') {
-        instRaw.push({
-          id,
-          rol,
-          instrumento: meta?.instrumento ?? infoPorPlantilla.get(id)?.instrumento ?? 'DOCENTE',
-        });
-      }
-    });
-
-    const institucional: OpcionPlantilla[] = instRaw.map((p) => {
-      const rolLabel = ROL_LABEL[p.rol] ?? p.rol;
-      const variosDelRol = instRaw.filter((x) => x.rol === p.rol).length > 1;
-      const label = variosDelRol
-        ? `${rolLabel} · ${INSTRUMENTO_LABEL[p.instrumento] ?? p.instrumento}`
-        : rolLabel;
-      return { id: p.id, label, conteo: conteo(p.id) };
-    });
-
+    const institucional: OpcionPlantilla[] = institucionalResuelto.map((r) => ({
+      id: r.id,
+      label: ROL_LABEL[r.rol] ?? r.rol,
+      conteo: conteo(r.id),
+    }));
     return { ugel, institucional };
-  }, [ugelResuelto, conteoPorPlantilla, plantillas, infoPorPlantilla]);
+  }, [ugelResuelto, institucionalResuelto, conteoPorPlantilla]);
 
   // Instrumento por id de rúbrica (incluye los ids de respaldo), para derivar el
   // tipo aun cuando la plantilla elegida no tenga fichas ni metadatos.
   const instrumentoPorId = useMemo(() => {
     const m = new Map<string, FiltroDeInstrumento>();
     ugelResuelto.forEach((u) => m.set(u.id, u.instrumento));
+    institucionalResuelto.forEach((r) => m.set(r.id, r.instrumento));
     plantillas.forEach((p) => m.set(p.id, p.instrumento));
     infoPorPlantilla.forEach((info, id) => {
       if (!m.has(id)) m.set(id, info.instrumento);
     });
     return m;
-  }, [ugelResuelto, plantillas, infoPorPlantilla]);
+  }, [ugelResuelto, institucionalResuelto, plantillas, infoPorPlantilla]);
 
   // Selección efectiva: la elegida si sigue siendo válida; si no, la de más fichas
   // (normalmente la oficial UGEL). El instrumento se deriva de la plantilla.

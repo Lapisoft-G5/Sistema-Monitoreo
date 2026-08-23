@@ -122,21 +122,21 @@ const DesempenoCard = ({
           />
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <TextField
-                label="Nombre del Desempeño"
-                required
-                value={desempeno.nombre}
-                onChange={(v) => onChange({ nombre: v })}
-                placeholder="Ej. Involucra activamente a los estudiantes..."
-              />
-              <TextField
-                label="Descripción Corta"
-                value={desempeno.descripcionCorta}
-                onChange={(v) => onChange({ descripcionCorta: v })}
-                placeholder="Breve contexto del desempeño..."
-              />
-            </div>
+            {/* A ancho completo: los enunciados de docente son largos y a media
+                columna se cortaban. */}
+            <TextField
+              label="Nombre del Desempeño"
+              required
+              value={desempeno.nombre}
+              onChange={(v) => onChange({ nombre: v })}
+              placeholder="Ej. Involucra activamente a los estudiantes..."
+            />
+            <TextField
+              label="Descripción Corta"
+              value={desempeno.descripcionCorta}
+              onChange={(v) => onChange({ descripcionCorta: v })}
+              placeholder="Breve contexto del desempeño..."
+            />
 
             {/* Pregunta Extra Sí/No */}
             <div className="flex flex-col gap-2">
@@ -153,7 +153,7 @@ const DesempenoCard = ({
             {/* Aspectos evaluados */}
             <div className="flex flex-col gap-2">
               <FieldLabel label="Aspectos Evaluados" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 {desempeno.aspectos.map((aspecto) => (
                   <div key={aspecto.id} className="relative">
                     <input

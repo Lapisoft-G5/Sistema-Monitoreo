@@ -222,45 +222,59 @@ export async function seedIeSecundariaDemo() {
     return;
   }
 
+  // Perfiles para la 2ª ronda: casi siempre mejor que la 1ª (evolución positiva),
+  // así el «Progreso Histórico» sube; alguno se mantiene o baja, para variar.
+  const EVOLUCION = { inicio: 'proceso', proceso: 'logro', logro: 'destacado', destacado: 'destacado', mixto: 'logro' };
+
   let semilla = 1;
+  let docenteIdx = 0;
   let total = 0;
 
   for (const actor of actores) {
-    // Cuántos docentes monitorea cada actor (repartidos, con solape realista).
     const cuantos = actor.rol === 'director_institucion' ? 8 : 6;
-    let creadas = 0;
+    const tieneEib = actor.plantillas.find((p) => p.tipo === 'DOCENTE_EIB');
+    const tieneRegular = actor.plantillas.find((p) => p.tipo === 'DOCENTE');
+    let visitasCreadas = 0;
 
     for (let i = 0; i < cuantos; i++) {
-      const evaluado = docentes[(semilla * 3 + i) % docentes.length];
-      const perfil = CICLO[semilla % CICLO.length];
-      const numeroVisita = (i % 2) + 1;
+      // Cada actor toma docentes distintos (con solape realista entre actores).
+      const evaluado = docentes[docenteIdx % docentes.length];
+      docenteIdx += 1;
 
-      // El director aplica AMBAS plantillas a algunos docentes (regular + EIB);
-      // el resto de actores usa la que tenga.
-      const tieneEib = actor.plantillas.find((p) => p.tipo === 'DOCENTE_EIB');
-      const tieneRegular = actor.plantillas.find((p) => p.tipo === 'DOCENTE');
+      // Qué plantilla(s) aplica el actor a ESTE docente:
+      //  - director: a 1 de cada 4 le aplica ambas (regular + EIB) en la visita;
+      //    al resto alterna entre las suyas.
+      //  - coordinador/jefe de taller: su única plantilla.
       let plantillasAplicar;
       if (actor.rol === 'director_institucion' && tieneEib && tieneRegular && i % 4 === 0) {
-        plantillasAplicar = [tieneRegular, tieneEib]; // ambas en la misma visita
+        plantillasAplicar = [tieneRegular, tieneEib];
       } else {
-        // Alterna entre las plantillas propias del actor.
         plantillasAplicar = [actor.plantillas[i % actor.plantillas.length]];
       }
 
-      total += await crearVisita({
-        actor,
-        evaluado,
-        plantillas: plantillasAplicar,
-        numeroVisita,
-        perfil,
-        semilla,
-        nivelEducativo,
-      });
-      creadas += 1;
+      // Nº de rondas para este docente: la mitad recibe una 2ª visita, de modo
+      // que el histórico muestre evolución. La numeración es SIEMPRE secuencial:
+      // ronda 1 = 1er monitoreo, ronda 2 = 2do. Nunca un 2do sin 1ro.
+      const rondas = i % 2 === 0 ? 2 : 1;
+      let perfil = CICLO[semilla % CICLO.length];
+
+      for (let ronda = 1; ronda <= rondas; ronda++) {
+        total += await crearVisita({
+          actor,
+          evaluado,
+          plantillas: plantillasAplicar,
+          numeroVisita: ronda,
+          perfil,
+          semilla: semilla * 100 + ronda,
+          nivelEducativo,
+        });
+        visitasCreadas += 1;
+        perfil = EVOLUCION[perfil] ?? perfil; // la siguiente ronda tiende a mejorar
+      }
       semilla += 1;
     }
     console.log(
-      `  + ${actor.nombre} (${actor.rol}): ${creadas} visitas, plantillas [${actor.plantillas
+      `  + ${actor.nombre} (${actor.rol}): ${visitasCreadas} visitas, plantillas [${actor.plantillas
         .map((p) => p.tipo)
         .join(', ')}].`,
     );

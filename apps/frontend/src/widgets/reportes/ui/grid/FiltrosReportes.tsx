@@ -57,8 +57,19 @@ const Buscador = ({ etiqueta, marcador, valor, onCambiar }: BuscadorProps) => (
   </div>
 );
 
-/** Grupo de píldoras seleccionables (una sola activa), con su rótulo y conteos. */
-const GrupoDePildoras = ({
+/** Una opción de un grupo segmentado; el conteo es opcional. */
+interface OpcionSegmento {
+  id: string;
+  label: string;
+  conteo?: number;
+}
+
+/**
+ * Grupo de selección única con estilo «segmented control»: los botones viven
+ * unidos dentro de una cápsula gris y el activo se resalta. Se lee como una sola
+ * decisión (a diferencia de píldoras sueltas), y su rótulo va arriba.
+ */
+const GrupoSegmentado = ({
   etiqueta,
   icono,
   opciones,
@@ -67,38 +78,42 @@ const GrupoDePildoras = ({
 }: {
   etiqueta: string;
   icono: import('react').ReactNode;
-  opciones: OpcionPlantilla[];
+  opciones: OpcionSegmento[];
   seleccionada?: string;
   onSeleccionar?: (id: string) => void;
 }) => (
-  <div className="flex flex-wrap items-center gap-2 border-l border-slate-200 pl-4 sm:pl-6">
-    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
-      {icono} {etiqueta}:
+  <div className="flex flex-col gap-1.5">
+    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1 px-0.5">
+      {icono} {etiqueta}
     </span>
-    {opciones.map((o) => {
-      const activo = seleccionada === o.id;
-      return (
-        <button
-          key={o.id}
-          type="button"
-          onClick={() => onSeleccionar?.(o.id)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
-            activo
-              ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
-          }`}
-        >
-          <span>{o.label}</span>
-          <span
-            className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-              activo ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+    <div className="inline-flex flex-wrap items-center gap-0.5 rounded-xl bg-slate-100 p-1 border border-slate-200 w-fit">
+      {opciones.map((o) => {
+        const activo = seleccionada === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => onSeleccionar?.(o.id)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activo
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
             }`}
           >
-            {o.conteo}
-          </span>
-        </button>
-      );
-    })}
+            <span>{o.label}</span>
+            {o.conteo !== undefined && (
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  activo ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-600'
+                }`}
+              >
+                {o.conteo}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
   </div>
 );
 
@@ -261,98 +276,53 @@ export const FiltrosReportes = ({
         )}
       </div>
 
-      {/* Fila de Filtros Rápidos (Período y Tipo de Monitoreo) */}
-      <div className="flex flex-wrap items-center gap-y-3 gap-x-6 pt-0.5">
-        {/* Píldoras por Período */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
-            <Calendar className="w-3.5 h-3.5 text-primary" /> Período:
-          </span>
-          {FILTROS_PERIODO.map((item) => {
-            const activo = filtroPeriodo === item.id;
-            const conteo = conteosPeriodo ? conteosPeriodo[item.id] : undefined;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setFiltroPeriodo(item.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
-                  activo
-                    ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <span>{item.label}</span>
-                {conteo !== undefined && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      activo
-                        ? 'bg-white/20 text-white'
-                        : 'bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    {conteo}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      {/* Filtros rápidos como controles segmentados: Período (cuándo), y la
+          rúbrica (qué se mide) en UGEL / Institucional. Cada grupo es una sola
+          decisión, con su rótulo arriba. */}
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-4 pt-0.5">
+        <GrupoSegmentado
+          etiqueta="Período"
+          icono={<Calendar className="w-3 h-3 text-primary" />}
+          opciones={FILTROS_PERIODO.map((item) => ({
+            id: item.id,
+            label: item.label,
+            conteo: conteosPeriodo ? conteosPeriodo[item.id] : undefined,
+          }))}
+          seleccionada={filtroPeriodo}
+          onSeleccionar={(id) => setFiltroPeriodo(id as FiltroPeriodoTipo)}
+        />
 
-        {/* Píldoras por Tipo de Monitoreo (Docente vs Directivo) */}
-        {!isEvaluatedView && setFilterTipo && (
-          <div className="flex flex-wrap items-center gap-2 border-l border-slate-200 pl-4 sm:pl-6">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
-              <Users className="w-3.5 h-3.5 text-primary" /> Tipo:
-            </span>
-            {opcionesDeTipo.map((item) => {
-              const activo = (filterTipo || 'Todos') === item.id;
-              const conteo = conteosTipo ? conteosTipo[item.id] : undefined;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setFilterTipo(item.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
-                    activo
-                      ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                >
-                  <span>{item.label}</span>
-                  {conteo !== undefined && (
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                        activo
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      {conteo}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        {/* Tipo de instrumento: sólo en las vistas que no eligen plantilla
+            concreta (Fichas Completadas). El Análisis usa UGEL/Institucional. */}
+        {!isEvaluatedView && setFilterTipo && !gruposDePlantilla && (
+          <GrupoSegmentado
+            etiqueta="Tipo"
+            icono={<Users className="w-3 h-3 text-primary" />}
+            opciones={opcionesDeTipo.map((item) => ({
+              id: item.id,
+              label: item.label,
+              conteo: conteosTipo ? conteosTipo[item.id] : undefined,
+            }))}
+            seleccionada={filterTipo || 'Todos'}
+            onSeleccionar={(id) => setFilterTipo(id as FiltroDeInstrumento)}
+          />
         )}
 
-        {/* Plantilla como píldoras, hermanas de Tipo: UGEL (oficial) e
-            Institucional (los clones que crean las IE). Se elige una y el
-            análisis nunca mezcla rúbricas. */}
+        {/* Rúbrica: UGEL (oficial) e Institucional (los clones de las IE). Se
+            elige una y el análisis nunca mezcla rúbricas. */}
         {gruposDePlantilla && gruposDePlantilla.ugel.length > 0 && (
-          <GrupoDePildoras
-            etiqueta="UGEL"
-            icono={<FileText className="w-3.5 h-3.5 text-primary" />}
+          <GrupoSegmentado
+            etiqueta="Rúbrica · UGEL"
+            icono={<FileText className="w-3 h-3 text-primary" />}
             opciones={gruposDePlantilla.ugel}
             seleccionada={plantillaSeleccionada}
             onSeleccionar={onSeleccionarPlantilla}
           />
         )}
         {gruposDePlantilla && gruposDePlantilla.institucional.length > 0 && (
-          <GrupoDePildoras
-            etiqueta="Institucional"
-            icono={<FileText className="w-3.5 h-3.5 text-primary" />}
+          <GrupoSegmentado
+            etiqueta="Rúbrica · Institucional"
+            icono={<FileText className="w-3 h-3 text-primary" />}
             opciones={gruposDePlantilla.institucional}
             seleccionada={plantillaSeleccionada}
             onSeleccionar={onSeleccionarPlantilla}

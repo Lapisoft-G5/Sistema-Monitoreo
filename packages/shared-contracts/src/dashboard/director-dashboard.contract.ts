@@ -61,9 +61,26 @@ export interface IDirectorDashboardMonitoreoReciente {
   promedio: number | null;
 }
 
+/**
+ * Un docente que requiere atención: su última ficha de rúbrica quedó en INICIO
+ * (crítico) o EN_PROCESO (seguimiento). Ordenados del promedio más bajo al más
+ * alto, para que el director priorice de un vistazo.
+ */
+export interface IDirectorDashboardFoco {
+  docenteId: string;
+  docenteNombre: string;
+  /** INICIO | EN_PROCESO (los únicos que aparecen como foco). */
+  nivelLogro: NivelLogro;
+  promedio: number;
+  /** Ficha que sustenta el nivel, para abrir su detalle. */
+  fichaId: string;
+}
+
 export interface IDirectorDashboardResponse {
   institucion: IDirectorDashboardInstitucion | null;
   kpis: IDirectorDashboardKpis;
   semaforo: IDirectorDashboardSemaforo;
   monitoreosRecientes: IDirectorDashboardMonitoreoReciente[];
+  /** Docentes en situación crítica o en seguimiento, para priorizar. */
+  focosDeAtencion: IDirectorDashboardFoco[];
 }

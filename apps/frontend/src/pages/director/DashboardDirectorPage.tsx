@@ -1,12 +1,8 @@
 import { Building2, FileCheck2, FileWarning, BarChart4 } from 'lucide-react';
 import { StatCard } from '@shared/ui/Stat-Card';
-import { useDirectorDashboard, nivelLogroUi, iniciales } from '@features/dashboard';
+import { useDirectorDashboard } from '@features/dashboard';
 import { EvaluationStateCard } from '../directorUgel/components/EvaluationStateCard';
-import {
-  RecentMonitoringsTable,
-  type MonitoringRow,
-} from '../directorUgel/components/RecentMonitoringsTable';
-import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
+import { FocosDeAtencion } from './components/FocosDeAtencion';
 
 export const DashboardDirectorPage = () => {
   const { data, isLoading, isError, error } = useDirectorDashboard();
@@ -29,23 +25,6 @@ export const DashboardDirectorPage = () => {
 
   const kpis = data?.kpis;
   const semaforo = data?.semaforo;
-
-  const rows: MonitoringRow[] = (data?.monitoreosRecientes ?? []).map((m) => {
-    const ui = m.nivelLogro ? nivelLogroUi(m.nivelLogro) : null;
-    return {
-      id: m.fichaId,
-      school: m.docenteNombre,
-      level: m.nivelEducativo,
-      specialist: m.especialistaNombre,
-      specialistInitials: iniciales(m.especialistaNombre),
-      date: formatearFechaCorta(m.fecha),
-      status: ui?.label ?? '',
-      score: m.promedio != null ? Number(m.promedio.toFixed(1)) : null,
-      statusVariant: ui?.variant as MonitoringRow['statusVariant'],
-      esInformativo: m.esInformativo,
-    };
-  });
-
   const nivelPromedio = kpis?.nivelPromedio ?? 0;
 
   return (
@@ -101,11 +80,7 @@ export const DashboardDirectorPage = () => {
           />
         </div>
         <div className="lg:col-span-2">
-          <RecentMonitoringsTable
-            rows={rows}
-            firstColumnLabel="Docente"
-            emptyLabel="Aún no hay monitoreos finalizados en tu institución."
-          />
+          <FocosDeAtencion focos={data?.focosDeAtencion ?? []} />
         </div>
       </div>
     </div>

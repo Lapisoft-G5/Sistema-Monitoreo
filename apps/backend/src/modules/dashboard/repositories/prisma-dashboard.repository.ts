@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type {
+  IDirectorDashboardFoco,
   IDirectorDashboardMonitoreoReciente,
   IDirectorDashboardResponse,
   IUgelDashboardCriticaIe,
@@ -159,6 +160,20 @@ export class PrismaDashboardRepository implements DashboardRepository {
         };
       });
 
+    // 6. Focos de atención: docentes cuya última ficha de rúbrica quedó en INICIO
+    // (crítico) o EN_PROCESO (seguimiento), del promedio más bajo al más alto.
+    const focosDeAtencion: IDirectorDashboardFoco[] = [...ultimaRubricaPorDocente.values()]
+      .filter((f) => f.nivelLogro === 'INICIO' || f.nivelLogro === 'EN_PROCESO')
+      .sort((a, b) => Number(a.promedio) - Number(b.promedio))
+      .map((f) => ({
+        docenteId: f.cronograma.evaluadoId,
+        docenteNombre:
+          `${f.cronograma.evaluado.persona.nombres} ${f.cronograma.evaluado.persona.apellidos}`.trim(),
+        nivelLogro: f.nivelLogro as NivelLogro,
+        promedio: Number(f.promedio),
+        fichaId: f.id,
+      }));
+
     return {
       institucion,
       kpis: {
@@ -175,6 +190,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
         sinRegistro,
       },
       monitoreosRecientes,
+      focosDeAtencion,
     };
   }
 

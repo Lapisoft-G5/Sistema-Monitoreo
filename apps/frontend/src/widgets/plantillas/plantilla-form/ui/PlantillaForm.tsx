@@ -94,7 +94,12 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
     setErrorDeLema(falta);
     if (falta) return;
 
-    onSubmit({ ...form, lema: lemaVigente.trim() });
+    // Los ejes/ítems son opcionales: se descartan los que quedaron sin describir
+    // y se renumeran, para no enviar al backend un eje vacío que rechaza con 400.
+    const ejeItems = form.ejeItems
+      .filter((it) => it.descripcion.trim() !== '')
+      .map((it, i) => ({ ...it, numero: i + 1 }));
+    onSubmit({ ...form, ejeItems, lema: lemaVigente.trim() });
   };
 
   return (

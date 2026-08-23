@@ -229,54 +229,54 @@ export const AnalisisDesempenoPage = () => {
     return m;
   }, [completedVisits]);
 
-  // Rúbricas elegibles, partidas en UGEL e Institucional. Se arman a partir de
-  // TODO lo que tenga fichas en el alcance (así nada queda sin poder elegirse),
-  // más las 3 oficiales UGEL aunque estén en cero. Se clasifica por el rol autor
-  // cuando se conoce; si no, se asume UGEL y se rotula por instrumento.
+  // Las 3 rúbricas oficiales UGEL, SIEMPRE, aunque el rol no las liste o no haya
+  // fichas: para cada instrumento se usa su plantilla oficial (de la lista) o, si
+  // el rol no la trae, la que aparezca en los datos; si tampoco, un id de respaldo
+  // para que la píldora igual se muestre en cero. Así el cliente ve el juego
+  // completo (Docente / Docente EIB / Directivo) y no cree que falta.
+  const ugelResuelto = useMemo(() => {
+    const dominanteEnDatos = (inst: FiltroDeInstrumento): string | undefined => {
+      const c = new Map<string, number>();
+      completedVisits.forEach((v) => {
+        if (v.instrumento !== inst) return;
+        if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
+        if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
+        if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return;
+        if (v.plantillaId) c.set(v.plantillaId, (c.get(v.plantillaId) ?? 0) + 1);
+      });
+      return [...c.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    };
+    return INSTRUMENTOS.map(({ id: inst }) => ({
+      instrumento: inst,
+      id: plantillasUgelPorInstrumento.get(inst) ?? dominanteEnDatos(inst) ?? `ugel:${inst}`,
+    }));
+  }, [plantillasUgelPorInstrumento, completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
+
+  // Rúbricas elegibles: las 3 UGEL (arriba) + las institucionales presentes en el
+  // ámbito, rotuladas por el rol que las creó.
   const gruposDePlantilla = useMemo<GruposDePlantilla>(() => {
     const conteo = (id: string) => conteoPorPlantilla.get(id) ?? 0;
-    const metaDe = (id: string) => plantillas.find((p) => p.id === id);
-    const instrumentoDe = (id: string): FiltroDeInstrumento =>
-      metaDe(id)?.instrumento ?? infoPorPlantilla.get(id)?.instrumento ?? 'DOCENTE';
+    const idsUgel = new Set(ugelResuelto.map((u) => u.id));
 
-    const ugelIds: { id: string; instrumento: FiltroDeInstrumento }[] = [];
+    const ugel: OpcionPlantilla[] = ugelResuelto.map((u) => ({
+      id: u.id,
+      label: INSTRUMENTO_LABEL[u.instrumento] ?? u.instrumento,
+      conteo: conteo(u.id),
+    }));
+
     const instRaw: { id: string; rol: string; instrumento: FiltroDeInstrumento }[] = [];
-    const vistos = new Set<string>();
-
-    const marcarUgel = (id: string, instrumento: FiltroDeInstrumento) => {
-      if (vistos.has(id)) return;
-      vistos.add(id);
-      ugelIds.push({ id, instrumento });
-    };
-
-    // 1) Las 3 oficiales UGEL primero (para que el jefe de gestión las vea siempre).
-    INSTRUMENTOS.forEach(({ id: inst }) => {
-      const pid = plantillasUgelPorInstrumento.get(inst);
-      if (pid) marcarUgel(pid, inst);
-    });
-
-    // 2) Todo lo presente en los datos: institucional por rol; el resto (UGEL sin
-    //    metadatos, p. ej. la EIB de un director) va a UGEL por instrumento.
     [...conteoPorPlantilla.keys()].forEach((id) => {
-      if (vistos.has(id)) return;
-      const rol = metaDe(id)?.creadoPorRole;
+      if (idsUgel.has(id)) return;
+      const meta = plantillas.find((p) => p.id === id);
+      const rol = meta?.creadoPorRole;
       if (rol && rol !== 'jefe_gestion') {
-        vistos.add(id);
-        instRaw.push({ id, rol, instrumento: instrumentoDe(id) });
-      } else {
-        marcarUgel(id, instrumentoDe(id));
+        instRaw.push({
+          id,
+          rol,
+          instrumento: meta?.instrumento ?? infoPorPlantilla.get(id)?.instrumento ?? 'DOCENTE',
+        });
       }
     });
-
-    const ordenInst = (inst: FiltroDeInstrumento) =>
-      INSTRUMENTOS.findIndex((i) => i.id === inst);
-    const ugel: OpcionPlantilla[] = ugelIds
-      .sort((a, b) => ordenInst(a.instrumento) - ordenInst(b.instrumento))
-      .map(({ id, instrumento }) => ({
-        id,
-        label: INSTRUMENTO_LABEL[instrumento] ?? instrumento,
-        conteo: conteo(id),
-      }));
 
     const institucional: OpcionPlantilla[] = instRaw.map((p) => {
       const rolLabel = ROL_LABEL[p.rol] ?? p.rol;
@@ -288,7 +288,19 @@ export const AnalisisDesempenoPage = () => {
     });
 
     return { ugel, institucional };
-  }, [conteoPorPlantilla, plantillasUgelPorInstrumento, plantillas, infoPorPlantilla]);
+  }, [ugelResuelto, conteoPorPlantilla, plantillas, infoPorPlantilla]);
+
+  // Instrumento por id de rúbrica (incluye los ids de respaldo), para derivar el
+  // tipo aun cuando la plantilla elegida no tenga fichas ni metadatos.
+  const instrumentoPorId = useMemo(() => {
+    const m = new Map<string, FiltroDeInstrumento>();
+    ugelResuelto.forEach((u) => m.set(u.id, u.instrumento));
+    plantillas.forEach((p) => m.set(p.id, p.instrumento));
+    infoPorPlantilla.forEach((info, id) => {
+      if (!m.has(id)) m.set(id, info.instrumento);
+    });
+    return m;
+  }, [ugelResuelto, plantillas, infoPorPlantilla]);
 
   // Selección efectiva: la elegida si sigue siendo válida; si no, la de más fichas
   // (normalmente la oficial UGEL). El instrumento se deriva de la plantilla.
@@ -299,17 +311,14 @@ export const AnalisisDesempenoPage = () => {
     '';
   const filterPlantillaEf =
     filterPlantilla && idsElegibles.includes(filterPlantilla) ? filterPlantilla : plantillaDominante;
-  const tipoEf: FiltroDeInstrumento =
-    plantillas.find((p) => p.id === filterPlantillaEf)?.instrumento ??
-    completedVisits.find((v) => v.plantillaId === filterPlantillaEf)?.instrumento ??
-    'DOCENTE';
+  const tipoEf: FiltroDeInstrumento = instrumentoPorId.get(filterPlantillaEf) ?? 'DOCENTE';
 
   // Los filtros se aplican en el backend, que es quien arma la distribución por
   // criterio: de nada sirve filtrarlos sólo en el cliente porque el análisis no
   // se recalcula de las fichas, viene consolidado del servidor.
   const { data: criteriosBackend } = useAnalisisDesempenos({
     anioAcademico: anioNumero,
-    tipoMonitoreo: tipoEf,
+    tipoMonitoreo: tipoEf === 'Todos' ? undefined : tipoEf,
     modalidad: filterModalidad !== 'Todos' ? filterModalidad : undefined,
     nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
     institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,

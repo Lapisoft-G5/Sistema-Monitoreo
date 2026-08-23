@@ -138,9 +138,17 @@ export const ListaDesempenos = ({
       const seleccionado = seleccionadoId === desempeno.id;
       const nivel = nivelesElegidos[desempeno.id];
 
-      const actualParsed = parseSeccionYSubcriterio(desempeno.descripcionCorta);
+      // La agrupación por Sección/Subcriterio es propia del instrumento EIB, que
+      // estructura la descripción como «Sección — Subcriterio». En docente regular
+      // la descripción es un párrafo suelto: mostrarla como encabezado saturaba el
+      // índice, y el nombre del criterio (en la tarjeta) ya alcanza.
+      const actualParsed = esEib
+        ? parseSeccionYSubcriterio(desempeno.descripcionCorta)
+        : { seccion: '', subcriterio: null };
       const previaParsed =
-        indice > 0 ? parseSeccionYSubcriterio(desempenos[indice - 1]?.descripcionCorta) : null;
+        esEib && indice > 0
+          ? parseSeccionYSubcriterio(desempenos[indice - 1]?.descripcionCorta)
+          : null;
 
       const esNuevaSeccion =
         actualParsed.seccion !== '' && (!previaParsed || actualParsed.seccion !== previaParsed.seccion);

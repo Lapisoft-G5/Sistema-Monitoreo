@@ -8,6 +8,7 @@ import { seedPersonas } from './personas.js';
 import { seedMonitoring } from './monitoring.js';
 import { seedScheduling } from './scheduling.js';
 import { seedAnalisisDemo } from './analisis-demo.js';
+import { seedIeSecundariaDemo } from './ie-secundaria-demo.js';
 
 /**
  * Orquestador del seeder. Ejecuta los modulos en orden de dependencias:
@@ -48,6 +49,7 @@ async function main() {
   const { planUgelId } = await seedMonitoring({ instMap });
   await seedScheduling({ planUgelId });
   await seedAnalisisDemo();
+  await seedIeSecundariaDemo();
 
   console.log('\n=== Seeding completado (incluye Planes, Plantillas y Fichas) ===');
   console.log('Credenciales: el DNI es la contrasena inicial (usuarios en isFirstLogin=true).');

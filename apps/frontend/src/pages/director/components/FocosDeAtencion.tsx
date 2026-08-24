@@ -13,10 +13,14 @@ const ESTILO_NIVEL: Record<string, { punto: string; pastilla: string }> = {
 
 interface FocosDeAtencionProps {
   focos: IDirectorDashboardFoco[];
+  /** Máximo de docentes a listar; el resto se resume en un pie. */
+  limite?: number;
 }
 
-export const FocosDeAtencion = ({ focos }: FocosDeAtencionProps) => {
+export const FocosDeAtencion = ({ focos, limite = 5 }: FocosDeAtencionProps) => {
   const navigate = useNavigate();
+  const visibles = focos.slice(0, limite);
+  const restantes = focos.length - visibles.length;
 
   return (
     <Card className="shadow-xs border-border flex flex-col h-full overflow-hidden">
@@ -44,7 +48,7 @@ export const FocosDeAtencion = ({ focos }: FocosDeAtencionProps) => {
         </div>
       ) : (
         <div className="flex flex-col divide-y divide-border/50 overflow-y-auto">
-          {focos.map((foco) => {
+          {visibles.map((foco) => {
             const ui = nivelLogroUi(foco.nivelLogro);
             const estilo = ESTILO_NIVEL[foco.nivelLogro] ?? ESTILO_NIVEL.EN_PROCESO;
             return (
@@ -76,6 +80,11 @@ export const FocosDeAtencion = ({ focos }: FocosDeAtencionProps) => {
               </button>
             );
           })}
+          {restantes > 0 && (
+            <div className="px-5 py-2.5 text-center text-xs font-semibold text-slate-400">
+              y {restantes} docente{restantes > 1 ? 's' : ''} más
+            </div>
+          )}
         </div>
       )}
     </Card>

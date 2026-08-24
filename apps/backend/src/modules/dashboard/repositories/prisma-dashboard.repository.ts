@@ -160,19 +160,27 @@ export class PrismaDashboardRepository implements DashboardRepository {
         };
       });
 
-    // 6. Focos de atención: docentes cuya última ficha de rúbrica quedó en INICIO
-    // (crítico) o EN_PROCESO (seguimiento), del promedio más bajo al más alto.
+    // 6. Focos de atención y destacados: se derivan de la última ficha de rúbrica
+    // por docente. Focos = INICIO/EN_PROCESO (del promedio más bajo al más alto);
+    // destacados = LOGRO_ESPERADO/DESTACADO (del más alto al más bajo).
+    const aDocente = (f: (typeof fichas)[number]): IDirectorDashboardFoco => ({
+      docenteId: f.cronograma.evaluadoId,
+      docenteNombre:
+        `${f.cronograma.evaluado.persona.nombres} ${f.cronograma.evaluado.persona.apellidos}`.trim(),
+      nivelLogro: f.nivelLogro as NivelLogro,
+      promedio: Number(f.promedio),
+      fichaId: f.id,
+    });
+
     const focosDeAtencion: IDirectorDashboardFoco[] = [...ultimaRubricaPorDocente.values()]
       .filter((f) => f.nivelLogro === 'INICIO' || f.nivelLogro === 'EN_PROCESO')
       .sort((a, b) => Number(a.promedio) - Number(b.promedio))
-      .map((f) => ({
-        docenteId: f.cronograma.evaluadoId,
-        docenteNombre:
-          `${f.cronograma.evaluado.persona.nombres} ${f.cronograma.evaluado.persona.apellidos}`.trim(),
-        nivelLogro: f.nivelLogro as NivelLogro,
-        promedio: Number(f.promedio),
-        fichaId: f.id,
-      }));
+      .map(aDocente);
+
+    const docentesDestacados: IDirectorDashboardFoco[] = [...ultimaRubricaPorDocente.values()]
+      .filter((f) => f.nivelLogro === 'LOGRO_ESPERADO' || f.nivelLogro === 'LOGRO_DESTACADO')
+      .sort((a, b) => Number(b.promedio) - Number(a.promedio))
+      .map(aDocente);
 
     return {
       institucion,
@@ -191,6 +199,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       },
       monitoreosRecientes,
       focosDeAtencion,
+      docentesDestacados,
     };
   }
 

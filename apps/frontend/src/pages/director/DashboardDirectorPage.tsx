@@ -3,6 +3,8 @@ import { StatCard } from '@shared/ui/Stat-Card';
 import { useDirectorDashboard } from '@features/dashboard';
 import { EvaluationStateCard } from '../directorUgel/components/EvaluationStateCard';
 import { FocosDeAtencion } from './components/FocosDeAtencion';
+import { ActividadReciente } from './components/ActividadReciente';
+import { DocentesDestacados } from './components/DocentesDestacados';
 
 export const DashboardDirectorPage = () => {
   const { data, isLoading, isError, error } = useDirectorDashboard();
@@ -80,7 +82,15 @@ export const DashboardDirectorPage = () => {
           />
         </div>
         <div className="lg:col-span-2">
-          <FocosDeAtencion focos={data?.focosDeAtencion ?? []} />
+          <FocosDeAtencion focos={data?.focosDeAtencion ?? []} limite={4} />
+        </div>
+
+        {/* Segunda fila: qué pasó (actividad) y el contrapeso positivo (destacados). */}
+        <div className="lg:col-span-2">
+          <ActividadReciente recientes={data?.monitoreosRecientes ?? []} limite={5} />
+        </div>
+        <div className="lg:col-span-1">
+          <DocentesDestacados destacados={data?.docentesDestacados ?? []} limite={5} />
         </div>
       </div>
     </div>

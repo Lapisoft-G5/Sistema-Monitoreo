@@ -30,7 +30,7 @@ export const DashboardDirectorPage = () => {
   const nivelPromedio = kpis?.nivelPromedio ?? 0;
 
   return (
-    <div className="flex flex-col gap-4 h-full min-h-0">
+    <div className="flex flex-col gap-4 lg:h-full lg:min-h-0">
       {data?.institucion && (
         <div className="shrink-0">
           <h1 className="text-2xl font-bold">{data.institucion.nombre}</h1>
@@ -70,7 +70,7 @@ export const DashboardDirectorPage = () => {
 
       {/* Bento que llena el alto restante: cada tarjeta scrollea internamente si su
           lista es larga, de modo que la página nunca scrollea. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-2 gap-4 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-2 gap-4 lg:flex-1 lg:min-h-0">
         <div className="lg:col-span-1 min-h-0">
           <EvaluationStateCard
             data={{

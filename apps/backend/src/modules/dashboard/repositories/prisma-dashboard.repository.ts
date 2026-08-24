@@ -86,7 +86,6 @@ export class PrismaDashboardRepository implements DashboardRepository {
         promedio: true,
         finalizadaAt: true,
         createdAt: true,
-        plantilla: { select: { tipoMonitoreo: true } },
         cronograma: {
           select: {
             evaluadoId: true,
@@ -99,10 +98,11 @@ export class PrismaDashboardRepository implements DashboardRepository {
       orderBy: [{ finalizadaAt: 'desc' }, { createdAt: 'desc' }],
     });
 
-    // El monitoreo EIB es informativo: registra la práctica pero no produce nota
-    // ni nivel de logro, así que no entra en el promedio ni en el semáforo.
-    const esInformativa = (f: (typeof fichas)[number]) =>
-      f.plantilla.tipoMonitoreo === 'DOCENTE_EIB';
+    // El monitoreo EIB es informativo: se finaliza sin puntaje ni nivel (promedio
+    // nulo). Ese es el criterio robusto —vale aunque el cronograma diga DOCENTE y
+    // la plantilla EIB, un desajuste real— para dejarlo fuera del promedio y el
+    // semáforo.
+    const esInformativa = (f: (typeof fichas)[number]) => f.promedio === null;
 
     // Última ficha finalizada por docente (las fichas ya vienen ordenadas desc,
     // así que la primera que veamos por docente es la más reciente). Para la
@@ -284,8 +284,9 @@ export class PrismaDashboardRepository implements DashboardRepository {
     // El monitoreo EIB es informativo: no produce nota ni nivel, así que no entra
     // en promedios, semáforo ni rankings. Sí cuenta como monitoreo hecho
     // (evolución mensual y recientes lo muestran, sin nota).
-    const esInformativa = (f: (typeof fichas)[number]) =>
-      f.cronograma.tipoMonitoreo === 'DOCENTE_EIB';
+    // Informativo = sin nota (promedio nulo), criterio robusto ante el desajuste
+    // cronograma DOCENTE / plantilla EIB.
+    const esInformativa = (f: (typeof fichas)[number]) => f.promedio === null;
     const fichasConNota = fichas.filter((f) => !esInformativa(f));
 
     // 3. Nivel promedio provincial (media de las fichas de rúbrica finalizadas).
@@ -583,7 +584,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
     // anterior). El EIB informativo no aporta a la comparación interanual.
     const ieePrevia = new Map<string, { distrito: string; suma: number; n: number }>();
     for (const f of fichasPrevias) {
-      if (f.cronograma.tipoMonitoreo === 'DOCENTE_EIB') continue;
+      if (f.promedio === null) continue; // EIB informativo: sin promedio
       const ieId = f.cronograma.institucionId;
       const acc = ieePrevia.get(ieId) ?? {
         distrito: f.cronograma.institucion.distrito,

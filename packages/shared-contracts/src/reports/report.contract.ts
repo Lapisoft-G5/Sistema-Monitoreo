@@ -26,9 +26,10 @@ export interface IReporteFicha {
    */
   instrumento: TipoPlantilla;
   anioAcademico: number;
-  nivelLogro: NivelLogro;
-  promedio: number;
-  puntajeTotal: number;
+  /** Nulos cuando el instrumento es informativo (EIB): no produce nivel ni puntaje. */
+  nivelLogro: NivelLogro | null;
+  promedio: number | null;
+  puntajeTotal: number | null;
   estado: EstadoFicha;
   observaciones?: string | null;
   compromisos?: string | null;

@@ -326,7 +326,11 @@ describe('PrismaFichaRepository', () => {
 
       expect(prisma.fichaMonitoreo.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { cronograma: { evaluadoId: 'd-1' }, estado: 'FINALIZADO' },
+          where: {
+            cronograma: { evaluadoId: 'd-1' },
+            estado: 'FINALIZADO',
+            promedio: { not: null },
+          },
         }),
       );
     });

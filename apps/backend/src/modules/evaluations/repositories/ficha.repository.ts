@@ -63,6 +63,8 @@ export interface CronogramaBasic {
 export interface EscalaDePlantilla {
   modo: ModoDeBaremo;
   tramos: TramoDeEscala[];
+  /** Tipo del instrumento; el EIB (DOCENTE_EIB) es informativo y no se baremiza. */
+  tipoMonitoreo: string;
 }
 
 export interface PlantillaBasic {
@@ -87,9 +89,9 @@ export abstract class FichaRepository {
   abstract saveRespuestaEjeItem(data: SaveRespuestaEjeItemData): Promise<IFichaRespuestaEjeItem>;
   abstract finalizar(
     fichaId: string,
-    puntajeTotal: number,
-    promedio: number,
-    nivelLogro: NivelLogro,
+    puntajeTotal: number | null,
+    promedio: number | null,
+    nivelLogro: NivelLogro | null,
     finalizadaPorId: string,
     observaciones?: string,
     sugerencias?: string,

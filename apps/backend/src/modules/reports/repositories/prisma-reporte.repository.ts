@@ -176,22 +176,27 @@ export class PrismaReporteRepository implements ReporteRepository {
       let sumaPromedios = 0;
       let docentesCount = 0;
       let directivosCount = 0;
+      let conNota = 0;
       for (const f of grupo) {
-        dist[f.nivelLogro] = (dist[f.nivelLogro] ?? 0) + 1;
-        sumaPromedios += Number(f.promedio);
         if (
           f.cronograma?.tipoMonitoreo === 'DOCENTE' ||
           f.cronograma?.tipoMonitoreo === 'DOCENTE_EIB'
         )
           docentesCount++;
         else if (f.cronograma?.tipoMonitoreo === 'DIRECTIVO') directivosCount++;
+        // El EIB informativo no tiene nivel ni promedio: no entra en la
+        // distribución, el promedio ni la satisfacción.
+        if (f.nivelLogro === null || f.promedio === null) continue;
+        dist[f.nivelLogro] = (dist[f.nivelLogro] ?? 0) + 1;
+        sumaPromedios += Number(f.promedio);
+        conNota++;
       }
       const totalFichas = grupo.length;
       const promedioInstitucional =
-        totalFichas > 0 ? Number((sumaPromedios / totalFichas).toFixed(2)) : 0;
+        conNota > 0 ? Number((sumaPromedios / conNota).toFixed(2)) : 0;
       const totalNivelesAltos = dist.LOGRO_ESPERADO + dist.LOGRO_DESTACADO;
       const porcentajeSatisfaccion =
-        totalFichas > 0 ? Math.round((totalNivelesAltos / totalFichas) * 100) : 0;
+        conNota > 0 ? Math.round((totalNivelesAltos / conNota) * 100) : 0;
 
       resumen.push({
         institucionId: institucion.id,

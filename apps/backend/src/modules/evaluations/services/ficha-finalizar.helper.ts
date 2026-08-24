@@ -51,9 +51,13 @@ export async function finalizar(
 
   // El nivel de logro lo decide la escala que declara la plantilla, leída en su
   // modo: la rúbrica docente corta sobre el puntaje y la directiva sobre el
-  // porcentaje de avance.
+  // porcentaje de avance. El EIB es informativo (No/Parcial/Sí): registra la
+  // práctica pero no produce puntaje ni nivel, así que se finaliza en nulo.
   const escala = await repository.findEscalaDePlantilla(ficha.plantillaId);
-  const resultado = baremoService.calcularResultadoCompleto(niveles, escala.tramos, escala.modo);
+  const esInformativo = escala.tipoMonitoreo === 'DOCENTE_EIB';
+  const resultado = esInformativo
+    ? { puntajeTotal: null, promedio: null, nivelLogro: null }
+    : baremoService.calcularResultadoCompleto(niveles, escala.tramos, escala.modo);
 
   const result = await repository.finalizar(
     fichaId,

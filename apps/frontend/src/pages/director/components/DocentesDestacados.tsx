@@ -10,13 +10,13 @@ interface DocentesDestacadosProps {
   limite?: number;
 }
 
-export const DocentesDestacados = ({ destacados, limite = 5 }: DocentesDestacadosProps) => {
+export const DocentesDestacados = ({ destacados, limite = 20 }: DocentesDestacadosProps) => {
   const navigate = useNavigate();
   const visibles = destacados.slice(0, limite);
 
   return (
-    <Card className="shadow-xs border-border flex flex-col overflow-hidden">
-      <div className="p-5 flex items-center gap-2 border-b border-border bg-card">
+    <Card className="shadow-xs border-border flex flex-col h-full overflow-hidden">
+      <div className="p-4 flex items-center gap-2 border-b border-border bg-card">
         <Trophy className="h-4.5 w-4.5 text-emerald-500" />
         <h3 className="text-lg font-bold">Destacados</h3>
       </div>
@@ -26,7 +26,7 @@ export const DocentesDestacados = ({ destacados, limite = 5 }: DocentesDestacado
           Todavía no hay docentes en logro previsto.
         </div>
       ) : (
-        <div className="flex flex-col divide-y divide-border/50">
+        <div className="flex flex-col divide-y divide-border/50 overflow-y-auto flex-1 min-h-0">
           {visibles.map((d) => {
             const ui = nivelLogroUi(d.nivelLogro);
             return (
@@ -34,7 +34,7 @@ export const DocentesDestacados = ({ destacados, limite = 5 }: DocentesDestacado
                 key={d.docenteId}
                 type="button"
                 onClick={() => navigate(`/instituciones/docentes/${d.docenteId}`)}
-                className="group flex items-center gap-3 px-5 py-3 text-left hover:bg-emerald-500/[0.04] transition-colors cursor-pointer"
+                className="group flex items-center gap-3 px-5 py-2.5 text-left hover:bg-emerald-500/[0.04] transition-colors cursor-pointer"
               >
                 <span className="h-2.5 w-2.5 rounded-full shrink-0 bg-emerald-500" />
                 <Avatar className="w-8 h-8 bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 ring-1 ring-emerald-200 shrink-0">

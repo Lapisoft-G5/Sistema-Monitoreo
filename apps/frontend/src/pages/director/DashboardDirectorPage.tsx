@@ -30,9 +30,9 @@ export const DashboardDirectorPage = () => {
   const nivelPromedio = kpis?.nivelPromedio ?? 0;
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-4 h-full min-h-0">
       {data?.institucion && (
-        <div>
+        <div className="shrink-0">
           <h1 className="text-2xl font-bold">{data.institucion.nombre}</h1>
           <p className="text-sm text-text-muted">
             {data.institucion.nivelEducativo} · {data.institucion.distrito} · Cód. Modular{' '}
@@ -42,7 +42,7 @@ export const DashboardDirectorPage = () => {
       )}
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
         <StatCard
           title="Total Docentes"
           icon={<Building2 className="w-5 h-5" />}
@@ -68,9 +68,10 @@ export const DashboardDirectorPage = () => {
         />
       </div>
 
-      {/* Estado de evaluación (semáforo). El mapa se incorpora en una fase posterior. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-1">
+      {/* Bento que llena el alto restante: cada tarjeta scrollea internamente si su
+          lista es larga, de modo que la página nunca scrollea. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-2 gap-4 flex-1 min-h-0">
+        <div className="lg:col-span-1 min-h-0">
           <EvaluationStateCard
             data={{
               critico: semaforo?.critico ?? 0,
@@ -81,16 +82,16 @@ export const DashboardDirectorPage = () => {
             }}
           />
         </div>
-        <div className="lg:col-span-2">
-          <FocosDeAtencion focos={data?.focosDeAtencion ?? []} limite={4} />
+        <div className="lg:col-span-2 min-h-0">
+          <FocosDeAtencion focos={data?.focosDeAtencion ?? []} />
         </div>
 
         {/* Segunda fila: qué pasó (actividad) y el contrapeso positivo (destacados). */}
-        <div className="lg:col-span-2">
-          <ActividadReciente recientes={data?.monitoreosRecientes ?? []} limite={5} />
+        <div className="lg:col-span-2 min-h-0">
+          <ActividadReciente recientes={data?.monitoreosRecientes ?? []} />
         </div>
-        <div className="lg:col-span-1">
-          <DocentesDestacados destacados={data?.docentesDestacados ?? []} limite={5} />
+        <div className="lg:col-span-1 min-h-0">
+          <DocentesDestacados destacados={data?.docentesDestacados ?? []} />
         </div>
       </div>
     </div>

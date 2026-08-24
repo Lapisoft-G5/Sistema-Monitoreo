@@ -18,12 +18,12 @@ interface ActividadRecienteProps {
   limite?: number;
 }
 
-export const ActividadReciente = ({ recientes, limite = 5 }: ActividadRecienteProps) => {
+export const ActividadReciente = ({ recientes, limite = 20 }: ActividadRecienteProps) => {
   const visibles = recientes.slice(0, limite);
 
   return (
-    <Card className="shadow-xs border-border flex flex-col overflow-hidden">
-      <div className="p-5 flex items-center gap-2 border-b border-border bg-card">
+    <Card className="shadow-xs border-border flex flex-col h-full overflow-hidden">
+      <div className="p-4 flex items-center gap-2 border-b border-border bg-card">
         <History className="h-4.5 w-4.5 text-primary" />
         <h3 className="text-lg font-bold">Actividad Reciente</h3>
       </div>
@@ -33,14 +33,14 @@ export const ActividadReciente = ({ recientes, limite = 5 }: ActividadRecientePr
           Aún no hay monitoreos finalizados.
         </div>
       ) : (
-        <div className="flex flex-col divide-y divide-border/50">
+        <div className="flex flex-col divide-y divide-border/50 overflow-y-auto flex-1 min-h-0">
           {visibles.map((m) => {
             const ui = m.nivelLogro ? nivelLogroUi(m.nivelLogro) : null;
             const clasePastilla = m.esInformativo
               ? PASTILLA.secondary
               : PASTILLA[ui?.variant ?? 'default'] ?? PASTILLA.default;
             return (
-              <div key={m.fichaId} className="flex items-center gap-3 px-5 py-3">
+              <div key={m.fichaId} className="flex items-center gap-3 px-5 py-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-slate-700 text-sm leading-tight truncate">
                     {m.docenteNombre}

@@ -40,7 +40,7 @@ export const EvaluationStateCard = ({ data }: { data?: EvaluationStateData }) =>
   ];
 
   return (
-    <Card className="p-5 border-border shadow-xs flex flex-col gap-5 h-full">
+    <Card className="p-4 border-border shadow-xs flex flex-col gap-4 h-full overflow-y-auto">
       <h3 className="text-lg font-bold">Estado de Evaluación</h3>
 
       {/* Distribución de niveles: una barra apilada dice la proporción de un vistazo. */}

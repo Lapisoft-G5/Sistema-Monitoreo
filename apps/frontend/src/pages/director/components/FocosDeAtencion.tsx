@@ -17,14 +17,14 @@ interface FocosDeAtencionProps {
   limite?: number;
 }
 
-export const FocosDeAtencion = ({ focos, limite = 5 }: FocosDeAtencionProps) => {
+export const FocosDeAtencion = ({ focos, limite = 20 }: FocosDeAtencionProps) => {
   const navigate = useNavigate();
   const visibles = focos.slice(0, limite);
   const restantes = focos.length - visibles.length;
 
   return (
     <Card className="shadow-xs border-border flex flex-col h-full overflow-hidden">
-      <div className="p-5 flex justify-between items-center border-b border-border bg-card">
+      <div className="p-4 flex justify-between items-center border-b border-border bg-card">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4.5 w-4.5 text-amber-500" />
           <h3 className="text-lg font-bold">Focos de Atención</h3>
@@ -47,7 +47,7 @@ export const FocosDeAtencion = ({ focos, limite = 5 }: FocosDeAtencionProps) => 
           </p>
         </div>
       ) : (
-        <div className="flex flex-col divide-y divide-border/50 overflow-y-auto">
+        <div className="flex flex-col divide-y divide-border/50 overflow-y-auto flex-1 min-h-0">
           {visibles.map((foco) => {
             const ui = nivelLogroUi(foco.nivelLogro);
             const estilo = ESTILO_NIVEL[foco.nivelLogro] ?? ESTILO_NIVEL.EN_PROCESO;
@@ -56,7 +56,7 @@ export const FocosDeAtencion = ({ focos, limite = 5 }: FocosDeAtencionProps) => 
                 key={foco.docenteId}
                 type="button"
                 onClick={() => navigate(`/instituciones/docentes/${foco.docenteId}`)}
-                className="group flex items-center gap-3 px-5 py-3.5 text-left hover:bg-primary/[0.03] transition-colors cursor-pointer"
+                className="group flex items-center gap-3 px-5 py-2.5 text-left hover:bg-primary/[0.03] transition-colors cursor-pointer"
               >
                 <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${estilo.punto}`} />
                 <Avatar className="w-9 h-9 bg-gradient-to-br from-slate-100 to-slate-50 text-slate-500 ring-1 ring-slate-200 shrink-0">

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import { ClipboardList, Inbox, Loader2, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   CargoBeneficiario,
@@ -7,7 +7,7 @@ import {
   type ISolicitudPlantilla,
   type TipoPlantilla,
 } from '@sistema-monitoreo/shared-contracts';
-import { PageHeader } from '@shared/ui/pageHeader';
+import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
@@ -16,7 +16,7 @@ import {
   useCrearSolicitudPlantilla,
   useMisSolicitudesPlantilla,
 } from '../api/use-solicitudes-plantilla-api';
-import { InsigniaEstado, ItemsSolicitados } from './EstadoSolicitud';
+import { InsigniaEstado, PildorasDePlantillas } from './EstadoSolicitud';
 import { BotonJustificacion } from './BotonJustificacion';
 import { DetalleSolicitudDialog } from './DetalleSolicitudDialog';
 
@@ -233,26 +233,41 @@ function Tarjeta({
   solicitud: ISolicitudPlantilla;
   onAbrir: () => void;
 }) {
+  const cuposLibres = solicitud.items.filter((i) => i.plantillaId === null).length;
+
   return (
-    <div className="bg-white rounded-lg border shadow-sm p-5 flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">Solicitud {solicitud.anioEscolar}</span>
-          <InsigniaEstado estado={solicitud.estado} />
+    <div className="bg-white rounded-xl border border-border shadow-xs p-5 flex flex-col gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-extrabold text-slate-800 tracking-tight">
+              Solicitud {solicitud.anioEscolar}
+            </h3>
+            <InsigniaEstado estado={solicitud.estado} />
+          </div>
+          <p className="text-xs text-muted-foreground">Presentada por {solicitud.solicitante}</p>
         </div>
-        <span className="text-xs text-muted-foreground">
-          Presentada el {new Date(solicitud.createdAt).toLocaleDateString('es-PE')}
-        </span>
+
+        <div className="text-right shrink-0">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block">
+            Presentada
+          </span>
+          <span className="text-xs font-semibold text-slate-600">
+            {new Date(solicitud.createdAt).toLocaleDateString('es-PE')}
+          </span>
+        </div>
       </div>
 
-      <ItemsSolicitados solicitud={solicitud} />
+      <PildorasDePlantillas solicitud={solicitud} />
 
+      {/* El motivo del rechazo es lo que el director necesita para corregir:
+          va en la tarjeta y no escondido en el detalle. */}
       {solicitud.comentario && (
         <p
-          className={`text-sm rounded-md p-3 ${
+          className={`text-sm rounded-lg p-3 ${
             solicitud.estado === 'RECHAZADA'
-              ? 'bg-red-50 text-red-900'
-              : 'bg-slate-50 text-slate-700'
+              ? 'bg-red-50 text-red-900 border border-red-100'
+              : 'bg-slate-50 text-slate-700 border border-slate-100'
           }`}
         >
           <strong>
@@ -262,12 +277,20 @@ function Tarjeta({
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-4">
+      {solicitud.estado === 'APROBADA' && (
+        <p className="text-[11px] text-emerald-700 font-medium">
+          {cuposLibres === 0
+            ? 'Ya usaste todos los cupos de esta solicitud.'
+            : `Puedes crear ${cuposLibres} ${cuposLibres === 1 ? 'plantilla' : 'plantillas'} con esta autorización.`}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 pt-2.5">
         <BotonJustificacion solicitudId={solicitud.id} />
         <button
           type="button"
           onClick={onAbrir}
-          className="text-sm font-semibold text-primary hover:underline"
+          className="text-xs font-bold text-primary hover:underline cursor-pointer"
         >
           Ver detalle y trazabilidad →
         </button>
@@ -279,7 +302,7 @@ function Tarjeta({
 export function MisSolicitudesPlantillaPage() {
   const [creando, setCreando] = useState(false);
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
-  const { data, isLoading } = useMisSolicitudesPlantilla();
+  const { data, isLoading, isError, refetch } = useMisSolicitudesPlantilla();
 
   const solicitudes = data?.solicitudes ?? [];
   const abierta = solicitudes.find((s) => s.id === abiertaId) ?? null;
@@ -287,10 +310,16 @@ export function MisSolicitudesPlantillaPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Solicitudes de Plantilla"
-        description="Pide autorización a la Jefatura de Gestión para que tu institución use plantillas propias."
-      />
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2 tracking-tight">
+          <ClipboardList className="w-6 h-6 text-primary" />
+          Solicitudes de Plantilla
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Pide autorización a la Jefatura de Gestión para que tu institución use plantillas propias
+          además de las tres fichas oficiales.
+        </p>
+      </div>
 
       {!creando && (
         <Button
@@ -314,11 +343,30 @@ export function MisSolicitudesPlantillaPage() {
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Cargando…</p>
+      ) : isError ? (
+        /* Un fallo de red no puede leerse como «no presentaste solicitudes»:
+           el director creería que su pedido se perdió. */
+        <Card
+          role="alert"
+          className="p-8 text-center border-destructive/20 bg-destructive/5 flex flex-col items-center gap-3"
+        >
+          <p className="text-sm text-destructive">
+            No se pudieron cargar tus solicitudes. Esto no significa que no las hayas presentado.
+          </p>
+          <Button size="sm" variant="outline" onClick={() => void refetch()}>
+            <RefreshCw className="w-4 h-4 mr-1" /> Reintentar
+          </Button>
+        </Card>
       ) : solicitudes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Tu institución todavía no presentó solicitudes. Las tres fichas oficiales de la UGEL
-          están disponibles sin trámite.
-        </p>
+        <Card className="p-10 text-center border-border flex flex-col items-center gap-2">
+          <Inbox className="h-8 w-8 text-slate-300" />
+          <p className="text-sm text-muted-foreground">
+            Tu institución todavía no presentó solicitudes.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Las tres fichas oficiales de la UGEL están disponibles sin trámite.
+          </p>
+        </Card>
       ) : (
         <div className="flex flex-col gap-4">
           {solicitudes.map((s) => (

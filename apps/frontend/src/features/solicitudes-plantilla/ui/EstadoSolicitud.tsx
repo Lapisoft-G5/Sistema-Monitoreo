@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Clock, GraduationCap, XCircle } from 'lucide-react';
 import type { ISolicitudPlantilla } from '@sistema-monitoreo/shared-contracts';
 
 /**
@@ -29,31 +29,49 @@ export function InsigniaEstado({ estado }: { estado: ISolicitudPlantilla['estado
   );
 }
 
+/** Rótulo legible del instrumento. El contrato usa el valor tipado. */
+const ROTULO_INSTRUMENTO: Record<string, string> = {
+  DOCENTE: 'Docente',
+  DOCENTE_EIB: 'Docente EIB',
+  DIRECTIVO: 'Directiva',
+};
+
 /**
- * Las plantillas pedidas dentro de un pedido.
+ * Las plantillas pedidas, en píldoras.
  *
- * Cada fila marca si su cupo ya se usó. Es lo que permite ver de un vistazo si
- * una aprobación queda con saldo, sin abrir el catálogo de plantillas.
+ * Vive acá y no en cada pantalla porque las dos —la bandeja de la Jefatura y el
+ * seguimiento del director— muestran el mismo pedido. Duplicarlo dejaría dos
+ * lenguajes visuales para lo mismo, y el día que cambie uno el otro quedaría
+ * viejo sin que nadie lo note.
+ *
+ * La descripción va en el `title` y no en el cuerpo: un pedido de tres
+ * plantillas rompería la fila si cada una arrastrara su párrafo.
  */
-export function ItemsSolicitados({ solicitud }: { solicitud: ISolicitudPlantilla }) {
+export function PildorasDePlantillas({ solicitud }: { solicitud: ISolicitudPlantilla }) {
   return (
-    <ul className="flex flex-col gap-1.5">
+    <div className="flex flex-wrap gap-1.5">
       {solicitud.items.map((item) => (
-        <li key={item.id} className="text-sm flex flex-wrap items-baseline gap-x-2">
-          <span className="font-semibold">
-            {item.instrumento === 'DOCENTE_EIB' ? 'Docente EIB' : 'Docente'}
-          </span>
-          <span className="text-muted-foreground">· {item.cargoBeneficiario}</span>
-          <span className="text-slate-700">— {item.descripcion}</span>
+        <span
+          key={item.id}
+          title={item.descripcion}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] max-w-full"
+        >
+          <ClipboardList className="h-3.5 w-3.5 text-primary shrink-0" />
+          <strong className="text-slate-700">
+            {ROTULO_INSTRUMENTO[item.instrumento] ?? item.instrumento}
+          </strong>
+          <GraduationCap className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+          <span className="text-slate-500 truncate">{item.cargoBeneficiario}</span>
+          {/* Sólo se habla de cupos cuando ya hay decisión: antes no existen. */}
           {solicitud.estado === 'APROBADA' && (
             <span
-              className={`text-xs ${item.plantillaId ? 'text-muted-foreground' : 'text-emerald-700 font-medium'}`}
+              className={item.plantillaId ? 'text-slate-400' : 'text-emerald-700 font-bold'}
             >
-              {item.plantillaId ? '(cupo usado)' : '(cupo disponible)'}
+              · {item.plantillaId ? 'usado' : 'libre'}
             </span>
           )}
-        </li>
+        </span>
       ))}
-    </ul>
+    </div>
   );
 }

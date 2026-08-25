@@ -1,62 +1,87 @@
 import { useState } from 'react';
+import {
+  CheckCircle2,
+  ClipboardList,
+  Clock,
+  Inbox,
+  RefreshCw,
+  XCircle,
+} from 'lucide-react';
 import type { ISolicitudPlantilla } from '@sistema-monitoreo/shared-contracts';
-import { PageHeader } from '@shared/ui/pageHeader';
+import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
+import { EntityStats } from '@shared/ui/EntityStats';
 import { useSolicitudesPlantilla } from '../api/use-solicitudes-plantilla-api';
-import { InsigniaEstado, ItemsSolicitados } from './EstadoSolicitud';
+import { InsigniaEstado, PildorasDePlantillas } from './EstadoSolicitud';
 import { DetalleSolicitudDialog } from './DetalleSolicitudDialog';
 
 /**
- * Bandeja del Jefe de Gestión.
+ * Bandeja del Jefe de Gestión: pedidos de las instituciones para usar
+ * plantillas propias.
  *
- * Decide sobre el pedido completo de una institución: aprueba o rechaza todas
- * las plantillas solicitadas de una vez.
+ * ── Por qué la lista no decide ──
+ * La tarjeta resume y abre el detalle; aprobar y rechazar viven ahí adentro,
+ * junto a la justificación. Decidir desde la lista invita a resolver sin abrir
+ * el PDF, y entonces el trámite es un sello.
  *
- * ── Por qué el rechazo exige motivo y la aprobación no ──
- * Un rechazo sin explicación obliga al director a adivinar qué corregir, y el
- * trámite vuelve igual. Una aprobación no necesita defenderse. El backend
- * aplica la misma regla: la pantalla no es el control.
- *
- * ── Por qué el PDF está a un clic y no escondido ──
- * Es el documento sobre el que se decide. Aprobar sin leerlo convierte el
- * trámite en un sello, y entonces la función no protege nada.
+ * ── Por qué el fallo de red se muestra distinto del vacío ──
+ * Sin separarlos, una consulta caída se ve igual que una bandeja al día: la
+ * pantalla diría «no hay solicitudes» y los pedidos esperando se darían por
+ * inexistentes. Es la misma lección que ya está escrita en la bandeja de
+ * solicitudes de visita.
  */
 
-function Tarjeta({
-  solicitud,
-  onAbrir,
-}: {
-  solicitud: ISolicitudPlantilla;
-  onAbrir: () => void;
-}) {
+const FILTROS = [
+  { valor: 'PENDIENTE' as string | undefined, etiqueta: 'Pendientes' },
+  { valor: 'APROBADA' as string | undefined, etiqueta: 'Aprobadas' },
+  { valor: 'RECHAZADA' as string | undefined, etiqueta: 'Rechazadas' },
+  { valor: undefined, etiqueta: 'Todas' },
+];
+
+function Tarjeta({ solicitud, onAbrir }: { solicitud: ISolicitudPlantilla; onAbrir: () => void }) {
+  const cuposLibres = solicitud.items.filter((i) => i.plantillaId === null).length;
+
   return (
     <button
       type="button"
       onClick={onAbrir}
-      className="w-full text-left bg-white rounded-lg border shadow-sm p-5 flex flex-col gap-2 hover:border-primary/40 hover:shadow transition-colors"
+      className="w-full text-left bg-white rounded-xl border border-border shadow-xs p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">{solicitud.institucionNombre}</span>
-          <InsigniaEstado estado={solicitud.estado} />
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-extrabold text-slate-800 tracking-tight truncate">
+              {solicitud.institucionNombre}
+            </h3>
+            <InsigniaEstado estado={solicitud.estado} />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {solicitud.solicitante} · Año {solicitud.anioEscolar}
+          </p>
         </div>
-        <span className="text-xs text-muted-foreground">
-          {new Date(solicitud.createdAt).toLocaleDateString('es-PE')}
-        </span>
+
+        <div className="text-right shrink-0">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block">
+            Presentada
+          </span>
+          <span className="text-xs font-semibold text-slate-600">
+            {new Date(solicitud.createdAt).toLocaleDateString('es-PE')}
+          </span>
+        </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {solicitud.solicitante} · Año {solicitud.anioEscolar} ·{' '}
-        {solicitud.items.length === 1
-          ? '1 plantilla solicitada'
-          : `${solicitud.items.length} plantillas solicitadas`}
-      </p>
+      <PildorasDePlantillas solicitud={solicitud} />
 
-      <ItemsSolicitados solicitud={solicitud} />
-
-      <span className="text-xs font-semibold text-primary pt-1">
-        Ver detalle y trazabilidad →
-      </span>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+        <span className="text-[11px] text-muted-foreground">
+          {solicitud.estado === 'APROBADA'
+            ? `${cuposLibres} de ${solicitud.items.length} cupos sin usar`
+            : `${solicitud.items.length} ${
+                solicitud.items.length === 1 ? 'plantilla solicitada' : 'plantillas solicitadas'
+              }`}
+        </span>
+        <span className="text-xs font-bold text-primary">Ver detalle y trazabilidad →</span>
+      </div>
     </button>
   );
 }
@@ -64,45 +89,105 @@ function Tarjeta({
 export function BandejaSolicitudesPlantillaPage() {
   const [filtro, setFiltro] = useState<string | undefined>('PENDIENTE');
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
-  const { data, isLoading } = useSolicitudesPlantilla(filtro);
+
+  const { data, isLoading, isError, refetch } = useSolicitudesPlantilla(filtro);
+  // Segunda consulta sin filtro para los totales: el resumen debe contar la
+  // bandeja entera, no lo que quedó a la vista.
+  const { data: todas } = useSolicitudesPlantilla(undefined);
 
   const solicitudes = data?.solicitudes ?? [];
   // Se busca en la lista viva y no se guarda una copia: así el detalle refleja
   // el estado nuevo apenas la consulta se revalida tras aprobar o rechazar.
   const abierta = solicitudes.find((s) => s.id === abiertaId) ?? null;
 
+  const cuenta = (estado: string) =>
+    (todas?.solicitudes ?? []).filter((s) => s.estado === estado).length;
+
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Solicitudes de Plantilla"
-        description="Pedidos de las instituciones para usar plantillas propias además de las fichas oficiales."
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2 tracking-tight">
+            <ClipboardList className="w-6 h-6 text-primary" />
+            Solicitudes de Plantilla
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Pedidos de las instituciones para usar plantillas propias además de las tres fichas
+            oficiales.
+          </p>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {[
-          { valor: 'PENDIENTE', etiqueta: 'Pendientes' },
-          { valor: 'APROBADA', etiqueta: 'Aprobadas' },
-          { valor: 'RECHAZADA', etiqueta: 'Rechazadas' },
-          { valor: undefined, etiqueta: 'Todas' },
-        ].map(({ valor, etiqueta }) => (
-          <Button
-            key={etiqueta}
-            variant={filtro === valor ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFiltro(valor)}
-          >
-            {etiqueta}
-            {valor === 'PENDIENTE' && data?.pendientes ? ` (${data.pendientes})` : ''}
-          </Button>
-        ))}
+        <div className="flex gap-1 flex-wrap">
+          {FILTROS.map(({ valor, etiqueta }) => (
+            <button
+              key={etiqueta}
+              type="button"
+              onClick={() => setFiltro(valor)}
+              className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors cursor-pointer ${
+                filtro === valor
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-slate-200'
+              }`}
+            >
+              {etiqueta}
+            </button>
+          ))}
+        </div>
       </div>
+
+      <EntityStats
+        columns={3}
+        cards={[
+          {
+            title: 'Pendientes',
+            icon: <Clock className="h-5 w-5" />,
+            value: cuenta('PENDIENTE'),
+            trendText: 'Esperan tu decisión',
+            trendType: cuenta('PENDIENTE') > 0 ? 'warning' : 'neutral',
+          },
+          {
+            title: 'Aprobadas',
+            icon: <CheckCircle2 className="h-5 w-5" />,
+            value: cuenta('APROBADA'),
+            trendText: 'Con cupos habilitados',
+            trendType: 'success',
+          },
+          {
+            title: 'Rechazadas',
+            icon: <XCircle className="h-5 w-5" />,
+            value: cuenta('RECHAZADA'),
+            trendText: 'Con motivo registrado',
+            trendType: 'neutral',
+          },
+        ]}
+      />
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Cargando…</p>
+      ) : isError ? (
+        <Card
+          role="alert"
+          className="p-8 text-center border-destructive/20 bg-destructive/5 flex flex-col items-center gap-3"
+        >
+          <p className="text-sm text-destructive">
+            No se pudieron cargar las solicitudes. Puede haber pedidos esperando que no se están
+            mostrando.
+          </p>
+          <Button size="sm" variant="outline" onClick={() => void refetch()}>
+            <RefreshCw className="w-4 h-4 mr-1" /> Reintentar
+          </Button>
+        </Card>
       ) : solicitudes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hay solicitudes en este estado.</p>
+        <Card className="p-10 text-center border-border flex flex-col items-center gap-2">
+          <Inbox className="h-8 w-8 text-slate-300" />
+          <p className="text-sm text-muted-foreground">
+            {filtro === 'PENDIENTE'
+              ? 'No hay solicitudes esperando decisión.'
+              : 'No hay solicitudes en este estado.'}
+          </p>
+        </Card>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {solicitudes.map((s) => (
             <Tarjeta key={s.id} solicitud={s} onAbrir={() => setAbiertaId(s.id)} />
           ))}

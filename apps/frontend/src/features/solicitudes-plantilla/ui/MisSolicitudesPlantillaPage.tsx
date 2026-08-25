@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { FileText, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -55,6 +55,18 @@ function Formulario({ onListo }: { onListo: () => void }) {
   const [items, setItems] = useState<ItemBorrador[]>([itemVacio()]);
   const [pdf, setPdf] = useState<File | null>(null);
 
+  /**
+   * El `input[type=file]` guarda el archivo elegido en el DOM, no en React.
+   * Vaciar el estado no lo borra: hay que limpiar el elemento, o el navegador
+   * seguiría mostrando el nombre del PDF que el usuario acaba de quitar.
+   */
+  const campoPdf = useRef<HTMLInputElement>(null);
+
+  const quitarPdf = () => {
+    setPdf(null);
+    if (campoPdf.current) campoPdf.current.value = '';
+  };
+
   const crear = useCrearSolicitudPlantilla();
 
   const cambiar = (i: number, cambio: Partial<ItemBorrador>) =>
@@ -85,12 +97,30 @@ function Formulario({ onListo }: { onListo: () => void }) {
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="pdf-justificacion">Justificación en PDF</Label>
-        <Input
-          id="pdf-justificacion"
-          type="file"
-          accept="application/pdf"
-          onChange={(e) => setPdf(e.target.files?.[0] ?? null)}
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            id="pdf-justificacion"
+            ref={campoPdf}
+            type="file"
+            accept="application/pdf"
+            onChange={(e) => setPdf(e.target.files?.[0] ?? null)}
+            // El botón del selector nativo viene transparente y se confunde con
+            // el borde del campo. Se pinta con el color de la marca para que se
+            // lea como la acción que es.
+            className="h-10 py-1.5 file:mr-3 file:h-7 file:rounded-md file:bg-primary file:px-3 file:font-semibold file:text-primary-foreground file:cursor-pointer hover:file:opacity-90"
+          />
+          <Button
+            variant="ghost"
+            aria-label="Quitar el archivo adjunto"
+            // El botón aparece sólo con archivo elegido: uno permanentemente
+            // deshabilitado ocupa lugar y no dice nada.
+            className={pdf ? '' : 'invisible'}
+            disabled={!pdf}
+            onClick={quitarPdf}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
         <p className="text-xs text-muted-foreground">
           Explique por qué la institución necesita estas plantillas y qué no cubre la ficha
           oficial.
@@ -98,11 +128,30 @@ function Formulario({ onListo }: { onListo: () => void }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <Label>Plantillas solicitadas</Label>
+        <div>
+          <Label>¿Qué plantillas necesitan?</Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            Enumera acá las mismas plantillas que detallas en el PDF. La Jefatura de Gestión
+            aprueba esta lista, y tu institución sólo podrá crear las plantillas que figuren en
+            ella: una por cada fila.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            El contenido de cada plantilla lo armas después y puede ser completamente nuevo. Acá
+            sólo declaras de qué <strong>tipo</strong> es, porque de eso depende en qué visitas se
+            aplica, cómo se califica y con qué otras fichas se compara en los reportes.
+          </p>
+        </div>
+
+        <div className="hidden md:grid grid-cols-[1fr_1fr_2fr_auto] gap-2 text-xs font-semibold text-muted-foreground">
+          <span>Tipo de ficha</span>
+          <span>¿Quién la va a aplicar?</span>
+          <span>¿Para qué la necesitan?</span>
+          <span className="w-10" />
+        </div>
         {items.map((item, i) => (
           <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_2fr_auto] gap-2">
             <select
-              aria-label={`Instrumento de la plantilla ${i + 1}`}
+              aria-label={`Tipo de ficha de la plantilla ${i + 1}`}
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={item.instrumento}
               onChange={(e) => cambiar(i, { instrumento: e.target.value as TipoPlantilla })}
@@ -131,7 +180,7 @@ function Formulario({ onListo }: { onListo: () => void }) {
 
             <Input
               aria-label={`Descripción de la plantilla ${i + 1}`}
-              placeholder="Para qué es esta plantilla"
+              placeholder="Ej.: observación del taller de carpintería"
               maxLength={300}
               value={item.descripcion}
               onChange={(e) => cambiar(i, { descripcion: e.target.value })}

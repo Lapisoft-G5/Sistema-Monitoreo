@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform, Type, plainToInstance } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -18,6 +18,20 @@ import {
 
 /** Tope de plantillas por solicitud. Un pedido de veinte no es un pedido, es un catálogo. */
 const MAX_ITEMS = 10;
+
+/**
+ * Parsea los ítems que llegan como texto desde `FormData`.
+ *
+ * Un JSON malformado devuelve el texto sin tocar: así el error lo produce
+ * `@IsArray`, con un mensaje sobre el campo, en lugar de una traza de parseo.
+ */
+function parsearItems(valor: string): unknown {
+  try {
+    return JSON.parse(valor);
+  } catch {
+    return valor;
+  }
+}
 
 export class ItemSolicitudPlantillaDto {
   @IsIn([...INSTRUMENTOS_SOLICITABLES])
@@ -51,22 +65,27 @@ export class CrearSolicitudPlantillaDto {
   @IsInt()
   anioEscolar!: number;
 
+  /**
+   * ── Por qué el `@Transform` también construye las instancias ──
+   * `@Transform` y `@Type` no se suman sobre la misma propiedad: el primero
+   * REEMPLAZA la conversión, de modo que `@Type` nunca corre. Los ítems
+   * quedaban como objetos planos, sin los metadatos que dejan los decoradores
+   * de `ItemSolicitudPlantillaDto`, y `forbidNonWhitelisted` los tomaba por
+   * propiedades desconocidas: «property instrumento should not exist», campo
+   * por campo, sobre un cuerpo perfectamente válido.
+   *
+   * Por eso acá se parsea Y se instancia. No hay `@Type`: sería decorativo.
+   */
   @Transform(({ value }): unknown => {
-    if (typeof value !== 'string') return value;
-    try {
-      const parseado: unknown = JSON.parse(value);
-      return parseado;
-    } catch {
-      // Devolver el texto sin tocar deja que `@IsArray` produzca el mensaje de
-      // error, en vez de reventar acá con una traza de parseo.
-      return value;
-    }
+    const bruto: unknown = typeof value === 'string' ? parsearItems(value) : value;
+    // Un valor que no es arreglo se devuelve intacto para que `@IsArray`
+    // produzca el mensaje, en vez de romper la conversión.
+    return Array.isArray(bruto) ? plainToInstance(ItemSolicitudPlantillaDto, bruto) : bruto;
   })
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(MAX_ITEMS)
   @ValidateNested({ each: true })
-  @Type(() => ItemSolicitudPlantillaDto)
   items!: ItemSolicitudPlantillaDto[];
 }
 

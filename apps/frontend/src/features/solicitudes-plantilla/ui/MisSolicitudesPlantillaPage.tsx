@@ -1,5 +1,17 @@
 import { useRef, useState } from 'react';
-import { ClipboardList, Inbox, Loader2, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle2,
+  ClipboardList,
+  Clock,
+  Inbox,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Upload,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   CargoBeneficiario,
@@ -308,35 +320,106 @@ export function MisSolicitudesPlantillaPage() {
   const abierta = solicitudes.find((s) => s.id === abiertaId) ?? null;
   const hayPendiente = solicitudes.some((s) => s.estado === 'PENDIENTE');
 
+  /**
+   * Cupos aprobados que todavía no se usaron.
+   *
+   * Es el dato que le cambia el día al director: le dice cuántas plantillas
+   * puede crear ahora mismo. Un contador de «solicitudes presentadas» sería
+   * simetría con la bandeja de la Jefatura, pero a él no le sirve de nada.
+   */
+  const cuposLibres = solicitudes
+    .filter((s) => s.estado === 'APROBADA')
+    .flatMap((s) => s.items)
+    .filter((i) => i.plantillaId === null).length;
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2 tracking-tight">
-          <ClipboardList className="w-6 h-6 text-primary" />
-          Solicitudes de Plantilla
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Pide autorización a la Jefatura de Gestión para que tu institución use plantillas propias
-          además de las tres fichas oficiales.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2 tracking-tight">
+            <ClipboardList className="w-6 h-6 text-primary" />
+            Solicitudes de Plantilla
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Pide autorización a la Jefatura de Gestión para que tu institución use plantillas
+            propias además de las tres fichas oficiales.
+          </p>
+        </div>
+
+        {!creando && (
+          <Button
+            onClick={() => setCreando(true)}
+            // Un segundo pedido abierto deja a la Jefatura decidiendo sobre
+            // información que se contradice. El backend también lo rechaza.
+            disabled={hayPendiente}
+            title={
+              hayPendiente
+                ? 'Ya tienes una solicitud pendiente. Espera la respuesta antes de presentar otra.'
+                : undefined
+            }
+          >
+            <Plus className="h-4 w-4" />
+            Nueva solicitud
+          </Button>
+        )}
       </div>
 
+      {/* El estado del trámite, en una línea, arriba de todo: es lo primero que
+          el director viene a mirar. */}
       {!creando && (
-        <Button
-          className="w-fit"
-          onClick={() => setCreando(true)}
-          // Un segundo pedido abierto deja a la Jefatura decidiendo sobre
-          // información que se contradice. El backend también lo rechaza.
-          disabled={hayPendiente}
+        <Card
+          className={`p-4 flex flex-wrap items-center justify-between gap-3 border ${
+            cuposLibres > 0
+              ? 'border-emerald-200 bg-emerald-50'
+              : hayPendiente
+                ? 'border-amber-200 bg-amber-50'
+                : 'border-border bg-slate-50'
+          }`}
         >
-          <Plus className="h-4 w-4" />
-          Nueva solicitud
-        </Button>
-      )}
-      {hayPendiente && !creando && (
-        <p className="text-sm text-muted-foreground -mt-4">
-          Ya tienes una solicitud pendiente. Espera la respuesta antes de presentar otra.
-        </p>
+          <div className="flex items-center gap-2.5">
+            {cuposLibres > 0 ? (
+              <CheckCircle2 className="h-5 w-5 text-emerald-700 shrink-0" />
+            ) : hayPendiente ? (
+              <Clock className="h-5 w-5 text-amber-700 shrink-0" />
+            ) : (
+              <ClipboardList className="h-5 w-5 text-slate-400 shrink-0" />
+            )}
+            <div>
+              <p
+                className={`text-sm font-bold ${
+                  cuposLibres > 0
+                    ? 'text-emerald-900'
+                    : hayPendiente
+                      ? 'text-amber-900'
+                      : 'text-slate-700'
+                }`}
+              >
+                {cuposLibres > 0
+                  ? `Tienes ${cuposLibres} ${cuposLibres === 1 ? 'plantilla autorizada' : 'plantillas autorizadas'} sin crear`
+                  : hayPendiente
+                    ? 'Tu solicitud está esperando respuesta'
+                    : 'Sin autorizaciones pendientes de usar'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {cuposLibres > 0
+                  ? 'Créalas desde el catálogo de plantillas de tu institución.'
+                  : hayPendiente
+                    ? 'No puedes presentar otra hasta que la Jefatura resuelva ésta.'
+                    : 'Las tres fichas oficiales de la UGEL están disponibles sin trámite.'}
+              </p>
+            </div>
+          </div>
+
+          {cuposLibres > 0 && (
+            <Link
+              to="/plantillas?filtro=ie"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white hover:opacity-90"
+            >
+              Ir a crear la plantilla
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          )}
+        </Card>
       )}
 
       {creando && <Formulario onListo={() => setCreando(false)} />}

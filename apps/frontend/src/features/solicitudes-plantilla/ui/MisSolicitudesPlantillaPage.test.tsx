@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { MisSolicitudesPlantillaPage } from './MisSolicitudesPlantillaPage';
 import { solicitudesPlantillaApi } from '@shared/api/solicitudes-plantilla.api';
 
@@ -27,11 +28,38 @@ const pdf = (nombre = 'justificacion.pdf') =>
 const montar = () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={client}>
-      <MisSolicitudesPlantillaPage />
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <QueryClientProvider client={client}>
+        <MisSolicitudesPlantillaPage />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
 };
+
+/** Solicitud mínima, con los cupos que se le indiquen. */
+const solicitud = (
+  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA',
+  cuposUsados: (string | null)[] = [null],
+) => ({
+  id: `s-${estado}`,
+  institucionId: 'ie-1',
+  institucionNombre: 'I.E. 70001',
+  solicitante: 'Luis Quispe',
+  anioEscolar: 2026,
+  justificacionUrl: '/uploads/x.pdf',
+  estado,
+  comentario: null,
+  resueltaPor: null,
+  resueltaAt: null,
+  createdAt: '2026-08-25T10:00:00.000Z',
+  items: cuposUsados.map((plantillaId, i) => ({
+    id: `item-${i}`,
+    instrumento: 'DOCENTE' as const,
+    cargoBeneficiario: 'Director' as const,
+    descripcion: 'ficha del taller',
+    plantillaId,
+  })),
+});
 
 const campoPdf = () => screen.getByLabelText(/Justificación en PDF/i) as HTMLInputElement;
 const botonQuitar = () => screen.getByRole('button', { name: /Quitar el archivo adjunto/i });
@@ -90,5 +118,60 @@ describe('MisSolicitudesPlantillaPage — el adjunto', () => {
 
     expect(botonQuitar()).toBeDisabled();
     expect(botonQuitar().className).toContain('invisible');
+  });
+});
+
+describe('MisSolicitudesPlantillaPage — estado del trámite', () => {
+  /**
+   * El aviso de arriba es lo primero que el director viene a mirar, y cada
+   * estado le dice algo distinto de lo que puede hacer. Confundirlos lo deja
+   * esperando una respuesta que ya llegó, o buscando un permiso que no tiene.
+   */
+  it('avisa cuantas plantillas autorizadas le quedan por crear', async () => {
+    vi.mocked(solicitudesPlantillaApi.mias).mockResolvedValue({
+      solicitudes: [solicitud('APROBADA', [null, null])],
+      pendientes: 0,
+    } as never);
+
+    montar();
+
+    expect(await screen.findByText(/2 plantillas autorizadas sin crear/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Ir a crear la plantilla/i })).toBeInTheDocument();
+  });
+
+  it('no cuenta como libre un cupo ya usado', async () => {
+    vi.mocked(solicitudesPlantillaApi.mias).mockResolvedValue({
+      solicitudes: [solicitud('APROBADA', ['plantilla-1'])],
+      pendientes: 0,
+    } as never);
+
+    montar();
+
+    expect(await screen.findByText(/Sin autorizaciones pendientes de usar/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Ir a crear/i })).toBeNull();
+  });
+
+  it('con un pedido pendiente explica que no puede presentar otro', async () => {
+    vi.mocked(solicitudesPlantillaApi.mias).mockResolvedValue({
+      solicitudes: [solicitud('PENDIENTE')],
+      pendientes: 1,
+    } as never);
+
+    montar();
+
+    expect(await screen.findByText(/esperando respuesta/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Nueva solicitud/i })).toBeDisabled();
+  });
+
+  it('un rechazo no bloquea presentar una solicitud nueva', async () => {
+    // El rechazo cierra el trámite: el director corrige y vuelve a presentar.
+    vi.mocked(solicitudesPlantillaApi.mias).mockResolvedValue({
+      solicitudes: [solicitud('RECHAZADA')],
+      pendientes: 0,
+    } as never);
+
+    montar();
+
+    expect(await screen.findByRole('button', { name: /Nueva solicitud/i })).toBeEnabled();
   });
 });

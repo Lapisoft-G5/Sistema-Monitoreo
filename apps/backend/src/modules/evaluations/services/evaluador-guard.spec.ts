@@ -4,7 +4,7 @@ import type { SessionUser } from '../../../shared/types/session-user.js';
 
 const sesion = (especialistaId?: string | null): SessionUser => ({
   id: 'u-1',
-  role: 'especialista' as SessionUser['role'],
+  role: 'especialista',
   especialistaId,
 });
 

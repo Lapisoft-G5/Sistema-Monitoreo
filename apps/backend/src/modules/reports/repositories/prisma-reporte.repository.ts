@@ -192,8 +192,7 @@ export class PrismaReporteRepository implements ReporteRepository {
         conNota++;
       }
       const totalFichas = grupo.length;
-      const promedioInstitucional =
-        conNota > 0 ? Number((sumaPromedios / conNota).toFixed(2)) : 0;
+      const promedioInstitucional = conNota > 0 ? Number((sumaPromedios / conNota).toFixed(2)) : 0;
       const totalNivelesAltos = dist.LOGRO_ESPERADO + dist.LOGRO_DESTACADO;
       const porcentajeSatisfaccion =
         conNota > 0 ? Math.round((totalNivelesAltos / conNota) * 100) : 0;

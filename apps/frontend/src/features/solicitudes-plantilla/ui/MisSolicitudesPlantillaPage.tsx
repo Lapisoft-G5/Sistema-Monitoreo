@@ -248,7 +248,10 @@ function Tarjeta({
   const cuposLibres = solicitud.items.filter((i) => i.plantillaId === null).length;
 
   return (
-    <div className="bg-white rounded-xl border border-border shadow-xs p-5 flex flex-col gap-3">
+    // No es un `button` como la tarjeta de la Jefatura porque lleva otro botón
+    // adentro —el de la justificación—, y anidar controles rompe el teclado y
+    // el lector de pantalla. El hover se conserva para que se lea igual.
+    <div className="bg-white rounded-xl border border-border shadow-xs p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -289,16 +292,21 @@ function Tarjeta({
         </p>
       )}
 
-      {solicitud.estado === 'APROBADA' && (
-        <p className="text-[11px] text-emerald-700 font-medium">
-          {cuposLibres === 0
-            ? 'Ya usaste todos los cupos de esta solicitud.'
-            : `Puedes crear ${cuposLibres} ${cuposLibres === 1 ? 'plantilla' : 'plantillas'} con esta autorización.`}
-        </p>
-      )}
+      {/* Mismo pie que la bandeja de la Jefatura: el dato del pedido a la
+          izquierda, el acceso al detalle a la derecha. Las dos pantallas
+          muestran el mismo objeto y deben leerse igual. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-2.5">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-[11px] text-muted-foreground">
+            {solicitud.estado === 'APROBADA'
+              ? `${cuposLibres} de ${solicitud.items.length} cupos sin usar`
+              : `${solicitud.items.length} ${
+                  solicitud.items.length === 1 ? 'plantilla solicitada' : 'plantillas solicitadas'
+                }`}
+          </span>
+          <BotonJustificacion solicitudId={solicitud.id} />
+        </div>
 
-      <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 pt-2.5">
-        <BotonJustificacion solicitudId={solicitud.id} />
         <button
           type="button"
           onClick={onAbrir}

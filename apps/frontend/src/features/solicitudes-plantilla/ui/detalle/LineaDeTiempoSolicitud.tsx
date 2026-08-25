@@ -109,7 +109,7 @@ export const LineaDeTiempoSolicitud = ({ solicitud }: Props) => {
           </div>
 
           <div className="pt-1">
-            <BotonJustificacion solicitudId={solicitud.id} variante="boton" />
+            <BotonJustificacion solicitudId={solicitud.id} />
           </div>
         </Nodo>
       </div>

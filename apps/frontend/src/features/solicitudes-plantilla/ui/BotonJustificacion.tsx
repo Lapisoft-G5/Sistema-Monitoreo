@@ -18,18 +18,21 @@ import { solicitudesPlantillaApi } from '@shared/api/solicitudes-plantilla.api';
  * La URL temporal se libera después de abrirla. Cada `createObjectURL` retiene
  * el blob en memoria hasta que se revoca, y una bandeja con muchas solicitudes
  * las iría acumulando.
+ *
+ * Tiene un solo aspecto. Antes ofrecía dos variantes para dos pantallas, y esa
+ * es una diferencia que nadie pidió: el mismo acto debe verse igual en toda la
+ * aplicación, y un parámetro de estilo es una decisión que hay que volver a
+ * tomar en cada uso.
  */
 
 interface Props {
   solicitudId: string;
-  /** `enlace` para el seguimiento del director; `boton` para la bandeja. */
-  variante?: 'enlace' | 'boton';
 }
 
 /** Margen para que la pestaña alcance a cargar el blob antes de revocarlo. */
 const MS_ANTES_DE_LIBERAR = 60_000;
 
-export function BotonJustificacion({ solicitudId, variante = 'enlace' }: Props) {
+export function BotonJustificacion({ solicitudId }: Props) {
   const [abriendo, setAbriendo] = useState(false);
 
   const abrir = async () => {
@@ -50,29 +53,19 @@ export function BotonJustificacion({ solicitudId, variante = 'enlace' }: Props) 
     }
   };
 
-  const contenido = (
-    <>
-      {abriendo ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <FileText className="h-4 w-4" />
-      )}
-      {variante === 'boton' ? 'Leer la justificación' : 'Ver la justificación'}
-    </>
-  );
-
   return (
     <button
       type="button"
       onClick={abrir}
       disabled={abriendo}
-      className={
-        variante === 'boton'
-          ? 'inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-slate-50 disabled:opacity-60'
-          : 'inline-flex items-center gap-1 text-sm text-primary underline w-fit disabled:opacity-60'
-      }
+      className="inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs font-bold text-primary shadow-xs transition-colors cursor-pointer hover:bg-primary hover:text-primary-foreground hover:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
     >
-      {contenido}
+      {abriendo ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <FileText className="h-4 w-4" />
+      )}
+      Ver la justificación
     </button>
   );
 }

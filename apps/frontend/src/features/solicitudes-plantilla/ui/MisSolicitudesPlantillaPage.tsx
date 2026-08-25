@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { FileText, Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import { Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   CargoBeneficiario,
@@ -17,6 +17,7 @@ import {
   useMisSolicitudesPlantilla,
 } from '../api/use-solicitudes-plantilla-api';
 import { InsigniaEstado, ItemsSolicitados } from './EstadoSolicitud';
+import { BotonJustificacion } from './BotonJustificacion';
 
 /**
  * Solicitudes de plantilla de la institución, vistas por su director.
@@ -254,15 +255,7 @@ function Tarjeta({ solicitud }: { solicitud: ISolicitudPlantilla }) {
         </p>
       )}
 
-      <a
-        href={solicitud.justificacionUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-sm text-primary underline inline-flex items-center gap-1 w-fit"
-      >
-        <FileText className="h-4 w-4" />
-        Ver la justificación
-      </a>
+      <BotonJustificacion solicitudId={solicitud.id} />
     </div>
   );
 }

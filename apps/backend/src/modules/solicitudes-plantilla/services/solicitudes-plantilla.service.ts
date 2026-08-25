@@ -151,6 +151,36 @@ export class SolicitudesPlantillaService {
     return this.resolver(id, session, 'RECHAZADA', motivo);
   }
 
+  /**
+   * Ruta del PDF de justificación, si esta sesión puede verlo.
+   *
+   * El archivo NO puede servirse como estático: `uploads/` no exige sesión, así
+   * que cualquiera con la URL se lo llevaría. Es el mismo agujero que ya se
+   * cerró para las firmas manuscritas, y este documento —donde una institución
+   * explica sus necesidades internas— merece el mismo trato.
+   *
+   * Ante una solicitud ajena responde «no encontrada» y no «prohibido»: un 403
+   * confirmaría que esa solicitud existe. Mismo criterio que las solicitudes de
+   * visita.
+   */
+  async rutaDeJustificacion(
+    id: string,
+    quien: { userId: string; esGestor: boolean; institucionId?: string | null },
+  ): Promise<string> {
+    if (!quien.esGestor && !quien.institucionId) {
+      throw new NotFoundException('Solicitud no encontrada.');
+    }
+
+    const fila = await this.prisma.solicitudPlantilla.findFirst({
+      // El gestor ve la bandeja completa; el resto, sólo lo de su institución.
+      where: quien.esGestor ? { id } : { id, institucionId: quien.institucionId! },
+      select: { justificacionUrl: true },
+    });
+
+    if (!fila) throw new NotFoundException('Solicitud no encontrada.');
+    return fila.justificacionUrl;
+  }
+
   // ── Internos ───────────────────────────────────────────────────────────────
 
   /**

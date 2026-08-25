@@ -5,7 +5,7 @@ import type {
   ISolicitudesPlantillaResponse,
   IValeDisponible,
 } from '@sistema-monitoreo/shared-contracts';
-import { request } from '../config/api.js';
+import { request, requestBlob } from '../config/api.js';
 
 /**
  * Solicitudes de plantilla de las instituciones.
@@ -55,4 +55,14 @@ export const solicitudesPlantillaApi = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+
+  /**
+   * PDF de justificación.
+   *
+   * Se pide por el endpoint con sesión y no por la ruta del archivo: `uploads/`
+   * se sirve estático y sin sesión, de modo que un enlace directo dejaría el
+   * documento al alcance de cualquiera que conociera la URL.
+   */
+  justificacion: (id: string): Promise<Blob> =>
+    requestBlob(`/api/solicitudes-plantilla/${id}/justificacion`),
 };

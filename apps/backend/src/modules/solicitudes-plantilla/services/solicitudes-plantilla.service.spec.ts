@@ -1,5 +1,10 @@
 import { jest } from '@jest/globals';
-import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CargoBeneficiario } from '@sistema-monitoreo/shared-contracts';
 import { SolicitudesPlantillaService } from './solicitudes-plantilla.service.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
@@ -250,6 +255,75 @@ describe('SolicitudesPlantillaService', () => {
       prisma.solicitudPlantilla.count.mockResolvedValue(3 as never);
 
       await expect(service.listar()).resolves.toMatchObject({ pendientes: 3 });
+    });
+  });
+
+  describe('justificacion', () => {
+    /**
+     * El PDF no puede servirse como archivo estatico: `uploads/` no pide sesion
+     * y cualquiera con la URL se lo lleva. Es el mismo agujero que ya se cerro
+     * para las firmas manuscritas.
+     *
+     * Y a quien no corresponde se le responde «no encontrada» y no «prohibido»,
+     * para no confirmarle que la solicitud existe. Mismo criterio que las
+     * solicitudes de visita.
+     */
+    it('el jefe de gestion accede a la justificacion de cualquier institucion', async () => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantilla.findFirst.mockResolvedValue(fila() as never);
+
+      await expect(
+        service.rutaDeJustificacion('s-1', { userId: jefeGestion.id, esGestor: true }),
+      ).resolves.toBe(PDF);
+
+      const where = (
+        prisma.solicitudPlantilla.findFirst.mock.calls[0]?.[0] as {
+          where: Record<string, unknown>;
+        }
+      ).where;
+      // Sin acotar por institucion: la bandeja es de todas.
+      expect(where).toEqual({ id: 's-1' });
+    });
+
+    it('el director solo accede a la de SU institucion', async () => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantilla.findFirst.mockResolvedValue(fila() as never);
+
+      await service.rutaDeJustificacion('s-1', {
+        userId: director.id,
+        esGestor: false,
+        institucionId: IE,
+      });
+
+      const where = (
+        prisma.solicitudPlantilla.findFirst.mock.calls[0]?.[0] as {
+          where: Record<string, unknown>;
+        }
+      ).where;
+      expect(where).toMatchObject({ id: 's-1', institucionId: IE });
+    });
+
+    it('responde «no encontrada» y no «prohibido» ante una solicitud ajena', async () => {
+      // Un 403 confirmaria que esa solicitud existe.
+      const { service, prisma } = montar();
+      prisma.solicitudPlantilla.findFirst.mockResolvedValue(null as never);
+
+      await expect(
+        service.rutaDeJustificacion('s-ajena', {
+          userId: director.id,
+          esGestor: false,
+          institucionId: IE,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('rechaza a una sesion de institucion sin institucion', async () => {
+      const { service, prisma } = montar();
+
+      await expect(
+        service.rutaDeJustificacion('s-1', { userId: director.id, esGestor: false }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.solicitudPlantilla.findFirst).not.toHaveBeenCalled();
     });
   });
 });

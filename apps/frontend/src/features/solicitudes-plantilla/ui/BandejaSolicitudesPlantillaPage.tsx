@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, FileText, Loader2, X } from 'lucide-react';
+import { Check, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ISolicitudPlantilla } from '@sistema-monitoreo/shared-contracts';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -12,6 +12,7 @@ import {
   useSolicitudesPlantilla,
 } from '../api/use-solicitudes-plantilla-api';
 import { InsigniaEstado, ItemsSolicitados } from './EstadoSolicitud';
+import { BotonJustificacion } from './BotonJustificacion';
 
 /**
  * Bandeja del Jefe de Gestión.
@@ -76,15 +77,7 @@ function Tarjeta({ solicitud }: { solicitud: ISolicitudPlantilla }) {
           </p>
         </div>
 
-        <a
-          href={solicitud.justificacionUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
-        >
-          <FileText className="h-4 w-4" />
-          Leer la justificación
-        </a>
+        <BotonJustificacion solicitudId={solicitud.id} variante="boton" />
       </div>
 
       <ItemsSolicitados solicitud={solicitud} />

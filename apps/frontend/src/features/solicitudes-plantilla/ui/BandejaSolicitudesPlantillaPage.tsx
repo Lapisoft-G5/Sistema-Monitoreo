@@ -1,18 +1,10 @@
 import { useState } from 'react';
-import { Check, Loader2, X } from 'lucide-react';
-import { toast } from 'sonner';
 import type { ISolicitudPlantilla } from '@sistema-monitoreo/shared-contracts';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Button } from '@shared/ui/button';
-import { Input } from '@shared/ui/input';
-import { ErrorDeApi } from '@shared/config/api';
-import {
-  useAprobarSolicitudPlantilla,
-  useRechazarSolicitudPlantilla,
-  useSolicitudesPlantilla,
-} from '../api/use-solicitudes-plantilla-api';
+import { useSolicitudesPlantilla } from '../api/use-solicitudes-plantilla-api';
 import { InsigniaEstado, ItemsSolicitados } from './EstadoSolicitud';
-import { BotonJustificacion } from './BotonJustificacion';
+import { DetalleSolicitudDialog } from './DetalleSolicitudDialog';
 
 /**
  * Bandeja del Jefe de Gestión.
@@ -30,123 +22,54 @@ import { BotonJustificacion } from './BotonJustificacion';
  * trámite en un sello, y entonces la función no protege nada.
  */
 
-const motivoDelFallo = (error: unknown, respaldo: string): string =>
-  error instanceof ErrorDeApi && error.message ? error.message : respaldo;
-
-function Tarjeta({ solicitud }: { solicitud: ISolicitudPlantilla }) {
-  const [motivo, setMotivo] = useState('');
-  const [rechazando, setRechazando] = useState(false);
-
-  const aprobar = useAprobarSolicitudPlantilla();
-  const rechazar = useRechazarSolicitudPlantilla();
-
-  const pendiente = solicitud.estado === 'PENDIENTE';
-  const trabajando = aprobar.isPending || rechazar.isPending;
-
-  const onAprobar = async () => {
-    try {
-      await aprobar.mutateAsync({ id: solicitud.id });
-      toast.success('Solicitud aprobada. La institución ya puede crear esas plantillas.');
-    } catch (error) {
-      toast.error(motivoDelFallo(error, 'No se pudo aprobar la solicitud.'));
-    }
-  };
-
-  const onRechazar = async () => {
-    try {
-      await rechazar.mutateAsync({ id: solicitud.id, body: { comentario: motivo.trim() } });
-      toast.success('Solicitud rechazada.');
-      setRechazando(false);
-      setMotivo('');
-    } catch (error) {
-      toast.error(motivoDelFallo(error, 'No se pudo rechazar la solicitud.'));
-    }
-  };
-
+function Tarjeta({
+  solicitud,
+  onAbrir,
+}: {
+  solicitud: ISolicitudPlantilla;
+  onAbrir: () => void;
+}) {
   return (
-    <div className="bg-white rounded-lg border shadow-sm p-5 flex flex-col gap-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">{solicitud.institucionNombre}</span>
-            <InsigniaEstado estado={solicitud.estado} />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {solicitud.solicitante} · Año {solicitud.anioEscolar} ·{' '}
-            {new Date(solicitud.createdAt).toLocaleDateString('es-PE')}
-          </p>
+    <button
+      type="button"
+      onClick={onAbrir}
+      className="w-full text-left bg-white rounded-lg border shadow-sm p-5 flex flex-col gap-2 hover:border-primary/40 hover:shadow transition-colors"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold">{solicitud.institucionNombre}</span>
+          <InsigniaEstado estado={solicitud.estado} />
         </div>
-
-        <BotonJustificacion solicitudId={solicitud.id} variante="boton" />
+        <span className="text-xs text-muted-foreground">
+          {new Date(solicitud.createdAt).toLocaleDateString('es-PE')}
+        </span>
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        {solicitud.solicitante} · Año {solicitud.anioEscolar} ·{' '}
+        {solicitud.items.length === 1
+          ? '1 plantilla solicitada'
+          : `${solicitud.items.length} plantillas solicitadas`}
+      </p>
 
       <ItemsSolicitados solicitud={solicitud} />
 
-      {solicitud.comentario && (
-        <p className="text-sm rounded-md bg-slate-50 p-3 text-slate-700">
-          <strong>Comentario:</strong> {solicitud.comentario}
-        </p>
-      )}
-
-      {!pendiente && solicitud.resueltaPor && (
-        <p className="text-xs text-muted-foreground">
-          Resuelta por {solicitud.resueltaPor}
-          {solicitud.resueltaAt
-            ? ` el ${new Date(solicitud.resueltaAt).toLocaleDateString('es-PE')}`
-            : ''}
-        </p>
-      )}
-
-      {pendiente && !rechazando && (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Button onClick={onAprobar} disabled={trabajando}>
-            {aprobar.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Check className="h-4 w-4" />
-            )}
-            Aprobar
-          </Button>
-          <Button variant="outline" onClick={() => setRechazando(true)} disabled={trabajando}>
-            <X className="h-4 w-4" />
-            Rechazar
-          </Button>
-        </div>
-      )}
-
-      {pendiente && rechazando && (
-        <div className="flex flex-col gap-2 pt-1">
-          <Input
-            aria-label="Motivo del rechazo"
-            placeholder="Explique por qué se rechaza, para que el director sepa qué corregir"
-            maxLength={1000}
-            value={motivo}
-            onChange={(e) => setMotivo(e.target.value)}
-          />
-          <div className="flex items-center gap-2">
-            <Button
-              variant="destructive"
-              onClick={onRechazar}
-              disabled={motivo.trim() === '' || trabajando}
-            >
-              {rechazar.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Confirmar rechazo
-            </Button>
-            <Button variant="ghost" onClick={() => setRechazando(false)}>
-              Cancelar
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+      <span className="text-xs font-semibold text-primary pt-1">
+        Ver detalle y trazabilidad →
+      </span>
+    </button>
   );
 }
 
 export function BandejaSolicitudesPlantillaPage() {
   const [filtro, setFiltro] = useState<string | undefined>('PENDIENTE');
+  const [abiertaId, setAbiertaId] = useState<string | null>(null);
   const { data, isLoading } = useSolicitudesPlantilla(filtro);
 
   const solicitudes = data?.solicitudes ?? [];
+  // Se busca en la lista viva y no se guarda una copia: así el detalle refleja
+  // el estado nuevo apenas la consulta se revalida tras aprobar o rechazar.
+  const abierta = solicitudes.find((s) => s.id === abiertaId) ?? null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -181,10 +104,16 @@ export function BandejaSolicitudesPlantillaPage() {
       ) : (
         <div className="flex flex-col gap-4">
           {solicitudes.map((s) => (
-            <Tarjeta key={s.id} solicitud={s} />
+            <Tarjeta key={s.id} solicitud={s} onAbrir={() => setAbiertaId(s.id)} />
           ))}
         </div>
       )}
+
+      <DetalleSolicitudDialog
+        solicitud={abierta}
+        puedeDecidir
+        onClose={() => setAbiertaId(null)}
+      />
     </div>
   );
 }

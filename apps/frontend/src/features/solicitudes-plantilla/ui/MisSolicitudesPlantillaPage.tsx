@@ -18,6 +18,7 @@ import {
 } from '../api/use-solicitudes-plantilla-api';
 import { InsigniaEstado, ItemsSolicitados } from './EstadoSolicitud';
 import { BotonJustificacion } from './BotonJustificacion';
+import { DetalleSolicitudDialog } from './DetalleSolicitudDialog';
 
 /**
  * Solicitudes de plantilla de la institución, vistas por su director.
@@ -225,7 +226,13 @@ function Formulario({ onListo }: { onListo: () => void }) {
   );
 }
 
-function Tarjeta({ solicitud }: { solicitud: ISolicitudPlantilla }) {
+function Tarjeta({
+  solicitud,
+  onAbrir,
+}: {
+  solicitud: ISolicitudPlantilla;
+  onAbrir: () => void;
+}) {
   return (
     <div className="bg-white rounded-lg border shadow-sm p-5 flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -255,16 +262,27 @@ function Tarjeta({ solicitud }: { solicitud: ISolicitudPlantilla }) {
         </p>
       )}
 
-      <BotonJustificacion solicitudId={solicitud.id} />
+      <div className="flex flex-wrap items-center gap-4">
+        <BotonJustificacion solicitudId={solicitud.id} />
+        <button
+          type="button"
+          onClick={onAbrir}
+          className="text-sm font-semibold text-primary hover:underline"
+        >
+          Ver detalle y trazabilidad →
+        </button>
+      </div>
     </div>
   );
 }
 
 export function MisSolicitudesPlantillaPage() {
   const [creando, setCreando] = useState(false);
+  const [abiertaId, setAbiertaId] = useState<string | null>(null);
   const { data, isLoading } = useMisSolicitudesPlantilla();
 
   const solicitudes = data?.solicitudes ?? [];
+  const abierta = solicitudes.find((s) => s.id === abiertaId) ?? null;
   const hayPendiente = solicitudes.some((s) => s.estado === 'PENDIENTE');
 
   return (
@@ -304,10 +322,17 @@ export function MisSolicitudesPlantillaPage() {
       ) : (
         <div className="flex flex-col gap-4">
           {solicitudes.map((s) => (
-            <Tarjeta key={s.id} solicitud={s} />
+            <Tarjeta key={s.id} solicitud={s} onAbrir={() => setAbiertaId(s.id)} />
           ))}
         </div>
       )}
+
+      {/* El director ve la misma trazabilidad que la Jefatura, sin poder decidir. */}
+      <DetalleSolicitudDialog
+        solicitud={abierta}
+        puedeDecidir={false}
+        onClose={() => setAbiertaId(null)}
+      />
     </div>
   );
 }

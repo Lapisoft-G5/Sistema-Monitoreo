@@ -110,7 +110,7 @@ describe('ValePlantillaService', () => {
       prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(null as never);
 
       await expect(service.consumirParaCrear(director, 'DOCENTE')).rejects.toThrow(
-        /solicitud aprobada/i,
+        /solicitud a su nombre/i,
       );
     });
 
@@ -206,40 +206,73 @@ describe('ValePlantillaService', () => {
     });
   });
 
-  describe('el cargo del vale manda', () => {
+  describe('el vale es de una persona, no de un cargo', () => {
     /**
-     * El director es la unica boca para PEDIR, pero no crea lo que se pidio
-     * para otro. Cada vale declara a que cargo sirve, y sin esta comprobacion
-     * el director podria gastarse el cupo del jefe de taller: la solicitud
-     * diria una cosa y el sistema permitiria otra, que es justo el agujero que
-     * este mecanismo viene a cerrar.
+     * El agujero que cierra este bloque.
+     *
+     * Mientras el vale se buscaba por CARGO, una I.E. con dos coordinadores
+     * pedagógicos recibía un cupo aprobado para uno y se lo llevaba el otro: el
+     * sistema le decía que sí, porque su rol coincidía, y el destinatario
+     * legítimo se encontraba con «no hay cupo» semanas más tarde, al ir a
+     * monitorear. La intención del director vivía en una conversación.
      */
-    it.each([
-      ['el director', director, CargoBeneficiario.DIRECTOR],
-      ['el jefe de taller', jefeTaller, CargoBeneficiario.JEFE_DE_TALLER],
-      ['el coordinador pedagogico', coordinador, CargoBeneficiario.COORDINADOR_PEDAGOGICO],
-    ])('%s solo alcanza los vales de SU cargo', async (_caso, sesion, cargo) => {
+    it('busca el vale a nombre de quien lo consume', async () => {
       const { service, prisma } = montar();
       prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(vale() as never);
 
-      await service.consumirParaCrear(sesion, 'DOCENTE', ANIO);
+      await service.consumirParaCrear(coordinador, 'DOCENTE', ANIO);
 
       const where = filtroDe(prisma.solicitudPlantillaItem.findFirst);
-      expect(where).toMatchObject({ cargoBeneficiario: cargo });
+      expect(where.OR).toContainEqual({ beneficiarioId: coordinador.id });
     });
 
-    it('el mensaje nombra el cargo, para que se sepa a quien le toca', async () => {
-      // Sin el cargo, el director lee «no hay cupo» y vuelve a pedir uno que ya
-      // le concedieron a otra persona.
+    /**
+     * Los vales anteriores al destinatario siguen valiendo para cualquiera de su
+     * cargo: invalidar aprobaciones ya concedidas sería peor que la imprecisión
+     * que arrastran.
+     */
+    it('acepta tambien los vales antiguos sin destinatario, por cargo', async () => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(vale() as never);
+
+      await service.consumirParaCrear(jefeTaller, 'DOCENTE', ANIO);
+
+      const where = filtroDe(prisma.solicitudPlantillaItem.findFirst);
+      expect(where.OR).toContainEqual({
+        beneficiarioId: null,
+        cargoBeneficiario: CargoBeneficiario.JEFE_DE_TALLER,
+      });
+    });
+
+    /**
+     * Si tiene uno a su nombre, ése se gasta primero: consumir en su lugar un
+     * vale genérico se lo quitaría a un compañero que todavía no llegó.
+     */
+    it('gasta primero el vale nominativo y no el generico', async () => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(vale() as never);
+
+      await service.consumirParaCrear(coordinador, 'DOCENTE', ANIO);
+
+      const args = prisma.solicitudPlantillaItem.findFirst.mock.calls[0]?.[0] as {
+        orderBy: Record<string, unknown>;
+      };
+      expect(args.orderBy).toEqual({ beneficiarioId: 'desc' });
+    });
+
+    it('el mensaje dice que el cupo es de una persona, para no volver a pedir el mismo', async () => {
+      // Sin eso, quien lee «no hay cupo» vuelve a pedir uno que ya le
+      // concedieron a un compañero.
       const { service, prisma } = montar();
       prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(null as never);
 
       await expect(service.consumirParaCrear(jefeTaller, 'DOCENTE')).rejects.toThrow(
-        /Jefe de Taller/i,
+        /nombre de una persona/i,
       );
     });
 
-    it('los vales disponibles tambien se acotan por cargo', async () => {
+    it('los vales disponibles siguen la misma regla', async () => {
+      // Ofrecer el de un compañero prometería lo que el consumo va a rechazar.
       const { service, prisma } = montar();
       prisma.solicitudPlantillaItem.findMany.mockResolvedValue([] as never);
 
@@ -250,9 +283,7 @@ describe('ValePlantillaService', () => {
           where: Record<string, unknown>;
         }
       ).where;
-      expect(where).toMatchObject({
-        cargoBeneficiario: CargoBeneficiario.COORDINADOR_PEDAGOGICO,
-      });
+      expect(where.OR).toContainEqual({ beneficiarioId: coordinador.id });
     });
   });
 });

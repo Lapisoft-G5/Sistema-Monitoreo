@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import {
   CargoBeneficiario,
   INSTRUMENTOS_SOLICITABLES,
+  type IDestinatarioDeVale,
   type ISolicitudPlantilla,
   type TipoPlantilla,
 } from '@sistema-monitoreo/shared-contracts';
@@ -28,6 +29,7 @@ import { ErrorDeApi } from '@shared/config/api';
 import {
   useCrearSolicitudPlantilla,
   useCuposDePlantilla,
+  useDestinatariosDeVale,
   useMisSolicitudesPlantilla,
 } from '../api/use-solicitudes-plantilla-api';
 import { InsigniaEstado, PildorasDePlantillas } from './EstadoSolicitud';
@@ -43,7 +45,13 @@ import { DetalleSolicitudDialog } from './DetalleSolicitudDialog';
  *
  * El director es la única boca de la institución: también tramita lo que
  * necesitan el Jefe de Taller y el Coordinador Pedagógico, y por eso cada
- * plantilla pedida declara para qué cargo es.
+ * plantilla pedida declara A QUIÉN se destina.
+ *
+ * ── Por qué a una persona y no a un cargo ──
+ * El cupo lo consume su destinatario y nadie más. Mientras se pedía por cargo,
+ * una I.E. con dos coordinadores pedagógicos recibía un cupo aprobado para uno
+ * y se lo llevaba el otro: el sistema le decía que sí, porque su rol coincidía,
+ * y el destinatario legítimo se encontraba con «no hay cupo» semanas después.
  */
 
 const ETIQUETA_INSTRUMENTO: Record<string, string> = {
@@ -53,15 +61,23 @@ const ETIQUETA_INSTRUMENTO: Record<string, string> = {
 
 interface ItemBorrador {
   instrumento: TipoPlantilla;
-  cargoBeneficiario: CargoBeneficiario;
+  /** Usuario destinatario. Vacío mientras el director no eligió a nadie. */
+  beneficiarioId: string;
   descripcion: string;
 }
 
 const itemVacio = (): ItemBorrador => ({
   instrumento: 'DOCENTE',
-  cargoBeneficiario: CargoBeneficiario.DIRECTOR,
+  beneficiarioId: '',
   descripcion: '',
 });
+
+/** El cargo sale de la persona: el pedido no puede decir uno y apuntar a otro. */
+const cargoDe = (
+  beneficiarioId: string,
+  personal: readonly IDestinatarioDeVale[],
+): CargoBeneficiario | undefined =>
+  personal.find((p) => p.usuarioId === beneficiarioId)?.cargo;
 
 const motivoDelFallo = (error: unknown, respaldo: string): string =>
   error instanceof ErrorDeApi && error.message ? error.message : respaldo;
@@ -84,11 +100,14 @@ function Formulario({ onListo }: { onListo: () => void }) {
   };
 
   const crear = useCrearSolicitudPlantilla();
+  const { data: personal = [], isLoading: cargandoPersonal } = useDestinatariosDeVale();
 
   const cambiar = (i: number, cambio: Partial<ItemBorrador>) =>
     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...cambio } : it)));
 
-  const completo = pdf !== null && items.every((i) => i.descripcion.trim() !== '');
+  const completo =
+    pdf !== null &&
+    items.every((i) => i.descripcion.trim() !== '' && i.beneficiarioId !== '');
 
   const enviar = async () => {
     if (!pdf) return;
@@ -96,7 +115,15 @@ function Formulario({ onListo }: { onListo: () => void }) {
       await crear.mutateAsync({
         dto: {
           anioEscolar: anio,
-          items: items.map((i) => ({ ...i, descripcion: i.descripcion.trim() })),
+          items: items.map((i) => ({
+            instrumento: i.instrumento,
+            beneficiarioId: i.beneficiarioId,
+            // El cargo viaja porque es lo que el Jefe de Gestión lee y lo que el
+            // PDF justifica, pero se deduce de la persona: el servidor rechaza
+            // el pedido si no coinciden.
+            cargoBeneficiario: cargoDe(i.beneficiarioId, personal)!,
+            descripcion: i.descripcion.trim(),
+          })),
         },
         pdf,
       });
@@ -156,7 +183,25 @@ function Formulario({ onListo }: { onListo: () => void }) {
             sólo declaras de qué <strong>tipo</strong> es, porque de eso depende en qué visitas se
             aplica, cómo se califica y con qué otras fichas se compara en los reportes.
           </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Cada cupo se aprueba <strong>a nombre de una persona</strong>, y sólo ella podrá crear
+            y aplicar esa ficha. Si dos personas del mismo cargo necesitan la suya, agrega una
+            fila para cada una.
+          </p>
         </div>
+
+        {/*
+          Sin personal registrado el director no tiene a quién destinar el cupo.
+          Un selector vacío no explica nada: se dice qué falta y dónde se
+          resuelve, en vez de dejarlo probando.
+        */}
+        {!cargandoPersonal && personal.length === 0 && (
+          <p className="text-xs rounded-md border border-amber-200 bg-amber-50 text-amber-900 p-3">
+            Tu institución todavía no tiene personal registrado con un cargo que pueda recibir una
+            plantilla. Registra al coordinador pedagógico o al jefe de taller antes de presentar la
+            solicitud.
+          </p>
+        )}
 
         <div className="hidden md:grid grid-cols-[1fr_1fr_2fr_auto] gap-2 text-xs font-semibold text-muted-foreground">
           <span>Tipo de ficha</span>
@@ -180,16 +225,16 @@ function Formulario({ onListo }: { onListo: () => void }) {
             </select>
 
             <select
-              aria-label={`Cargo destinatario de la plantilla ${i + 1}`}
+              aria-label={`Persona destinataria de la plantilla ${i + 1}`}
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-              value={item.cargoBeneficiario}
-              onChange={(e) =>
-                cambiar(i, { cargoBeneficiario: e.target.value as CargoBeneficiario })
-              }
+              value={item.beneficiarioId}
+              disabled={personal.length === 0}
+              onChange={(e) => cambiar(i, { beneficiarioId: e.target.value })}
             >
-              {Object.values(CargoBeneficiario).map((cargo) => (
-                <option key={cargo} value={cargo}>
-                  {cargo}
+              <option value="">Elige a quién se destina…</option>
+              {personal.map((p) => (
+                <option key={p.usuarioId} value={p.usuarioId}>
+                  {p.nombre} · {p.cargo}
                 </option>
               ))}
             </select>
@@ -335,28 +380,32 @@ export function MisSolicitudesPlantillaPage() {
    *
    * El director tramita por todos, así que ve los cupos de su institución
    * entera —incluidos los del Jefe de Taller y el Coordinador—. Pero crear la
-   * plantilla le toca a quien lleva el cargo del cupo.
+   * plantilla le toca a la PERSONA a cuyo nombre se aprobó el cupo.
    *
    * Contarlos juntos producía una contradicción: esta pantalla decía «tienes 1
    * plantilla autorizada, créala» y el formulario respondía «no tienes
-   * ninguna», porque el cupo era del Coordinador. Los dos tenían razón sobre
+   * ninguna», porque el cupo era de otra persona. Los dos tenían razón sobre
    * cosas distintas.
    *
-   * `mios` viene del backend ya acotado por cargo; el otro se calcula acá
-   * porque el director sí ve los ítems de toda su institución.
+   * `mios` viene del backend ya acotado a esta persona; el resto se calcula acá
+   * porque el director sí ve los ítems de toda su institución. Se comparan por
+   * ID de cupo y no por cargo: dos personas pueden ocupar el mismo cargo, y
+   * comparar cargos volvería a mezclar el cupo de una con el de la otra.
    */
   const { data: mios = [] } = useCuposDePlantilla(new Date().getFullYear());
 
+  const idsPropios = new Set(mios.map((m) => m.itemId));
   const ajenos = solicitudes
     .filter((s) => s.estado === 'APROBADA')
     .flatMap((s) => s.items)
-    .filter((i) => i.plantillaId === null);
+    .filter((i) => i.plantillaId === null && !idsPropios.has(i.id));
 
   const cuposLibres = mios.length;
   // A quién le corresponde crear lo que queda pendiente y no es de esta persona.
-  const cargosPendientes = [
-    ...new Set(ajenos.map((i) => i.cargoBeneficiario)),
-  ].filter((cargo) => !mios.some((m) => m.cargoBeneficiario === cargo));
+  // Los cupos antiguos no tienen destinatario: ésos se nombran por su cargo.
+  const pendientesDeOtros = [
+    ...new Set(ajenos.map((i) => i.beneficiarioNombre ?? i.cargoBeneficiario)),
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -399,7 +448,7 @@ export function MisSolicitudesPlantillaPage() {
       {!creando && (
         <EstadoDelTramite
           cuposPropios={cuposLibres}
-          cargosPendientes={cargosPendientes}
+          pendientesDeOtros={pendientesDeOtros}
           hayPendiente={hayPendiente}
         />
       )}
@@ -455,17 +504,18 @@ export function MisSolicitudesPlantillaPage() {
  *
  * Son cuatro situaciones y cada una dice algo distinto. La que faltaba —y
  * producía una contradicción entre pantallas— es la tercera: hay cupos
- * aprobados en la institución, pero son de OTRO cargo. Antes se contaban todos
- * juntos y esta pantalla invitaba a crear una plantilla que el formulario
+ * aprobados en la institución, pero son de OTRA PERSONA. Antes se contaban
+ * todos juntos y esta pantalla invitaba a crear una plantilla que el formulario
  * después negaba, con razón.
  */
 function EstadoDelTramite({
   cuposPropios,
-  cargosPendientes,
+  pendientesDeOtros,
   hayPendiente,
 }: {
   cuposPropios: number;
-  cargosPendientes: string[];
+  /** Nombres de quienes tienen un cupo libre que no es de esta persona. */
+  pendientesDeOtros: string[];
   hayPendiente: boolean;
 }) {
   if (cuposPropios > 0) {
@@ -494,7 +544,7 @@ function EstadoDelTramite({
     );
   }
 
-  if (cargosPendientes.length > 0) {
+  if (pendientesDeOtros.length > 0) {
     // Sin botón a propósito: el sistema no le va a dejar crearla, y ofrecerlo
     // sería mandarlo contra una pared.
     return (
@@ -505,7 +555,7 @@ function EstadoDelTramite({
             Tu institución tiene autorizaciones sin usar, pero no te corresponden a ti
           </p>
           <p className="text-xs text-sky-900">
-            Las crea {cargosPendientes.join(' y ')}, desde su propia sesión.
+            Las crea {pendientesDeOtros.join(' y ')}, desde su propia sesión.
           </p>
         </div>
       </Card>

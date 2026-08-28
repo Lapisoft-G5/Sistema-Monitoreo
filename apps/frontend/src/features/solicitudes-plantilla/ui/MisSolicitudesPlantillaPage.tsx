@@ -8,6 +8,7 @@ import {
   Loader2,
   Plus,
   RefreshCw,
+  Users,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ import { Label } from '@shared/ui/label';
 import { ErrorDeApi } from '@shared/config/api';
 import {
   useCrearSolicitudPlantilla,
+  useCuposDePlantilla,
   useMisSolicitudesPlantilla,
 } from '../api/use-solicitudes-plantilla-api';
 import { InsigniaEstado, PildorasDePlantillas } from './EstadoSolicitud';
@@ -329,16 +331,32 @@ export function MisSolicitudesPlantillaPage() {
   const hayPendiente = solicitudes.some((s) => s.estado === 'PENDIENTE');
 
   /**
-   * Cupos aprobados que todavía no se usaron.
+   * Cupos aprobados que TODAVÍA NO SE USARON, separados en dos cosas distintas.
    *
-   * Es el dato que le cambia el día al director: le dice cuántas plantillas
-   * puede crear ahora mismo. Un contador de «solicitudes presentadas» sería
-   * simetría con la bandeja de la Jefatura, pero a él no le sirve de nada.
+   * El director tramita por todos, así que ve los cupos de su institución
+   * entera —incluidos los del Jefe de Taller y el Coordinador—. Pero crear la
+   * plantilla le toca a quien lleva el cargo del cupo.
+   *
+   * Contarlos juntos producía una contradicción: esta pantalla decía «tienes 1
+   * plantilla autorizada, créala» y el formulario respondía «no tienes
+   * ninguna», porque el cupo era del Coordinador. Los dos tenían razón sobre
+   * cosas distintas.
+   *
+   * `mios` viene del backend ya acotado por cargo; el otro se calcula acá
+   * porque el director sí ve los ítems de toda su institución.
    */
-  const cuposLibres = solicitudes
+  const { data: mios = [] } = useCuposDePlantilla(new Date().getFullYear());
+
+  const ajenos = solicitudes
     .filter((s) => s.estado === 'APROBADA')
     .flatMap((s) => s.items)
-    .filter((i) => i.plantillaId === null).length;
+    .filter((i) => i.plantillaId === null);
+
+  const cuposLibres = mios.length;
+  // A quién le corresponde crear lo que queda pendiente y no es de esta persona.
+  const cargosPendientes = [
+    ...new Set(ajenos.map((i) => i.cargoBeneficiario)),
+  ].filter((cargo) => !mios.some((m) => m.cargoBeneficiario === cargo));
 
   return (
     <div className="flex flex-col gap-6">
@@ -372,62 +390,18 @@ export function MisSolicitudesPlantillaPage() {
         )}
       </div>
 
-      {/* El estado del trámite, en una línea, arriba de todo: es lo primero que
-          el director viene a mirar. */}
+      {/*
+        El estado del trámite, arriba de todo: es lo primero que se viene a
+        mirar. Se distingue lo que le toca a esta persona de lo que le toca a
+        otro cargo de la misma institución, porque el director ve los cupos de
+        todos pero sólo crea los suyos.
+      */}
       {!creando && (
-        <Card
-          className={`p-4 flex flex-wrap items-center justify-between gap-3 border ${
-            cuposLibres > 0
-              ? 'border-emerald-200 bg-emerald-50'
-              : hayPendiente
-                ? 'border-amber-200 bg-amber-50'
-                : 'border-border bg-slate-50'
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            {cuposLibres > 0 ? (
-              <CheckCircle2 className="h-5 w-5 text-emerald-700 shrink-0" />
-            ) : hayPendiente ? (
-              <Clock className="h-5 w-5 text-amber-700 shrink-0" />
-            ) : (
-              <ClipboardList className="h-5 w-5 text-slate-400 shrink-0" />
-            )}
-            <div>
-              <p
-                className={`text-sm font-bold ${
-                  cuposLibres > 0
-                    ? 'text-emerald-900'
-                    : hayPendiente
-                      ? 'text-amber-900'
-                      : 'text-slate-700'
-                }`}
-              >
-                {cuposLibres > 0
-                  ? `Tienes ${cuposLibres} ${cuposLibres === 1 ? 'plantilla autorizada' : 'plantillas autorizadas'} sin crear`
-                  : hayPendiente
-                    ? 'Tu solicitud está esperando respuesta'
-                    : 'Sin autorizaciones pendientes de usar'}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {cuposLibres > 0
-                  ? 'Créalas desde el catálogo de plantillas de tu institución.'
-                  : hayPendiente
-                    ? 'No puedes presentar otra hasta que la Jefatura resuelva ésta.'
-                    : 'Las tres fichas oficiales de la UGEL están disponibles sin trámite.'}
-              </p>
-            </div>
-          </div>
-
-          {cuposLibres > 0 && (
-            <Link
-              to="/plantillas?filtro=ie"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white hover:opacity-90"
-            >
-              Ir a crear la plantilla
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          )}
-        </Card>
+        <EstadoDelTramite
+          cuposPropios={cuposLibres}
+          cargosPendientes={cargosPendientes}
+          hayPendiente={hayPendiente}
+        />
       )}
 
       {creando && <Formulario onListo={() => setCreando(false)} />}
@@ -473,5 +447,96 @@ export function MisSolicitudesPlantillaPage() {
         onClose={() => setAbiertaId(null)}
       />
     </div>
+  );
+}
+
+/**
+ * Qué puede hacer esta persona ahora mismo con sus solicitudes.
+ *
+ * Son cuatro situaciones y cada una dice algo distinto. La que faltaba —y
+ * producía una contradicción entre pantallas— es la tercera: hay cupos
+ * aprobados en la institución, pero son de OTRO cargo. Antes se contaban todos
+ * juntos y esta pantalla invitaba a crear una plantilla que el formulario
+ * después negaba, con razón.
+ */
+function EstadoDelTramite({
+  cuposPropios,
+  cargosPendientes,
+  hayPendiente,
+}: {
+  cuposPropios: number;
+  cargosPendientes: string[];
+  hayPendiente: boolean;
+}) {
+  if (cuposPropios > 0) {
+    return (
+      <Card className="p-4 flex flex-wrap items-center justify-between gap-3 border border-emerald-200 bg-emerald-50">
+        <div className="flex items-center gap-2.5">
+          <CheckCircle2 className="h-5 w-5 text-emerald-700 shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-emerald-900">
+              Tienes {cuposPropios}{' '}
+              {cuposPropios === 1 ? 'plantilla autorizada' : 'plantillas autorizadas'} sin crear
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Créalas desde el catálogo de plantillas de tu institución.
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/plantillas?filtro=ie"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white hover:opacity-90"
+        >
+          Ir a crear la plantilla
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </Card>
+    );
+  }
+
+  if (cargosPendientes.length > 0) {
+    // Sin botón a propósito: el sistema no le va a dejar crearla, y ofrecerlo
+    // sería mandarlo contra una pared.
+    return (
+      <Card className="p-4 flex items-center gap-2.5 border border-sky-200 bg-sky-50">
+        <Users className="h-5 w-5 text-sky-700 shrink-0" />
+        <div>
+          <p className="text-sm font-bold text-sky-900">
+            Tu institución tiene autorizaciones sin usar, pero no te corresponden a ti
+          </p>
+          <p className="text-xs text-sky-900">
+            Las crea {cargosPendientes.join(' y ')}, desde su propia sesión.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (hayPendiente) {
+    return (
+      <Card className="p-4 flex items-center gap-2.5 border border-amber-200 bg-amber-50">
+        <Clock className="h-5 w-5 text-amber-700 shrink-0" />
+        <div>
+          <p className="text-sm font-bold text-amber-900">
+            Tu solicitud está esperando respuesta
+          </p>
+          <p className="text-xs text-muted-foreground">
+            No puedes presentar otra hasta que la Jefatura resuelva ésta.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-4 flex items-center gap-2.5 border border-border bg-slate-50">
+      <ClipboardList className="h-5 w-5 text-slate-400 shrink-0" />
+      <div>
+        <p className="text-sm font-bold text-slate-700">Sin autorizaciones pendientes de usar</p>
+        <p className="text-xs text-muted-foreground">
+          Las tres fichas oficiales de la UGEL están disponibles sin trámite.
+        </p>
+      </div>
+    </Card>
   );
 }

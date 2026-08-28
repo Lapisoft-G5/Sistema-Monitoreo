@@ -101,6 +101,18 @@ export const PlantillaCabecera = ({
             // ya están armadas para el que se eligió.
             disabled={isEditMode || opciones.length <= 1}
           />
+          {/*
+            Un campo gris y bloqueado sin explicación obliga a deducir por qué.
+            El instrumento no se elige acá: lo fijó la autorización, y cambiarlo
+            significa pedir otra. Decirlo ahorra el viaje de ida y vuelta.
+          */}
+          {instrumentosPermitidos !== undefined && (
+            <p className="text-xs text-muted-foreground -mt-2">
+              {opciones.length <= 1
+                ? 'Viene de tu autorización aprobada. Para una ficha de otro tipo, el director de la I.E. debe presentar una solicitud nueva.'
+                : 'Sólo aparecen los tipos que tienes autorizados.'}
+            </p>
+          )}
 
           <div className="flex flex-col gap-1">
             <TextField

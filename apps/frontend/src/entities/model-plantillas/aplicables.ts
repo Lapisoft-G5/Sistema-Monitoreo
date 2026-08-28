@@ -69,6 +69,8 @@ export interface PlantillaAplicable {
   creadoPorRole?: RolAutorPlantilla;
   /** Institución dueña del clon. Ausente en las de la UGEL. */
   ieId?: string;
+  /** Quien la creó. Decide quién puede aplicarla si es de una institución. */
+  creadoPorId?: string;
   /**
    * Si puede usarse en monitoreos nuevos.
    *
@@ -105,10 +107,27 @@ export function plantillasAplicables<T extends PlantillaAplicable>(
   // fuera por un dato que el backend todavía no envía.
   const autorizada = (p: T): boolean => p.autorizada !== false;
 
+  /**
+   * Una ficha de institución sólo se ofrece a quien la creó.
+   *
+   * Antes bastaba con pertenecer a la misma I.E. Pero una institución puede
+   * tener dos coordinadores pedagógicos o dos jefes de taller, cada uno con su
+   * área y su criterio de observación, y cada ficha propia nace de una solicitud
+   * aprobada para UNA persona. Compartirlas dentro de la I.E. hacía que el
+   * segundo evaluara con el instrumento que el primero diseñó para otra
+   * realidad, sin que nada en pantalla lo dijera.
+   *
+   * La misma regla la hace cumplir el servidor al abrir la ficha
+   * (`plantilla-aplicable.guard.ts`); acá se evita ofrecer lo que va a rechazar.
+   */
   const enAmbito = (p: T): boolean => {
     if (esDeLaUgel(p)) return true;
-    // Un clon sólo se ofrece a quien pertenece a la institución que lo creó.
-    return contexto.esInstitucion && p.ieId === contexto.institucionUsuarioId;
+
+    return (
+      contexto.esInstitucion &&
+      p.ieId === contexto.institucionUsuarioId &&
+      p.creadoPorId === contexto.usuarioId
+    );
   };
 
   return plantillas

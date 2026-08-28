@@ -105,14 +105,38 @@ describe('plantillasAplicables', () => {
   describe('personal de una institución', () => {
     const enInstitucion = contexto({ esInstitucion: true, institucionUsuarioId: IE_PROPIA });
 
-    it('ofrece las suyas y las de la UGEL', () => {
-      const propia = plantilla({ id: 'ie-propia-doc', creadoPorRole: 'director_ie', ieId: IE_PROPIA });
+    it('ofrece la suya y las de la UGEL', () => {
+      const propia = plantilla({
+        id: 'ie-propia-doc',
+        creadoPorRole: 'director_ie',
+        ieId: IE_PROPIA,
+        creadoPorId: 'u-1',
+      });
 
       expect(idsDe(plantillasAplicables([...CATALOGO, propia], enInstitucion))).toEqual([
         'ugel-docente',
         'ugel-eib',
         'ie-propia-doc',
       ]);
+    });
+
+    /**
+     * Una I.E. puede tener dos coordinadores pedagógicos o dos jefes de taller,
+     * cada uno con su área y su criterio de observación, y cada ficha propia
+     * nace de una solicitud aprobada para UNA persona. Ofrecer la del colega
+     * hacía que el segundo evaluara con el instrumento que el primero diseñó
+     * para otra realidad, y la ficha sale completa y firmada sin que nada lo
+     * delate.
+     */
+    it('no ofrece la ficha de un colega de la misma institución', () => {
+      const delColega = plantilla({
+        id: 'ie-del-colega',
+        creadoPorRole: 'coordinador_pedagogico',
+        ieId: IE_PROPIA,
+        creadoPorId: 'u-9',
+      });
+
+      expect(idsDe(plantillasAplicables([delColega], enInstitucion))).toEqual([]);
     });
 
     it('nunca ofrece las de otra institución', () => {
@@ -245,6 +269,7 @@ describe('plantillasAplicables', () => {
         id: 'clon-autorizado',
         creadoPorRole: 'director_ie',
         ieId: IE_PROPIA,
+        creadoPorId: 'u-1',
         autorizada: true,
       });
 

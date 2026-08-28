@@ -120,6 +120,46 @@ describe('rubricasInstitucionales', () => {
     expect(rubricas).toEqual([]);
   });
 
+  /**
+   * El Jefe de Gestión ve las rúbricas propias de TODOS los colegios. Sin el
+   * nombre del colegio, «Ficha de aula CTA — R. Mamani» no le dice de quién es.
+   * Al personal de una I.E. no se le pasa el mapa: ya sabe en cuál está.
+   */
+  describe('cuando mira la UGEL', () => {
+    const nombres = new Map([['ie-1', 'JOSE CARLOS MARIATEGUI']]);
+
+    it('antepone el colegio al rótulo', () => {
+      const propia = plantilla({ id: 'a', descripcion: 'Ficha de aula CTA' });
+
+      const { rubricas } = rubricasInstitucionales([propia], conteos({ a: 2 }), {
+        nombrePorInstitucion: nombres,
+      });
+
+      expect(rubricas[0]?.label).toBe('JOSE CARLOS MARIATEGUI · Ficha de aula CTA');
+    });
+
+    it('el detalle también nombra el colegio', () => {
+      const propia = plantilla({ id: 'a', descripcion: 'Ficha de aula CTA' });
+
+      const { rubricas } = rubricasInstitucionales([propia], conteos({ a: 2 }), {
+        nombrePorInstitucion: nombres,
+      });
+
+      expect(rubricas[0]?.titulo).toContain('JOSE CARLOS MARIATEGUI');
+    });
+
+    it('sin el nombre del colegio no inventa nada', () => {
+      // Una institución que no figura en el mapa: el rótulo sigue siendo válido.
+      const propia = plantilla({ id: 'a', descripcion: 'Ficha de aula CTA', ieId: 'ie-9' });
+
+      const { rubricas } = rubricasInstitucionales([propia], conteos({ a: 2 }), {
+        nombrePorInstitucion: nombres,
+      });
+
+      expect(rubricas[0]?.label).toBe('Ficha de aula CTA');
+    });
+  });
+
   describe('cuando no hay nada que analizar', () => {
     /**
      * Antes se mostraban tres píldoras en cero —Dirección, Coordinador P., Jefe

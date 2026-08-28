@@ -97,6 +97,17 @@ const ROTULO_INSTRUMENTO: Record<string, string> = {
 export function rubricasInstitucionales(
   plantillas: readonly PlantillaAnalizable[],
   conteoPorPlantilla: ReadonlyMap<string, number>,
+  opciones: {
+    /**
+     * Nombre de cada institución, para quien mira desde la UGEL.
+     *
+     * El Jefe de Gestión ve las rúbricas propias de TODOS los colegios: sin el
+     * nombre del colegio, «Ficha de aula CTA — R. Mamani» no le dice de quién
+     * es. Al personal de una I.E. no se le pasa: ya sabe en cuál está y
+     * repetirlo en cada píldora sólo la alarga.
+     */
+    nombrePorInstitucion?: ReadonlyMap<string, string>;
+  } = {},
 ): RubricasInstitucionales {
   const propias = plantillas.filter((p) => p.ieId !== undefined);
   if (propias.length === 0) {
@@ -118,16 +129,26 @@ export function rubricasInstitucionales(
     const cargo = etiquetaDeAutor(p.creadoPorRole);
     const autor = p.autorNombre ? nombreCorto(p.autorNombre) : cargo;
     const instrumento = ROTULO_INSTRUMENTO[p.instrumento] ?? p.instrumento;
+    const institucion = p.ieId ? opciones.nombrePorInstitucion?.get(p.ieId) : undefined;
+
+    /**
+     * El autor sólo entra en el rótulo cuando dos fichas se llaman igual.
+     * Agregarlo siempre alargaría la píldora sin necesidad; no agregarlo nunca
+     * deja dos botones idénticos que analizan cosas distintas.
+     */
+    const base = (repetido.get(nombre) ?? 0) > 1 ? `${nombre} · ${autor}` : nombre;
 
     return {
       id: p.id,
-      /**
-       * El autor sólo entra en el rótulo cuando dos fichas se llaman igual.
-       * Agregarlo siempre alargaría la píldora sin necesidad; no agregarlo nunca
-       * deja dos botones idénticos que analizan cosas distintas.
-       */
-      label: (repetido.get(nombre) ?? 0) > 1 ? `${nombre} · ${autor}` : nombre,
-      titulo: `${nombre} — ${autor} · ${cargo} · Ficha ${instrumento}`,
+      // Desde la UGEL, el colegio va primero: es lo que ordena la lectura
+      // cuando la lista mezcla rúbricas de varias instituciones.
+      label: institucion ? `${institucion} · ${base}` : base,
+      titulo: [
+        institucion,
+        `${nombre} — ${autor} · ${cargo} · Ficha ${instrumento}`,
+      ]
+        .filter(Boolean)
+        .join(' · '),
       autor,
       conteo: conteoPorPlantilla.get(p.id) ?? 0,
     };

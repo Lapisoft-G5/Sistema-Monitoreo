@@ -22,6 +22,8 @@ describe('PlantillaService - ILA-0046', () => {
     autorId: 'user-jefe',
     rolAutorAlCrear: 'jefe_gestion' as const,
     institucionId: null,
+    // De la UGEL: el catálogo oficial siempre puede usarse.
+    autorizada: true,
     niveles: [],
     desempenos: [],
     ejesItems: [],

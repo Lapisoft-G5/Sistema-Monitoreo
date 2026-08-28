@@ -33,6 +33,17 @@ const director: SessionUser = {
   institucionId: IE,
 };
 
+const jefeTaller: SessionUser = {
+  id: 'u-taller',
+  role: RoleCode.JEFE_TALLER,
+  institucionId: IE,
+};
+const coordinador: SessionUser = {
+  id: 'u-coord',
+  role: RoleCode.COORDINADOR_PEDAGOGICO,
+  institucionId: IE,
+};
+
 const especialista: SessionUser = { id: 'u-esp', role: RoleCode.ESPECIALISTA, institucionId: null };
 const jefeGestion: SessionUser = {
   id: 'u-jg',
@@ -192,6 +203,56 @@ describe('ValePlantillaService', () => {
 
       await expect(service.disponibles(especialista, ANIO)).resolves.toEqual([]);
       expect(prisma.solicitudPlantillaItem.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('el cargo del vale manda', () => {
+    /**
+     * El director es la unica boca para PEDIR, pero no crea lo que se pidio
+     * para otro. Cada vale declara a que cargo sirve, y sin esta comprobacion
+     * el director podria gastarse el cupo del jefe de taller: la solicitud
+     * diria una cosa y el sistema permitiria otra, que es justo el agujero que
+     * este mecanismo viene a cerrar.
+     */
+    it.each([
+      ['el director', director, CargoBeneficiario.DIRECTOR],
+      ['el jefe de taller', jefeTaller, CargoBeneficiario.JEFE_DE_TALLER],
+      ['el coordinador pedagogico', coordinador, CargoBeneficiario.COORDINADOR_PEDAGOGICO],
+    ])('%s solo alcanza los vales de SU cargo', async (_caso, sesion, cargo) => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(vale() as never);
+
+      await service.consumirParaCrear(sesion, 'DOCENTE', ANIO);
+
+      const where = filtroDe(prisma.solicitudPlantillaItem.findFirst);
+      expect(where).toMatchObject({ cargoBeneficiario: cargo });
+    });
+
+    it('el mensaje nombra el cargo, para que se sepa a quien le toca', async () => {
+      // Sin el cargo, el director lee «no hay cupo» y vuelve a pedir uno que ya
+      // le concedieron a otra persona.
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(null as never);
+
+      await expect(service.consumirParaCrear(jefeTaller, 'DOCENTE')).rejects.toThrow(
+        /Jefe de Taller/i,
+      );
+    });
+
+    it('los vales disponibles tambien se acotan por cargo', async () => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findMany.mockResolvedValue([] as never);
+
+      await service.disponibles(coordinador, ANIO);
+
+      const where = (
+        prisma.solicitudPlantillaItem.findMany.mock.calls[0]?.[0] as {
+          where: Record<string, unknown>;
+        }
+      ).where;
+      expect(where).toMatchObject({
+        cargoBeneficiario: CargoBeneficiario.COORDINADOR_PEDAGOGICO,
+      });
     });
   });
 });

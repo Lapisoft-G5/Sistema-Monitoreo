@@ -27,12 +27,20 @@ import type { SessionUser } from '../../../shared/types/session-user.js';
  * permiso ilimitado, y eso no se ve: no hay error, sólo un catálogo que crece.
  */
 
-/** Roles cuya sesión pertenece a una institución educativa. */
-const ROLES_DE_INSTITUCION: readonly RoleCode[] = [
-  RoleCode.DIRECTOR_INSTITUCION,
-  RoleCode.COORDINADOR_PEDAGOGICO,
-  RoleCode.JEFE_TALLER,
-];
+/**
+ * El cargo al que sirve cada rol de institución.
+ *
+ * El director es la única boca para PEDIR, pero no crea lo que se pidió para
+ * otro: cada vale declara a qué cargo sirve, y sólo quien lo ocupa lo consume.
+ * Sin esto, la solicitud diría una cosa y el sistema permitiría otra.
+ *
+ * Un rol que no esté acá no pertenece a una institución y no necesita vale.
+ */
+const CARGO_POR_ROL: Partial<Record<RoleCode, CargoBeneficiario>> = {
+  [RoleCode.DIRECTOR_INSTITUCION]: CargoBeneficiario.DIRECTOR,
+  [RoleCode.COORDINADOR_PEDAGOGICO]: CargoBeneficiario.COORDINADOR_PEDAGOGICO,
+  [RoleCode.JEFE_TALLER]: CargoBeneficiario.JEFE_DE_TALLER,
+};
 
 /** Fila del vale con la cabecera de su solicitud. */
 interface ValeConSolicitud {
@@ -66,9 +74,13 @@ export class ValePlantillaService {
     const institucionId = this.institucionDe(session);
     if (institucionId === null) return null;
 
+    const cargo = CARGO_POR_ROL[session.role]!;
+
     const libre = await this.prisma.solicitudPlantillaItem.findFirst({
       where: {
         instrumento,
+        // El vale se pidió para un cargo concreto y sólo ése lo gasta.
+        cargoBeneficiario: cargo,
         // Un vale sin plantilla asociada es un vale sin usar. Es la única
         // diferencia entre uno libre y uno gastado.
         plantillaId: null,
@@ -78,10 +90,13 @@ export class ValePlantillaService {
     });
 
     if (!libre) {
+      // El mensaje nombra el cargo: sin eso, quien lee «no hay cupo» vuelve a
+      // pedir uno que ya le concedieron a otra persona de la institución.
       throw new ForbiddenException(
         `Su institución no tiene una solicitud aprobada con un cupo libre para una plantilla ` +
-          `de tipo ${instrumento} en ${anioEscolar}. El director de la I.E. debe presentar la ` +
-          `solicitud con su justificación en PDF para que la Jefatura de Gestión la apruebe.`,
+          `de tipo ${instrumento} destinada al cargo "${cargo}" en ${anioEscolar}. El director ` +
+          `de la I.E. debe presentar la solicitud con su justificación en PDF para que la ` +
+          `Jefatura de Gestión la apruebe.`,
       );
     }
 
@@ -117,6 +132,7 @@ export class ValePlantillaService {
     const libres = await this.prisma.solicitudPlantillaItem.findMany({
       where: {
         plantillaId: null,
+        cargoBeneficiario: CARGO_POR_ROL[session.role]!,
         solicitud: { estado: 'APROBADA', institucionId, anioEscolar },
       },
       select: {
@@ -144,7 +160,7 @@ export class ValePlantillaService {
    * personal de UGEL crea las fichas oficiales del catálogo.
    */
   private institucionDe(session: SessionUser): string | null {
-    if (!ROLES_DE_INSTITUCION.includes(session.role)) return null;
+    if (!CARGO_POR_ROL[session.role]) return null;
     return session.institucionId ?? null;
   }
 }

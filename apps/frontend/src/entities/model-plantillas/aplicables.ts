@@ -33,6 +33,16 @@ import type { ContextoSeleccion } from './seleccion';
  * El corte va por el año de la VISITA, no por el calendario. Así una visita de
  * 2026 que se completa en febrero de 2027 se sigue evaluando con el instrumento
  * de 2026, que es el que corresponde.
+ *
+ * ── Por qué también se mira la autorización ──
+ * El catálogo de la UGEL es obligatorio. Una plantilla propia sólo se ofrece si
+ * la Jefatura aprobó la solicitud que la creó.
+ *
+ * Hay plantillas de institución ANTERIORES a que las autorizaciones existieran.
+ * Se dejan de ofrecer para monitoreos nuevos, pero NO se archivan: sus fichas
+ * ya cerradas siguen legibles y los reportes quedan intactos. Marcarlas
+ * `Historico` habría puesto un aviso de «migre las respuestas» sobre fichas que
+ * no necesitan nada.
  */
 
 /** Instrumentos que admite cada tipo de visita. */
@@ -58,6 +68,14 @@ export interface PlantillaAplicable {
   creadoPorRole?: RolAutorPlantilla;
   /** Institución dueña del clon. Ausente en las de la UGEL. */
   ieId?: string;
+  /**
+   * Si puede usarse en monitoreos nuevos.
+   *
+   * Las de la UGEL siempre. Una de institución sólo si nació de una solicitud
+   * aprobada. Ausente se trata como autorizada, para no dejar sin instrumento a
+   * una plantilla que el backend todavía no rotula.
+   */
+  autorizada?: boolean;
 }
 
 /** Contexto de la selección, más el año de la visita que se va a evaluar. */
@@ -85,6 +103,10 @@ export function plantillasAplicables<T extends PlantillaAplicable>(
 ): T[] {
   const admitidos = INSTRUMENTOS_POR_VISITA[contexto.tipoVisita];
 
+  // Ausente se trata como autorizada: una plantilla sin rotular no debe quedar
+  // fuera por un dato que el backend todavía no envía.
+  const autorizada = (p: T): boolean => p.autorizada !== false;
+
   const enAmbito = (p: T): boolean => {
     if (esDeLaUgel(p)) return true;
     // Un clon sólo se ofrece a quien pertenece a la institución que lo creó.
@@ -95,6 +117,7 @@ export function plantillasAplicables<T extends PlantillaAplicable>(
     .filter(
       (p) =>
         p.estado === 'Vigente' &&
+        autorizada(p) &&
         p.anioAcademico === contexto.anioVisita &&
         admitidos.includes(p.instrumento) &&
         enAmbito(p),

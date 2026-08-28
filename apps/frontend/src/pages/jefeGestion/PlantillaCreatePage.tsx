@@ -16,6 +16,9 @@ import {
 } from '@entities/model-plantillas/rotulo-de-instrumento';
 import { useCuposDePlantilla } from '@features/solicitudes-plantilla';
 import { useUser } from '@entities/model-user';
+import { useScope } from '@shared/auth';
+import { puedeGestionar } from '@features/plantillas/lib/permisos-plantilla';
+import { mapIPlantillaToPlantilla } from '@entities/model-plantillas/mapper';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 /** Roles cuya plantilla pertenece a una institución educativa. */
@@ -34,6 +37,7 @@ export const PlantillaCreatePage = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { user } = useUser();
+  const alcance = useScope();
   const esDeInstitucion = ROLES_DE_INSTITUCION.includes(user?.role as RoleCode);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -68,9 +72,27 @@ export const PlantillaCreatePage = () => {
         anioAcademico: Number(data.anioAcademico),
         estado: 'Vigente',
       });
-      if (existing && existing.length > 0) {
+
+      /**
+       * Sólo entran en conflicto las vigentes que esta persona podría archivar.
+       *
+       * Antes se tomaban TODAS las del tipo y el año. Mientras el personal de
+       * una I.E. no veía el catálogo de la UGEL eso daba lo mismo; desde que lo
+       * ve, la consulta devuelve también las oficiales, y el aviso proponía
+       * archivar una ficha de la UGEL. Al aceptar, el servidor respondía 403
+       * —«Los Directores e integrantes de la IE no pueden modificar plantillas
+       * UGEL»— y la plantilla nunca se creaba.
+       *
+       * La regla de quién gestiona qué ya existe y tiene pruebas propias: se
+       * reutiliza en lugar de escribirla acá otra vez.
+       */
+      const enConflicto = (existing ?? []).filter((p) =>
+        puedeGestionar(mapIPlantillaToPlantilla(p), user, alcance),
+      );
+
+      if (enConflicto.length > 0) {
         setPendingArchive({
-          plantillas: existing.map((p) => ({ id: p.id, anioAcademico: p.anioAcademico, tipoMonitoreo: p.tipoMonitoreo })),
+          plantillas: enConflicto.map((p) => ({ id: p.id, anioAcademico: p.anioAcademico, tipoMonitoreo: p.tipoMonitoreo })),
           data,
           backendTipo,
         });
@@ -78,7 +100,7 @@ export const PlantillaCreatePage = () => {
         return;
       }
 
-      await executeCreate(data, backendTipo, []);
+      await executeCreate(data, backendTipo);
     } catch (err) {
       console.error('[plantilla] Error al crear:', err);
       let msg = err instanceof Error ? err.message : 'Error desconocido';
@@ -96,16 +118,22 @@ export const PlantillaCreatePage = () => {
     }
   };
 
-  const executeCreate = async (data: PlantillaFormState, backendTipo: TipoPlantilla, toArchive: { id: string }[]) => {
+  /**
+   * Crea la plantilla y la deja vigente.
+   *
+   * Ya no archiva a mano la que regía: al activar la nueva, el servidor releva
+   * a la anterior por su cuenta —misma (tipo, año, autor, institución)— dentro
+   * de una sola operación. El navegador lo hacía con una llamada aparte,
+   * heredada de cuando el servidor devolvía 409 y exigía archivar primero. Si
+   * la creación fallaba después de ese archivado, la institución se quedaba sin
+   * plantilla vigente y sin la nueva.
+   */
+  const executeCreate = async (data: PlantillaFormState, backendTipo: TipoPlantilla) => {
     try {
       // El lema va primero: la plantilla lo devuelve ya resuelto por su año, de
       // modo que crearla antes la dejaría con el encabezado en blanco hasta la
       // próxima recarga.
       await lemasApi.upsert(Number(data.anioAcademico), data.lema);
-
-      for (const old of toArchive) {
-        await plantillasApi.cambiarEstado(old.id, 'Historico');
-      }
 
       const created = await plantillasApi.create({
         tipoMonitoreo: backendTipo,
@@ -254,7 +282,7 @@ export const PlantillaCreatePage = () => {
           onConfirm={() => {
             if (pendingArchive) {
               setIsSaving(true);
-              executeCreate(pendingArchive.data, pendingArchive.backendTipo, pendingArchive.plantillas);
+              executeCreate(pendingArchive.data, pendingArchive.backendTipo);
             }
           }}
           onCancel={() => setPendingArchive(null)}

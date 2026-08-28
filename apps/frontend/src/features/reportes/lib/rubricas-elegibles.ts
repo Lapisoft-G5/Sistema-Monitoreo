@@ -33,6 +33,9 @@ import type { RolAutorPlantilla, TipoPlantilla } from '@sistema-monitoreo/shared
 export interface PlantillaAnalizable {
   id: string;
   instrumento: TipoPlantilla;
+  /** Número de versión. Distingue dos revisiones del mismo instrumento. */
+  version?: number;
+  estado?: 'Borrador' | 'Vigente' | 'Historico';
   descripcion?: string;
   tipoMonitoreo: string;
   anioAcademico: number;
@@ -138,4 +141,68 @@ export function rubricasInstitucionales(
     ),
     motivoVacio: null,
   };
+}
+
+/**
+ * Las rúbricas del catálogo oficial de la UGEL, una píldora por instrumento.
+ *
+ * ── Por qué no alcanza con la vigente ──
+ * Se tomaba la plantilla VIGENTE de cada instrumento y se contaba sobre ella.
+ * Pero versionar una plantilla archiva la anterior y las fichas ya levantadas
+ * se quedan en la vieja: una institución cuya única visita se evaluó con la v1
+ * veía «Docente 0» y, sin embargo, la pantalla analizaba esa ficha igual, porque
+ * la selección caía por defecto en la plantilla con más fichas —la v1— que ni
+ * siquiera figuraba entre las píldoras. Ninguna quedaba resaltada y los tres
+ * conteos decían cero mientras arriba se leía «1 monitoreo analizado».
+ *
+ * No se suman las versiones: son rúbricas distintas. Versionar puede agregar,
+ * quitar o reescribir desempeños, y promediar criterios que no son los mismos
+ * produce un número que no significa nada. Cada versión con fichas es su propia
+ * píldora.
+ *
+ * La vigente se ofrece siempre, aunque esté en cero: es la que se va a usar en
+ * la próxima visita y su ausencia se leería como que falta el instrumento.
+ */
+export function rubricasDeLaUgel(
+  plantillas: readonly PlantillaAnalizable[],
+  conteoPorPlantilla: ReadonlyMap<string, number>,
+  instrumentos: readonly TipoPlantilla[],
+): RubricaElegible[] {
+  const deLaUgel = plantillas.filter((p) => p.ieId === undefined);
+
+  return instrumentos.flatMap((instrumento) => {
+    const delInstrumento = deLaUgel.filter((p) => p.instrumento === instrumento);
+    const vigente = delInstrumento.find((p) => p.estado === 'Vigente');
+    const conFichas = delInstrumento.filter((p) => (conteoPorPlantilla.get(p.id) ?? 0) > 0);
+
+    const elegidas = [...conFichas];
+    if (vigente && !elegidas.some((p) => p.id === vigente.id)) elegidas.push(vigente);
+
+    const rotulo = ROTULO_INSTRUMENTO[instrumento] ?? instrumento;
+
+    // Sin ninguna plantilla cargada la píldora igual se muestra, en cero: el
+    // catálogo oficial son tres fichas y su ausencia se leería como una falla.
+    if (elegidas.length === 0) {
+      return [{ id: `ugel:${instrumento}`, label: rotulo, titulo: rotulo, autor: 'UGEL', conteo: 0 }];
+    }
+
+    // La versión sólo entra en el rótulo cuando hay más de una en juego:
+    // «Docente» a secas es lo normal y lo que el cliente espera leer.
+    const varias = elegidas.length > 1;
+
+    // La más reciente primero: es la que rige y la que se busca antes.
+    return [...elegidas]
+      .sort((a, b) => (b.version ?? 1) - (a.version ?? 1))
+      .map((p) => {
+        const version = p.version ?? 1;
+        const estado = p.estado === 'Vigente' ? 'vigente' : 'versión anterior';
+        return {
+          id: p.id,
+          label: varias ? `${rotulo} · v${version}` : rotulo,
+          titulo: `Ficha oficial de la UGEL · ${rotulo} · v${version} (${estado})`,
+          autor: 'UGEL',
+          conteo: conteoPorPlantilla.get(p.id) ?? 0,
+        };
+      });
+  });
 }

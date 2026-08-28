@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  rubricasDeLaUgel,
   rubricasInstitucionales,
   type PlantillaAnalizable,
-} from './rubricas-institucionales';
+} from './rubricas-elegibles';
 
 /**
  * Qué rúbricas propias puede analizar una institución.
@@ -154,5 +155,86 @@ describe('rubricasInstitucionales', () => {
 
       expect(rubricas).toEqual([]);
     });
+  });
+});
+
+describe('rubricasDeLaUgel', () => {
+  const INSTRUMENTOS = ['DOCENTE', 'DOCENTE_EIB', 'DIRECTIVO'] as const;
+
+  const oficial = (over: Partial<PlantillaAnalizable> = {}): PlantillaAnalizable => ({
+    id: 'u-1',
+    instrumento: 'DOCENTE',
+    tipoMonitoreo: 'Monitoreo Docente',
+    anioAcademico: 2026,
+    ieId: undefined,
+    creadoPorRole: 'jefe_gestion',
+    version: 1,
+    estado: 'Vigente',
+    ...over,
+  });
+
+  it('ofrece los tres instrumentos del catálogo oficial', () => {
+    const rubricas = rubricasDeLaUgel([oficial()], conteos({ 'u-1': 4 }), INSTRUMENTOS);
+
+    expect(rubricas.map((r) => r.label)).toEqual(['Docente', 'Docente EIB', 'Directivo']);
+  });
+
+  it('ofrece la vigente aunque no tenga fichas todavía', () => {
+    // Es la que se va a usar en la próxima visita: su ausencia se leería como
+    // que falta el instrumento.
+    const rubricas = rubricasDeLaUgel([oficial()], conteos({}), ['DOCENTE']);
+
+    expect(rubricas).toHaveLength(1);
+    expect(rubricas[0]?.conteo).toBe(0);
+  });
+
+  /**
+   * El defecto que trae estas pruebas. Versionar archiva la anterior y las
+   * fichas ya levantadas se quedan en la vieja: la píldora apuntaba sólo a la
+   * vigente y decía «Docente 0» mientras la pantalla analizaba una ficha de la
+   * v1, que ni figuraba en la lista. Ninguna píldora quedaba resaltada.
+   */
+  it('ofrece también la versión anterior cuando conserva fichas', () => {
+    const v1 = oficial({ id: 'v1', version: 1, estado: 'Historico' });
+    const v2 = oficial({ id: 'v2', version: 2, estado: 'Vigente' });
+
+    const rubricas = rubricasDeLaUgel([v1, v2], conteos({ v1: 1 }), ['DOCENTE']);
+
+    expect(rubricas.map((r) => r.id)).toEqual(['v2', 'v1']);
+    expect(rubricas.map((r) => r.label)).toEqual(['Docente · v2', 'Docente · v1']);
+  });
+
+  it('no suma las versiones: son rúbricas distintas', () => {
+    // Versionar puede agregar, quitar o reescribir desempeños. Promediar
+    // criterios que no son los mismos produce un número que no significa nada.
+    const v1 = oficial({ id: 'v1', version: 1, estado: 'Historico' });
+    const v2 = oficial({ id: 'v2', version: 2, estado: 'Vigente' });
+
+    const rubricas = rubricasDeLaUgel([v1, v2], conteos({ v1: 7, v2: 3 }), ['DOCENTE']);
+
+    expect(rubricas.map((r) => r.conteo)).toEqual([3, 7]);
+  });
+
+  it('sin versiones en juego el rótulo queda limpio', () => {
+    const rubricas = rubricasDeLaUgel([oficial()], conteos({ 'u-1': 4 }), ['DOCENTE']);
+
+    expect(rubricas[0]?.label).toBe('Docente');
+  });
+
+  it('una versión archivada sin fichas no se ofrece', () => {
+    const v1 = oficial({ id: 'v1', version: 1, estado: 'Historico' });
+    const v2 = oficial({ id: 'v2', version: 2, estado: 'Vigente' });
+
+    const rubricas = rubricasDeLaUgel([v1, v2], conteos({ v2: 5 }), ['DOCENTE']);
+
+    expect(rubricas.map((r) => r.id)).toEqual(['v2']);
+  });
+
+  it('nunca ofrece las fichas de una institución', () => {
+    const deUnaIE = oficial({ id: 'ie', ieId: 'ie-1', creadoPorRole: 'director_ie' });
+
+    const rubricas = rubricasDeLaUgel([deUnaIE], conteos({ ie: 9 }), ['DOCENTE']);
+
+    expect(rubricas[0]?.conteo).toBe(0);
   });
 });

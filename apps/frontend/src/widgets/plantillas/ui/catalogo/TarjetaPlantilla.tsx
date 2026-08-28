@@ -91,8 +91,14 @@ export const TarjetaPlantilla = ({
           </Badge>
         </div>
 
+        {/*
+          El nombre que puso quien la creó manda sobre el rótulo automático.
+          Sin él, todas las fichas del mismo instrumento y año se titulaban
+          igual —«Monitoreo Docente 2026»— y sólo se distinguían por la insignia
+          del autor: cuatro tarjetas idénticas en el catálogo de una I.E.
+        */}
         <h3 className="text-base font-extrabold text-slate-800 tracking-tight leading-snug group-hover:text-primary transition-colors">
-          {plantilla.tipoMonitoreo} {plantilla.anioAcademico}
+          {plantilla.descripcion?.trim() || `${plantilla.tipoMonitoreo} ${plantilla.anioAcademico}`}
         </h3>
 
         <div className="inline-flex">

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ClipboardList } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Card } from '@shared/ui/card';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { PlantillaForm, type PlantillaFormState } from '@widgets/plantillas';
 import { plantillasApi } from '@entities/model-plantillas/api/plantillas.api';
@@ -8,7 +10,20 @@ import {
   descriptorPorDefecto,
   romanosDeInstrumento,
 } from '@entities/model-plantillas/escala-por-defecto';
-import { instrumentoDeRotulo } from '@entities/model-plantillas/rotulo-de-instrumento';
+import {
+  instrumentoDeRotulo,
+  ROTULO_DE_INSTRUMENTO,
+} from '@entities/model-plantillas/rotulo-de-instrumento';
+import { useCuposDePlantilla } from '@features/solicitudes-plantilla';
+import { useUser } from '@entities/model-user';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
+
+/** Roles cuya plantilla pertenece a una institución educativa. */
+const ROLES_DE_INSTITUCION: readonly RoleCode[] = [
+  RoleCode.DIRECTOR_INSTITUCION,
+  RoleCode.COORDINADOR_PEDAGOGICO,
+  RoleCode.JEFE_TALLER,
+];
 import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -18,7 +33,26 @@ import type { TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
 export const PlantillaCreatePage = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useUser();
+  const esDeInstitucion = ROLES_DE_INSTITUCION.includes(user?.role as RoleCode);
   const [isSaving, setIsSaving] = useState(false);
+
+  /**
+   * Instrumentos que esta persona puede registrar.
+   *
+   * Para la UGEL, todos. Para una institución, sólo los que tenga autorizados
+   * por una solicitud aprobada y sin usar. Antes el selector se fijaba a
+   * «Monitoreo Docente» a mano para el director y quedaba deshabilitado: no
+   * podía registrar una ficha EIB ni teniéndola aprobada.
+   *
+   * `undefined` significa «sin restricción» y lo resuelve la cabecera según el
+   * rol; una lista vacía significa «no tiene ninguna autorizada».
+   */
+  const { data: cupos = [] } = useCuposDePlantilla(new Date().getFullYear());
+  const instrumentosPermitidos = useMemo(() => {
+    if (!esDeInstitucion) return undefined;
+    return [...new Set(cupos.map((c) => ROTULO_DE_INSTRUMENTO[c.instrumento]))];
+  }, [esDeInstitucion, cupos]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pendingArchive, setPendingArchive] = useState<{ plantillas: { id: string; anioAcademico: number; tipoMonitoreo: string }[]; data: PlantillaFormState; backendTipo: TipoPlantilla } | null>(null);
 
@@ -77,8 +111,11 @@ export const PlantillaCreatePage = () => {
         tipoMonitoreo: backendTipo,
         anioAcademico: Number(data.anioAcademico),
         baremo: data.baremo,
-        // Sin descripción: la que se fabricaba acá —fecha de registro y cantidad
-        // de desempeños— repetía dos filas que la tarjeta ya muestra.
+        // El nombre que puso quien la crea. Antes acá se fabricaba una
+        // descripción con la fecha y la cantidad de desempeños, que repetía dos
+        // filas que la tarjeta ya muestra; ahora lleva lo único que la tarjeta
+        // no puede deducir: con qué nombre la distingue la institución.
+        descripcion: data.descripcion.trim() || undefined,
         niveles: data.niveles.map((n, i) => ({
           nivelRomano: n.nivel,
           denominacion: n.denominacion,
@@ -168,7 +205,37 @@ export const PlantillaCreatePage = () => {
         </div>
       )}
 
-      <PlantillaForm onCancel={() => navigate(-1)} onSubmit={handleSubmit} isSaving={isSaving} />
+      {/*
+        Sin autorizaciones el formulario no puede ofrecer ningún instrumento, y
+        un selector vacío no explica nada. Se dice qué falta y quién lo tramita,
+        en vez de dejar a la persona probando.
+      */}
+      {instrumentosPermitidos?.length === 0 ? (
+        <Card className="p-8 flex flex-col items-center gap-3 text-center border-amber-200 bg-amber-50">
+          <ClipboardList className="h-8 w-8 text-amber-700" />
+          <p className="text-sm font-bold text-amber-900">
+            Tu institución no tiene ninguna plantilla autorizada sin usar.
+          </p>
+          <p className="text-sm text-amber-900 max-w-xl">
+            Las tres fichas oficiales de la UGEL están disponibles para monitorear sin ningún
+            trámite. Para registrar una ficha propia, el director de la I.E. debe presentar una
+            solicitud y esperar que la Jefatura de Gestión la apruebe.
+          </p>
+          <Link
+            to="/plantillas/mis-solicitudes"
+            className="text-sm font-bold text-primary hover:underline"
+          >
+            Ir a Mis Solicitudes →
+          </Link>
+        </Card>
+      ) : (
+      <PlantillaForm
+        onCancel={() => navigate(-1)}
+        onSubmit={handleSubmit}
+        isSaving={isSaving}
+        instrumentosPermitidos={instrumentosPermitidos}
+      />
+      )}
 
       {pendingArchive && (
         <ConfirmModal

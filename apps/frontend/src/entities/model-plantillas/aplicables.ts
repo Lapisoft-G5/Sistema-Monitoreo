@@ -1,5 +1,6 @@
 import type { RolAutorPlantilla, TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type { ContextoSeleccion } from './seleccion';
+import { esDeLaUgel } from './identidad';
 
 /**
  * Qué instrumentos se le OFRECEN al evaluador para una visita.
@@ -88,9 +89,6 @@ export interface ContextoAplicables extends ContextoSeleccion {
    */
   anioVisita: number;
 }
-
-/** Una plantilla sin institución dueña es de la UGEL, con sello o sin él. */
-const esDeLaUgel = (p: PlantillaAplicable) => p.ieId === undefined;
 
 /**
  * Genérica en el tipo para devolver los mismos objetos que recibe: acá sólo se

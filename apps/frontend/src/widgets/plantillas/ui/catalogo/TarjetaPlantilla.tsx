@@ -3,7 +3,7 @@ import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { formatearFechaAbreviada } from '@shared/lib/fecha/fecha';
-import type { Plantilla } from '@entities/model-plantillas';
+import { nombreDePlantilla, type Plantilla } from '@entities/model-plantillas';
 import { esDeUgel } from '@features/plantillas/lib/visibilidad-plantillas';
 import { etiquetaDeAutor } from '@features/plantillas/lib/autor-de-plantilla';
 import { AccionesPlantilla } from './AccionesPlantilla';
@@ -98,7 +98,7 @@ export const TarjetaPlantilla = ({
           del autor: cuatro tarjetas idénticas en el catálogo de una I.E.
         */}
         <h3 className="text-base font-extrabold text-slate-800 tracking-tight leading-snug group-hover:text-primary transition-colors">
-          {plantilla.descripcion?.trim() || `${plantilla.tipoMonitoreo} ${plantilla.anioAcademico}`}
+          {nombreDePlantilla(plantilla)}
         </h3>
 
         <div className="inline-flex">

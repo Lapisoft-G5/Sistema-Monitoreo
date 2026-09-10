@@ -6,8 +6,12 @@ WORKDIR /app
 # Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# We need openssl for Prisma
-RUN apk add --no-cache openssl
+# We need openssl for Prisma and Chromium with system fonts for Puppeteer PDF reports
+RUN apk add --no-cache openssl chromium nss freetype harfbuzz ca-certificates ttf-freefont
+
+# Configure Puppeteer to use the system installed Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Copy all project files to support the monorepo structure
 COPY . .
@@ -25,5 +29,5 @@ RUN pnpm --filter backend... run build
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["pnpm", "--filter", "backend", "start:prod"]
+# Run pending database migrations and start the application
+CMD ["sh", "-c", "pnpm --filter backend exec prisma migrate deploy && pnpm --filter backend start:prod"]

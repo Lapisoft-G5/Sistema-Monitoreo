@@ -5,6 +5,8 @@ export interface User {
   dni: string;
   nombres: string;
   apellidos: string;
+  correo?: string | null;
+  telefono?: string | null;
   role: UserRole;
   /**
    * Capacidades efectivas que emite el backend al iniciar sesión.

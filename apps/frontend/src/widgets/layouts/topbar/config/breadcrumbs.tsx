@@ -3,6 +3,7 @@ import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 export const BREADCRUMBS_MAP: Record<string, string> = {
   '/dashboard': 'Panel de Control',
+  '/perfil': 'Mi Perfil',
   '/monitoreo/plan': 'Plan de Monitoreo',
   '/monitoreo/plan-anual': 'Plan de Monitoreo Anual',
   '/monitoreo/cronograma': 'Cronograma',

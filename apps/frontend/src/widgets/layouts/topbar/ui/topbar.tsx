@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user'; // Entidad limpia
 import { ROLE_LABELS } from '@sistema-monitoreo/shared-contracts';
 import { useScope } from '@shared/auth';
@@ -8,10 +8,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@shared/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Button } from '@shared/ui/button';
-import { HelpCircle, LogOut, ChevronDown, Menu, ChevronRight } from 'lucide-react';
+import { HelpCircle, LogOut, ChevronDown, Menu, ChevronRight, User } from 'lucide-react';
 import { NotificationsBell } from '@features/notifications';
 import { BotonPrepararOffline } from '@features/offline/BotonPrepararOffline';
 import { EstadoOffline } from '@features/offline/EstadoOffline';
@@ -26,6 +27,7 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
   const { user, logout } = useUser();
   const { isMonitorCampo } = useScope();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // 2. Cálculo automático del título basado en la URL
   const title = getPageTitle(location.pathname, user?.role);
@@ -124,6 +126,14 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
                 {user ? ROLE_LABELS[user.role] : ''}
               </p>
             </DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => navigate('/perfil')}
+              className="cursor-pointer flex items-center gap-2 text-text hover:bg-muted"
+            >
+              <User className="h-4 w-4 text-text-muted" />
+              <span>Perfil</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={logout}
               className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive flex items-center gap-2"

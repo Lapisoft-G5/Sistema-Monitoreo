@@ -4,6 +4,7 @@ export * from './auth/forgot-password.contract.js';
 export * from './auth/reset-password.contract.js';
 export * from './auth/logout.contract.js';
 export * from './auth/refresh-token.contract.js';
+export * from './auth/perfil.contract.js';
 export * from './teachers/teachers.contract.js';
 export * from './teachers/areas.contract.js';
 export * from './teachers/carpeta-pedagogica.contract.js';

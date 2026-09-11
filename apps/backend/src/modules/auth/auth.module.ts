@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthSessionService } from './services/auth-session.service.js';
 import { AuthTokenService } from './services/auth-token.service.js';
 import { AuthPasswordService } from './services/auth-password.service.js';
+import { PerfilService } from './services/perfil.service.js';
 
 import { AuthController } from './controllers/auth.controller.js';
 
@@ -44,6 +45,7 @@ import { PermissionsGuard } from './guards/permissions.guard.js';
     AuthSessionService,
     AuthTokenService,
     AuthPasswordService,
+    PerfilService,
     RlsGucService,
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: SessionRepository, useClass: PrismaSessionRepository },
@@ -56,6 +58,7 @@ import { PermissionsGuard } from './guards/permissions.guard.js';
     AuthSessionService,
     AuthTokenService,
     AuthPasswordService,
+    PerfilService,
     RlsGucService,
     UserRepository,
     SessionRepository,

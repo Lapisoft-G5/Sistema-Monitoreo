@@ -14,6 +14,8 @@
     "typecheck": "pnpm --filter frontend exec tsc -b && pnpm --filter backend exec tsc --noEmit",
     "test": "pnpm --filter shared-validation test && pnpm --filter frontend test && pnpm --filter backend test",
     "test:cov": "pnpm --filter frontend test:cov && pnpm --filter backend test:cov",
+    "seed": "pnpm --filter backend prisma:seed",
+    "seed:prod": "pnpm --filter backend prisma:seed:prod",
     "metricas": "./scripts/metricas.sh"
   },
   "engines": {

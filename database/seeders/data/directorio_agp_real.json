@@ -1,0 +1,190 @@
+[
+  {
+    "dni": "01211704",
+    "firstName": "Edwin Ernesto",
+    "lastName": "Chayña Gonzales",
+    "email": "edwinechgonzales@gmail.com",
+    "phone": "951607694",
+    "cargoDescripcion": "DIRECTOR UGEL LAMPA",
+    "role": "director_ugel",
+    "cargoEspecialista": null,
+    "nivelEducativo": "Secundaria",
+    "especialidades": []
+  },
+  {
+    "dni": "01296539",
+    "firstName": "Edwin Leonet",
+    "lastName": "Figueroa Quispe",
+    "email": "edfi91@gmail.com",
+    "phone": "951527881",
+    "cargoDescripcion": "JEFE AGP (JEFE DE GESTIÓN)",
+    "role": "jefe_gestion",
+    "cargoEspecialista": "Jefe de Gestión",
+    "nivelEducativo": "Secundaria",
+    "especialidades": []
+  },
+  {
+    "dni": "01545149",
+    "firstName": "Olga Mercedes",
+    "lastName": "Huaraya Quispe",
+    "email": "olgamercedeshuarayaquispe@gmail.com",
+    "phone": "948554202",
+    "cargoDescripcion": "ESP EDUC INIC. (JEFE DE NIVEL/ÁREA)",
+    "role": "jefe_area",
+    "cargoEspecialista": "Jefe de Área",
+    "nivelEducativo": "Inicial",
+    "especialidades": []
+  },
+  {
+    "dni": "80157677",
+    "firstName": "Wilver",
+    "lastName": "Dueñas Gutierrez",
+    "email": "wilber.due@gmail.com",
+    "phone": "970764444",
+    "cargoDescripcion": "ESPEC.E.PRIM.EIB (JEFE DE NIVEL/ÁREA)",
+    "role": "jefe_area",
+    "cargoEspecialista": "Jefe de Área",
+    "nivelEducativo": "Primaria",
+    "especialidades": [
+      "PIP"
+    ]
+  },
+  {
+    "dni": "01258944",
+    "firstName": "Vidal Moises",
+    "lastName": "Choque Alejo",
+    "email": "vidamcho@gmail.com",
+    "phone": "998849000",
+    "cargoDescripcion": "ESP EDUC PRIMARIA",
+    "role": "especialista",
+    "cargoEspecialista": "Especialista",
+    "nivelEducativo": "Primaria",
+    "especialidades": [
+      "PIP"
+    ]
+  },
+  {
+    "dni": "02432130",
+    "firstName": "Ernesto",
+    "lastName": "Chuquimamani Luque",
+    "email": "ernestochuquimamani@gmail.com",
+    "phone": "984001592",
+    "cargoDescripcion": "ESP-MATEMATICA",
+    "role": "especialista",
+    "cargoEspecialista": "Especialista",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "Matematica"
+    ]
+  },
+  {
+    "dni": "45475533",
+    "firstName": "Harold",
+    "lastName": "Montoya Cuno",
+    "email": "hamocu1988@gmail.com",
+    "phone": "933151568",
+    "cargoDescripcion": "ESP. CIENCIAS SOCIALES",
+    "role": "especialista",
+    "cargoEspecialista": "Especialista",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "Ciencias Sociales"
+    ]
+  },
+  {
+    "dni": "02147290",
+    "firstName": "Wladimir",
+    "lastName": "Huayta Loayza",
+    "email": "wlahulo1020@gmail.com",
+    "phone": "951913547",
+    "cargoDescripcion": "ESP CULT. DEPORTE",
+    "role": "especialista",
+    "cargoEspecialista": "Especialista",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "Educacion Fisica"
+    ]
+  },
+  {
+    "dni": "29560307",
+    "firstName": "Godofredo",
+    "lastName": "Mamani Quispe",
+    "email": "gmamani@ugellampa.edu.pe",
+    "phone": "979677503",
+    "cargoDescripcion": "ESP. DE COMUNIC. (JEFE DE NIVEL/ÁREA)",
+    "role": "jefe_area",
+    "cargoEspecialista": "Jefe de Área",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "Comunicacion"
+    ]
+  },
+  {
+    "dni": "02150800",
+    "firstName": "Quintin",
+    "lastName": "Ticona Flores",
+    "email": "q1t2f3@hotmail.com",
+    "phone": "914235122",
+    "cargoDescripcion": "ESP. TIC",
+    "role": "especialista",
+    "cargoEspecialista": "Especialista",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "EPT"
+    ]
+  },
+  {
+    "dni": "43928571",
+    "firstName": "Abdenir Nelson",
+    "lastName": "Colque Santamaría",
+    "email": "abdenir.27@gmail.com",
+    "phone": "989418008",
+    "cargoDescripcion": "PROF. III ITINERANTE C. E.",
+    "role": "especialista",
+    "cargoEspecialista": "Especialista",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "Desarrollo Personal Ciudadania y Civica"
+    ]
+  },
+  {
+    "dni": "04118698",
+    "firstName": "Marcial",
+    "lastName": "Quispe Huarilloclla",
+    "email": "marcialqh2013@gmail.com",
+    "phone": "946621930",
+    "cargoDescripcion": "ESP. ED. EPT CETPRO EBA",
+    "role": "especialista",
+    "cargoEspecialista": "Especialista",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "EPT"
+    ]
+  },
+  {
+    "dni": "02168053",
+    "firstName": "Gerson Cleofe",
+    "lastName": "Justo Condori",
+    "email": "gersonjusto@gmail.com",
+    "phone": "951593836",
+    "cargoDescripcion": "ESPEC.CONV.ESCOLAR",
+    "role": "especialista",
+    "cargoEspecialista": "Especialista",
+    "nivelEducativo": "Secundaria",
+    "especialidades": [
+      "Desarrollo Personal Ciudadania y Civica"
+    ]
+  },
+  {
+    "dni": "70146942",
+    "firstName": "Milagros",
+    "lastName": "Molina Torres",
+    "email": "mily_sharon@hotmail.com",
+    "phone": "951636842",
+    "cargoDescripcion": "SECRETARIA",
+    "role": "invitado",
+    "cargoEspecialista": null,
+    "nivelEducativo": "Secundaria",
+    "especialidades": []
+  }
+]

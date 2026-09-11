@@ -35,7 +35,8 @@ export const NivelEducativoCEPTRO = {
   MECANICA_MOTOS: 'Mecánica de Motos y Vehículos Afines',
   PELUQUERIA_BARBERIA: 'Peluquería y barbería',
   MADERA: 'Fabricación artesanal de productos de madera',
-  TI: 'Plataformas y servicios de tecnologías de la información',
+  TI: 'Plataformas y Servicios de TI',
+  TECNICO_PRODUCTIVA: 'Técnico Productiva',
 } as const;
 
 export const EspecialidadPrimaria = {

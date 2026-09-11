@@ -51,7 +51,12 @@ const NIVELES_BASE = [
 ];
 
 export async function seedMonitoring(ctx) {
-  console.log('[monitoring] Seeding planes de monitoreo...');
+  const isProduction = Boolean(ctx?.isProduction);
+  if (isProduction) {
+    console.log('[monitoring] Modo producción: no se siembran planes ni plantillas de prueba (deben ser creados formalmente desde el sistema).');
+    return { planUgelId: null };
+  }
+  console.log('[monitoring] Seeding planes de monitoreo de prueba...');
 
   const jefeGestion = await prisma.usuario.findFirst({ where: { rol: { codigo: 'jefe_gestion' } } });
   const directorIe = await prisma.usuario.findFirst({ where: { rol: { codigo: 'director_institucion' } } });
@@ -83,7 +88,8 @@ export async function seedMonitoring(ctx) {
     console.log(`  Plan UGEL 2026: ${plan.id}`);
   }
 
-  if (directorIe && primeraIe) {
+  // En modo desarrollo creamos el plan de ejemplo para una IE
+  if (!isProduction && directorIe && primeraIe) {
     const plan = await findOrCreatePlan(
       { titulo: 'Plan de Monitoreo IE 2026', anioAcademico: 2026, tipoEntidad: 'IE', deleted: false },
       {
@@ -106,7 +112,7 @@ export async function seedMonitoring(ctx) {
         data: { id: randomUUID(), planId: plan.id, institucionId: primeraIe.id },
       });
     }
-    console.log(`  Plan IE 2026: ${plan.id}`);
+    console.log(`  Plan IE 2026 (Demo): ${plan.id}`);
   }
 
   console.log('[monitoring] Seeding plantillas de monitoreo...');

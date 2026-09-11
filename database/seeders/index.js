@@ -33,8 +33,15 @@ async function migrateLegacyRoles() {
   }
 }
 
+const isProduction =
+  process.env.SEED_MODE === 'production' ||
+  process.env.SEED_MODE === 'prod' ||
+  process.env.NODE_ENV === 'production' ||
+  process.argv.includes('--production') ||
+  process.argv.includes('--prod');
+
 async function main() {
-  console.log('=== Sistema de Monitoreo - Seeder ===\n');
+  console.log(`=== Sistema de Monitoreo - Seeder [${isProduction ? 'PRODUCCIÓN' : 'DESARROLLO'}] ===\n`);
 
   await migrateLegacyRoles();
 
@@ -44,22 +51,41 @@ async function main() {
   const cargoMap = await seedCargos();
   const { instMap } = await seedInstituciones();
 
-  await seedPersonas({ roleMap, cargoMap, instMap, nivelMap, cursoMap });
+  await seedPersonas({ roleMap, cargoMap, instMap, nivelMap, cursoMap, isProduction });
 
-  const { planUgelId } = await seedMonitoring({ instMap });
-  await seedScheduling({ planUgelId });
-  await seedAnalisisDemo();
-  await seedIeSecundariaDemo();
+  if (!isProduction) {
+    const { planUgelId } = await seedMonitoring({ instMap, isProduction });
+    await seedScheduling({ planUgelId });
+    await seedAnalisisDemo();
+    await seedIeSecundariaDemo();
 
-  console.log('\n=== Seeding completado (incluye Planes, Plantillas y Fichas) ===');
-  console.log('Credenciales: el DNI es la contrasena inicial (usuarios en isFirstLogin=true).');
-  console.log('Usuarios creados:');
-  console.log('  director_ugel        → DNI: 40000001');
-  console.log('  jefe_gestion         → DNI: 40000002, 41000001');
-  console.log('  jefe_area            → DNI: 40000003, 41000000, 41000002, 41000003, 41000004');
-  console.log('  especialista         → DNI: 40000004, 40000005, 42000001, 42000002, 42000003, 42000004');
-  console.log('  director_institucion → DNI: 40000006, 40000007, 43000001, 43000002, 43000003, 43000004, 43000005');
-  console.log('  docente (y cargos)   → DNI: 40000008-40000013, 44000001-44000003');
+    console.log('\n=== Seeding DESARROLLO completado (con datos demo para pruebas locales) ===');
+    console.log('Credenciales: el DNI es la contraseña inicial (usuarios en isFirstLogin=true).');
+    console.log('Usuarios Demo de Prueba:');
+    console.log('  director_ugel        → DNI: 40000001');
+    console.log('  jefe_gestion         → DNI: 40000002');
+    console.log('  jefe_area            → DNI: 40000003 (Sec.), 40000004 (Prim.), 40000005 (Inic.)');
+    console.log('  especialistas        → DNI: 40000006 - 40000009, 40000100, 40000101');
+    console.log('Superadministrador:');
+    console.log('  superusuario         → DNI: ' + (process.env.SUPERADMIN_DNI || '00000000'));
+    console.log('Usuarios AGP reales:');
+    console.log('  director_ugel        → 01211704 (Edwin Ernesto Chayña Gonzales)');
+    console.log('  jefe_gestion         → 01296539 (Edwin Leonet Figueroa Quispe)');
+    console.log('  jefe_area (Inicial)  → 01545149 (Olga Mercedes Huaraya Quispe)');
+    console.log('  jefe_area (Primaria) → 80157677 (Wilver Dueñas Gutierrez)');
+    console.log('  jefe_area (Secund.)  → 29560307 (Godofredo Mamani Quispe)');
+    console.log('  secretaria (invitado)→ 70146942 (Milagros Molina Torres)');
+  } else {
+    console.log('\n=== Seeding PRODUCCIÓN completado con éxito ===');
+    console.log('Base de datos inicializada LIMPIA para operación en producción:');
+    console.log('  ✔ Super Administrador configurado (DNI: ' + (process.env.SUPERADMIN_DNI || '00000000') + ')');
+    console.log('  ✔ Directorio Oficial AGP UGEL Lampa (14 funcionarios)');
+    console.log('  ✔ Padrón Oficial de II.EE. (225 instituciones ESCALE)');
+    console.log('  ✔ Padrón Oficial NEXUS (Directores y Docentes reales)');
+    console.log('  ✔ 0 cuentas de prueba / demo');
+    console.log('  ✔ 0 planes o plantillas simuladas (se crearán oficialmente desde el sistema)');
+    console.log('  ✔ 0 visitas o evaluaciones simuladas');
+  }
 }
 
 main()

@@ -33,6 +33,10 @@ const NIVELES_POR_MODALIDAD = {
   CEPTRO: [
     { codigo: 'Corte y Ensamblaje', nombre: 'Corte y Ensamblaje' },
     { codigo: 'Mecánica de Motos y Vehículos Afines', nombre: 'Mecánica de Motos y Vehículos Afines' },
+    { codigo: 'Peluquería y barbería', nombre: 'Peluquería y barbería' },
+    { codigo: 'Fabricación artesanal de productos de madera', nombre: 'Fabricación artesanal de productos de madera' },
+    { codigo: 'Plataformas y Servicios de TI', nombre: 'Plataformas y servicios de tecnologías de la información' },
+    { codigo: 'Técnico Productiva', nombre: 'Técnico Productiva' },
   ],
 };
 
@@ -121,6 +125,14 @@ export async function seedCatalogos() {
       create: { nombre: curso.nombre, nivelEducativoId: nivel.id },
     });
     cursoMap[`${curso.nombre}||${curso.nivelEducativo}`] = c.id;
+  }
+
+  // Aliases entre Especialidades y Cursos para enlace automático
+  if (cursoMap['HGE||Secundaria']) {
+    cursoMap['Ciencias Sociales||Secundaria'] = cursoMap['HGE||Secundaria'];
+  }
+  if (cursoMap['DPCC||Secundaria']) {
+    cursoMap['Desarrollo Personal Ciudadania y Civica||Secundaria'] = cursoMap['DPCC||Secundaria'];
   }
 
   console.log(`[catalogos] ${MODALIDADES.length} modalidades, ${ESPECIALIDADES.length} especialidades, ${CURSOS.length} cursos listos.`);

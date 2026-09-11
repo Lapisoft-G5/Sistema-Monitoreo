@@ -10,7 +10,7 @@ import { esDescargaPublica } from './descarga-publica.js';
  * `.env` está a dos niveles de distancia.
  */
 
-const RAIZ = '/srv/app/uploads';
+const RAIZ = path.resolve('/srv/app/uploads');
 
 describe('rutaDeArchivo', () => {
   it('resuelve un archivo dentro de su cajón', () => {

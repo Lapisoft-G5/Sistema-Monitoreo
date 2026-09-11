@@ -36,9 +36,12 @@ services:
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASS=${SMTP_PASS}
+      - SMTP_TLS_INSECURE=${SMTP_TLS_INSECURE:-false}
       - EMAIL_FROM=${EMAIL_FROM}
     expose:
       - '3000'
+    volumes:
+      - backend_uploads:/app/uploads
     networks:
       - monitoring-network
 
@@ -48,3 +51,4 @@ networks:
 
 volumes:
   postgres_data:
+  backend_uploads:

@@ -17,6 +17,7 @@ const CARGOS = [
   'Docente de Educacion Fisica',
   'Auxiliar de Educacion',
   'Jefe de Taller',
+  'Jefe de Laboratorio',
   'Coordinador de TOE',
   'Psicologo',
   'PIP',

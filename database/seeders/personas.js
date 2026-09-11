@@ -19,15 +19,21 @@ const RUTA_INICIAL = new URL('./data/NEXUS_SISTEMA_MONITOREO-inicial.json', impo
 const RUTA_PRIMARIA = new URL('./data/NEXUS_SISTEMA_MONITOREO-primaria.json', import.meta.url);
 const RUTA_SECUNDARIA = new URL('./data/NEXUS_SISTEMA_MONITOREO-secundaria.json', import.meta.url);
 const RUTA_IES = new URL('./data/ies_completas_db.json', import.meta.url);
+const RUTA_EBA_EBE_CETPRO = new URL('./data/iiee_eba_ebe_cetpro.json', import.meta.url);
+const RUTA_AGP_REAL = new URL('./data/directorio_agp_real.json', import.meta.url);
 
-const UGEL_ADMIN_USERS = [
-  {
-    dni: '00000000',
-    firstName: 'Super',
-    lastName: 'Administrador',
-    email: 'superadmin@ugel.gob.pe',
-    role: 'superusuario',
-  },
+const AGP_DIRECTORIO_REAL = JSON.parse(readFileSync(RUTA_AGP_REAL, 'utf-8'));
+
+const SUPERADMIN_USER = {
+  dni: process.env.SUPERADMIN_DNI || '00000000',
+  firstName: process.env.SUPERADMIN_FIRST_NAME || 'Super',
+  lastName: process.env.SUPERADMIN_LAST_NAME || 'Administrador',
+  email: process.env.SUPERADMIN_EMAIL || 'superadmin@ugel.gob.pe',
+  phone: process.env.SUPERADMIN_PHONE || '999999999',
+  role: 'superusuario',
+};
+
+const DEMO_UGEL_USERS = [
   {
     dni: '40000001',
     firstName: 'Carlos',
@@ -144,36 +150,96 @@ const normalizarNivel = (nivel) => {
   return 'Inicial';
 };
 
-function parseEspecialidadSecundaria(raw) {
-  if (!raw) return 'Comunicacion';
-  const str = raw.toUpperCase();
-  if (str.includes('MATEMATICA')) return 'Matematica';
-  if (str.includes('COMUNICACION')) return 'Comunicacion';
-  if (str.includes('CIENCIA') || str.includes('CTA') || str.includes('TECNOLOGIA') || str.includes('AMBIENTE')) return 'CTA';
-  if (str.includes('SOCIAL') || str.includes('HISTORIA')) return 'Ciencias Sociales';
-  if (str.includes('INGLES')) return 'Ingles';
-  if (str.includes('TRABAJO') || str.includes('EPT')) return 'EPT';
-  if (str.includes('DESARROLLO') || str.includes('DPCC') || str.includes('CIVICA')) return 'Desarrollo Personal Ciudadania y Civica';
-  if (str.includes('ARTE')) return 'Arte y Cultura';
-  if (str.includes('RELIGIOSA')) return 'Educacion Religiosa';
-  if (str.includes('FISICA')) return 'Educacion Fisica';
-  return 'Comunicacion';
+const AREAS_SECUNDARIA = [
+  { nombre: 'Matematica', patterns: [/MATEMATICA/i] },
+  { nombre: 'Comunicacion', patterns: [/COMUNICACION/i] },
+  { nombre: 'Ciencias Sociales', patterns: [/CIENCIAS SOCIALES/i, /HISTORIA/i, /\bHGE\b/i] },
+  { nombre: 'CTA', patterns: [/CIENCIA TECNOLOGIA/i, /TECNOLOGIA Y AMBIENTE/i, /\bCTA\b/i, /CIENCIA Y AMBIENTE/i] },
+  { nombre: 'Ingles', patterns: [/INGLES/i] },
+  { nombre: 'EPT', patterns: [/EDUCACION PARA EL TRABAJO/i, /\bEPT\b/i, /TALLER/i] },
+  { nombre: 'Desarrollo Personal Ciudadania y Civica', patterns: [/DESARROLLO PERSONAL/i, /\bDPCC\b/i, /CIVICA/i, /CIUDADANIA/i] },
+  { nombre: 'Arte y Cultura', patterns: [/ARTE Y CULTURA/i, /\bARTE\b/i] },
+  { nombre: 'Educacion Religiosa', patterns: [/EDUCACION RELIGIOSA/i, /RELIGIOSA/i] },
+  { nombre: 'Educacion Fisica', patterns: [/EDUCACION FISICA/i, /ED\. FISICA/i] },
+];
+
+const NO_LECTIVAS = ['ATENCION', 'COLEGIADO', 'TUTORIA', 'MATERIALES', 'REFUERZO', 'INVEST'];
+
+function parseEspecialidadesSecundaria(raw) {
+  if (!raw || typeof raw !== 'string') {
+    return [{ nombre: 'Comunicacion', horas: 0, esPrincipal: true }];
+  }
+
+  const regex = /(\d+)\s*HRS?\s+([^,]+)/gi;
+  const matches = [...raw.matchAll(regex)];
+  const mapaHoras = new Map();
+
+  for (const match of matches) {
+    const horas = parseInt(match[1], 10);
+    const glosa = match[2].trim().toUpperCase();
+
+    if (NO_LECTIVAS.some((ign) => glosa.includes(ign))) {
+      continue;
+    }
+
+    for (const area of AREAS_SECUNDARIA) {
+      if (area.patterns.some((p) => p.test(glosa))) {
+        mapaHoras.set(area.nombre, (mapaHoras.get(area.nombre) || 0) + horas);
+        break;
+      }
+    }
+  }
+
+  if (mapaHoras.size === 0) {
+    const str = raw.toUpperCase();
+    let fallbackNombre = 'Comunicacion';
+    for (const area of AREAS_SECUNDARIA) {
+      if (area.patterns.some((p) => p.test(str))) {
+        fallbackNombre = area.nombre;
+        break;
+      }
+    }
+    return [{ nombre: fallbackNombre, horas: 0, esPrincipal: true }];
+  }
+
+  return Array.from(mapaHoras.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([nombre, horas], index) => ({
+      nombre,
+      horas,
+      esPrincipal: index === 0,
+    }));
 }
 
-function parseEspecialidadPrimaria(rawCargo, rawSpec) {
+function parseEspecialidadesPrimaria(rawCargo, rawSpec) {
   const combined = `${rawCargo || ''} ${rawSpec || ''}`.toUpperCase();
-  if (combined.includes('FISICA')) return 'Educacion Fisica';
-  return 'PIP';
+  if (combined.includes('FISICA')) {
+    return [{ nombre: 'Educacion Fisica', horas: 30, esPrincipal: true }];
+  }
+  return [{ nombre: 'PIP', horas: 30, esPrincipal: true }];
 }
 
 function cargarNexusPersonas() {
-  const iesBase = JSON.parse(readFileSync(RUTA_IES, 'utf-8')).map((ie) => ({
+  const rawIesEbr = JSON.parse(readFileSync(RUTA_IES, 'utf-8'));
+  const rawIesEba = JSON.parse(readFileSync(RUTA_EBA_EBE_CETPRO, 'utf-8'));
+  const iesBase = [...rawIesEbr, ...rawIesEba].map((ie) => ({
     codMod: String(ie.codMod),
     normNombre: norm(ie.nombreIE),
     normDistrito: norm(ie.distrito),
     num: extractNumber(ie.nombreIE),
     nivel: normalizarNivel(ie.nivel),
   }));
+
+  const CARGO_PRIORITY = {
+    'Director': 100,
+    'Subdirector': 90,
+    'Coordinador Pedagógico': 80,
+    'Jefe de Taller': 70,
+    'Jefe de Laboratorio': 70,
+    'PIP': 40,
+    'Docente de Educacion Fisica': 30,
+    'Docente de Aula': 10,
+  };
 
   const nexusFiles = [RUTA_INICIAL, RUTA_PRIMARIA, RUTA_SECUNDARIA];
   const nexusMap = new Map();
@@ -191,6 +257,7 @@ function cargarNexusPersonas() {
       const materno = String(r['APELLIDO MATERNO'] || '').trim().toUpperCase();
       const apellidos = `${patero} ${materno}`.trim();
       const rawCargo = String(r['CARGO'] || '').trim().toUpperCase();
+      const rawEstado = String(r['ESTADO'] || '').trim().toUpperCase();
       const rawNivel = String(r['NIVEL EDUCATIVO'] || '').trim();
       const rawIE = String(r['NOMBRE DE LA INSTITUCION EDUCATIVA'] || '');
       const rawDist = String(r['DISTRITO'] || '');
@@ -203,7 +270,7 @@ function cargarNexusPersonas() {
       const num = extractNumber(rawIE);
       const levelNorm = normalizarNivel(rawNivel);
 
-      // Match IE
+      // Match IE (consistente con instituciones.js)
       let found = iesBase.find((ie) => ie.normDistrito === normDist && ie.normNombre === normName);
       if (!found && num) {
         found = iesBase.find((ie) => ie.normDistrito === normDist && ie.nivel === levelNorm && ie.num === num);
@@ -223,6 +290,12 @@ function cargarNexusPersonas() {
       if (!found) {
         found = iesBase.find((ie) => ie.nivel === levelNorm && ie.normNombre === normName);
       }
+      if (!found && normName.includes('PRONOEI')) {
+        found = iesBase.find((ie) => ie.normNombre.includes('PRONOEI'));
+      }
+      if (!found && num) {
+        found = iesBase.find((ie) => ie.num === num && ie.nivel === levelNorm);
+      }
 
       let codMod = found?.codMod;
       if (!codMod) {
@@ -236,27 +309,32 @@ function cargarNexusPersonas() {
       let role = 'docente';
       let cargoNombre = 'Docente de Aula';
 
-      if (rawCargo === 'DIRECTOR I.E.') {
+      if (rawCargo === 'DIRECTOR I.E.' || rawEstado.includes('DIRECTOR') || rawEstado.includes('DIRECTIVOS DE I.E')) {
         role = 'director_institucion';
         cargoNombre = 'Director';
-      } else if (rawCargo === 'SUB-DIRECTOR I.E.') {
+      } else if (rawCargo === 'SUB-DIRECTOR I.E.' || rawEstado.includes('SUB-DIRECTOR')) {
         cargoNombre = 'Subdirector';
-      } else if (rawCargo === 'PROFESOR - IP') {
-        cargoNombre = 'PIP';
+      } else if (rawCargo.includes('COORDINADOR') || rawEstado.includes('COORDINADOR')) {
+        cargoNombre = 'Coordinador Pedagógico';
       } else if (rawCargo === 'JEFE DE TALLER') {
         cargoNombre = 'Jefe de Taller';
       } else if (rawCargo === 'JEFE DE LABORATORIO') {
         cargoNombre = 'Jefe de Laboratorio';
-      } else if (rawCargo === 'COORDINADOR DE TUTORIA Y DESARROLLO INTEGRAL' || rawCargo === 'DOCENTE COORDINADOR') {
-        cargoNombre = 'Coordinador Pedagógico';
+      } else if (rawCargo === 'PROFESOR - IP') {
+        cargoNombre = 'PIP';
+      } else if (rawCargo.includes('EDUCACION FISICA') || rawCargo.includes('TECNICO DEPORTIVO')) {
+        cargoNombre = 'Docente de Educacion Fisica';
       }
 
-      let especialidadNombre = null;
+      const cargoPrioridad = CARGO_PRIORITY[cargoNombre] || 10;
+
+      let especialidades = [];
       if (levelNorm === 'Primaria') {
-        especialidadNombre = parseEspecialidadPrimaria(rawCargo, especialidadRaw);
+        especialidades = parseEspecialidadesPrimaria(rawCargo, especialidadRaw);
       } else if (levelNorm === 'Secundaria') {
-        especialidadNombre = parseEspecialidadSecundaria(especialidadRaw);
+        especialidades = parseEspecialidadesSecundaria(especialidadRaw);
       }
+      const especialidadPrincipal = especialidades[0]?.nombre || null;
 
       const cleanFirst = nombres.split(' ')[0].toLowerCase().replace(/[^a-z]/g, '');
       const cleanLast = patero.toLowerCase().replace(/[^a-z]/g, '');
@@ -274,14 +352,22 @@ function cargarNexusPersonas() {
           cargaLaboral: jornada,
           institucionCodigoModular: codMod,
           cargoNombre,
-          especialidad: especialidadNombre,
+          cargoPrioridad,
+          especialidad: especialidadPrincipal,
+          especialidades,
         });
       } else {
         const existing = nexusMap.get(dni);
-        if (role === 'director_institucion') {
-          existing.role = 'director_institucion';
+        if (cargoPrioridad > (existing.cargoPrioridad || 0)) {
+          existing.role = role;
           existing.institucionCodigoModular = codMod;
-          existing.cargoNombre = 'Director';
+          existing.cargoNombre = cargoNombre;
+          existing.cargoPrioridad = cargoPrioridad;
+          existing.nivelEducativo = levelNorm;
+          existing.especialidad = especialidadPrincipal;
+          existing.especialidades = especialidades;
+          existing.cargaLaboral = jornada;
+          existing.condicionLaboral = situacion.charAt(0).toUpperCase() + situacion.slice(1).toLowerCase();
         }
       }
     });
@@ -303,6 +389,12 @@ async function limpiarPersonasPrevias() {
   await prisma.cronograma.deleteMany({});
   await prisma.planCoberturaIe.deleteMany({});
   await prisma.planMonitoreo.deleteMany({});
+  await prisma.rubricaNivel.deleteMany({});
+  await prisma.aspectoEvaluado.deleteMany({});
+  await prisma.desempenoPlantilla.deleteMany({});
+  await prisma.ejeItemPlantilla.deleteMany({});
+  await prisma.nivelCalificacion.deleteMany({});
+  await prisma.solicitudPlantillaItem.deleteMany({});
   await prisma.plantillaMonitoreo.deleteMany({});
   await prisma.docenteSeccion.deleteMany({});
   await prisma.docenteCurso.deleteMany({});
@@ -322,16 +414,27 @@ async function limpiarPersonasPrevias() {
 }
 
 export async function seedPersonas(ctx) {
-  console.log('[personas] Seeding personas y usuarios reales de UGEL Lampa...');
+  const isProduction = Boolean(ctx?.isProduction);
+  console.log(
+    `[personas] Seeding personas y usuarios (${isProduction ? 'MODO PRODUCCIÓN - Solo datos reales' : 'MODO DESARROLLO - Incluye usuarios demo'})...`,
+  );
 
   await limpiarPersonasPrevias();
 
   const nexusUsers = cargarNexusPersonas();
-  const todosLosUsuarios = [...UGEL_ADMIN_USERS, ...nexusUsers];
-  console.log(`[personas] Total de usuarios a procesar: ${todosLosUsuarios.length} (${UGEL_ADMIN_USERS.length} Admin + ${nexusUsers.length} NEXUS)`);
+  const adminUsers = isProduction ? [SUPERADMIN_USER] : [SUPERADMIN_USER, ...DEMO_UGEL_USERS];
+  // Los usuarios reales de AGP se agregan al final para asegurar precedencia de roles sobre plazas de NEXUS
+  const todosLosUsuarios = [...adminUsers, ...nexusUsers, ...AGP_DIRECTORIO_REAL];
+  console.log(
+    `[personas] Total de usuarios a procesar: ${todosLosUsuarios.length} ` +
+      `(${adminUsers.length} Admin + ${AGP_DIRECTORIO_REAL.length} AGP Real + ${nexusUsers.length} NEXUS)`,
+  );
 
   const passwordCache = new Map();
-  const getPasswordHash = (dni) => {
+  const getPasswordHash = (dni, role) => {
+    if (role === 'superusuario' && process.env.SUPERADMIN_PASSWORD) {
+      return bcrypt.hashSync(process.env.SUPERADMIN_PASSWORD, 4);
+    }
     if (!passwordCache.has(dni)) {
       passwordCache.set(dni, bcrypt.hashSync(dni, 4));
     }
@@ -345,7 +448,8 @@ export async function seedPersonas(ctx) {
       continue;
     }
 
-    const hash = getPasswordHash(u.dni);
+    const hash = getPasswordHash(u.dni, u.role);
+    const isFirstLogin = u.role === 'superusuario' && process.env.SUPERADMIN_PASSWORD ? false : true;
 
     const persona = await prisma.persona.upsert({
       where: { dni: u.dni },
@@ -353,12 +457,14 @@ export async function seedPersonas(ctx) {
         nombres: u.firstName,
         apellidos: u.lastName,
         correo: u.email,
+        telefono: u.phone || null,
       },
       create: {
         dni: u.dni,
         nombres: u.firstName,
         apellidos: u.lastName,
         correo: u.email,
+        telefono: u.phone || null,
       },
     });
 
@@ -368,20 +474,27 @@ export async function seedPersonas(ctx) {
         rolId,
         passwordHash: hash,
         isActive: true,
-        isFirstLogin: true,
+        isFirstLogin,
       },
       create: {
         personaId: persona.id,
         rolId,
         passwordHash: hash,
         isActive: true,
-        isFirstLogin: true,
+        isFirstLogin,
       },
     });
 
     // 1. Especialista UGEL
     if (['especialista', 'jefe_area', 'jefe_gestion', 'director_ugel'].includes(u.role)) {
-      const cargoEspecialista = u.role === 'jefe_area' ? 'Jefe de Área' : u.role === 'jefe_gestion' ? 'Jefe de Gestión' : 'Especialista';
+      const cargoEspecialista =
+        u.cargoEspecialista ||
+        (u.role === 'jefe_area'
+          ? 'Jefe de Área'
+          : u.role === 'jefe_gestion'
+            ? 'Jefe de Gestión'
+            : 'Especialista');
+
       const esp = await prisma.especialista.upsert({
         where: { personaId: persona.id },
         update: {
@@ -398,6 +511,20 @@ export async function seedPersonas(ctx) {
           condicionLaboral: 'Nombrado',
           cargaLaboral: 40,
           estado: 'Activo',
+        },
+      });
+
+      // Cargo activo en especialista_cargos (Fase 2 de capability-map)
+      await prisma.especialistaCargo.deleteMany({
+        where: { especialistaId: esp.id },
+      });
+      await prisma.especialistaCargo.create({
+        data: {
+          especialistaId: esp.id,
+          cargo: cargoEspecialista,
+          esPrincipal: true,
+          fechaInicio: new Date(),
+          fechaFin: null,
         },
       });
 
@@ -456,26 +583,34 @@ export async function seedPersonas(ctx) {
         },
       });
 
-      if (u.especialidad && nivelDocente) {
-        const espRecord = await prisma.especialidad.findFirst({
-          where: { nombre: u.especialidad, nivelEducativoId: nivelDocente.id },
-        });
-        if (espRecord) {
-          await prisma.docenteEspecialidad.upsert({
-            where: { docenteId_especialidadId: { docenteId: docente.id, especialidadId: espRecord.id } },
-            update: {},
-            create: { docenteId: docente.id, especialidadId: espRecord.id },
-          });
-        }
+      const especialidadesList = u.especialidades && u.especialidades.length > 0
+        ? u.especialidades
+        : u.especialidad
+          ? [{ nombre: u.especialidad, esPrincipal: true }]
+          : [];
 
-        const cursoKey = `${u.especialidad}||${u.nivelEducativo || 'Secundaria'}`;
-        const cursoId = ctx.cursoMap[cursoKey];
-        if (cursoId) {
-          await prisma.docenteCurso.upsert({
-            where: { docenteId_cursoId: { docenteId: docente.id, cursoId } },
-            update: {},
-            create: { docenteId: docente.id, cursoId },
+      if (especialidadesList.length > 0 && nivelDocente) {
+        for (const espItem of especialidadesList) {
+          const espRecord = await prisma.especialidad.findFirst({
+            where: { nombre: espItem.nombre, nivelEducativoId: nivelDocente.id },
           });
+          if (espRecord) {
+            await prisma.docenteEspecialidad.upsert({
+              where: { docenteId_especialidadId: { docenteId: docente.id, especialidadId: espRecord.id } },
+              update: { esPrincipal: espItem.esPrincipal },
+              create: { docenteId: docente.id, especialidadId: espRecord.id, esPrincipal: espItem.esPrincipal },
+            });
+          }
+
+          const cursoKey = `${espItem.nombre}||${u.nivelEducativo || 'Secundaria'}`;
+          const cursoId = ctx.cursoMap[cursoKey];
+          if (cursoId) {
+            await prisma.docenteCurso.upsert({
+              where: { docenteId_cursoId: { docenteId: docente.id, cursoId } },
+              update: {},
+              create: { docenteId: docente.id, cursoId },
+            });
+          }
         }
       }
 
@@ -547,8 +682,10 @@ export async function seedPersonas(ctx) {
     'Subdirector': 2,
     'Coordinador Pedagógico': 3,
     'Jefe de Taller': 4,
-    'PIP': 5,
-    'Docente de Aula': 6,
+    'Jefe de Laboratorio': 5,
+    'PIP': 6,
+    'Docente de Educacion Fisica': 7,
+    'Docente de Aula': 8,
   };
 
   const docentesConCargos = await prisma.docente.findMany({

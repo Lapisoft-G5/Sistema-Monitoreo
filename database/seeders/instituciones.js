@@ -14,6 +14,7 @@ const RUTA_IES = new URL('./data/ies_completas_db.json', import.meta.url);
 const RUTA_INICIAL = new URL('./data/NEXUS_SISTEMA_MONITOREO-inicial.json', import.meta.url);
 const RUTA_PRIMARIA = new URL('./data/NEXUS_SISTEMA_MONITOREO-primaria.json', import.meta.url);
 const RUTA_SECUNDARIA = new URL('./data/NEXUS_SISTEMA_MONITOREO-secundaria.json', import.meta.url);
+const RUTA_EBA_EBE_CETPRO = new URL('./data/iiee_eba_ebe_cetpro.json', import.meta.url);
 
 const CODIGOS_DEMO = [
   '0200001', '0200002', '0200003', '0200004', '0200005', '0200006',
@@ -27,7 +28,24 @@ const tituloCaso = (s) =>
     .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
     .join(' ');
 
-const normalizarNivel = (nivel) => {
+const normalizarModalidad = (mod, nivel) => {
+  if (mod === 'EBA' || /alternativa/i.test(nivel)) return 'EBA';
+  if (mod === 'EBE' || /especial|cebe|prite/i.test(nivel)) return 'EBE';
+  if (mod === 'CEPTRO' || /cetpro|productiva/i.test(nivel)) return 'CEPTRO';
+  return 'EBR';
+};
+
+const normalizarNivel = (nivel, modalidad) => {
+  if (modalidad === 'EBA') {
+    if (/avanzado/i.test(nivel)) return 'Avanzado';
+    return 'Inicial-Intermedio';
+  }
+  if (modalidad === 'EBE') {
+    return 'CEBE';
+  }
+  if (modalidad === 'CEPTRO') {
+    return 'Técnico Productiva';
+  }
   if (/inicial/i.test(nivel)) return 'Inicial';
   if (/primaria/i.test(nivel)) return 'Primaria';
   if (/secundaria/i.test(nivel)) return 'Secundaria';
@@ -58,15 +76,19 @@ const coordEnLampa = (lat, lng) =>
   lng <= -69.9;
 
 function cargarTodasInstituciones() {
-  const rawIes = JSON.parse(readFileSync(RUTA_IES, 'utf-8'));
+  const rawIesEbr = JSON.parse(readFileSync(RUTA_IES, 'utf-8'));
+  const rawIesEbaEbeCetpro = JSON.parse(readFileSync(RUTA_EBA_EBE_CETPRO, 'utf-8'));
+  const rawIes = [...rawIesEbr, ...rawIesEbaEbeCetpro];
+
   const listaBase = rawIes.map((x) => {
     const enLampa = coordEnLampa(x.latitud, x.longitud);
+    const modalidad = normalizarModalidad(x.modalidad, x.nivel);
     return {
       codigoModular: String(x.codMod),
       codigoLocal: String(x.codLocal),
       nombre: String(x.nombreIE).trim(),
-      nivelEducativo: normalizarNivel(x.nivel),
-      modalidad: 'EBR',
+      nivelEducativo: normalizarNivel(x.nivel, modalidad),
+      modalidad,
       departamento: 'Puno',
       provincia: tituloCaso(x.provincia),
       distrito: tituloCaso(x.distrito),
@@ -126,6 +148,12 @@ function cargarTodasInstituciones() {
       if (!found) {
         found = ieListMapped.find((ie) => ie.nivelEducativo === levelNorm && ie.normNombre === normName);
       }
+      if (!found && normName.includes('PRONOEI')) {
+        found = ieListMapped.find((ie) => ie.normNombre.includes('PRONOEI'));
+      }
+      if (!found && num) {
+        found = ieListMapped.find((ie) => ie.num === num && ie.nivelEducativo === levelNorm);
+      }
 
       if (!found) {
         const key = `${normDist}|${normName}|${levelNorm}`;
@@ -156,6 +184,9 @@ function cargarTodasInstituciones() {
 
 export async function seedInstituciones() {
   console.log('[instituciones] Importando II.EE. reales de la UGEL Lampa (incluyendo datos NEXUS)...');
+  await prisma.institucionEducativa.deleteMany({
+    where: { codigoModular: { startsWith: '99' } },
+  });
   const instituciones = cargarTodasInstituciones();
   const instMap = {};
   let sinCoord = 0;

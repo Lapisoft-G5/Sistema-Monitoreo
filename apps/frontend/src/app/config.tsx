@@ -4,11 +4,15 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { Toaster } from 'sonner';
 import { UserProvider } from '@entities/model-user';
 import { setupFetchInterceptor } from '@shared/api/fetchInterceptor';
+import { setupChunkReloadHandler } from '@shared/lib/chunk-reload';
 import { STALE_TIMES } from '@shared/config/constants';
 import { persister, MAX_AGE_CACHE } from './query-persistence';
 
 // 1. Activamos el interceptor global de red de la capa shared
 setupFetchInterceptor();
+
+// 2. Activamos la auto-recuperación ante desfase de chunks por nuevos despliegues
+setupChunkReloadHandler();
 
 // 2. Cliente de TanStack Query (cache, retries, deduplicacion de requests)
 const queryClient = new QueryClient({

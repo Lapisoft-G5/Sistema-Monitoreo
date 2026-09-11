@@ -32,6 +32,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Al actualizar el Service Worker, toma el control de inmediato sin esperar a cerrar pestañas
+        clientsClaim: true,
+        skipWaiting: true,
         // El shell de una SPA: cualquier ruta desconocida se sirve con index.html
         // desde la caché, para que la navegación funcione sin red.
         navigateFallback: '/index.html',

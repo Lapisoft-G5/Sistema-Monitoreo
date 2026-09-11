@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
+  Patch,
   Post,
   Req,
   Res,
@@ -14,10 +16,12 @@ import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { AuthSessionService } from '../services/auth-session.service.js';
 import { AuthPasswordService } from '../services/auth-password.service.js';
+import { PerfilService } from '../services/perfil.service.js';
 import { LoginDto } from '../dto/login.dto.js';
 import { ChangePasswordDto } from '../dto/change-password.dto.js';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto.js';
 import { ResetPasswordDto } from '../dto/reset-password.dto.js';
+import { UpdatePerfilDto } from '../dto/update-perfil.dto.js';
 import { AuthGuard } from '../guards/auth.guard.js';
 import { AllowFirstLogin } from '../decorators/allow-first-login.decorator.js';
 import {
@@ -27,6 +31,7 @@ import {
   IResetPasswordResponse,
   ILogoutResponse,
   IRefreshTokenResponse,
+  IPerfilResponse,
 } from '@sistema-monitoreo/shared-contracts';
 import { RefreshTokenDto } from '../dto/refresh-token.dto.js';
 import { JwtPayload } from '../services/auth-token.service.js';
@@ -41,6 +46,7 @@ export class AuthController {
   constructor(
     private readonly authSessionService: AuthSessionService,
     private readonly authPasswordService: AuthPasswordService,
+    private readonly perfilService: PerfilService,
     @Inject(ConfigService) private readonly configService: ConfigService,
   ) {}
 
@@ -152,6 +158,25 @@ export class AuthController {
     res.clearCookie('refreshToken', cookieOpts);
 
     return result;
+  }
+
+  @Get('perfil')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getPerfil(@Req() req: AuthenticatedRequest): Promise<IPerfilResponse> {
+    const userId = req.user.sub;
+    return this.perfilService.getPerfil(userId);
+  }
+
+  @Patch('perfil')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updatePerfil(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: UpdatePerfilDto,
+  ): Promise<IPerfilResponse> {
+    const userId = req.user.sub;
+    return this.perfilService.updatePerfil(userId, dto);
   }
 
   private getCookieOptions(maxAge?: number) {

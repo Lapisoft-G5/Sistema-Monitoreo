@@ -1,4 +1,9 @@
-import type { ILoginResponse, ILoginError } from '@sistema-monitoreo/shared-contracts';
+import type {
+  ILoginResponse,
+  ILoginError,
+  IPerfilResponse,
+  IUpdatePerfilRequest,
+} from '@sistema-monitoreo/shared-contracts';
 import { request } from '../config/api.js';
 
 export const authApi = {
@@ -82,6 +87,29 @@ export const authApi = {
         '/api/auth/refresh',
         { method: 'POST', body: JSON.stringify({ refreshToken }) },
       );
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
+
+  getPerfil: async (): Promise<{ ok: boolean; data?: IPerfilResponse; error?: unknown }> => {
+    try {
+      const data = await request<IPerfilResponse>('/api/auth/perfil', { method: 'GET' });
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
+
+  updatePerfil: async (
+    dto: IUpdatePerfilRequest,
+  ): Promise<{ ok: boolean; data?: IPerfilResponse; error?: unknown }> => {
+    try {
+      const data = await request<IPerfilResponse>('/api/auth/perfil', {
+        method: 'PATCH',
+        body: JSON.stringify(dto),
+      });
       return { ok: true, data };
     } catch (err) {
       return { ok: false, error: err };

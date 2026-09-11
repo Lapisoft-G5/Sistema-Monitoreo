@@ -27,8 +27,14 @@ export const setupFetchInterceptor = () => {
         urlStr = args[0].url;
       }
 
-      const isAuthUrl = urlStr.includes('/api/auth/');
-      if (!isAuthUrl) {
+      // Solo las rutas públicas de auth (login, refresh, forgot/reset password) no deben reintentar refresco.
+      // Rutas protegidas bajo /api/auth/ (como /api/auth/perfil o change-password) sí deben refrescar el token si expiró.
+      const isPublicAuthUrl =
+        urlStr.includes('/api/auth/login') ||
+        urlStr.includes('/api/auth/refresh') ||
+        urlStr.includes('/api/auth/forgot-password') ||
+        urlStr.includes('/api/auth/reset-password');
+      if (!isPublicAuthUrl) {
         if (!isRefreshing) {
           isRefreshing = true;
           // Llamamos a refresh() asumiendo que las cookies se enviarán automáticamente.

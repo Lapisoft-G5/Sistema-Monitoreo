@@ -19,6 +19,7 @@ import {
   BandejaSolicitudesPlantillaPage,
   MisSolicitudesPlantillaPage,
 } from '@/features/solicitudes-plantilla';
+import { PerfilPage } from '@/pages/perfil/PerfilPage';
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ export const router = createBrowserRouter([
       ...adminRoutes,
       ...jefeGestionRoutes,
       ...especialistaRoutes,
+      {
+        path: 'perfil',
+        element: <PerfilPage />,
+      },
       {
         element: <ProtectedRoute permission="focos_atencion" />,
         children: [{ path: 'focos-atencion', element: <FocosAtencionPage /> }],

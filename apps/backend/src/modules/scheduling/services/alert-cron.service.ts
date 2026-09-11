@@ -60,12 +60,15 @@ export class AlertCronService {
             const fechaStr = cronograma.fechaProgramada.toLocaleDateString('es-PE');
             const institucionStr = `${cronograma.institucion.codigoModular} - ${cronograma.institucion.nombre}`;
             const docenteStr = `${cronograma.evaluado.persona.nombres} ${cronograma.evaluado.persona.apellidos}`;
+            const monitorStr =
+              `${cronograma.monitor.persona.nombres} ${cronograma.monitor.persona.apellidos}`.trim();
 
             await this.mailer.sendCronogramaVencidoEmail(
               emailMonitor,
               fechaStr,
               institucionStr,
               docenteStr,
+              monitorStr,
             );
 
             // Marcar como enviada para no repetir

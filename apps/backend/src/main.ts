@@ -26,13 +26,8 @@ async function bootstrap() {
   const port = configService.getOrThrow<number>('PORT');
   const host = configService.getOrThrow<string>('HOST');
 
-  const allowedOrigins = frontendUrl
-    .split(',')
-    .map((url) => url.trim().replace(/\/+$/, ''))
-    .filter(Boolean);
-
   app.enableCors({
-    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
+    origin: frontendUrl,
     credentials: true,
   });
 

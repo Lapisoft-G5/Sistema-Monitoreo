@@ -20,11 +20,13 @@ import {
   MisSolicitudesPlantillaPage,
 } from '@/features/solicitudes-plantilla';
 import { PerfilPage } from '@/pages/perfil/PerfilPage';
+import { RouteErrorBoundary } from '@shared/ui/RouteErrorBoundary';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <AppShell />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, element: <RootRedirect /> },
 

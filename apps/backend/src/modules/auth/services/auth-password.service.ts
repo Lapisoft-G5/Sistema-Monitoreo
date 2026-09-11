@@ -76,9 +76,11 @@ export class AuthPasswordService {
       requestedIp: meta?.ipAddress,
     });
 
+    const nombreCompleto = `${user.persona.nombres} ${user.persona.apellidos ?? ''}`.trim();
     await this.mailerService.sendPasswordResetEmail(
       user.persona.correo!,
-      user.persona.nombres,
+      nombreCompleto,
+      user.persona.dni,
       rawToken,
     );
     await this.auditRepository.logAuthEvent({

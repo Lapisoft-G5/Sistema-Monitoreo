@@ -123,7 +123,7 @@ export class NotificationsService {
 
         let email = false;
         if (d.correo) {
-          email = await this.enviarCorreoBestEffort(d.correo, titulo, cuerpo);
+          email = await this.enviarCorreoBestEffort(d.correo, titulo, cuerpo, d.nombre);
         }
 
         resultados.push({
@@ -743,10 +743,10 @@ export class NotificationsService {
     to: string,
     subject: string,
     texto: string,
+    destinatarioNombre?: string,
   ): Promise<boolean> {
     try {
-      const html = `<p>${texto.replace(/</g, '&lt;')}</p>`;
-      await this.mailer.sendMail(to, subject, texto, html);
+      await this.mailer.sendNotificacionEmail(to, subject, texto, destinatarioNombre);
       return true;
     } catch (error) {
       // El correo es best-effort: su fallo no debe romper la notificación in-app.

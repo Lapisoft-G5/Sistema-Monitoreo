@@ -28,7 +28,7 @@ const usuario = (over: Record<string, unknown> = {}) =>
     id: 'u-1',
     isActive: true,
     passwordHash: HASH_ACTUAL,
-    persona: { nombres: 'Ana', correo: 'ana@ugel.pe' },
+    persona: { nombres: 'Ana', apellidos: 'Pérez', dni: '12345678', correo: 'ana@ugel.pe' },
     ...over,
   }) as never;
 
@@ -121,7 +121,8 @@ describe('AuthPasswordService', () => {
       await pedirEnlace();
       expect(mailerService.sendPasswordResetEmail).toHaveBeenCalledWith(
         'ana@ugel.pe',
-        'Ana',
+        'Ana Pérez',
+        '12345678',
         expect.any(String),
       );
     });
@@ -138,8 +139,8 @@ describe('AuthPasswordService', () => {
       const [[guardado]] = passwordTokenRepository.createPasswordResetToken.mock.calls as [
         [{ tokenHash: string }],
       ];
-      const [[, , enviado]] = mailerService.sendPasswordResetEmail.mock.calls as [
-        [string, string, string],
+      const [[, , , enviado]] = mailerService.sendPasswordResetEmail.mock.calls as [
+        [string, string, string, string],
       ];
 
       expect(guardado.tokenHash).not.toBe(enviado);

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { TipoMonitoreo } from '@sistema-monitoreo/shared-contracts';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { FormularioCronograma } from '../lib/formulario';
 import { numerosDeVisitaDisponibles } from '../lib/numeracion-visitas';
@@ -13,6 +14,8 @@ interface SincronizacionParams {
   evaluadorElegidoId: string;
   evaluadoElegidoId: string;
   tipoDeVisita: FormularioCronograma['tipo'];
+  /** Fichas que el monitor elegido puede levantar. */
+  tiposPermitidos: readonly TipoMonitoreo[];
   /** Evaluados que el evaluador actual puede monitorear. */
   evaluadosDisponibles: readonly Evaluable[];
   /** Evaluado ya resuelto a su registro. */
@@ -42,11 +45,22 @@ export function useSincronizacionFormulario({
   evaluadorElegidoId,
   evaluadoElegidoId,
   tipoDeVisita,
+  tiposPermitidos,
   evaluadosDisponibles,
   evaluadoResuelto,
   cronogramas,
   onCambiar,
 }: SincronizacionParams) {
+  /**
+   * El Jefe de Gestión sólo levanta la ficha del director. Si se lo elige con
+   * «Docente» marcado, el formulario pasa a «Director» —y, como cambiar el tipo
+   * limpia el evaluado, deja de mostrar a un docente que ya no corresponde—.
+   * Al editar no se toca: la visita ya está emitida.
+   */
+  if (!esEdicion && tiposPermitidos.length > 0 && !tiposPermitidos.includes(tipoDeVisita)) {
+    onCambiar('tipo', tiposPermitidos[0]);
+  }
+
   /**
    * Un coordinador o jefe de taller sólo evalúa a su cartera. Al cambiar de
    * evaluador, el evaluado ya elegido puede dejar de estar entre sus opciones:

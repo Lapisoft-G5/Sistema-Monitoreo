@@ -7,6 +7,7 @@ import type {
 } from '../repositories/cronograma.repository.js';
 import type { CreateVisitaDto, UpdateVisitaDto } from '../dto/create-visita.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import {
   requiereEspecialidadCompartida,
   compartenEspecialidad,
@@ -208,11 +209,6 @@ export async function crearVisita(
       'El monitor (especialista/director) seleccionado no está activo.',
     );
   }
-  if (activas.monitorCargo === 'Jefe de Área') {
-    throw new ForbiddenException(
-      'Los Responsables de Nivel no pueden realizar visitas (rol no evaluador).',
-    );
-  }
   // El Director de UGEL conduce la unidad, no hace monitoreo de campo: no debe
   // ser monitor de una visita, porque quien monitorea firma la ficha y él no
   // tiene esa potestad. Sin esta regla la ficha quedaría sin poder cerrarse.
@@ -223,6 +219,16 @@ export async function crearVisita(
   }
   if (!activas.evaluado) {
     throw new BadRequestException('El evaluado (docente/director) seleccionado no está activo.');
+  }
+
+  // El Jefe de Gestión monitorea sólo a los directores de las instituciones. Al
+  // personal lo monitorean los especialistas y los Responsables de Nivel, que
+  // sí cubren un nivel; el Jefe de Gestión no está atado a ninguno.
+  if (activas.monitorCargo === CargoNombre.JEFE_GESTION && !activas.evaluadoEsDirector) {
+    throw new ForbiddenException(
+      'El Jefe de Gestión solo monitorea a los directores de las instituciones: ' +
+        'para monitorear a un docente seleccione un especialista o un Responsable de Nivel.',
+    );
   }
 
   // A un director se lo evalúa sólo con la ficha directiva. Sin esta regla se

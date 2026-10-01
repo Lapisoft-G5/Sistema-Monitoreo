@@ -1,3 +1,4 @@
+import type { TipoMonitoreo } from '@sistema-monitoreo/shared-contracts';
 import type { Opcion } from '@features/cronogramas/lib/opciones-de-asignacion';
 import type { BotonVisita } from './SelectorNumeroVisita';
 
@@ -17,6 +18,8 @@ export interface OpcionesDelFormulario {
   evaluados: Opcion[];
   evaluadores: Opcion[];
   visitas: BotonVisita[];
+  /** Fichas que el monitor elegido puede levantar; el resto se muestra bloqueado. */
+  tiposPermitidos: readonly TipoMonitoreo[];
 }
 
 /** Qué puede editar quien está usando el formulario. */

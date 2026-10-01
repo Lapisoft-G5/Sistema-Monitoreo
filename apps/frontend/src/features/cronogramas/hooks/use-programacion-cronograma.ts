@@ -6,6 +6,7 @@ import {
   institucionesAsignables,
   modalidadesPermitidas,
   nivelesPermitidos,
+  tiposPermitidosDelMonitor,
   type EspecialistaAsignable,
   type InstitucionAsignable,
   type UsuarioAsignador,
@@ -98,6 +99,12 @@ export function useProgramacionCronograma({
     [especialistas, form.monitorId],
   );
 
+  /** Qué ficha puede levantar el monitor elegido: el Jefe de Gestión, sólo la del director. */
+  const tiposPermitidos = useMemo(
+    () => tiposPermitidosDelMonitor(especialistas.find((e) => e.id === form.monitorId)?.cargo),
+    [especialistas, form.monitorId],
+  );
+
   const { evaluados, esSecundaria, opcionesDeEvaluado, opcionesDeEvaluador } =
     useOpcionesDeEvaluacion({
       docentes,
@@ -117,6 +124,7 @@ export function useProgramacionCronograma({
     evaluadorElegidoId: form.monitorId,
     evaluadoElegidoId: form.evaluadoId,
     tipoDeVisita: form.tipo,
+    tiposPermitidos,
     evaluadosDisponibles: evaluados,
     evaluadoResuelto,
     cronogramas,
@@ -152,6 +160,7 @@ export function useProgramacionCronograma({
       ),
       evaluados: opcionesDeEvaluado,
       evaluadores: opcionesDeEvaluador,
+      tiposPermitidos,
       visitas: numerosDeVisitaDisponibles(
         evaluadoResuelto
           ? cronogramas.filter((c) => c.evaluadoId === evaluadoResuelto.id && c.tipo === form.tipo)
@@ -169,6 +178,7 @@ export function useProgramacionCronograma({
       instituciones,
       opcionesDeEvaluado,
       opcionesDeEvaluador,
+      tiposPermitidos,
       evaluadoResuelto,
       cronogramas,
     ],

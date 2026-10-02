@@ -16,6 +16,7 @@ import {
   ResolverSolicitudData,
   type QueryVisitasFilters,
   type QuerySolicitudesFilters,
+  type EntidadesActivasValidation,
 } from './cronograma.repository.js';
 import {
   fromPrismaVisita,
@@ -137,16 +138,7 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
     institucionId: string,
     monitorId: string,
     evaluadoId: string,
-  ): Promise<{
-    institucion: boolean;
-    monitor: boolean;
-    evaluado: boolean;
-    monitorCargo?: string;
-    monitorEsDirectorUgel: boolean;
-    monitorEspecialidades: string[];
-    evaluadoEsDirector: boolean;
-    evaluadoEspecialidades: string[];
-  }> {
+  ): Promise<EntidadesActivasValidation> {
     const [ie, monitor, evaluado] = await Promise.all([
       this.prisma.institucionEducativa.findUnique({ where: { id: institucionId } }),
       this.prisma.especialista.findUnique({
@@ -181,6 +173,7 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
       monitor: monitor?.estado === 'Activo',
       evaluado: evaluado?.estado === 'Activo',
       monitorCargo: monitor?.cargo,
+      monitorNivel: monitor?.nivelEducativo,
       monitorEsDirectorUgel: monitor?.persona?.usuario?.rol?.codigo === RoleCode.DIRECTOR_UGEL,
       monitorEspecialidades: (monitor?.especialidades ?? []).map((e) => e.especialidad.nombre),
       evaluadoEsDirector: (evaluado?.docenteCargos?.length ?? 0) > 0,

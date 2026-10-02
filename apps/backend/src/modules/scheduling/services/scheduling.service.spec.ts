@@ -412,6 +412,192 @@ describe('SchedulingService - Reprogramaciones', () => {
     });
   });
 
+  /**
+   * Quién monitorea a quién depende del cargo del monitor:
+   *  - Especialista: docentes (y directores) de su nivel y área.
+   *  - Responsable de Nivel (Jefe de Área): docentes y directores de su nivel.
+   *  - Jefe de Gestión: sólo directores de institución.
+   *
+   * Antes el Responsable de Nivel se rechazaba como monitor («rol no evaluador»)
+   * aunque el formulario sí lo ofrecía, y al Jefe de Gestión no se le decía nada.
+   */
+  describe('crearVisita - quién puede ser monitor según su cargo', () => {
+    const visitaPara = (tipoMonitoreo: 'DOCENTE' | 'DIRECTIVO') => ({
+      monitorId: 'mon-1',
+      institucionId: 'ie-1',
+      evaluadoId: 'eval-1',
+      tipoMonitoreo,
+      numeroVisita: 1,
+      fechaProgramada: '2099-03-15',
+      horaInicio: '09:00:00',
+      modalidad: 'EBR',
+      nivelEducativo: 'Primaria',
+    });
+
+    const conMonitor = (monitorCargo: string, evaluadoEsDirector: boolean) => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo,
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
+        evaluadoEsDirector,
+        evaluadoEspecialidades: [],
+      });
+    };
+
+
+    it('acepta a un Responsable de Nivel como monitor de un docente', async () => {
+      conMonitor('Jefe de Área', false);
+
+      const r = await service.crearVisita(visitaPara('DOCENTE') as any, sesionJefe);
+
+      expect(r.id).toBe('vis-1');
+    });
+
+    it('acepta a un Responsable de Nivel como monitor de un director', async () => {
+      conMonitor('Jefe de Área', true);
+
+      const r = await service.crearVisita(visitaPara('DIRECTIVO') as any, sesionJefe);
+
+      expect(r.id).toBe('vis-1');
+    });
+
+    it('acepta al Jefe de Gestión como monitor de un director', async () => {
+      conMonitor('Jefe de Gestión', true);
+
+      const r = await service.crearVisita(visitaPara('DIRECTIVO') as any, sesionJefe);
+
+      expect(r.id).toBe('vis-1');
+    });
+
+    it('rechaza al Jefe de Gestión como monitor de un docente', async () => {
+      conMonitor('Jefe de Gestión', false);
+
+      await expect(service.crearVisita(visitaPara('DOCENTE') as any, sesionJefe)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('el rechazo dice que el Jefe de Gestión sólo monitorea a directores', async () => {
+      conMonitor('Jefe de Gestión', false);
+
+      await expect(service.crearVisita(visitaPara('DOCENTE') as any, sesionJefe)).rejects.toThrow(
+        /solo monitorea a los directores/i,
+      );
+    });
+
+    it('un especialista sigue monitoreando a un docente', async () => {
+      conMonitor('Especialista', false);
+
+      const r = await service.crearVisita(visitaPara('DOCENTE') as any, sesionJefe);
+      expect(r.id).toBe('vis-1');
+    });
+
+    it('permite a un Jefe de Área monitorear docentes de su nivel asignado', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(0);
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: 'Jefe de Área',
+        monitorNivel: 'Primaria',
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
+        evaluadoEsDirector: false,
+        evaluadoEspecialidades: [],
+      });
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+
+      const r = await service.crearVisita(
+        {
+          monitorId: 'jefe-primaria-1',
+          institucionId: 'ie-1',
+          evaluadoId: 'doc-1',
+          tipoMonitoreo: 'DOCENTE',
+          numeroVisita: 1,
+          fechaProgramada: '2099-03-15',
+          horaInicio: '09:00:00',
+          modalidad: 'EBR',
+          nivelEducativo: 'Primaria',
+        } as any,
+        sesionJefe,
+      );
+      expect(r.id).toBe('vis-1');
+    });
+
+    it('rechaza si se asigna a Jefe de Área Primaria para visita de Secundaria', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(0);
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: 'Jefe de Área',
+        monitorNivel: 'Primaria',
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
+        evaluadoEsDirector: false,
+        evaluadoEspecialidades: [],
+      });
+
+      await expect(
+        service.crearVisita(
+          {
+            monitorId: 'jefe-primaria-1',
+            institucionId: 'ie-1',
+            evaluadoId: 'doc-1',
+            tipoMonitoreo: 'DOCENTE',
+            numeroVisita: 1,
+            fechaProgramada: '2099-03-15',
+            horaInicio: '09:00:00',
+            modalidad: 'EBR',
+            nivelEducativo: 'Secundaria',
+          } as any,
+          sesionJefe,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('permite a Jefe de Área Secundaria monitorear docentes de Secundaria sin exigir especialidad de área', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(0);
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: 'Jefe de Área',
+        monitorNivel: 'Secundaria',
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: ['Comunicación'],
+        evaluadoEsDirector: false,
+        evaluadoEspecialidades: ['Matemática'],
+      });
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+
+      const r = await service.crearVisita(
+        {
+          monitorId: 'jefe-secundaria-1',
+          institucionId: 'ie-1',
+          evaluadoId: 'doc-1',
+          tipoMonitoreo: 'DOCENTE',
+          numeroVisita: 1,
+          fechaProgramada: '2099-03-15',
+          horaInicio: '09:00:00',
+          modalidad: 'EBR',
+          nivelEducativo: 'Secundaria',
+        } as any,
+        sesionJefe,
+      );
+      expect(r.id).toBe('vis-1');
+    });
+
+  });
+
   describe('crearSolicitud', () => {
     it('crea solicitud válida SIN PDF de sustento exitosamente', async () => {
       cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Secundaria' });

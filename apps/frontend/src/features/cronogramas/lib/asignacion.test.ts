@@ -5,6 +5,7 @@ import {
   institucionesAsignables,
   modalidadesPermitidas,
   nivelesPermitidos,
+  tiposPermitidosDelMonitor,
   docenteEvaluablePorEspecialista,
   especialidadesDelDocente,
   type EspecialistaAsignable,
@@ -138,11 +139,76 @@ describe('especialistasAsignables — EBR', () => {
 });
 
 describe('especialistasAsignables — jefe de gestión', () => {
-  /** El Jefe de Gestión coordina la UGEL; no sale a monitorear. */
-  it('nunca queda entre los asignables', () => {
+  /** El Jefe de Gestión monitorea a los directores de las instituciones. */
+  it('queda entre los asignables', () => {
     const jefe = especialista({ id: 'jefe-1', cargo: 'Jefe de Gestión' });
     const resultado = especialistasAsignables([jefe], 'EBR', 'Primaria');
-    expect(resultado).toEqual([]);
+    expect(resultado.map((e) => e.id)).toEqual(['jefe-1']);
+  });
+
+  /**
+   * No cubre un nivel: es de toda la UGEL. Su registro de especialista trae un
+   * nivel y una modalidad, pero exigírselos lo dejaría fuera de casi todas las
+   * visitas.
+   */
+  it('se ofrece en cualquier nivel y modalidad, sin importar los de su registro', () => {
+    const jefe = especialista({
+      id: 'jefe-1',
+      cargo: 'Jefe de Gestión',
+      nivelEducativo: 'Secundaria',
+      modalidad: 'EBA',
+    });
+
+    for (const [modalidad, nivel] of [
+      ['EBR', 'Primaria'],
+      ['EBR', 'Inicial'],
+      ['EBE', 'CEBE'],
+      ['CEPTRO', 'Técnico Productiva'],
+    ]) {
+      expect(especialistasAsignables([jefe], modalidad, nivel).map((e) => e.id)).toEqual(['jefe-1']);
+    }
+  });
+
+  it('sin modalidad o nivel elegidos no se ofrece nada, como a cualquiera', () => {
+    const jefe = especialista({ id: 'jefe-1', cargo: 'Jefe de Gestión' });
+    expect(especialistasAsignables([jefe], '', '')).toEqual([]);
+  });
+
+  it('inactivo no se ofrece', () => {
+    const jefe = especialista({ id: 'jefe-1', cargo: 'Jefe de Gestión', activo: false });
+    expect(especialistasAsignables([jefe], 'EBR', 'Primaria')).toEqual([]);
+  });
+
+  it('el Director de UGEL sigue sin ofrecerse', () => {
+    const director = especialista({
+      id: 'dir-ugel',
+      cargo: 'Jefe de Gestión',
+      rolCode: 'director_ugel',
+    });
+    expect(especialistasAsignables([director], 'EBR', 'Primaria')).toEqual([]);
+  });
+});
+
+/**
+ * Qué ficha puede levantar el monitor elegido. El formulario elige primero al
+ * monitor y después el tipo de ficha, así que es el monitor quien lo acota.
+ */
+describe('tiposPermitidosDelMonitor', () => {
+  it('el Jefe de Gestión sólo levanta la ficha directiva', () => {
+    expect(tiposPermitidosDelMonitor('Jefe de Gestión')).toEqual(['DIRECTIVO']);
+  });
+
+  it('el Responsable de Nivel levanta las dos', () => {
+    expect(tiposPermitidosDelMonitor('Jefe de Área')).toEqual(['DOCENTE', 'DIRECTIVO']);
+  });
+
+  it('el especialista levanta las dos', () => {
+    expect(tiposPermitidosDelMonitor('Especialista')).toEqual(['DOCENTE', 'DIRECTIVO']);
+  });
+
+  /** Mientras no hay monitor elegido no hay nada que restringir. */
+  it('sin monitor elegido no restringe', () => {
+    expect(tiposPermitidosDelMonitor(undefined)).toEqual(['DOCENTE', 'DIRECTIVO']);
   });
 });
 
@@ -174,15 +240,17 @@ describe('especialistasAsignables — jefe de área', () => {
 
 describe('especialistasAsignables — monitor ya asignado, al editar', () => {
   /**
-   * Una regla de elegibilidad se endurece después de creada la visita —acá,
-   * que el Jefe de Gestión deje de poder monitorear— y el monitor que ya
-   * estaba asignado no pasa el filtro. Sin conservarlo, el selector se abría
-   * vacío en modo edición: la opción elegida desaparecía de la lista.
+   * Una regla de elegibilidad cambia después de creada la visita —acá, que el
+   * Responsable de Nivel pasa a cubrir otro nivel— y el monitor que ya estaba
+   * asignado no pasa el filtro. Sin conservarlo, el selector se abría vacío en
+   * modo edición: la opción elegida desaparecía de la lista.
    */
+  const deOtroNivel = () =>
+    especialista({ id: 'jefe-area-1', cargo: 'Jefe de Área', nivelEducativo: 'Secundaria' });
+
   it('conserva al monitor ya asignado aunque ya no sea elegible', () => {
-    const jefeGestion = especialista({ id: 'jefe-gestion-1', cargo: 'Jefe de Gestión' });
-    const resultado = especialistasAsignables([jefeGestion], 'EBR', 'Primaria', 'jefe-gestion-1');
-    expect(resultado.map((e) => e.id)).toEqual(['jefe-gestion-1']);
+    const resultado = especialistasAsignables([deOtroNivel()], 'EBR', 'Primaria', 'jefe-area-1');
+    expect(resultado.map((e) => e.id)).toEqual(['jefe-area-1']);
   });
 
   it('no lo duplica si de todos modos sigue siendo elegible', () => {
@@ -196,8 +264,7 @@ describe('especialistasAsignables — monitor ya asignado, al editar', () => {
   });
 
   it('sin id de monitor actual, no agrega nada de más', () => {
-    const jefeGestion = especialista({ id: 'jefe-gestion-1', cargo: 'Jefe de Gestión' });
-    const resultado = especialistasAsignables([jefeGestion], 'EBR', 'Primaria', null);
+    const resultado = especialistasAsignables([deOtroNivel()], 'EBR', 'Primaria', null);
     expect(resultado).toEqual([]);
   });
 });
@@ -320,4 +387,14 @@ describe('docenteEvaluablePorEspecialista', () => {
   it('en Secundaria, sin especialidades del especialista no ofrece a nadie', () => {
     expect(docenteEvaluablePorEspecialista('Matematica', [], true)).toBe(false);
   });
+
+  it('en Secundaria, admite al docente si comparte una de sus especialidades extras', () => {
+    expect(
+      docenteEvaluablePorEspecialista('Matematica', ['Fisica'], true, ['Fisica', 'Quimica']),
+    ).toBe(true);
+    expect(
+      docenteEvaluablePorEspecialista('Matematica', ['Arte'], true, ['Fisica', 'Quimica']),
+    ).toBe(false);
+  });
 });
+

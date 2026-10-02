@@ -63,14 +63,20 @@ export const PlantillaEditPage = () => {
         qc.invalidateQueries({ queryKey: ['lema-anual'] });
       }
 
+      // El nombre es lo que lleva el formulario en «Nombre de la ficha»: se
+      // manda lo que la persona escribió, y sólo si lo cambió. Antes se
+      // reescribía solo, con la fecha y la cantidad de desempeños, y eso borraba
+      // el «Copia basada en …» que deja el clonado en este mismo campo y es el
+      // único rastro de qué versión desciende cada copia. Después dejó de
+      // mandarse del todo, y editarlo en pantalla no hacía nada.
+      const nombre = data.descripcion.trim();
+      const nombreCambio = nombre !== (plantilla?.descripcion ?? '').trim();
+
       const resultado = await actualizar.mutateAsync({
         id,
         data: {
           baremo: data.baremo,
-          // La descripción no se toca al editar. Se reescribía con la fecha y la
-          // cantidad de desempeños —dato que la tarjeta ya muestra en dos filas—
-          // y eso borraba el «Copia basada en …» que deja el clonado, que es el
-          // único rastro de qué versión desciende cada copia.
+          ...(nombreCambio && { descripcion: nombre }),
           niveles: data.niveles.map((n, i) => ({
             nivelRomano: n.nivel,
             denominacion: n.denominacion,

@@ -38,23 +38,34 @@ export const CamposDeEvaluacion = ({ form, onCambiar, opciones, perfil, esEdicio
       <div className="flex flex-col gap-2">
         <label className="text-xs font-bold text-text-muted">Tipo de Monitoreo *</label>
         <div className="flex items-center gap-0 rounded-xl border border-border overflow-hidden w-fit">
-          {TIPOS.map(({ valor, rotulo }, indice) => (
-            <button
-              key={valor}
-              type="button"
-              onClick={() => onCambiar('tipo', valor)}
-              className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
-                indice > 0 ? 'border-l border-border' : ''
-              } ${
-                form.tipo === valor
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-surface text-text-muted hover:bg-muted/60'
-              }`}
-            >
-              {rotulo}
-            </button>
-          ))}
+          {TIPOS.map(({ valor, rotulo }, indice) => {
+            const permitido = opciones.tiposPermitidos.includes(valor);
+            return (
+              <button
+                key={valor}
+                type="button"
+                disabled={!permitido}
+                onClick={() => onCambiar('tipo', valor)}
+                className={`px-6 py-2.5 text-xs font-bold transition-all duration-200 ${
+                  indice > 0 ? 'border-l border-border' : ''
+                } ${
+                  form.tipo === valor
+                    ? 'bg-primary text-white shadow-sm'
+                    : permitido
+                      ? 'bg-surface text-text-muted hover:bg-muted/60 cursor-pointer'
+                      : 'bg-muted/40 text-text-muted/50 cursor-not-allowed'
+                }`}
+              >
+                {rotulo}
+              </button>
+            );
+          })}
         </div>
+        {opciones.tiposPermitidos.length < TIPOS.length && (
+          <p className="text-[11px] text-text-muted">
+            El Jefe de Gestión solo monitorea a directores de instituciones.
+          </p>
+        )}
       </div>
     )}
 

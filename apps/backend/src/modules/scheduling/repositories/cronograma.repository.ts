@@ -67,6 +67,18 @@ export interface QuerySolicitudesFilters {
   estado?: string;
 }
 
+export interface EntidadesActivasValidation {
+  institucion: boolean;
+  monitor: boolean;
+  evaluado: boolean;
+  monitorCargo?: string;
+  monitorNivel?: string;
+  monitorEsDirectorUgel: boolean;
+  monitorEspecialidades: string[];
+  evaluadoEsDirector: boolean;
+  evaluadoEspecialidades: string[];
+}
+
 export abstract class CronogramaRepository {
   abstract findAll(filters?: QueryVisitasFilters): Promise<IVisita[]>;
   abstract findById(id: string): Promise<IVisita | null>;
@@ -95,16 +107,7 @@ export abstract class CronogramaRepository {
     institucionId: string,
     monitorId: string,
     evaluadoId: string,
-  ): Promise<{
-    institucion: boolean;
-    monitor: boolean;
-    evaluado: boolean;
-    monitorCargo?: string;
-    monitorEsDirectorUgel: boolean;
-    monitorEspecialidades: string[];
-    evaluadoEsDirector: boolean;
-    evaluadoEspecialidades: string[];
-  }>;
+  ): Promise<EntidadesActivasValidation>;
   abstract countPendientesByMonitor(monitorId: string): Promise<number>;
   abstract findVisitaExistente(
     evaluadoId: string,

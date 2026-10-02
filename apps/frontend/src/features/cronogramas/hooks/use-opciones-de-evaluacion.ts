@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Docente } from '@entities/model-docentes';
 import { opcionesDeEvaluadorInterno, type Opcion } from '../lib/opciones-de-asignacion';
-import { docenteEvaluablePorEspecialista } from '../lib/asignacion';
+import { docenteEvaluablePorEspecialista, especialidadesDelDocente } from '../lib/asignacion';
 
 /**
  * A quién se puede evaluar y quién puede evaluarlo, dentro de una institución.
@@ -39,7 +39,12 @@ interface OpcionesDeEvaluacionParams {
   docentes: readonly Docente[];
   instituciones: readonly InstitucionConocida[];
   /** Para resolver a qué especialista corresponde cada evaluador de la I.E. */
-  especialistas: readonly { id: string; personaId: string }[];
+  especialistas: readonly {
+    id: string;
+    personaId: string;
+    cargo?: string;
+    especialidades?: string[];
+  }[];
   /** El director trabaja siempre sobre su propia institución. */
   esDirector: boolean;
   /** Identificador de la institución del usuario, cuando pertenece a una. */
@@ -71,7 +76,15 @@ const conValorActual = (
   if (!elegidoId || opciones.some((o) => o.value === elegidoId)) return opciones;
 
   const conocido = padron.find((d) => d.id === elegidoId);
-  const label = conocido ? `${nombreCompleto(conocido)} (${conocido.cargo})` : 'Registro anterior';
+  const todas = conocido
+    ? [
+        ...especialidadesDelDocente(conocido.especialidad),
+        ...(conocido.especialidadesExtras ?? []),
+      ].filter(Boolean)
+    : [];
+  const unicas = Array.from(new Set(todas));
+  const area = unicas.length > 0 ? ` · ${unicas.join(', ')}` : '';
+  const label = conocido ? `${nombreCompleto(conocido)} (${conocido.cargo})${area}` : 'Registro anterior';
 
   return [{ value: elegidoId, label }, ...opciones];
 };
@@ -79,12 +92,18 @@ const conValorActual = (
 const aOpcion = (docente: Docente): Opcion => {
   // Se muestra el área además del cargo: en Secundaria es lo que permite ver de
   // un vistazo que el docente corresponde al especialista elegido.
-  const area = docente.especialidad ? ` · ${docente.especialidad}` : '';
+  const todas = [
+    ...especialidadesDelDocente(docente.especialidad),
+    ...(docente.especialidadesExtras ?? []),
+  ].filter(Boolean);
+  const unicas = Array.from(new Set(todas));
+  const area = unicas.length > 0 ? ` · ${unicas.join(', ')}` : '';
   return {
     value: docente.id,
     label: `${nombreCompleto(docente)} (${docente.cargo})${area}`,
   };
 };
+
 
 export function useOpcionesDeEvaluacion({
   docentes,
@@ -183,6 +202,12 @@ export function useOpcionesDeEvaluacion({
    * de áreas descarta a TODOS los docentes: el selector aparecía sin una sola
    * opción, con la cartera correctamente cargada detrás.
    */
+  const evaluadorEspecialista = useMemo(
+    () => especialistas.find((e) => e.id === evaluadorElegidoId),
+    [especialistas, evaluadorElegidoId],
+  );
+  const esJefeDeArea = evaluadorEspecialista?.cargo === 'Jefe de Área';
+
   const evaluados = useMemo(
     () =>
       esDirector
@@ -190,14 +215,24 @@ export function useOpcionesDeEvaluacion({
         : evaluadosBase.filter(
             (d) =>
               !evaluadorElegidoId ||
+              esJefeDeArea ||
               docenteEvaluablePorEspecialista(
                 d.especialidad,
                 especialidadesDelEvaluador ?? [],
                 esSecundaria,
+                d.especialidadesExtras,
               ),
           ),
-    [esDirector, evaluadosBase, evaluadorElegidoId, especialidadesDelEvaluador, esSecundaria],
+    [
+      esDirector,
+      evaluadosBase,
+      evaluadorElegidoId,
+      esJefeDeArea,
+      especialidadesDelEvaluador,
+      esSecundaria,
+    ],
   );
+
 
   const opcionesDeEvaluado = useMemo(
     () => conValorActual(evaluados.map(aOpcion), evaluadoElegidoId, docentes),

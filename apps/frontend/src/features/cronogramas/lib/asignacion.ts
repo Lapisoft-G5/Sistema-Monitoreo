@@ -1,4 +1,8 @@
-import { ModalidadEducativa, RoleCode } from '@sistema-monitoreo/shared-contracts';
+import {
+  ModalidadEducativa,
+  RoleCode,
+  type TipoMonitoreo,
+} from '@sistema-monitoreo/shared-contracts';
 import { MODALIDAD_NIVEL_MAP } from '@entities/model-instituciones';
 import { esDeEPT } from '@features/docentes/lib/asignacion-de-cargo';
 
@@ -17,8 +21,30 @@ import { esDeEPT } from '@features/docentes/lib/asignacion-de-cargo';
 
 const TODAS_LAS_MODALIDADES = Object.values(ModalidadEducativa);
 
-/** Cargos de la UGEL que salen a monitorear. El Jefe de Gestión coordina, no monitorea. */
-const CARGOS_QUE_MONITOREAN = ['Especialista', 'Jefe de Área'];
+/** Cargos de la UGEL que salen a monitorear. */
+const CARGOS_QUE_MONITOREAN = ['Especialista', 'Jefe de Área', 'Jefe de Gestión'];
+
+const JEFE_DE_GESTION = 'Jefe de Gestión';
+
+/**
+ * Qué ficha puede levantar el monitor elegido.
+ *
+ * El Jefe de Gestión monitorea sólo a los directores de las instituciones: su
+ * ficha es la directiva. El especialista y el Responsable de Nivel monitorean
+ * al personal de su nivel y también a su director, así que levantan las dos.
+ *
+ * El formulario elige primero al monitor y después el tipo de ficha, por eso
+ * es el monitor quien acota el tipo y no al revés. Sin monitor elegido no hay
+ * nada que restringir.
+ */
+export function tiposPermitidosDelMonitor(cargo: string | undefined): readonly TipoMonitoreo[] {
+  return cargo === JEFE_DE_GESTION ? SOLO_DIRECTIVO : AMBOS_TIPOS;
+}
+
+// Constantes y no literales nuevos en cada llamada: quien las usa como
+// dependencia de un `useMemo` no debe invalidarlo en cada render.
+const SOLO_DIRECTIVO: readonly TipoMonitoreo[] = ['DIRECTIVO'];
+const AMBOS_TIPOS: readonly TipoMonitoreo[] = ['DOCENTE', 'DIRECTIVO'];
 
 /** Modalidad que se asume cuando el especialista no la declara. */
 const MODALIDAD_POR_DEFECTO = 'EBR';
@@ -144,9 +170,10 @@ const cubreModalidadYNivel = (
  * recibe: la regla sólo lee los campos declarados acá, pero quien la llama
  * necesita el registro completo para renderizar el selector.
  *
- * El nivel/modalidad de la visita acota a cualquiera, sin excepción por quién
- * arma el cronograma: un Responsable de Nivel de Secundaria no cubre una
- * visita de Primaria aunque sea el Jefe de Gestión quien la programe.
+ * El nivel/modalidad de la visita acota a especialistas y Responsables de Nivel,
+ * sin excepción por quién arma el cronograma: un Responsable de Nivel de
+ * Secundaria no cubre una visita de Primaria aunque sea el Jefe de Gestión
+ * quien la programe. El Jefe de Gestión, que es de toda la UGEL, no se acota.
  */
 export function especialistasAsignables<T extends EspecialistaAsignable>(
   especialistas: readonly T[],
@@ -168,6 +195,11 @@ export function especialistasAsignables<T extends EspecialistaAsignable>(
     if (especialista.activo !== true) return false;
     if (!CARGOS_QUE_MONITOREAN.includes(especialista.cargo)) return false;
     if (ROLES_DE_CONDUCCION.includes(especialista.rolCode ?? '')) return false;
+
+    // El Jefe de Gestión es de toda la UGEL: su registro trae un nivel y una
+    // modalidad, pero no los cubre, y exigírselos lo dejaría fuera de casi
+    // todas las visitas.
+    if (especialista.cargo === JEFE_DE_GESTION) return true;
 
     return cubreModalidadYNivel(especialista, modalidad, nivel);
   });
@@ -220,7 +252,7 @@ export function especialidadesDelDocente(especialidad: string | null | undefined
  * ¿El especialista puede evaluar a este docente?
  *
  * En Secundaria el monitoreo es por área: sólo si comparten al menos una
- * especialidad. Fuera de Secundaria la regla no aplica y el docente pasa. La
+ * especialidad (principal o adicional). Fuera de Secundaria la regla no aplica y el docente pasa. La
  * misma decisión la reafirma el backend al programar; acá evita ofrecer en el
  * selector a quien luego sería rechazado.
  */
@@ -228,10 +260,16 @@ export function docenteEvaluablePorEspecialista(
   especialidadDocente: string | null | undefined,
   especialidadesEspecialista: readonly string[],
   esSecundaria: boolean,
+  especialidadesExtras?: readonly string[],
 ): boolean {
   if (!esSecundaria) return true;
   const delEspecialista = new Set(especialidadesEspecialista.map(normalizarEspecialidad));
-  return especialidadesDelDocente(especialidadDocente).some((e) =>
+  const todasLasEspecialidades = [
+    ...especialidadesDelDocente(especialidadDocente),
+    ...(especialidadesExtras ?? []),
+  ];
+  return todasLasEspecialidades.some((e) =>
     delEspecialista.has(normalizarEspecialidad(e)),
   );
 }
+

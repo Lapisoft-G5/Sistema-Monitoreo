@@ -29,6 +29,7 @@ const OPCIONES: OpcionesDelFormulario = {
   evaluados: [{ value: 'doc-1', label: 'Rosa Mamani (Docente de Aula)' }],
   evaluadores: [{ value: 'esp-dir', label: 'Rosa Mamani (Director)' }],
   visitas: [],
+  tiposPermitidos: ['DOCENTE', 'DIRECTIVO'],
 };
 
 const PERFIL_UGEL: PerfilDelFormulario = {
@@ -304,5 +305,36 @@ describe('ModalCronograma — tipo de monitoreo', () => {
   it('el rótulo del evaluado sigue al tipo elegido', () => {
     montar({ form: { tipo: 'DIRECTIVO' } });
     expect(screen.getByRole('combobox', { name: /Director a Evaluar/i })).toBeInTheDocument();
+  });
+});
+
+describe('ModalCronograma — tipo de visita según el monitor', () => {
+  const botonDe = (rotulo: string) => screen.getByRole('button', { name: rotulo });
+
+  it('con las dos fichas permitidas deja elegir Docente y Director', () => {
+    montar({ perfil: { esDirector: false } });
+
+    expect(botonDe('Docente')).toBeEnabled();
+    expect(botonDe('Director')).toBeEnabled();
+  });
+
+  /** El servidor rechaza al Jefe de Gestión con un docente: no se ofrece la opción. */
+  it('si el monitor sólo levanta la del director, bloquea «Docente»', () => {
+    montar({ opciones: { tiposPermitidos: ['DIRECTIVO'] }, form: { tipo: 'DIRECTIVO' } });
+
+    expect(botonDe('Docente')).toBeDisabled();
+    expect(botonDe('Director')).toBeEnabled();
+  });
+
+  it('dice por qué está bloqueada', () => {
+    montar({ opciones: { tiposPermitidos: ['DIRECTIVO'] }, form: { tipo: 'DIRECTIVO' } });
+
+    expect(screen.getByText(/Jefe de Gestión solo monitorea a directores/i)).toBeInTheDocument();
+  });
+
+  it('no avisa nada cuando no hay restricción', () => {
+    montar();
+
+    expect(screen.queryByText(/solo monitorea a directores/i)).not.toBeInTheDocument();
   });
 });

@@ -412,7 +412,6 @@ describe('SchedulingService - Reprogramaciones', () => {
     });
   });
 
-<<<<<<< HEAD
   /**
    * Quién monitorea a quién depende del cargo del monitor:
    *  - Especialista: docentes (y directores) de su nivel y área.
@@ -438,17 +437,10 @@ describe('SchedulingService - Reprogramaciones', () => {
     const conMonitor = (monitorCargo: string, evaluadoEsDirector: boolean) => {
       cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
       cronogramaRepo.create.mockResolvedValue(visitaBase);
-=======
-  describe('crearVisita - asignación de Jefe de Área como monitor evaluador', () => {
-    it('permite asignar a un Jefe de Área Primaria como monitor para EBR Primaria', async () => {
-      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
-      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(0);
->>>>>>> c499d29 (fix(scheduling): allow level managers to execute and be assigned monitoring visits)
       cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
         institucion: true,
         monitor: true,
         evaluado: true,
-<<<<<<< HEAD
         monitorCargo,
         monitorEsDirectorUgel: false,
         monitorEspecialidades: [],
@@ -456,6 +448,7 @@ describe('SchedulingService - Reprogramaciones', () => {
         evaluadoEspecialidades: [],
       });
     };
+
 
     it('acepta a un Responsable de Nivel como monitor de un docente', async () => {
       conMonitor('Jefe de Área', false);

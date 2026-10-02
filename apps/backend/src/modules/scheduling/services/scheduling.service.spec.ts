@@ -449,7 +449,6 @@ describe('SchedulingService - Reprogramaciones', () => {
       });
     };
 
-
     it('acepta a un Responsable de Nivel como monitor de un docente', async () => {
       conMonitor('Jefe de Área', false);
 
@@ -595,7 +594,6 @@ describe('SchedulingService - Reprogramaciones', () => {
       );
       expect(r.id).toBe('vis-1');
     });
-
   });
 
   describe('crearSolicitud', () => {

@@ -74,6 +74,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.SOLICITUDES_PLANTILLA_GESTIONAR,
   ],
   [RoleCode.JEFE_AREA]: [
+    Capability.MONITOREO_EXECUTE,
     Capability.ESPECIALISTAS_READ,
     Capability.INSTITUCIONES_READ,
     Capability.INSTITUCIONES_WRITE,

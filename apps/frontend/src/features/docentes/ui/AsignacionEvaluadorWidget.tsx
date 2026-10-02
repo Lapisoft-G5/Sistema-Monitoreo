@@ -54,8 +54,9 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
         let deAula = allDocentes.filter((d) => d.cargo === 'Docente de Aula' && d.id !== evaluadorId);
         // El Jefe de Taller solo evalúa docentes de EPT (Educación para el Trabajo).
         if (evaluadorCargo === 'Jefe de Taller') {
-          deAula = deAula.filter((d) => esDeEPT(d.especialidad));
+          deAula = deAula.filter((d) => esDeEPT(d.especialidad, d.especialidadesExtras));
         }
+
         setDocentes(deAula);
         
         // Cargar asignados reales
@@ -161,6 +162,8 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
                   {filteredDocentes.map((docente) => {
                     const isAsignado = asignados.includes(docente.id);
                     const isAssignedToOther = !!(docente.evaluadorActual && docente.evaluadorActual.evaluadorId !== evaluadorId);
+                    const todasEsp = [docente.especialidad, ...(docente.especialidadesExtras ?? [])].filter(Boolean);
+                    const espTexto = todasEsp.length > 0 ? Array.from(new Set(todasEsp)).join(', ') : '—';
                     
                     return (
                       <TableRow key={docente.id} className="hover:bg-muted/30 transition-colors">
@@ -169,8 +172,9 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
                           {docente.apellidos}, {docente.nombres}
                         </TableCell>
                         <TableCell className="text-text-muted text-sm font-medium">
-                          {docente.especialidad || '—'}
+                          {espTexto}
                         </TableCell>
+
                         <TableCell>
                           {isAsignado ? (
                             <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[0.65rem] py-0.5 px-2.5 uppercase font-bold">

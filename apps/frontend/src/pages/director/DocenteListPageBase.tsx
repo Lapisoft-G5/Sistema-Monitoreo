@@ -57,9 +57,10 @@ export const DocenteListPageBase = ({
       }
       if (filterEspecialidad) {
         docentesMapped = docentesMapped.filter((d) =>
-          coincideEspecialidad(d.especialidad, filterEspecialidad),
+          coincideEspecialidad(d.especialidad, filterEspecialidad, d.especialidadesExtras),
         );
       }
+
       setDocentes(docentesMapped);
 
       if (user?.institucion && user?.institucionNombre) {

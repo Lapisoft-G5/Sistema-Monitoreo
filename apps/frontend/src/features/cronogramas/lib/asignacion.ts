@@ -252,7 +252,7 @@ export function especialidadesDelDocente(especialidad: string | null | undefined
  * ¿El especialista puede evaluar a este docente?
  *
  * En Secundaria el monitoreo es por área: sólo si comparten al menos una
- * especialidad. Fuera de Secundaria la regla no aplica y el docente pasa. La
+ * especialidad (principal o adicional). Fuera de Secundaria la regla no aplica y el docente pasa. La
  * misma decisión la reafirma el backend al programar; acá evita ofrecer en el
  * selector a quien luego sería rechazado.
  */
@@ -260,10 +260,16 @@ export function docenteEvaluablePorEspecialista(
   especialidadDocente: string | null | undefined,
   especialidadesEspecialista: readonly string[],
   esSecundaria: boolean,
+  especialidadesExtras?: readonly string[],
 ): boolean {
   if (!esSecundaria) return true;
   const delEspecialista = new Set(especialidadesEspecialista.map(normalizarEspecialidad));
-  return especialidadesDelDocente(especialidadDocente).some((e) =>
+  const todasLasEspecialidades = [
+    ...especialidadesDelDocente(especialidadDocente),
+    ...(especialidadesExtras ?? []),
+  ];
+  return todasLasEspecialidades.some((e) =>
     delEspecialista.has(normalizarEspecialidad(e)),
   );
 }
+

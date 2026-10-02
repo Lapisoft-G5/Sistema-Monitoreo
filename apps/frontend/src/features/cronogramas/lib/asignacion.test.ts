@@ -387,4 +387,14 @@ describe('docenteEvaluablePorEspecialista', () => {
   it('en Secundaria, sin especialidades del especialista no ofrece a nadie', () => {
     expect(docenteEvaluablePorEspecialista('Matematica', [], true)).toBe(false);
   });
+
+  it('en Secundaria, admite al docente si comparte una de sus especialidades extras', () => {
+    expect(
+      docenteEvaluablePorEspecialista('Matematica', ['Fisica'], true, ['Fisica', 'Quimica']),
+    ).toBe(true);
+    expect(
+      docenteEvaluablePorEspecialista('Matematica', ['Arte'], true, ['Fisica', 'Quimica']),
+    ).toBe(false);
+  });
 });
+

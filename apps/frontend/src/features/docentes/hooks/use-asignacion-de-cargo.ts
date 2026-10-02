@@ -104,10 +104,13 @@ export function useAsignacionDeCargo({ cargo, onAsignado }: Opciones) {
         telefono: elegido.celular || undefined,
         // Coordinador Pedagógico y Jefe de Taller sólo existen en Secundaria.
         nivelEducativo: 'Secundaria',
+        especialidad: elegido.especialidad || undefined,
+        especialidadesExtras: elegido.especialidadesExtras || undefined,
         cursoAsignado: elegido.especialidad || undefined,
         cargoId: cargoEnCatalogo.id,
         condicionLaboral: condicion,
         cargaLaboral: Number(cargaHoraria),
+
         // La escala magisterial no se edita en esta pantalla, así que sólo se
         // reenvía si el docente ya tenía una. Antes se mandaba
         // `MAP_ROMAN_TO_INT[escala] || 1`, y como hoy la columna está vacía

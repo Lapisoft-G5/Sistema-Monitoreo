@@ -209,6 +209,39 @@ export async function crearVisita(
       'El monitor (especialista/director) seleccionado no está activo.',
     );
   }
+  // Un Responsable de Nivel (Jefe de Área) puede realizar visitas de monitoreo
+  // en su nivel educativo asignado.
+  if (activas.monitorCargo === 'Jefe de Área' && activas.monitorNivel) {
+    const targetMod = dto.modalidad || 'EBR';
+    const targetNivel = dto.nivelEducativo;
+
+    if (activas.monitorNivel === 'Inicial') {
+      const isValid = (targetMod === 'EBR' && targetNivel === 'Inicial') || targetMod === 'EBE';
+      if (!isValid) {
+        throw new ForbiddenException(
+          'Un Responsable de Nivel de nivel Inicial solo puede ser asignado a visitas de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
+        );
+      }
+    } else if (activas.monitorNivel === 'Primaria') {
+      const isValid = targetMod === 'EBR' && targetNivel === 'Primaria';
+      if (!isValid) {
+        throw new ForbiddenException(
+          'Un Responsable de Nivel de nivel Primaria solo puede ser asignado a visitas de nivel Primaria (EBR).',
+        );
+      }
+    } else if (activas.monitorNivel === 'Secundaria') {
+      const isValid =
+        (targetMod === 'EBR' && targetNivel === 'Secundaria') ||
+        targetMod === 'EBA' ||
+        targetMod === 'CEPTRO';
+      if (!isValid) {
+        throw new ForbiddenException(
+          'Un Responsable de Nivel de nivel Secundaria solo puede ser asignado a visitas de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
+        );
+      }
+    }
+  }
+
   // El Director de UGEL conduce la unidad, no hace monitoreo de campo: no debe
   // ser monitor de una visita, porque quien monitorea firma la ficha y él no
   // tiene esa potestad. Sin esta regla la ficha quedaría sin poder cerrarse.
@@ -244,13 +277,15 @@ export async function crearVisita(
   }
 
   // En Secundaria el monitoreo es por área: el especialista sólo evalúa a docentes
-  // de una especialidad que él maneja.
+  // de una especialidad que él maneja. El Responsable de Nivel (Jefe de Área)
+  // conduce la supervisión general de su nivel y no está atado a un área curricular única.
   //
   // No alcanza al personal de la institución. El Coordinador y el Jefe de Taller
   // se rigen por su cartera de docentes asignados, y el Director por todo su
   // personal; ninguno tiene registro de especialista, así que su lista de áreas
   // llega vacía y esta regla los dejaba sin poder programar una sola visita.
   if (
+    activas.monitorCargo !== 'Jefe de Área' &&
     requiereEspecialidadCompartida(dto.nivelEducativo, dto.tipoMonitoreo, session.role) &&
     !compartenEspecialidad(activas.monitorEspecialidades, activas.evaluadoEspecialidades)
   ) {

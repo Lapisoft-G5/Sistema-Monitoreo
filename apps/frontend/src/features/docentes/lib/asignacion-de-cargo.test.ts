@@ -67,6 +67,12 @@ describe('esDeEPT', () => {
     expect(esDeEPT('EPT (Electricidad)')).toBe(true);
   });
 
+  it('reconoce EPT cuando se encuentra en las especialidades extras', () => {
+    expect(esDeEPT('Matemática', ['Educación para el Trabajo'])).toBe(true);
+    expect(esDeEPT('Matemática', ['Física', 'EPT'])).toBe(true);
+    expect(esDeEPT('Matemática', ['Física', 'Química'])).toBe(false);
+  });
+
   it('es falso sin especialidad', () => {
     expect(esDeEPT('')).toBe(false);
     expect(esDeEPT(null)).toBe(false);
@@ -80,6 +86,18 @@ describe('coincideEspecialidad', () => {
     expect(coincideEspecialidad('Educación para el Trabajo', 'EPT')).toBe(true);
     expect(coincideEspecialidad('Matemática, EPT', 'Educación para el Trabajo')).toBe(true);
     expect(coincideEspecialidad('EPT - Computación', 'EPT')).toBe(true);
+  });
+
+  it('reconoce coincidencia a través de las especialidades extras', () => {
+    expect(
+      coincideEspecialidad('Matemática', 'Física', ['Física', 'Química']),
+    ).toBe(true);
+    expect(
+      coincideEspecialidad('Matemática', 'Educación para el Trabajo', ['EPT']),
+    ).toBe(true);
+    expect(
+      coincideEspecialidad('Matemática', 'Arte', ['Física', 'Química']),
+    ).toBe(false);
   });
 
   it('compara otras especialidades con normalización de mayúsculas y tildes', () => {
@@ -106,6 +124,7 @@ describe('candidatosParaCargo', () => {
     docente({ id: 'aula-inactivo', activo: false }),
     docente({ id: 'ya-coordinador', cargo: 'Coordinador Pedagógico' }),
     docente({ id: 'aula-ept', especialidad: 'EPT' }),
+    docente({ id: 'aula-ept-extra', especialidad: 'Matemática', especialidadesExtras: ['EPT'] }),
   ];
 
   /**
@@ -130,10 +149,11 @@ describe('candidatosParaCargo', () => {
    * El Jefe de Taller dirige el taller de Educación para el Trabajo: sólo un
    * docente de esa especialidad puede ocuparlo.
    */
-  it('para Jefe de Taller son sólo los de EPT', () => {
+  it('para Jefe de Taller son sólo los de EPT (principal o adicional)', () => {
     const ids = candidatosParaCargo(lista, 'Jefe de Taller').map((d) => d.id);
-    expect(ids).toEqual(['aula-ept']);
+    expect(ids).toEqual(['aula-ept', 'aula-ept-extra']);
   });
+
 
   it('no propone a quien ya tiene otro cargo', () => {
     expect(candidatosParaCargo([docente({ cargo: 'Director' })], 'Coordinador Pedagógico')).toEqual(

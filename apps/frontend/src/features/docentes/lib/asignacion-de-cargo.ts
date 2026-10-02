@@ -50,6 +50,7 @@ export interface DocenteCandidato {
   activo: boolean;
   cargo: string;
   especialidad?: string | null;
+  especialidadesExtras?: string[] | null;
   condicion?: string | null;
   cargaHoraria?: number | null;
 }
@@ -58,31 +59,43 @@ export interface DocenteCandidato {
  * ¿El docente enseña Educación para el Trabajo?
  *
  * La especialidad puede registrarse como sigla («EPT»), nombre oficial («Educación para el Trabajo»),
- * variante con mención de especialidad técnica o lista separada por comas.
+ * variante con mención de especialidad técnica o lista separada por comas, sea en su especialidad
+ * principal o en sus adicionales.
  */
-export function esDeEPT(especialidad: string | null | undefined): boolean {
-  if (!especialidad) return false;
-  return especialidad
-    .split(',')
+export function esDeEPT(
+  especialidad: string | null | undefined,
+  especialidadesExtras?: readonly string[] | null,
+): boolean {
+  const todas = [
+    ...(especialidad ? especialidad.split(',') : []),
+    ...(especialidadesExtras ?? []),
+  ];
+  if (todas.length === 0) return false;
+  return todas
     .map(normalizarTexto)
     .some((item) => EPT_REGEX.test(item));
 }
 
 /**
  * Comprueba si la especialidad de un docente coincide con una especialidad de filtro u objetivo.
- * Maneja transparentemente la equivalencia semántica de EPT y listas separadas por comas.
+ * Maneja transparentemente la equivalencia semántica de EPT, listas separadas por comas
+ * y especialidades adicionales.
  */
 export function coincideEspecialidad(
   especialidadDocente: string | null | undefined,
   especialidadFiltro: string | null | undefined,
+  especialidadesExtras?: readonly string[] | null,
 ): boolean {
   if (!especialidadFiltro) return true;
   if (esDeEPT(especialidadFiltro)) {
-    return esDeEPT(especialidadDocente);
+    return esDeEPT(especialidadDocente, especialidadesExtras);
   }
   const filtro = normalizarTexto(especialidadFiltro);
-  return (especialidadDocente ?? '')
-    .split(',')
+  const todas = [
+    ...(especialidadDocente ? especialidadDocente.split(',') : []),
+    ...(especialidadesExtras ?? []),
+  ];
+  return todas
     .map(normalizarTexto)
     .includes(filtro);
 }
@@ -104,12 +117,13 @@ export function candidatosParaCargo<T extends DocenteCandidato>(
     // Taller y el resto del Coordinador Pedagógico. La regla exigía EPT para el
     // primero pero no lo descartaba del segundo, de modo que un docente de EPT
     // figuraba en las dos listas.
-    if (cargo === 'Jefe de Taller') return esDeEPT(d.especialidad);
-    if (cargo === 'Coordinador Pedagógico') return !esDeEPT(d.especialidad);
+    if (cargo === 'Jefe de Taller') return esDeEPT(d.especialidad, d.especialidadesExtras);
+    if (cargo === 'Coordinador Pedagógico') return !esDeEPT(d.especialidad, d.especialidadesExtras);
 
     return true;
   });
 }
+
 
 /**
  * Carga horaria con la que se abre el formulario.

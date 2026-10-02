@@ -157,4 +157,40 @@ describe('useOpcionesDeEvaluacion — especialista de UGEL', () => {
     // un dato faltante en su registro, no una lista que haya que ignorar.
     expect(nombresOfrecidos(params([]))).toEqual([]);
   });
+
+  it('ofrece a los docentes que comparten especialidad a través de sus especialidades extras', () => {
+    const paramsConExtras = parametros({
+      esDirector: false,
+      institucionDelUsuarioId: undefined,
+      docentes: [
+        docente({ id: 'a', nombres: 'Bertha', especialidad: 'CTA' }),
+        docente({
+          id: 'c',
+          nombres: 'Carlos',
+          especialidad: 'Comunicación',
+          especialidadesExtras: ['CTA'],
+        }),
+      ],
+      evaluadorElegidoId: 'esp-ugel',
+      especialidadesDelEvaluador: ['CTA'],
+    });
+    expect(nombresOfrecidos(paramsConExtras).sort()).toEqual(['Bertha', 'Carlos']);
+  });
+
+  it('el responsable de nivel (Jefe de Área) puede evaluar a todos los docentes de secundaria sin restricción de especialidad única', () => {
+    const paramsJefeArea = parametros({
+      esDirector: false,
+      institucionDelUsuarioId: undefined,
+      docentes: [
+        docente({ id: 'a', nombres: 'Bertha', especialidad: 'CTA' }),
+        docente({ id: 'b', nombres: 'Marlene', especialidad: 'Matemática' }),
+      ],
+      especialistas: [{ id: 'jefe-secundaria', personaId: 'per-jefe', cargo: 'Jefe de Área' }],
+      evaluadorElegidoId: 'jefe-secundaria',
+      especialidadesDelEvaluador: [],
+    });
+    expect(nombresOfrecidos(paramsJefeArea).sort()).toEqual(['Bertha', 'Marlene']);
+  });
 });
+
+

@@ -20,16 +20,16 @@ export const PieDeFicha = ({
   onFirmar,
   yaFirmo,
 }: PieDeFichaProps) => (
-  <div className="py-2.5 px-4 border-t border-border bg-slate-50 flex justify-between items-center">
+  <div className="py-2.5 px-4 border-t border-border bg-slate-50 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2.5">
     <div>
       {!soloLectura && (
-        <span className="text-[10px] text-slate-500 font-bold">
+        <span className="text-[10px] text-slate-500 font-bold block sm:inline">
           El progreso se guarda temporalmente de forma local en la cuenta del especialista.
         </span>
       )}
     </div>
 
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-2">
       {soloLectura ? (
         <>
           {onFirmar && (

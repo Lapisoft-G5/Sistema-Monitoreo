@@ -12,7 +12,7 @@ import { puedeEvaluarVisita, type Cronograma } from '@/entities/model-cronograma
 import type { Plantilla } from '@/entities/model-plantillas';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
 import { useFormularioFicha } from '../hooks/use-formulario-ficha';
@@ -65,6 +65,7 @@ export const LlenarFichaForm = ({
   initialState,
 }: LlenarFichaFormProps) => {
   const { user } = useUser();
+  const qc = useQueryClient();
   // Una sola pieza de estado; los actualizadores conservan la firma de
   // `useState` para que los sitios de uso del formulario no cambien.
   const {
@@ -245,6 +246,27 @@ export const LlenarFichaForm = ({
       if (esErrorDeRed(error)) {
         await encolar('firmar-ficha', { cronogramaId: visit.id, plantillaId: template.id });
         setFirmaPendiente(true);
+        if (rolEsperado) {
+          qc.setQueryData(
+            ['firmas', visit.id, template.id],
+            (
+              prev:
+                | {
+                    firmas?: Array<{
+                      rolFirmante: string;
+                      imagenUrl: string | null;
+                      createdAt: string;
+                    }>;
+                  }
+                | undefined,
+            ) => ({
+              firmas: [
+                ...(prev?.firmas ?? []).filter((f) => f.rolFirmante !== rolEsperado),
+                { rolFirmante: rolEsperado, imagenUrl: null, createdAt: new Date().toISOString() },
+              ],
+            }),
+          );
+        }
         toast.info('Sin conexión: la firma quedó guardada y se enviará al recuperar internet.', {
           duration: 8000,
         });

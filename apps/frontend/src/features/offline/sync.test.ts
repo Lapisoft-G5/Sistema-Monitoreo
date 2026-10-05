@@ -14,6 +14,10 @@ describe('clasificar (resultado de un envío de la cola)', () => {
     expect(clasificar(err(400, 'La ficha ya esta FINALIZADO.')).resultado).toBe('ok');
   });
 
+  it('"Ya firmó esta ficha con este rol" es éxito idempotente', () => {
+    expect(clasificar(err(400, 'Ya firmó esta ficha con este rol.')).resultado).toBe('ok');
+  });
+
   it('un 4xx normal es permanente', () => {
     expect(clasificar(err(400, 'Datos inválidos')).resultado).toBe('permanente');
     expect(clasificar(err(403, 'Prohibido')).resultado).toBe('permanente');

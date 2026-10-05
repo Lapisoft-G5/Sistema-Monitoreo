@@ -191,6 +191,67 @@ describe('useOpcionesDeEvaluacion — especialista de UGEL', () => {
     });
     expect(nombresOfrecidos(paramsJefeArea).sort()).toEqual(['Bertha', 'Marlene']);
   });
+
+  describe('visitas de tipo DIRECTIVO', () => {
+    const director = docente({
+      id: 'dir-1',
+      nombres: 'Hernán',
+      apellidos: 'Pérez',
+      cargo: 'Director',
+      especialidad: 'Ciencias Sociales',
+    });
+    const docenteAula = docente({
+      id: 'doc-1',
+      nombres: 'Bertha',
+      cargo: 'Docente de Aula',
+      especialidad: 'CTA',
+    });
+
+    it('ofrece al director al especialista de UGEL aunque no compartan especialidad curricular', () => {
+      const resultado = nombresOfrecidos(
+        parametros({
+          esDirector: false,
+          institucionDelUsuarioId: undefined,
+          docentes: [director, docenteAula],
+          especialistas: [{ id: 'esp-cta', personaId: 'per-cta', cargo: 'Especialista' }],
+          evaluadorElegidoId: 'esp-cta',
+          especialidadesDelEvaluador: ['CTA'],
+          tipoDeVisita: 'DIRECTIVO',
+        }),
+      );
+      expect(resultado).toEqual(['Hernán']);
+    });
+
+    it('ofrece al director al Responsable de Nivel (Jefe de Área)', () => {
+      const resultado = nombresOfrecidos(
+        parametros({
+          esDirector: false,
+          institucionDelUsuarioId: undefined,
+          docentes: [director, docenteAula],
+          especialistas: [{ id: 'jefe-sec', personaId: 'per-sec', cargo: 'Jefe de Área' }],
+          evaluadorElegidoId: 'jefe-sec',
+          especialidadesDelEvaluador: [],
+          tipoDeVisita: 'DIRECTIVO',
+        }),
+      );
+      expect(resultado).toEqual(['Hernán']);
+    });
+
+    it('ofrece al director al Jefe de Gestión Pedagógica', () => {
+      const resultado = nombresOfrecidos(
+        parametros({
+          esDirector: false,
+          institucionDelUsuarioId: undefined,
+          docentes: [director, docenteAula],
+          especialistas: [{ id: 'jg-ugel', personaId: 'per-jg', cargo: 'Jefe de Gestión' }],
+          evaluadorElegidoId: 'jg-ugel',
+          especialidadesDelEvaluador: [],
+          tipoDeVisita: 'DIRECTIVO',
+        }),
+      );
+      expect(resultado).toEqual(['Hernán']);
+    });
+  });
 });
 
 

@@ -473,6 +473,14 @@ describe('SchedulingService - Reprogramaciones', () => {
       expect(r.id).toBe('vis-1');
     });
 
+    it('acepta a un Especialista como monitor de un director', async () => {
+      conMonitor('Especialista', true);
+
+      const r = await service.crearVisita(visitaPara('DIRECTIVO') as any, sesionJefe);
+
+      expect(r.id).toBe('vis-1');
+    });
+
     it('rechaza al Jefe de Gestión como monitor de un docente', async () => {
       conMonitor('Jefe de Gestión', false);
 

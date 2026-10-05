@@ -43,7 +43,7 @@ export const CabeceraFicha = ({
   onImprimir,
   onCerrar,
 }: CabeceraFichaProps) => (
-  <div className="shrink-0 bg-white border-b border-border px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+  <div className="shrink-0 bg-white border-b border-border px-4 sm:px-6 py-2.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
     {/* Título del instrumento */}
     <div className="min-w-0 flex items-center gap-2.5">
       <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -68,7 +68,7 @@ export const CabeceraFicha = ({
 
     {/* Selector de pestañas tipo pill (en el centro) */}
     {pestana && (
-      <div className="inline-flex p-0.5 bg-slate-100/90 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
+      <div className="order-last sm:order-none w-full sm:w-auto flex justify-center inline-flex p-0.5 bg-slate-100/90 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
         {[...PESTANAS, ...(conCarpeta ? [PESTANA_CARPETA] : [])].map(({ clave, etiqueta, Icono }) => {
           const activa = pestana === clave;
           return (

@@ -222,6 +222,25 @@ describe('especialistasAsignables — jefe de área', () => {
     expect(resultado.map((e) => e.id)).toEqual(['jefe-area-1']);
   });
 
+  it('cuando quien programa es Jefe de Área, el Jefe de Gestión no queda entre los asignables (jerarquía)', () => {
+    const jefeGestion = especialista({ id: 'jefe-gestion-1', cargo: 'Jefe de Gestión' });
+    const espPrimaria = especialista({
+      id: 'esp-primaria-1',
+      cargo: 'Especialista',
+      nivelEducativo: 'Primaria',
+      modalidad: 'EBR',
+    });
+    const usuarioJefeArea = { role: RoleCode.JEFE_AREA, especialistaNivel: 'Primaria' };
+    const resultado = especialistasAsignables(
+      [jefeGestion, espPrimaria],
+      'EBR',
+      'Primaria',
+      null,
+      usuarioJefeArea,
+    );
+    expect(resultado.map((e) => e.id)).toEqual(['esp-primaria-1']);
+  });
+
   /**
    * Sin excepciones por quién arma el cronograma: un Responsable de Nivel de
    * otro nivel u otra modalidad queda fuera igual que cualquier especialista.

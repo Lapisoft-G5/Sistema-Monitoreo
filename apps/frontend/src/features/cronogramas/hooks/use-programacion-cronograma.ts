@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { Docente } from '@entities/model-docentes';
 import {
@@ -156,6 +157,7 @@ export function useProgramacionCronograma({
           form.modalidad,
           form.nivel,
           editandoId ? form.monitorId : null,
+          usuario,
         ),
       ),
       instituciones: opcionesDeInstitucion(
@@ -189,6 +191,10 @@ export function useProgramacionCronograma({
   );
 
   const abrirCreacion = () => {
+    // Los especialistas de UGEL y el Director de UGEL no programan visitas
+    if (usuario?.role === RoleCode.ESPECIALISTA || usuario?.role === RoleCode.DIRECTOR_UGEL) {
+      return;
+    }
     setEditandoId(null);
     setSolicitudPendiente(null);
     setError(null);

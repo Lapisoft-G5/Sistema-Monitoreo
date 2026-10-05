@@ -138,6 +138,14 @@ export async function crearVisita(
   dto: CreateVisitaDto,
   session: SessionUser,
 ): Promise<IVisita> {
+  // Los especialistas de UGEL no planifican ni asignan visitas: solo ejecutan
+  // las asignadas por sus Jefaturas.
+  if (session.role === RoleCode.ESPECIALISTA) {
+    throw new ForbiddenException(
+      'Los especialistas de UGEL no programan visitas de monitoreo: la asignación de cronogramas es realizada por las Jefaturas de Área o de Gestión.',
+    );
+  }
+
   if (session.role === RoleCode.JEFE_AREA) {
     const jefeNivel = session.especialistaNivel;
     const targetMod = dto.modalidad || 'EBR';
@@ -208,6 +216,38 @@ export async function crearVisita(
     throw new BadRequestException(
       'El monitor (especialista/director) seleccionado no está activo.',
     );
+  }
+
+  // Restricciones de jerarquía de asignación para Responsables de Nivel (Jefe de Área)
+  if (session.role === RoleCode.JEFE_AREA) {
+    if (activas.monitorCargo === CargoNombre.JEFE_GESTION) {
+      throw new ForbiddenException(
+        'Un Responsable de Nivel no puede asignar visitas al Jefe de Gestión.',
+      );
+    }
+    if (session.especialistaNivel) {
+      const jefeNivel = session.especialistaNivel;
+      const monNivel = activas.monitorNivel;
+      if (activas.monitorCargo === CargoNombre.JEFE_AREA && monNivel && monNivel !== jefeNivel) {
+        throw new ForbiddenException(
+          'Un Responsable de Nivel solo puede programarse a sí mismo o a especialistas de su propio nivel.',
+        );
+      }
+      if (activas.monitorCargo === CargoNombre.ESPECIALISTA && monNivel) {
+        const esCompatible =
+          (jefeNivel === 'Inicial' && (monNivel === 'Inicial' || monNivel === 'Especial')) ||
+          (jefeNivel === 'Primaria' && monNivel === 'Primaria') ||
+          (jefeNivel === 'Secundaria' &&
+            (monNivel === 'Secundaria' ||
+              monNivel === 'Alternativa' ||
+              monNivel === 'Técnico-Productiva'));
+        if (!esCompatible && monNivel !== jefeNivel) {
+          throw new ForbiddenException(
+            `Un Responsable de Nivel de ${jefeNivel} solo puede asignar a especialistas de su propio nivel.`,
+          );
+        }
+      }
+    }
   }
   // Un Responsable de Nivel (Jefe de Área) puede realizar visitas de monitoreo
   // en su nivel educativo asignado.

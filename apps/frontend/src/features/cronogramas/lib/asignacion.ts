@@ -211,6 +211,13 @@ export function especialistasAsignables<T extends EspecialistaAsignable>(
    * elegida desaparecía de la lista en vez de seguir mostrándose.
    */
   monitorActualId?: string | null,
+  /**
+   * Quien está programando el cronograma.
+   *
+   * La jerarquía prohíbe la asignación hacia arriba: un Responsable de Nivel
+   * (Jefe de Área) no puede asignarle visitas a su superior (Jefe de Gestión).
+   */
+  usuario?: UsuarioAsignador | null,
 ): T[] {
   if (!modalidad || !nivel) return [];
 
@@ -222,7 +229,12 @@ export function especialistasAsignables<T extends EspecialistaAsignable>(
     // El Jefe de Gestión es de toda la UGEL: su registro trae un nivel y una
     // modalidad, pero no los cubre, y exigírselos lo dejaría fuera de casi
     // todas las visitas.
-    if (esJefeDeGestion(especialista.cargo)) return true;
+    // Salvo que quien programa sea Jefe de Área: por jerarquía, no puede
+    // asignarle visitas a su superior.
+    if (esJefeDeGestion(especialista.cargo)) {
+      if (usuario?.role === RoleCode.JEFE_AREA) return false;
+      return true;
+    }
 
     return cubreModalidadYNivel(especialista, modalidad, nivel);
   });

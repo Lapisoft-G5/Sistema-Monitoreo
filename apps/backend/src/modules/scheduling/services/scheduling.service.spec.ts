@@ -1,4 +1,5 @@
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
@@ -133,7 +134,7 @@ describe('SchedulingService - Reprogramaciones', () => {
             modalidad: 'EBR',
             nivelEducativo: 'Primaria',
           } as any,
-          sesionEspecialista,
+          sesionJefe,
         ),
       ).rejects.toThrow(BadRequestException);
     });
@@ -153,7 +154,7 @@ describe('SchedulingService - Reprogramaciones', () => {
           modalidad: 'EBR',
           nivelEducativo: 'Primaria',
         } as any,
-        sesionEspecialista,
+        sesionJefe,
       );
       expect(r.id).toBe('vis-1');
     });
@@ -178,6 +179,8 @@ describe('SchedulingService - Reprogramaciones', () => {
         institucion: true,
         monitor: true,
         evaluado: true,
+        monitorCargo: 'Especialista',
+        monitorNivel: 'Primaria',
         monitorEsDirectorUgel: false,
         monitorEspecialidades: [],
         evaluadoEsDirector: true,
@@ -190,21 +193,21 @@ describe('SchedulingService - Reprogramaciones', () => {
      * aula a quien conduce la institución. Por eso se rechaza al programar.
      */
     it('rechaza programarle una ficha docente', async () => {
-      await expect(
-        service.crearVisita(visitaPara('DOCENTE') as any, sesionEspecialista),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.crearVisita(visitaPara('DOCENTE') as any, sesionJefe)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('el mensaje dice qué tipo corresponde', async () => {
-      await expect(
-        service.crearVisita(visitaPara('DOCENTE') as any, sesionEspecialista),
-      ).rejects.toThrow(/ficha directiva/i);
+      await expect(service.crearVisita(visitaPara('DOCENTE') as any, sesionJefe)).rejects.toThrow(
+        /ficha directiva/i,
+      );
     });
 
     it('acepta la ficha directiva', async () => {
       cronogramaRepo.create.mockResolvedValue(visitaBase);
 
-      const r = await service.crearVisita(visitaPara('DIRECTIVO') as any, sesionEspecialista);
+      const r = await service.crearVisita(visitaPara('DIRECTIVO') as any, sesionJefe);
 
       expect(r.id).toBe('vis-1');
     });
@@ -214,6 +217,8 @@ describe('SchedulingService - Reprogramaciones', () => {
         institucion: true,
         monitor: true,
         evaluado: true,
+        monitorCargo: 'Especialista',
+        monitorNivel: 'Primaria',
         monitorEsDirectorUgel: false,
         monitorEspecialidades: [],
         evaluadoEsDirector: false,
@@ -221,7 +226,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       });
       cronogramaRepo.create.mockResolvedValue(visitaBase);
 
-      const r = await service.crearVisita(visitaPara('DOCENTE') as any, sesionEspecialista);
+      const r = await service.crearVisita(visitaPara('DOCENTE') as any, sesionJefe);
 
       expect(r.id).toBe('vis-1');
     });
@@ -253,7 +258,7 @@ describe('SchedulingService - Reprogramaciones', () => {
             modalidad: 'EBR',
             nivelEducativo: 'Primaria',
           } as any,
-          sesionEspecialista,
+          sesionJefe,
         ),
       ).rejects.toThrow(/Director de UGEL no realiza visitas/i);
     });
@@ -278,15 +283,17 @@ describe('SchedulingService - Reprogramaciones', () => {
         institucion: true,
         monitor: true,
         evaluado: true,
+        monitorCargo: 'Especialista',
+        monitorNivel: 'Secundaria',
         monitorEsDirectorUgel: false,
         monitorEspecialidades: ['Matematica'],
         evaluadoEsDirector: false,
         evaluadoEspecialidades: ['Comunicacion'],
       });
 
-      await expect(
-        service.crearVisita(visitaSecundaria() as any, sesionEspecialista),
-      ).rejects.toThrow(/deben compartir/i);
+      await expect(service.crearVisita(visitaSecundaria() as any, sesionJefe)).rejects.toThrow(
+        /deben compartir/i,
+      );
     });
 
     it('acepta cuando comparten al menos una especialidad', async () => {
@@ -295,6 +302,8 @@ describe('SchedulingService - Reprogramaciones', () => {
         institucion: true,
         monitor: true,
         evaluado: true,
+        monitorCargo: 'Especialista',
+        monitorNivel: 'Secundaria',
         monitorEsDirectorUgel: false,
         monitorEspecialidades: ['Matematica', 'Comunicacion'],
         evaluadoEsDirector: false,
@@ -302,7 +311,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       });
       cronogramaRepo.create.mockResolvedValue(visitaBase);
 
-      const r = await service.crearVisita(visitaSecundaria() as any, sesionEspecialista);
+      const r = await service.crearVisita(visitaSecundaria() as any, sesionJefe);
 
       expect(r.id).toBe('vis-1');
     });
@@ -392,6 +401,17 @@ describe('SchedulingService - Reprogramaciones', () => {
     it('permite a Jefe de Área Secundaria crear visita para nivel Secundaria, EBA o CEPTRO', async () => {
       cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
       cronogramaRepo.countPendientesByMonitor.mockResolvedValue(0);
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: 'Especialista',
+        monitorNivel: 'Secundaria',
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: ['Educación para el Trabajo'],
+        evaluadoEsDirector: false,
+        evaluadoEspecialidades: ['Educación para el Trabajo'],
+      });
       cronogramaRepo.create.mockResolvedValue(visitaBase);
 
       const r = await service.crearVisita(
@@ -409,6 +429,71 @@ describe('SchedulingService - Reprogramaciones', () => {
         sesionJefeAreaSecundaria,
       );
       expect(r.id).toBe('vis-1');
+    });
+  });
+
+  describe('crearVisita - jerarquía de asignación', () => {
+    it('rechaza la creación de visitas por parte de un Especialista', async () => {
+      await expect(service.crearVisita(visitaBase as any, sesionEspecialista)).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.crearVisita(visitaBase as any, sesionEspecialista)).rejects.toThrow(
+        /no programan visitas de monitoreo/i,
+      );
+    });
+
+    it('un Jefe de Área no puede asignar visitas al Jefe de Gestión', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: CargoNombre.JEFE_GESTION,
+        monitorNivel: 'Secundaria',
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
+        evaluadoEsDirector: false,
+        evaluadoEspecialidades: [],
+      });
+
+      await expect(
+        service.crearVisita(
+          {
+            ...visitaBase,
+            monitorId: 'jefe-gestion-id',
+            modalidad: 'EBR',
+            nivelEducativo: 'Primaria',
+          } as any,
+          { id: 'jefe-area-1', role: RoleCode.JEFE_AREA, especialistaNivel: 'Primaria' },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('un Jefe de Área no puede asignar a especialistas de otro nivel educativo', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: CargoNombre.ESPECIALISTA,
+        monitorNivel: 'Secundaria',
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
+        evaluadoEsDirector: false,
+        evaluadoEspecialidades: [],
+      });
+
+      await expect(
+        service.crearVisita(
+          {
+            ...visitaBase,
+            monitorId: 'esp-secundaria-id',
+            modalidad: 'EBR',
+            nivelEducativo: 'Primaria',
+          } as any,
+          { id: 'jefe-area-1', role: RoleCode.JEFE_AREA, especialistaNivel: 'Primaria' },
+        ),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

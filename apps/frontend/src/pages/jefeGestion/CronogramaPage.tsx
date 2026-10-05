@@ -20,6 +20,7 @@ import { useUser } from '@entities/model-user';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import type { Cronograma } from '@entities/model-cronogramas';
 import {
+  RoleCode,
 } from '@sistema-monitoreo/shared-contracts';
 import { useScope } from '@shared/auth';
 
@@ -34,6 +35,9 @@ export const CronogramaPage = () => {
   const isDirector = isInstitution;
 
   const isCoordOrTaller = isMonitorCampo && isInstitution;
+
+  const puedeRegistrar =
+    user?.role !== RoleCode.ESPECIALISTA && user?.role !== RoleCode.DIRECTOR_UGEL;
 
   const {
     cronogramas,
@@ -96,13 +100,15 @@ export const CronogramaPage = () => {
         title="Cronogramas de Monitoreo"
         description="Programación de visitas de monitoreo pedagógico y administrativo."
         action={
-          <Button
-            onClick={programacion.abrirCreacion}
-            className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary/90 text-white transition-colors"
-          >
-            <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
-            Registrar cronograma
-          </Button>
+          puedeRegistrar ? (
+            <Button
+              onClick={programacion.abrirCreacion}
+              className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary/90 text-white transition-colors"
+            >
+              <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
+              Registrar cronograma
+            </Button>
+          ) : undefined
         }
       />
 

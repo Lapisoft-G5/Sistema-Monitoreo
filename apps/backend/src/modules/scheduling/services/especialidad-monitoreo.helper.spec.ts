@@ -27,6 +27,14 @@ describe('compartenEspecialidad', () => {
     expect(compartenEspecialidad(['Matematica', 'Comunicacion'], ['Comunicacion'])).toBe(true);
   });
 
+  it('acepta cuando el docente tiene varias especialidades y una coincide', () => {
+    expect(compartenEspecialidad(['Fisica'], ['Matematica', 'Fisica'])).toBe(true);
+  });
+
+  it('acepta cuando ambos tienen múltiples especialidades y comparten al menos una', () => {
+    expect(compartenEspecialidad(['Quimica', 'Biologia'], ['Matematica', 'Biologia'])).toBe(true);
+  });
+
   it('rechaza cuando no hay intersección', () => {
     expect(compartenEspecialidad(['Matematica'], ['Comunicacion'])).toBe(false);
   });

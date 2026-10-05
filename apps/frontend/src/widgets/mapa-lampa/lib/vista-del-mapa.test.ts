@@ -255,6 +255,17 @@ describe('coincideConFiltroDeNivel', () => {
       false,
     );
   });
+
+  it('es insensible a mayúsculas/minúsculas y espacios en blanco', () => {
+    const filtro = { modalidad: 'ebr', nivel: 'secundaria' };
+    expect(coincideConFiltroDeNivel(secundaria, filtro)).toBe(true);
+    expect(
+      coincideConFiltroDeNivel(
+        ie({ modalidad: '  EBR  ', nivelEducativo: '  Secundaria  ' }),
+        filtro,
+      ),
+    ).toBe(true);
+  });
 });
 
 describe('NOMBRE_DE_MODALIDAD', () => {

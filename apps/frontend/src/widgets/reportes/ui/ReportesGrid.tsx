@@ -153,7 +153,7 @@ export const ReportesGrid = ({
   useEffect(() => {
     if (!visitaAbierta || !plantillaActiva || !estadoDeLaFicha) return;
 
-    navigate(`/monitoreo/ficha/${visitaAbierta.id}`, {
+    navigate(`/monitoreo/ficha/${visitaAbierta.id}?plantillaId=${plantillaActiva.id}`, {
       state: { visit: visitaAbierta, template: plantillaActiva, initialState: estadoDeLaFicha },
     });
   }, [visitaAbierta, plantillaActiva, estadoDeLaFicha, navigate]);

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { Docente } from '@entities/model-docentes';
 import {
@@ -56,6 +57,7 @@ interface ProgramacionParams {
     instituciones: readonly (InstitucionAsignable & InstitucionOfrecible)[];
     docentes: readonly Docente[];
   };
+  cargandoCatalogos?: boolean;
   crear: (payload: never) => Promise<{ id?: string } | undefined | void>;
   actualizar: (id: string, payload: never) => Promise<unknown>;
 }
@@ -64,6 +66,7 @@ export function useProgramacionCronograma({
   usuario,
   esDeInstitucion,
   catalogos,
+  cargandoCatalogos,
   crear,
   actualizar,
 }: ProgramacionParams) {
@@ -145,6 +148,7 @@ export function useProgramacionCronograma({
   // Cascada de asignación: modalidad → nivel → especialista e institución.
   const opciones = useMemo(
     () => ({
+      cargando: cargandoCatalogos,
       modalidades: modalidadesPermitidas(usuario),
       niveles: nivelesPermitidos(form.modalidad, usuario),
       especialistas: opcionesDeEspecialista(
@@ -153,6 +157,7 @@ export function useProgramacionCronograma({
           form.modalidad,
           form.nivel,
           editandoId ? form.monitorId : null,
+          usuario,
         ),
       ),
       instituciones: opcionesDeInstitucion(
@@ -168,6 +173,7 @@ export function useProgramacionCronograma({
       ),
     }),
     [
+      cargandoCatalogos,
       usuario,
       form.modalidad,
       form.nivel,
@@ -185,6 +191,10 @@ export function useProgramacionCronograma({
   );
 
   const abrirCreacion = () => {
+    // Los especialistas de UGEL y el Director de UGEL no programan visitas
+    if (usuario?.role === RoleCode.ESPECIALISTA || usuario?.role === RoleCode.DIRECTOR_UGEL) {
+      return;
+    }
     setEditandoId(null);
     setSolicitudPendiente(null);
     setError(null);

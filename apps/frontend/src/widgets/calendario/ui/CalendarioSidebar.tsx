@@ -189,7 +189,9 @@ export const CalendarioSidebar = ({
       ? fichaAEstadoFormulario(fichaExistente)
       : undefined;
 
-    navigate(`/monitoreo/ficha/${visit.id}`, { state: { visit, template, initialState } });
+    navigate(`/monitoreo/ficha/${visit.id}?plantillaId=${template.id}`, {
+      state: { visit, template, initialState },
+    });
   };
 
   // Manejo de inicio de ficha: si hay varias fichas vigentes disponibles, se abre el selector de instrumento

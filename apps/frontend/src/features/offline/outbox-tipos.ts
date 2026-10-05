@@ -9,7 +9,7 @@
  */
 
 /** Qué operación quedó pendiente de enviar. */
-export type TipoOperacion = 'finalizar-ficha' | 'firmar-ficha';
+export type TipoOperacion = 'finalizar-ficha' | 'firmar-ficha' | 'guardar-borrador';
 
 export type EstadoOperacion = 'pendiente' | 'enviando' | 'enviada' | 'error';
 

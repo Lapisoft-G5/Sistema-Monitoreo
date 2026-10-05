@@ -1,6 +1,6 @@
 import { get, set, createStore } from 'idb-keyval';
 import type { OperacionOffline, TipoOperacion } from './outbox-tipos';
-import { nuevaOperacion } from './outbox-logica';
+import { nuevaOperacion, compactarOperaciones } from './outbox-logica';
 
 /** El cronograma al que apunta una operación, según su tipo de payload. */
 function cronogramaDe(op: OperacionOffline): string | undefined {
@@ -44,11 +44,12 @@ export async function guardarOperaciones(ops: readonly OperacionOffline[]): Prom
   notificarCambio();
 }
 
-/** Agrega una operación nueva al final de la cola y devuelve su id. */
+/** Agrega una operación nueva a la cola (compactando si ya existía una pendiente para la misma visita). */
 export async function encolar(tipo: TipoOperacion, payload: unknown): Promise<string> {
   const op = nuevaOperacion(idFactory(), tipo, payload);
   const ops = await listarOperaciones();
-  await guardarOperaciones([...ops, op]);
+  const compactadas = compactarOperaciones(ops, op);
+  await guardarOperaciones(compactadas);
   return op.id;
 }
 

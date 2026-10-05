@@ -48,7 +48,7 @@ export async function clonePlantilla(
       version: nextVersion,
       baremo: original.baremo,
       descripcion:
-        descripcion ??
+        (descripcion && descripcion.trim()) ||
         `Copia basada en ${original.tipoMonitoreo} ${original.anioAcademico} v${original.version}.`,
       estado: 'Borrador',
       autorId: nuevoAutorId,

@@ -35,11 +35,13 @@ export function useAccionesPlantilla(plantillas: readonly Plantilla[]) {
   // ── Clonar ──
   const [aClonar, setAClonar] = useState<Plantilla | null>(null);
   const [anioDestino, setAnioDestino] = useState(new Date().getFullYear());
+  const [nombreDestino, setNombreDestino] = useState('');
   const [errorClonar, setErrorClonar] = useState<string | null>(null);
 
   const abrirClonar = (plantilla: Plantilla) => {
     setAClonar(plantilla);
     setAnioDestino(new Date().getFullYear());
+    setNombreDestino('');
     setErrorClonar(null);
   };
 
@@ -47,7 +49,11 @@ export function useAccionesPlantilla(plantillas: readonly Plantilla[]) {
     if (!aClonar) return;
     setErrorClonar(null);
     try {
-      await clonar.mutateAsync({ id: aClonar.id, anioAcademico: anioDestino });
+      await clonar.mutateAsync({
+        id: aClonar.id,
+        anioAcademico: anioDestino,
+        descripcion: nombreDestino.trim() || undefined,
+      });
       setAClonar(null);
       setAviso({ mensaje: `Plantilla duplicada para el año ${anioDestino}`, tono: 'exito' });
     } catch (err) {
@@ -131,9 +137,11 @@ export function useAccionesPlantilla(plantillas: readonly Plantilla[]) {
     clonar: {
       objetivo: aClonar,
       anio: anioDestino,
+      nombre: nombreDestino,
       error: errorClonar,
       enCurso: clonar.isPending,
       setAnio: setAnioDestino,
+      setNombre: setNombreDestino,
       abrir: abrirClonar,
       cerrar: () => setAClonar(null),
       confirmar: confirmarClonar,

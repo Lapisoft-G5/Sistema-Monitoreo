@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useEstadoConexion } from './conexion';
 import { listarOperaciones, limpiarEnviadas, EVENTO_CAMBIO } from './outbox';
@@ -13,6 +14,7 @@ import { solicitarPersistencia } from './almacenamiento';
  */
 export function useSyncOffline() {
   const { enLinea } = useEstadoConexion();
+  const qc = useQueryClient();
   const [pendientes, setPendientes] = useState(0);
   const [sincronizando, setSincronizando] = useState(false);
 
@@ -26,11 +28,18 @@ export function useSyncOffline() {
       const enviadas = await sincronizarCola();
       await limpiarEnviadas();
       await refrescar();
-      if (enviadas > 0) toast.success(`${enviadas} ficha(s) sincronizada(s).`, { id: 'sync' });
+      if (enviadas > 0) {
+        await Promise.all([
+          qc.invalidateQueries({ queryKey: ['cronogramas'] }),
+          qc.invalidateQueries({ queryKey: ['fichas'] }),
+          qc.invalidateQueries({ queryKey: ['reportes'] }),
+        ]);
+        toast.success(`${enviadas} ficha(s) sincronizada(s).`, { id: 'sync' });
+      }
     } finally {
       setSincronizando(false);
     }
-  }, [refrescar]);
+  }, [qc, refrescar]);
 
   useEffect(() => {
     // Pide storage persistente para que no desalojen la cola.

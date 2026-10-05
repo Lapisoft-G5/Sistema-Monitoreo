@@ -1,6 +1,7 @@
 import { ErrorDeApi } from '@shared/config/api';
 import {
   finalizarFichaCompleta,
+  guardarBorradorFicha,
   firmarFichaCompleta,
   type PayloadFinalizarFicha,
   type PayloadFirmarFicha,
@@ -47,6 +48,10 @@ export function clasificar(e: unknown): Clasificacion {
 
 async function ejecutar(op: OperacionOffline): Promise<Clasificacion> {
   try {
+    if (op.tipo === 'guardar-borrador') {
+      await guardarBorradorFicha(op.payload as PayloadFinalizarFicha);
+      return { resultado: 'ok' };
+    }
     if (op.tipo === 'finalizar-ficha') {
       await finalizarFichaCompleta(op.payload as PayloadFinalizarFicha);
       return { resultado: 'ok' };
@@ -75,8 +80,11 @@ export async function sincronizarCola(): Promise<number> {
   sincronizando = true;
   let enviadas = 0;
   try {
-    let op = siguientePendiente(await listarOperaciones());
+    const visitadas = new Set<string>();
+    let ops = await listarOperaciones();
+    let op = siguientePendiente(ops.filter((o) => !visitadas.has(o.id)));
     while (op) {
+      visitadas.add(op.id);
       const { resultado, error, auth } = await ejecutar(op);
       // Un fallo de sesión no es culpa de la ficha: se corta el drenado dejando la
       // entrada intacta (sin sumar intento), para reintentarla tras re-loguear.
@@ -84,7 +92,8 @@ export async function sincronizarCola(): Promise<number> {
       await actualizarOperacion(aplicarResultado(op, resultado, error));
       if (resultado === 'ok') enviadas++;
       if (resultado === 'reintentar') break;
-      op = siguientePendiente(await listarOperaciones());
+      ops = await listarOperaciones();
+      op = siguientePendiente(ops.filter((o) => !visitadas.has(o.id)));
     }
   } finally {
     sincronizando = false;

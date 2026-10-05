@@ -236,6 +236,34 @@ describe('especialistasAsignables — jefe de área', () => {
     const resultado = especialistasAsignables([deOtroNivel], 'EBR', 'Primaria');
     expect(resultado).toEqual([]);
   });
+
+  it('reconoce el cargo "Responsable de Nivel" y variantes sin tilde', () => {
+    const responsable = especialista({
+      id: 'resp-1',
+      cargo: 'Responsable de Nivel',
+      nivelEducativo: 'Primaria',
+      modalidad: 'EBR',
+    });
+    const jefeSinTilde = especialista({
+      id: 'jefe-sin-tilde',
+      cargo: 'Jefe de Area',
+      nivelEducativo: 'Primaria',
+      modalidad: 'EBR',
+    });
+    const resultado = especialistasAsignables([responsable, jefeSinTilde], 'EBR', 'Primaria');
+    expect(resultado.map((e) => e.id).sort()).toEqual(['jefe-sin-tilde', 'resp-1']);
+  });
+
+  it('tolera diferencias de mayúsculas, minúsculas y espacios en modalidad y nivel', () => {
+    const espMayus = especialista({
+      id: 'esp-mayus',
+      cargo: 'ESPECIALISTA',
+      nivelEducativo: 'SECUNDARIA',
+      modalidad: 'EBR ',
+    });
+    const resultado = especialistasAsignables([espMayus], 'ebr', 'secundaria');
+    expect(resultado.map((e) => e.id)).toEqual(['esp-mayus']);
+  });
 });
 
 describe('especialistasAsignables — monitor ya asignado, al editar', () => {
@@ -354,6 +382,17 @@ describe('institucionesAsignables', () => {
 
     const resultado = institucionesAsignables([porEstado, porBandera], 'EBR', 'Primaria');
     expect(resultado.map((i) => i.id).sort()).toEqual(['a', 'b']);
+  });
+
+  it('tolera diferencias de mayúsculas y espacios en modalidad, nivel y estado', () => {
+    const ieConEspacios = institucion({
+      id: 'ie-espacios',
+      modalidad: 'ebr',
+      nivelEducativo: 'PRIMARIA ',
+      estado: 'activa',
+    });
+    const resultado = institucionesAsignables([ieConEspacios], 'EBR', 'Primaria');
+    expect(resultado.map((i) => i.id)).toEqual(['ie-espacios']);
   });
 });
 

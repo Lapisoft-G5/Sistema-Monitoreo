@@ -11,6 +11,7 @@ import type { BotonVisita } from './SelectorNumeroVisita';
 
 /** Todo lo que el formulario puede ofrecer, ya filtrado por la cascada. */
 export interface OpcionesDelFormulario {
+  cargando?: boolean;
   modalidades: string[];
   niveles: string[];
   especialistas: Opcion[];

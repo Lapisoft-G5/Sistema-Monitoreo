@@ -40,6 +40,7 @@ export const CronogramaPage = () => {
     especialistas,
     instituciones,
     docentes,
+    isLoading: cargandoCatalogos,
     createCronograma,
     updateCronograma,
     deleteCronograma: deleteFromContext,
@@ -54,6 +55,7 @@ export const CronogramaPage = () => {
     usuario: user,
     esDeInstitucion: isDirector,
     catalogos: { cronogramas, especialistas, instituciones, docentes },
+    cargandoCatalogos,
     crear: createCronograma,
     actualizar: updateCronograma,
   });

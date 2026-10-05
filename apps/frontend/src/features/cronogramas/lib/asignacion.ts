@@ -21,10 +21,31 @@ import { esDeEPT } from '@features/docentes/lib/asignacion-de-cargo';
 
 const TODAS_LAS_MODALIDADES = Object.values(ModalidadEducativa);
 
-/** Cargos de la UGEL que salen a monitorear. */
-const CARGOS_QUE_MONITOREAN = ['Especialista', 'Jefe de Área', 'Jefe de Gestión'];
+/** Texto normalizado: sin tildes, minúsculas y sin espacios a los bordes. */
+export const normalizarTexto = (s?: string | null): string =>
+  (s ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
 
-const JEFE_DE_GESTION = 'Jefe de Gestión';
+/** Cargos de la UGEL que salen a monitorear en sus formas normalizadas. */
+const CARGOS_QUE_MONITOREAN_NORMALIZADOS = new Set([
+  'especialista',
+  'jefe de area',
+  'jefe de gestion',
+  'responsable de nivel',
+]);
+
+export function esCargoQueMonitorea(cargo?: string | null): boolean {
+  if (!cargo) return false;
+  return CARGOS_QUE_MONITOREAN_NORMALIZADOS.has(normalizarTexto(cargo));
+}
+
+export function esJefeDeGestion(cargo?: string | null): boolean {
+  if (!cargo) return false;
+  return normalizarTexto(cargo) === 'jefe de gestion';
+}
 
 /**
  * Qué ficha puede levantar el monitor elegido.
@@ -38,7 +59,7 @@ const JEFE_DE_GESTION = 'Jefe de Gestión';
  * nada que restringir.
  */
 export function tiposPermitidosDelMonitor(cargo: string | undefined): readonly TipoMonitoreo[] {
-  return cargo === JEFE_DE_GESTION ? SOLO_DIRECTIVO : AMBOS_TIPOS;
+  return esJefeDeGestion(cargo) ? SOLO_DIRECTIVO : AMBOS_TIPOS;
 }
 
 // Constantes y no literales nuevos en cada llamada: quien las usa como
@@ -146,21 +167,23 @@ const cubreModalidadYNivel = (
   modalidad: string,
   nivel: string,
 ): boolean => {
-  if (modalidad === 'CEPTRO') {
+  const modVisita = normalizarTexto(modalidad);
+  const nivelVisita = normalizarTexto(nivel);
+  const modEsp = normalizarTexto(especialista.modalidad) || 'ebr';
+  const nivelEsp = normalizarTexto(especialista.nivelEducativo);
+
+  if (modVisita === 'ceptro') {
     return (
-      especialista.nivelEducativo === 'Secundaria' &&
+      nivelEsp === 'secundaria' &&
       !!especialista.especialidades?.some((e) => esDeEPT(e))
     );
   }
 
-  if (modalidad === 'EBA' || modalidad === 'EBE') {
-    return especialista.nivelEducativo === 'Primaria' || especialista.nivelEducativo === 'Inicial';
+  if (modVisita === 'eba' || modVisita === 'ebe') {
+    return nivelEsp === 'primaria' || nivelEsp === 'inicial';
   }
 
-  return (
-    (especialista.modalidad || MODALIDAD_POR_DEFECTO) === modalidad &&
-    especialista.nivelEducativo === nivel
-  );
+  return modEsp === modVisita && nivelEsp === nivelVisita;
 };
 
 /**
@@ -193,13 +216,13 @@ export function especialistasAsignables<T extends EspecialistaAsignable>(
 
   const elegibles = especialistas.filter((especialista) => {
     if (especialista.activo !== true) return false;
-    if (!CARGOS_QUE_MONITOREAN.includes(especialista.cargo)) return false;
+    if (!esCargoQueMonitorea(especialista.cargo)) return false;
     if (ROLES_DE_CONDUCCION.includes(especialista.rolCode ?? '')) return false;
 
     // El Jefe de Gestión es de toda la UGEL: su registro trae un nivel y una
     // modalidad, pero no los cubre, y exigírselos lo dejaría fuera de casi
     // todas las visitas.
-    if (especialista.cargo === JEFE_DE_GESTION) return true;
+    if (esJefeDeGestion(especialista.cargo)) return true;
 
     return cubreModalidadYNivel(especialista, modalidad, nivel);
   });
@@ -224,11 +247,14 @@ export function institucionesAsignables<T extends InstitucionAsignable>(
 ): T[] {
   if (!modalidad || !nivel) return [];
 
+  const modVisita = normalizarTexto(modalidad);
+  const nivelVisita = normalizarTexto(nivel);
+
   return instituciones.filter(
     (institucion) =>
-      institucion.modalidad === modalidad &&
-      institucion.nivelEducativo === nivel &&
-      (institucion.estado === 'Activa' || institucion.activo === true),
+      normalizarTexto(institucion.modalidad) === modVisita &&
+      normalizarTexto(institucion.nivelEducativo) === nivelVisita &&
+      (normalizarTexto(institucion.estado) === 'activa' || institucion.activo === true),
   );
 }
 

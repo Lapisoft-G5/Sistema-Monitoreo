@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Info } from 'lucide-react';
 import { Spinner } from '@shared/ui/Spinner';
 import { nombreDePlantilla, type Plantilla } from '@entities/model-plantillas';
 import { useUser } from '@entities/model-user';
@@ -94,6 +95,20 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
       />
 
       {isError && <ErrorDeCarga error={error} onReintentar={() => refetch()} />}
+
+      {alcance.isInstitution && cuposLibres.length === 0 && (
+        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/70 flex items-start gap-3 text-xs text-slate-700 shadow-xs">
+          <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold text-blue-900 block text-sm">
+              Plantillas Oficiales de la UGEL Habilitadas
+            </span>
+            <p className="text-slate-600 leading-relaxed">
+              Tu institución educativa cuenta con las plantillas oficiales vigentes de la UGEL para realizar monitoreos pedagógicos sin necesidad de tramitar autorizaciones adicionales.
+            </p>
+          </div>
+        </div>
+      )}
 
       {acciones.aviso && (
         <AvisoDeAccion

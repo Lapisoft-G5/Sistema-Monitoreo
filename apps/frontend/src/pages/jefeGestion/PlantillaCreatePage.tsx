@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { PlantillaForm, type PlantillaFormState } from '@widgets/plantillas';
@@ -239,22 +240,36 @@ export const PlantillaCreatePage = () => {
         en vez de dejar a la persona probando.
       */}
       {instrumentosPermitidos?.length === 0 ? (
-        <Card className="p-8 flex flex-col items-center gap-3 text-center border-amber-200 bg-amber-50">
-          <ClipboardList className="h-8 w-8 text-amber-700" />
-          <p className="text-sm font-bold text-amber-900">
-            Tu institución no tiene ninguna plantilla autorizada sin usar.
-          </p>
-          <p className="text-sm text-amber-900 max-w-xl">
-            Las tres fichas oficiales de la UGEL están disponibles para monitorear sin ningún
-            trámite. Para registrar una ficha propia, el director de la I.E. debe presentar una
-            solicitud y esperar que la Jefatura de Gestión la apruebe.
-          </p>
-          <Link
-            to="/plantillas/mis-solicitudes"
-            className="text-sm font-bold text-primary hover:underline"
-          >
-            Ir a Mis Solicitudes →
-          </Link>
+        <Card className="p-8 flex flex-col items-center gap-4 text-center border-blue-200 bg-blue-50/70 max-w-2xl mx-auto shadow-sm">
+          <div className="p-3 bg-blue-100 rounded-full text-blue-700">
+            <ClipboardList className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-base font-bold text-slate-800">
+              Plantillas Oficiales de la UGEL Habilitadas
+            </h3>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Tu institución educativa ya dispone de las <strong>plantillas oficiales de la UGEL</strong> habilitadas por defecto para ejecutar visitas de monitoreo (Docente, Directivo y Docente EIB). <strong>No requieres autorización previa para monitorear con los instrumentos oficiales de la UGEL.</strong>
+            </p>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              El registro de una plantilla personalizada en esta sección aplica únicamente si tu I.E. requiere un instrumento pedagógico diferenciado previamente aprobado por la Jefatura de Gestión Pedagógica.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Button
+              onClick={() => navigate('/plantillas')}
+              variant="default"
+              className="bg-primary hover:bg-primary-hover text-white font-semibold text-xs h-9 px-4 cursor-pointer"
+            >
+              Volver al Catálogo de Fichas
+            </Button>
+            <Link
+              to="/plantillas/mis-solicitudes"
+              className="text-xs font-bold text-primary hover:underline px-3 py-2"
+            >
+              Gestionar Solicitudes de Fichas Personalizadas →
+            </Link>
+          </div>
         </Card>
       ) : (
       <PlantillaForm

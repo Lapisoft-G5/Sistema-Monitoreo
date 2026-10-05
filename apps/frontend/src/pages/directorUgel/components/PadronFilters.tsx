@@ -3,6 +3,8 @@ import { Button } from '@shared/ui/button';
 import { Filter, RotateCw } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
+import { DISTRITOS_LAMPA, NIVELES } from '@entities/model-instituciones';
+
 export const PadronFilters = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -29,7 +31,7 @@ export const PadronFilters = () => {
           allLabel="Todos los Distritos"
           value={searchParams.get('distrito') || ''}
           onChange={(v) => handleFilterChange('distrito', v)}
-          options={['Lampa', 'Santa Lucía', 'Pucará', 'Ocuviri']}
+          options={DISTRITOS_LAMPA}
         />
       </div>
       
@@ -39,7 +41,7 @@ export const PadronFilters = () => {
           allLabel="Todos los Niveles"
           value={searchParams.get('nivel') || ''}
           onChange={(v) => handleFilterChange('nivel', v)}
-          options={['INICIAL', 'PRIMARIA', 'SECUNDARIA']}
+          options={NIVELES}
         />
       </div>
 

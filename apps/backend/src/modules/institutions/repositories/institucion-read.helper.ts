@@ -45,7 +45,7 @@ export async function findAll(
     andConditions.push({ nivelEducativo: { equals: nivelEducativo, mode: 'insensitive' } });
   }
   if (modalidad) {
-    andConditions.push({ modalidad: { equals: modalidad } });
+    andConditions.push({ modalidad: { equals: modalidad, mode: 'insensitive' } });
   }
 
   if (andConditions.length > 0) {

@@ -9,6 +9,7 @@ import { useEntityTable } from '@shared/hooks/useEntityTable';
 import type { Institucion } from '@entities/model-instituciones';
 import type { VariantProps } from 'class-variance-authority';
 import type { badgeVariants } from '@shared/ui/badge-variants';
+import { normDistrito } from '@shared/lib/distrito';
 
 interface PadronTableProps {
   data: Institucion[];
@@ -23,9 +24,9 @@ export const PadronTable = ({ data }: PadronTableProps) => {
       const nivel = params.get('nivel');
       const estado = params.get('estado');
 
-      if (distrito && item.distrito !== distrito) return false;
-      if (nivel && item.nivel !== nivel) return false;
-      if (estado && item.estado !== estado) return false;
+      if (distrito && normDistrito(item.distrito) !== normDistrito(distrito)) return false;
+      if (nivel && (item.nivel ?? '').trim().toLowerCase() !== nivel.trim().toLowerCase()) return false;
+      if (estado && (item.estado ?? '').trim().toLowerCase() !== estado.trim().toLowerCase()) return false;
 
       return true;
     }

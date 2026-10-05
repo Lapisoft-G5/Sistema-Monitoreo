@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Spinner } from '@shared/ui/Spinner';
-import { type Plantilla } from '@entities/model-plantillas';
+import { nombreDePlantilla, type Plantilla } from '@entities/model-plantillas';
 import { useUser } from '@entities/model-user';
 import { useScope } from '@shared/auth';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
@@ -142,6 +142,9 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
         <ModalClonarPlantilla
           anio={acciones.clonar.anio}
           onAnioChange={acciones.clonar.setAnio}
+          nombre={acciones.clonar.nombre}
+          onNombreChange={acciones.clonar.setNombre}
+          plantillaOriginalNombre={nombreDePlantilla(acciones.clonar.objetivo)}
           onConfirmar={acciones.clonar.confirmar}
           onCancelar={acciones.clonar.cerrar}
           error={acciones.clonar.error}

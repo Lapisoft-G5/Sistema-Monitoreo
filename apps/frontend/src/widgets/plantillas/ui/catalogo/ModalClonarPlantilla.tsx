@@ -20,6 +20,9 @@ const anioEnCurso = new Date().getFullYear();
 interface ModalClonarPlantillaProps {
   anio: number;
   onAnioChange: (anio: number) => void;
+  nombre?: string;
+  onNombreChange?: (nombre: string) => void;
+  plantillaOriginalNombre?: string;
   onConfirmar: () => void;
   onCancelar: () => void;
   error?: string | null;
@@ -28,6 +31,9 @@ interface ModalClonarPlantillaProps {
 export const ModalClonarPlantilla = ({
   anio,
   onAnioChange,
+  nombre = '',
+  onNombreChange,
+  plantillaOriginalNombre,
   onConfirmar,
   onCancelar,
   error,
@@ -43,11 +49,32 @@ export const ModalClonarPlantilla = ({
       <div className="space-y-4 text-left">
         <p className="text-sm text-gray-600">
           Se creará una copia en estado <strong className="text-gray-900">Borrador</strong> de la
-          plantilla seleccionada.
+          plantilla seleccionada{plantillaOriginalNombre ? ` (${plantillaOriginalNombre})` : ''}.
         </p>
+        {onNombreChange && (
+          <div className="flex flex-col gap-2">
+            <label htmlFor="nombre-ficha-clon" className="text-sm font-semibold text-gray-700">
+              Nombre de la ficha (opcional)
+            </label>
+            <input
+              id="nombre-ficha-clon"
+              type="text"
+              value={nombre}
+              onChange={(e) => onNombreChange(e.target.value)}
+              placeholder="Ej.: Copia adaptada para secundaria..."
+              className="px-3 py-2 border rounded-md text-sm"
+            />
+            <p className="text-xs text-gray-500">
+              Si se deja en blanco, se generará un nombre automático basado en la plantilla original.
+            </p>
+          </div>
+        )}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-gray-700">Año Académico Destino</label>
+          <label htmlFor="anio-academico-destino" className="text-sm font-semibold text-gray-700">
+            Año Académico Destino
+          </label>
           <input
+            id="anio-academico-destino"
             type="number"
             min={anioEnCurso}
             max={anioEnCurso}

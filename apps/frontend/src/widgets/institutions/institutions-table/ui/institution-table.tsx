@@ -20,12 +20,12 @@ interface InstitutionsTableWidgetProps {
 }
 
 const institutionFilter = (inst: Institucion, params: URLSearchParams) => {
-  const modalidadFilter = params.get('modalidad') || '';
-  const nivelFilter = params.get('nivel') || '';
+  const modalidadFilter = (params.get('modalidad') || '').trim().toUpperCase();
+  const nivelFilter = (params.get('nivel') || '').trim().toLowerCase();
   const q = (params.get('q') || '').trim().toLowerCase();
   return (
-    (!modalidadFilter || (inst.modalidad ?? '') === modalidadFilter) &&
-    (!nivelFilter || inst.nivel === nivelFilter) &&
+    (!modalidadFilter || (inst.modalidad ?? '').trim().toUpperCase() === modalidadFilter) &&
+    (!nivelFilter || (inst.nivel ?? '').trim().toLowerCase() === nivelFilter) &&
     (!q ||
       inst.nombre.toLowerCase().includes(q) ||
       inst.codigoModular.toLowerCase().includes(q))

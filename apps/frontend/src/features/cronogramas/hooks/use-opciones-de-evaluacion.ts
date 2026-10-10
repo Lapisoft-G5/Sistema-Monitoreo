@@ -215,6 +215,7 @@ export function useOpcionesDeEvaluacion({
         : evaluadosBase.filter(
             (d) =>
               !evaluadorElegidoId ||
+              tipoDeVisita === 'DIRECTIVO' ||
               esJefeDeArea ||
               docenteEvaluablePorEspecialista(
                 d.especialidad,
@@ -227,6 +228,7 @@ export function useOpcionesDeEvaluacion({
       esDirector,
       evaluadosBase,
       evaluadorElegidoId,
+      tipoDeVisita,
       esJefeDeArea,
       especialidadesDelEvaluador,
       esSecundaria,

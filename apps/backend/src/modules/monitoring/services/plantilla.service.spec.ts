@@ -367,6 +367,22 @@ describe('PlantillaService - ILA-0046', () => {
         new Date().getFullYear(),
       );
     });
+
+    it('clona plantilla con descripcion personalizada', async () => {
+      const clon = { ...plantillaVigente, id: 'clon-custom', descripcion: 'Ficha adaptada' };
+      repo.findById.mockResolvedValue(plantillaVigente);
+      repo.clone.mockResolvedValue(clon);
+      const r = await service.duplicar('plantilla-v1', sesionDirector, 'Ficha adaptada');
+      expect(r.id).toBe('clon-custom');
+      expect(repo.clone).toHaveBeenCalledWith(
+        'plantilla-v1',
+        'user-dir',
+        'director_ie',
+        'ie-1',
+        'Ficha adaptada',
+        new Date().getFullYear(),
+      );
+    });
   });
 
   /**

@@ -58,3 +58,63 @@ export function aplicarResultado(
     resultado === 'permanente' || intentos >= MAX_INTENTOS ? 'error' : 'pendiente';
   return { ...base, estado, intentos, error };
 }
+
+/** Extrae la clave de destino de una operación (visita + plantilla) para deduplicación. */
+export function claveDestino(op: OperacionOffline): string | null {
+  const p = op.payload as { visitId?: string; cronogramaId?: string; plantillaId?: string } | null;
+  const visitId = p?.visitId ?? p?.cronogramaId;
+  if (!visitId) return null;
+  return `${visitId}:${p?.plantillaId ?? ''}`;
+}
+
+/**
+ * Agrega o compacta una operación en la cola.
+ *
+ * Si ya hay una operación pendiente (o en reintento) para la misma visita y plantilla:
+ * - Un 'finalizar-ficha' nuevo sobreescribe un 'guardar-borrador' o un 'finalizar-ficha' anterior.
+ * - Un 'guardar-borrador' nuevo actualiza el 'guardar-borrador' anterior con las respuestas más recientes.
+ * - Un 'firmar-ficha' nuevo actualiza la firma anterior para esa visita.
+ *
+ * Mantiene la cola limpia y evita peticiones redundantes sin perder nada.
+ */
+export function compactarOperaciones(
+  ops: readonly OperacionOffline[],
+  nueva: OperacionOffline,
+): OperacionOffline[] {
+  const destinoNueva = claveDestino(nueva);
+  if (!destinoNueva) return [...ops, nueva];
+
+  const indiceExistente = ops.findIndex((existente) => {
+    if (existente.estado === 'enviada') return false;
+    if (claveDestino(existente) !== destinoNueva) return false;
+
+    // Ficha con ficha
+    if (
+      (nueva.tipo === 'guardar-borrador' || nueva.tipo === 'finalizar-ficha') &&
+      (existente.tipo === 'guardar-borrador' || existente.tipo === 'finalizar-ficha')
+    ) {
+      return true;
+    }
+
+    // Firma con firma
+    if (nueva.tipo === 'firmar-ficha' && existente.tipo === 'firmar-ficha') {
+      return true;
+    }
+
+    return false;
+  });
+
+  if (indiceExistente === -1) {
+    return [...ops, nueva];
+  }
+
+  const copia = [...ops];
+  copia[indiceExistente] = {
+    ...nueva,
+    id: copia[indiceExistente].id, // preservamos el id para estabilidad
+    creadaEn: copia[indiceExistente].creadaEn, // preservamos orden FIFO de llegada
+    actualizadaEn: ahora(),
+  };
+  return copia;
+}
+

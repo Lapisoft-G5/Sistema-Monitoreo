@@ -137,7 +137,7 @@ export const SelectField = ({
   return (
   <div className="flex flex-col gap-1 w-full">
     <FieldLabel label={label} required={required} htmlFor={id} />
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
+    <Select value={value || undefined} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger
         id={id}
         className={cn(

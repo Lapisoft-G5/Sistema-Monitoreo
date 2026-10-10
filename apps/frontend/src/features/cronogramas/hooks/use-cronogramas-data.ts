@@ -108,7 +108,10 @@ export const useCronogramasData = (enabled = true) => {
       // dos figuran con cargo «Especialista».
       rolCode: e.user?.role?.code,
       especialidades: e.especialidades || [],
-      activo: e.estado === 'Activo',
+      activo: Boolean(
+        (e as unknown as { activo?: boolean }).activo ??
+          (e.estado ? e.estado.trim().toLowerCase() === 'activo' : true),
+      ),
       dni: e.persona.dni,
       correo: e.persona.correo || '',
       celular: e.persona.telefono || '',

@@ -151,8 +151,18 @@ export function nivelesDelFiltro(
  * con cosas distintas.
  */
 export function coincideConFiltroDeNivel(ie: ConNivel, { modalidad, nivel }: FiltroDeNivel): boolean {
-  if (modalidad !== TODOS && ie.modalidad !== modalidad) return false;
-  if (nivel !== TODOS && ie.nivelEducativo !== nivel) return false;
+  if (
+    modalidad !== TODOS &&
+    (ie.modalidad ?? '').trim().toUpperCase() !== (modalidad ?? '').trim().toUpperCase()
+  ) {
+    return false;
+  }
+  if (
+    nivel !== TODOS &&
+    (ie.nivelEducativo ?? '').trim().toLowerCase() !== (nivel ?? '').trim().toLowerCase()
+  ) {
+    return false;
+  }
   return true;
 }
 

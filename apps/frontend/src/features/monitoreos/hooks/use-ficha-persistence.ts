@@ -87,16 +87,23 @@ export function useFichaPersistence({
    * trabajando sin perder nada.
    */
   const encolarEnvio = useCallback(
-    async (payload: PayloadFinalizarFicha, estadoLocal: 'BORRADOR' | 'FINALIZADO') => {
-      await encolar('finalizar-ficha', payload);
+    async (
+      tipo: 'guardar-borrador' | 'finalizar-ficha',
+      payload: PayloadFinalizarFicha,
+      estadoLocal: 'BORRADOR' | 'FINALIZADO',
+    ) => {
+      await encolar(tipo, payload);
       safeSetLocalStorage(
         claveEstadoLocal(payload.visitId, plantillaId),
         JSON.stringify({ ...payload.datos, estado: estadoLocal }),
       );
       marcarEstadoVisita(payload.visitId, estadoLocal === 'FINALIZADO' ? 'COMPLETADO' : 'EN_PROCESO');
-      toast.info('Sin conexión: la ficha quedó guardada y se enviará al recuperar internet.', {
-        duration: 8000,
-      });
+      toast.info(
+        estadoLocal === 'FINALIZADO'
+          ? 'Sin conexión: la ficha quedó guardada y se enviará al recuperar internet.'
+          : 'Sin conexión: el borrador quedó guardado y se enviará al recuperar internet.',
+        { duration: 8000 },
+      );
       onPersistido();
     },
     [marcarEstadoVisita, onPersistido, plantillaId],
@@ -149,7 +156,7 @@ export function useFichaPersistence({
         onPersistido();
       } catch (error) {
         // Sin señal, no es un fallo: la ficha se encola y se envía al reconectar.
-        if (esErrorDeRed(error)) await encolarEnvio(payload, 'BORRADOR');
+        if (esErrorDeRed(error)) await encolarEnvio('guardar-borrador', payload, 'BORRADOR');
         else manejarFallo(error, visitId, 'guardar borrador');
       }
     },
@@ -171,7 +178,7 @@ export function useFichaPersistence({
         await qc.invalidateQueries({ queryKey: ['cronogramas'] });
         onPersistido();
       } catch (error) {
-        if (esErrorDeRed(error)) await encolarEnvio(payload, 'FINALIZADO');
+        if (esErrorDeRed(error)) await encolarEnvio('finalizar-ficha', payload, 'FINALIZADO');
         else manejarFallo(error, visitId, 'finalizar la ficha');
       }
     },

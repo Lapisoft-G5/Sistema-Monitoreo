@@ -31,7 +31,13 @@ export const CamposDeAsignacion = ({ form, onCambiar, opciones, perfil }: Props)
 
   /** Qué decir cuando la lista está vacía, y por qué motivo. */
   const marcador = (vacio: string, lleno: string, cantidad: number) =>
-    faltaCascada ? 'Seleccione modalidad y nivel...' : cantidad === 0 ? vacio : lleno;
+    faltaCascada
+      ? 'Seleccione modalidad y nivel...'
+      : opciones.cargando
+        ? 'Cargando datos...'
+        : cantidad === 0
+          ? vacio
+          : lleno;
 
   return (
     <>
@@ -92,6 +98,7 @@ export const CamposDeAsignacion = ({ form, onCambiar, opciones, perfil }: Props)
                 opciones.especialistas.length,
               )}
               opciones={opciones.especialistas}
+              disabled={faltaCascada || Boolean(opciones.cargando) || opciones.especialistas.length === 0}
               recuento={
                 faltaCascada
                   ? null
@@ -118,6 +125,7 @@ export const CamposDeAsignacion = ({ form, onCambiar, opciones, perfil }: Props)
                 opciones.instituciones.length,
               )}
               opciones={opciones.instituciones}
+              disabled={faltaCascada || Boolean(opciones.cargando) || opciones.instituciones.length === 0}
               recuento={
                 faltaCascada
                   ? null
@@ -145,6 +153,7 @@ const CampoConRecuento = ({
   onChange,
   placeholder,
   opciones,
+  disabled,
   recuento,
 }: {
   label: string;
@@ -152,6 +161,7 @@ const CampoConRecuento = ({
   onChange: (valor: string) => void;
   placeholder: string;
   opciones: Opcion[];
+  disabled?: boolean;
   recuento: string | null;
 }) => (
   <>
@@ -161,6 +171,7 @@ const CampoConRecuento = ({
       onChange={onChange}
       placeholder={placeholder}
       options={opciones}
+      disabled={disabled}
     />
     {recuento && opciones.length > 0 && (
       <span className="text-[10px] text-text-muted pl-1">{recuento}</span>

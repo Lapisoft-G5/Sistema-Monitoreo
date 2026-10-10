@@ -171,7 +171,7 @@ export const ConsolidadoSeccion = ({
         </div>
 
         {/* Tabla Detallada Cualitativa */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/80">
@@ -222,7 +222,7 @@ export const ConsolidadoSeccion = ({
         </span>
       </div>
 
-      <div className="bg-white/80 rounded-xl border border-white shadow-sm overflow-hidden">
+      <div className="bg-white/80 rounded-xl border border-white shadow-sm overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-slate-100">

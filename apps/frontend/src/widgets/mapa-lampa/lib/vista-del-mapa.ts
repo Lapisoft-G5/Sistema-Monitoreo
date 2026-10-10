@@ -106,7 +106,7 @@ interface OpcionesDelFiltro {
  */
 export function normalizarModalidadCanonica(mod?: string | null): string {
   const m = (mod ?? '').trim().toUpperCase();
-  if (m === 'ESCOLARIZADO' || m === 'NO ESCOLARIZADO') return ModalidadEducativa.EBR;
+  if (!m || m === 'ESCOLARIZADO' || m === 'NO ESCOLARIZADO') return ModalidadEducativa.EBR;
   return m;
 }
 

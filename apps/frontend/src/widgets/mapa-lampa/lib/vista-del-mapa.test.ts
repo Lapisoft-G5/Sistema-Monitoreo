@@ -19,6 +19,7 @@ import {
   firmaDeCobertura,
   NOMBRE_DE_MODALIDAD,
   modalidadesDisponibles,
+  normalizarModalidadCanonica,
   nivelesDelFiltro,
   nivelesDisponibles,
   MODO_DISTRITAL,
@@ -265,6 +266,28 @@ describe('coincideConFiltroDeNivel', () => {
         filtro,
       ),
     ).toBe(true);
+  });
+
+  it('tolera datos heredados mapeando Escolarizado y No escolarizado a EBR', () => {
+    const filtro = { modalidad: 'EBR', nivel: TODOS };
+    expect(coincideConFiltroDeNivel(ie({ modalidad: 'Escolarizado' }), filtro)).toBe(true);
+    expect(coincideConFiltroDeNivel(ie({ modalidad: 'No escolarizado' }), filtro)).toBe(true);
+    expect(coincideConFiltroDeNivel(ie({ modalidad: 'EBA' }), filtro)).toBe(false);
+  });
+});
+
+describe('normalizarModalidadCanonica', () => {
+  it('normaliza Escolarizado y No escolarizado a EBR', () => {
+    expect(normalizarModalidadCanonica('Escolarizado')).toBe('EBR');
+    expect(normalizarModalidadCanonica('No escolarizado')).toBe('EBR');
+    expect(normalizarModalidadCanonica('ESCOLARIZADO')).toBe('EBR');
+  });
+
+  it('preserva las modalidades canónicas', () => {
+    expect(normalizarModalidadCanonica('EBR')).toBe('EBR');
+    expect(normalizarModalidadCanonica('EBA')).toBe('EBA');
+    expect(normalizarModalidadCanonica('EBE')).toBe('EBE');
+    expect(normalizarModalidadCanonica('CEPTRO')).toBe('CEPTRO');
   });
 });
 

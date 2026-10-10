@@ -98,12 +98,24 @@ interface OpcionesDelFiltro {
   delDominio?: boolean;
 }
 
+/**
+ * Normaliza la modalidad a su código canónico (EBR, EBA, EBE, CEPTRO).
+ *
+ * Datos heredados o de importaciones externas pueden contener 'Escolarizado' o
+ * 'No escolarizado' (PRONOEI), que corresponden a la modalidad EBR.
+ */
+export function normalizarModalidadCanonica(mod?: string | null): string {
+  const m = (mod ?? '').trim().toUpperCase();
+  if (m === 'ESCOLARIZADO' || m === 'NO ESCOLARIZADO') return ModalidadEducativa.EBR;
+  return m;
+}
+
 /** Modalidades que se ofrecen, en el orden del dominio. */
 export function modalidadesDisponibles(
   instituciones: readonly ConNivel[],
   { delDominio = false }: OpcionesDelFiltro = {},
 ): string[] {
-  const presentes = instituciones.map((ie) => ie.modalidad);
+  const presentes = instituciones.map((ie) => normalizarModalidadCanonica(ie.modalidad));
   return enOrdenDelDominio(
     delDominio ? [...MODALIDADES_DEL_DOMINIO, ...presentes] : presentes,
     MODALIDADES_DEL_DOMINIO,
@@ -117,8 +129,9 @@ export function nivelesDisponibles(
   { delDominio = false }: OpcionesDelFiltro = {},
 ): string[] {
   const delaModalidad = MODALIDAD_NIVEL_MAP[modalidad] ?? [];
+  const modFiltro = normalizarModalidadCanonica(modalidad);
   const presentes = instituciones
-    .filter((ie) => ie.modalidad === modalidad)
+    .filter((ie) => normalizarModalidadCanonica(ie.modalidad) === modFiltro)
     .map((ie) => ie.nivelEducativo);
   return enOrdenDelDominio(delDominio ? [...delaModalidad, ...presentes] : presentes, delaModalidad);
 }
@@ -151,11 +164,10 @@ export function nivelesDelFiltro(
  * con cosas distintas.
  */
 export function coincideConFiltroDeNivel(ie: ConNivel, { modalidad, nivel }: FiltroDeNivel): boolean {
-  if (
-    modalidad !== TODOS &&
-    (ie.modalidad ?? '').trim().toUpperCase() !== (modalidad ?? '').trim().toUpperCase()
-  ) {
-    return false;
+  if (modalidad !== TODOS) {
+    const modIe = normalizarModalidadCanonica(ie.modalidad);
+    const modFiltro = normalizarModalidadCanonica(modalidad);
+    if (modIe !== modFiltro) return false;
   }
   if (
     nivel !== TODOS &&

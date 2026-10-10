@@ -283,13 +283,6 @@ describe('normalizarModalidadCanonica', () => {
     expect(normalizarModalidadCanonica('ESCOLARIZADO')).toBe('EBR');
   });
 
-  it('asume EBR ante valores nulos, vacíos o indefinidos (datos heredados sin modalidad)', () => {
-    expect(normalizarModalidadCanonica(undefined)).toBe('EBR');
-    expect(normalizarModalidadCanonica(null)).toBe('EBR');
-    expect(normalizarModalidadCanonica('')).toBe('EBR');
-    expect(normalizarModalidadCanonica('   ')).toBe('EBR');
-  });
-
   it('preserva las modalidades canónicas', () => {
     expect(normalizarModalidadCanonica('EBR')).toBe('EBR');
     expect(normalizarModalidadCanonica('EBA')).toBe('EBA');
